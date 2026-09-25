@@ -24,6 +24,9 @@ def test_create_session_and_snapshot():
     body = r.json()
     assert body["step"] == 0
     assert len(body["fish"]) == 12
+    assert len(body["prey"]) == 24
+    assert len(body["predators"]) == 3
+    assert len(body["obstacles"]) == 6
 
 
 def test_release_advances_arena():

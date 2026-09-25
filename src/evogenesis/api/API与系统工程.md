@@ -79,7 +79,7 @@
 | GET | `/v1/sessions/{session_id}/fish/{fish_id}` | Fish Card |
 | POST | `/v1/sessions/{session_id}/release` | 释放鱼进入 Arena |
 | POST | `/v1/sessions/{session_id}/pause` | 暂停仿真 |
-| GET | `/v1/sessions/{session_id}/snapshot` | transforms + energy + events |
+| GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
 | POST | `/v1/sessions/{session_id}/evolutions` | 演化，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
 | POST | `/v1/experiments` | 启动正式实验，`202` + `job_id` |

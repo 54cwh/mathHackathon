@@ -4,29 +4,37 @@ import { BrainForgePanel } from "@/panels/BrainForgePanel";
 import { DanioArenaPanel } from "@/panels/DanioArenaPanel";
 import { useUiStore } from "@/store/ui";
 
-const stats = [
-  { label: "Env", value: "Food Rich" },
-  { label: "Generation", value: "0" },
-  { label: "Population", value: "0" },
-  { label: "Seed", value: "—" },
-];
-
 function App() {
   const running = useUiStore((state) => state.running);
   const toggleRunning = useUiStore((state) => state.toggleRunning);
-  const reset = useUiStore((state) => state.reset);
+  const bumpReset = useUiStore((state) => state.bumpReset);
+  const stats = useUiStore((state) => state.stats);
 
   return (
     <div className="flex h-screen flex-col bg-background text-foreground">
       <header className="flex items-center gap-6 border-b border-border px-4 py-2">
         <span className="font-semibold tracking-wide">EvoGenesis</span>
         <div className="flex gap-5 text-sm text-muted-foreground">
-          {stats.map((item) => (
-            <span key={item.label}>
-              {item.label}{" "}
-              <span className="text-foreground">{item.value}</span>
+          <span>
+            Env <span className="text-foreground">Food Rich</span>
+          </span>
+          <span>
+            Generation <span className="text-foreground">{stats?.generation ?? 0}</span>
+          </span>
+          <span>
+            Fish <span className="text-foreground">
+              {stats ? `${stats.fishAlive}/${stats.population}` : "—"}
             </span>
-          ))}
+          </span>
+          <span>
+            Prey <span className="text-foreground">{stats?.preyAlive ?? "—"}</span>
+          </span>
+          <span>
+            Step <span className="text-foreground">{stats?.step ?? "—"}</span>
+          </span>
+          <span>
+            Seed <span className="text-foreground">{stats?.seed ?? "—"}</span>
+          </span>
         </div>
       </header>
 
@@ -42,16 +50,12 @@ function App() {
           onClick={toggleRunning}
           className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary"
         >
-          {running ? (
-            <Pause className="size-4" />
-          ) : (
-            <Play className="size-4" />
-          )}
+          {running ? <Pause className="size-4" /> : <Play className="size-4" />}
           {running ? "Pause" : "Release"}
         </button>
         <button
           type="button"
-          onClick={reset}
+          onClick={bumpReset}
           className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary"
         >
           <RotateCcw className="size-4" />

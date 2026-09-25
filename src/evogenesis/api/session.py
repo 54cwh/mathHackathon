@@ -70,10 +70,30 @@ class Session:
                 "size": float(f.size),
                 "alive": f.alive,
             }
+        prey_out = {
+            pid: {
+                "x": float(p.pos[0]),
+                "y": float(p.pos[1]),
+                "size": float(p.size),
+                "alive": p.alive,
+            }
+            for pid, p in self.arena.prey.items()
+        }
+        pred_out = {
+            did: {"x": float(d.pos[0]), "y": float(d.pos[1]), "size": float(d.size)}
+            for did, d in self.arena.predators.items()
+        }
+        obst_out = [
+            {"x": float(o.pos[0]), "y": float(o.pos[1]), "radius": float(o.radius)}
+            for o in self.arena.obstacles
+        ]
         return Snapshot(
             session_id=self.session_id,
             step=self.arena.step_idx,
             fish=fish_out,
+            prey=prey_out,
+            predators=pred_out,
+            obstacles=obst_out,
             events=[e.to_dict() for e in self.arena.events[-200:]],
         )
 
