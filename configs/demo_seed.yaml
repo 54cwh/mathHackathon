@@ -1,0 +1,3 @@
+master_seed: 250927
+purpose: stable_live_demo
+notes: "正式 Demo 前需完整回归测试后冻结。"

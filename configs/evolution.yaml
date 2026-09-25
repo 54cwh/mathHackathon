@@ -1,0 +1,12 @@
+population_size: 48
+selection_beta: 3.0
+mutation_rate_per_base_per_gamete: 0.001
+crossover_probability_per_chromosome: 0.5
+max_crossovers_per_chromosome: 1
+fitness_weights:
+  survival: 0.35
+  prey_capture: 0.25
+  escape_success: 0.20
+  energy_efficiency: 0.20
+generation_buttons: [1, 5, 10, 20]
+mendel_display_offspring: 160

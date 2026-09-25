@@ -1,7 +1,7 @@
 .PHONY: help env test lint fmt tree
 
 help:
-	@echo "make env    - 同步依赖并安装 mh（editable）"
+	@echo "make env    - 同步依赖并安装 evogenesis（editable）"
 	@echo "make test   - 运行测试"
 	@echo "make lint   - ruff 静态检查"
 	@echo "make fmt    - ruff 格式化"

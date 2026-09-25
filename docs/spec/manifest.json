@@ -1,0 +1,312 @@
+[
+  {
+    "path": "LICENSE",
+    "bytes": 479,
+    "sha256": "7769d68e4393f9d3bae08ad417895572f9f1284d7601a5ffe107fb6d7b1a26e9"
+  },
+  {
+    "path": "PROJECT_STATUS.md",
+    "bytes": 1093,
+    "sha256": "cd3f53a66e91ea393778ec2c10f6a1c93743fe4964a08d67115c4c99f8dc3d39"
+  },
+  {
+    "path": "README.md",
+    "bytes": 3478,
+    "sha256": "f831ba4139afd3e0d8f04c7898d2b5d4ab1ef449351f22bd31f5e802cc8e732a"
+  },
+  {
+    "path": "THIRD_PARTY.md",
+    "bytes": 220,
+    "sha256": "4a4a9f9d6c7f079dcf9c3cfff2991c7fc7dbaea529cc2436b93067354c70f2cd"
+  },
+  {
+    "path": "archive/DNA2Brain_项目交接稿_v0.1.md",
+    "bytes": 16655,
+    "sha256": "c0056f4da735613e7b8c53ddc420bf56e4823381df6a6dadac3fdbdff40836d0"
+  },
+  {
+    "path": "archive/README_v0.3.md",
+    "bytes": 197,
+    "sha256": "10e05899114af67603886ede4b5fd95ceab65ef42a436092805d91386dc50e6e"
+  },
+  {
+    "path": "assets_placeholder/README.md",
+    "bytes": 389,
+    "sha256": "34c93b4f0e199f6fdec2b70e253df0729c7a3df06658a3038163bfa4f1152053"
+  },
+  {
+    "path": "assets_placeholder/image_prompt_template.md",
+    "bytes": 438,
+    "sha256": "4c444645f21bb70f77b6aca4acf28a3610e897fa75d138a669af29602130eff2"
+  },
+  {
+    "path": "configs/default_arena.yaml",
+    "bytes": 417,
+    "sha256": "bb07ae0a4718b0ffa5882924d1e23c795f5b1a53b1b5b1537bc731469d17dc1e"
+  },
+  {
+    "path": "configs/default_model.yaml",
+    "bytes": 617,
+    "sha256": "befb3c7c03d9c6e07557e28827a4c027a31dda0c66ff2f235d293c8b74b1db43"
+  },
+  {
+    "path": "configs/demo_seed.yaml",
+    "bytes": 104,
+    "sha256": "bf3fd31f8031ef7822f4da18278e121d4ebd450e8909cb63fd728ef6fe0c0237"
+  },
+  {
+    "path": "configs/evolution.yaml",
+    "bytes": 325,
+    "sha256": "795f0edbf29d780d44da30d9c2ed03c1433f69bef911e0809abe7c60f1b8be3a"
+  },
+  {
+    "path": "configs/experiment_seeds.yaml",
+    "bytes": 55,
+    "sha256": "8171841d853733ffedff897e3d50f9e60727e063089c6e076b650f3d7dc2d959"
+  },
+  {
+    "path": "docs/01_项目总交接稿.md",
+    "bytes": 4711,
+    "sha256": "c16e391f8ef8c2bf129fff85af175e1bc6d4c02ba8f77c34c242bd8e8ff18fb6"
+  },
+  {
+    "path": "docs/02_问题定义与研究假设.md",
+    "bytes": 2166,
+    "sha256": "ba7cf020586870b8c7ad9f7033554f76f487a4f8dd3e0d0fe944980e45cfdca8"
+  },
+  {
+    "path": "docs/03_生物学与进化遗传学基础.md",
+    "bytes": 2029,
+    "sha256": "bf7140cb841e7cc36e8a152090c97918819ef5fc540f5c62bad0eb5ee2a963e5"
+  },
+  {
+    "path": "docs/04_RGCD数学模型.md",
+    "bytes": 3331,
+    "sha256": "6eb73cb328c4982c732cf836648afa9b0139743aecf3a45210b25e07dba67a1e"
+  },
+  {
+    "path": "docs/05_DanioNet设计规范.md",
+    "bytes": 1741,
+    "sha256": "7e25c78d2e7c68bd1642296e91c9e94454634f4d0c36ff1c6ad362d92a1e5665"
+  },
+  {
+    "path": "docs/06_遗传繁殖与演化模型.md",
+    "bytes": 1405,
+    "sha256": "dfa864418ec1c615339a4253705c30d8ce738f8ea29385e2f8dc261eadb8acdc"
+  },
+  {
+    "path": "docs/07_Danio_Arena设计规范.md",
+    "bytes": 2542,
+    "sha256": "c45da036a15b77bd674b403cca60037d86cd5e8192d3f93e7ba7ffd0223c2e49"
+  },
+  {
+    "path": "docs/08_交互与可视化.md",
+    "bytes": 3440,
+    "sha256": "a82828b24ea75a32910b2814407a86210b63cbe47ea865729bd7fa8610b01361"
+  },
+  {
+    "path": "docs/09_实验与评价体系.md",
+    "bytes": 2171,
+    "sha256": "933a27240a50aad3f99f61c96fdea95e0c0ba6563e592f24dfa3ca77cfd6cfb4"
+  },
+  {
+    "path": "docs/10_系统工程与接口.md",
+    "bytes": 1735,
+    "sha256": "98bb730aca3cab1eeacab9f012eff19b93dfff4612c693fa880227c42cc4af3c"
+  },
+  {
+    "path": "docs/11_AI工作流.md",
+    "bytes": 1273,
+    "sha256": "5153c51d60b0328fa4af233f366336003580ffba4d0da3f4bd5802c18ac511ed"
+  },
+  {
+    "path": "docs/12_路演与答辩.md",
+    "bytes": 2233,
+    "sha256": "5260b7438de33699a2fea387ee334d9e3da23257e5c72e464513c408095a5bd8"
+  },
+  {
+    "path": "docs/13_相关工作与开源参考.md",
+    "bytes": 1140,
+    "sha256": "570d0886b429dacb84b1a4cf9c84f59a119dcd04cf593da483d0ee2a239d84da"
+  },
+  {
+    "path": "docs/14_局限与未来路线.md",
+    "bytes": 649,
+    "sha256": "9c9857004453c4337c15f73412a542d15cdb431dcdde0de6b2f703385b7460bd"
+  },
+  {
+    "path": "docs/15_开发排期与人员分工.md",
+    "bytes": 1733,
+    "sha256": "b43d295aeec752c4669b2ed36ad1ebb9428eeea1c5f60db3a40359e61865074a"
+  },
+  {
+    "path": "docs/16_参数总表.md",
+    "bytes": 957,
+    "sha256": "f576bdf54a4f4b7ac12f322c551c59822f2ed591dea3eb0f54ee1425598e34cb"
+  },
+  {
+    "path": "docs/17_验收清单.md",
+    "bytes": 1118,
+    "sha256": "23c06550e01f5054cdb5122fdd4805960a3ec75ddb30912434baffe82efdab83"
+  },
+  {
+    "path": "frontend_skeleton/README.md",
+    "bytes": 290,
+    "sha256": "7a5d47337da91f31ab03ba3389a49d0cf07401751fe63f99a73d475571235ce9"
+  },
+  {
+    "path": "frontend_skeleton/types.ts",
+    "bytes": 733,
+    "sha256": "a94cdb470e22d67d74bb53a2c1671d9278d30132c5413709154c2ba9070b5a1f"
+  },
+  {
+    "path": "prompts/AI_USE_DECLARATION.md",
+    "bytes": 623,
+    "sha256": "fdac6f7e54cea86e7450deb3b094ee2f739efd6968cc1099c90e1ca6056e7867"
+  },
+  {
+    "path": "prompts/coding_agent.md",
+    "bytes": 301,
+    "sha256": "84791ba36d39bb1227b19e9e52764d75467926d3a752cabcec84728de2e97db1"
+  },
+  {
+    "path": "prompts/modeling_agent.md",
+    "bytes": 311,
+    "sha256": "edb72a5d87ddcad5c16bab3d14f83effae491b7042026d5d593360bd8184c29f"
+  },
+  {
+    "path": "prompts/report_agent.md",
+    "bytes": 297,
+    "sha256": "1e51c591d3181800d361d65c37997efc4fa9e081a19ee107c02e9fc30618041c"
+  },
+  {
+    "path": "prompts/research_agent.md",
+    "bytes": 319,
+    "sha256": "97244d9eedd546120d00df70f241053458d5f0178cfe015c4800960f9bfd6f22"
+  },
+  {
+    "path": "prompts/testing_agent.md",
+    "bytes": 302,
+    "sha256": "11a24ac0c35e49b57705f6af32905818d32d62ce41ffdccb7e67ef2ec0d3121c"
+  },
+  {
+    "path": "prompts/visualization_agent.md",
+    "bytes": 327,
+    "sha256": "9960c55fa0e5d365b3b59b020eb10c54648bf787991435fde59ebfbb8ba17b14"
+  },
+  {
+    "path": "references/bibliography.md",
+    "bytes": 3233,
+    "sha256": "52eb3dc9d86ca17e4580259738d43d92f8db28544cd8b87ee2730a293bb1d5d9"
+  },
+  {
+    "path": "references/open_source_projects.md",
+    "bytes": 659,
+    "sha256": "afa57f8aea709634e648a7c466c0d4bad5fddc05ea64a4cb43426a2ad3fcfc14"
+  },
+  {
+    "path": "schemas/experiment.schema.json",
+    "bytes": 609,
+    "sha256": "24a02d45a18b049585f169efad690acef7140ccaaffb0ffd7e854ba3262c2589"
+  },
+  {
+    "path": "schemas/fish.schema.json",
+    "bytes": 782,
+    "sha256": "edd357ed492581beda515eb080620e77cb096fea3a594c8fc867bd6567a3de07"
+  },
+  {
+    "path": "schemas/genome.schema.json",
+    "bytes": 713,
+    "sha256": "2fe9ded90654ad124b42dabb57f1d8927913d1bd96cdc338eaa64adac21055dc"
+  },
+  {
+    "path": "scripts/start_demo.ps1",
+    "bytes": 232,
+    "sha256": "36835ec4dd82297223b101a99a1d124f7bb8fa86d28c06a3655dde0f2106d773"
+  },
+  {
+    "path": "scripts/start_demo.sh",
+    "bytes": 235,
+    "sha256": "777a5313992deaf5f4f76d78ed088f91279ff0af4fa4d57842a28ad225d5e26b"
+  },
+  {
+    "path": "src_skeleton/README.md",
+    "bytes": 524,
+    "sha256": "57f38ffc45fc9a2864e75f5c4cb52f3f78bdb6328b3c80f99ce66edaae4f4794"
+  },
+  {
+    "path": "src_skeleton/evogenesis/__init__.py",
+    "bytes": 22,
+    "sha256": "56b5e91c3bb77ab933c25fd65eba883419bdc5691cc94cb9dc840e8f4e3674eb"
+  },
+  {
+    "path": "src_skeleton/evogenesis/danionet.py",
+    "bytes": 843,
+    "sha256": "4fa2cafc15d3809cbfcba5a22259946cda6b5e1d5ccbd30a657ba089e4868f0e"
+  },
+  {
+    "path": "src_skeleton/evogenesis/development.py",
+    "bytes": 653,
+    "sha256": "59ef5bbbd49c674c54efe09ea4d58706e23203892ce3bb0a1b46bc598474e71e"
+  },
+  {
+    "path": "src_skeleton/evogenesis/evolution.py",
+    "bytes": 461,
+    "sha256": "d67da13892d1f8d05349c1ada582577c0673303c3d89b64f9a96e07673a0327b"
+  },
+  {
+    "path": "src_skeleton/evogenesis/genome.py",
+    "bytes": 1671,
+    "sha256": "347269318534895d40b898f083468c1a3f980db0f229e41cb121313ef5aed0af"
+  },
+  {
+    "path": "src_skeleton/evogenesis/grn.py",
+    "bytes": 533,
+    "sha256": "583722bb755a63a4eb7bd2947e90f03ad5caa351ffc4c17566bc205e40ba92ba"
+  },
+  {
+    "path": "src_skeleton/evogenesis/metrics.py",
+    "bytes": 302,
+    "sha256": "5ceca5390a19bb3ea57bbdf7bd95b8916d7f415045a67667ab59406b6175a70e"
+  },
+  {
+    "path": "src_skeleton/evogenesis/policies.py",
+    "bytes": 781,
+    "sha256": "58a097119aa4787d43de2c63a615facd029435a353f583b5dafcd3fb35316a97"
+  },
+  {
+    "path": "src_skeleton/evogenesis/rgcd.py",
+    "bytes": 1155,
+    "sha256": "33da1139761f765dcb68374f6c795f645f4794fc8374410c4798057111448246"
+  },
+  {
+    "path": "src_skeleton/evogenesis/seed.py",
+    "bytes": 237,
+    "sha256": "2538365fe1df02b57ecc3aaec6412d6eb48a43028ef59e8765db17b469340953"
+  },
+  {
+    "path": "tests/TEST_PLAN.md",
+    "bytes": 430,
+    "sha256": "4f36d5861293754de7e28bc69b45635458f7ef9aab8afe027fd2df9471e2a187"
+  },
+  {
+    "path": "tests/test_dale.py",
+    "bytes": 279,
+    "sha256": "457a73f0440ea08cd012c39460bc78b14a9374100c75ab38d70dd67aff34b55d"
+  },
+  {
+    "path": "tests/test_genome.py",
+    "bytes": 477,
+    "sha256": "a6683c0ac3fd4e4f519584db6f799b07be3e449479ed6da73d80d455c747bff4"
+  },
+  {
+    "path": "tests/test_grn.py",
+    "bytes": 372,
+    "sha256": "e7c16c19066c8138c2c8880bdf839503cd09db8cd7802cd94074f355382290a2"
+  },
+  {
+    "path": "tests/test_reproducibility.py",
+    "bytes": 231,
+    "sha256": "983a662b8ee12977f8a6efc620633eeb08153b457628a5753eb1bdb8578e7fa6"
+  }
+]

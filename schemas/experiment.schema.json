@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ExperimentRun",
+  "type": "object",
+  "required": [
+    "experiment_id",
+    "seed",
+    "model_config",
+    "arena_config",
+    "evolution_config"
+  ],
+  "properties": {
+    "experiment_id": {
+      "type": "string"
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "model_config": {
+      "type": "string"
+    },
+    "arena_config": {
+      "type": "string"
+    },
+    "evolution_config": {
+      "type": "string"
+    },
+    "git_commit": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    }
+  }
+}

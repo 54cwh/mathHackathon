@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DiploidGenome",
+  "type": "object",
+  "required": [
+    "genome_id",
+    "chromosome_pairs"
+  ],
+  "properties": {
+    "genome_id": {
+      "type": "string"
+    },
+    "chromosome_pairs": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "type": "object",
+        "required": [
+          "maternal",
+          "paternal"
+        ],
+        "properties": {
+          "maternal": {
+            "type": "string",
+            "pattern": "^[ACGT]{128}$"
+          },
+          "paternal": {
+            "type": "string",
+            "pattern": "^[ACGT]{128}$"
+          }
+        }
+      }
+    }
+  }
+}

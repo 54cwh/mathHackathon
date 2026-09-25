@@ -1,0 +1,30 @@
+genome:
+  chromosome_pairs: 2
+  bp_per_haplotype_chromosome: 128
+  alphabet: [A, C, G, T]
+  motif_count: 8
+grn:
+  dim: 8
+  development_steps: 12
+  rho: 0.35
+  activation: sigmoid
+development:
+  initial_precursors: 24
+  domains: [sensory, prey, threat, memory, inhibitory, motor]
+  precursors_per_domain: 4
+  max_divisions_per_precursor: 1
+  max_neurons: 48
+connectome:
+  target_density: 0.15
+  allow_self_loops: false
+  distance_lambda: 1.0
+  tau_min: 1.0
+  tau_max: 10.0
+network:
+  sensory_dim: 12
+  action_dim: 2
+  activation: tanh
+learning:
+  method: behavior_cloning
+  mini_batch_updates: 20
+  optional_rl: false
