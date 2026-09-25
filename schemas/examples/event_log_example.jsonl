@@ -1,0 +1,4 @@
+{"seq": 1, "type": "arena.spawn", "step": 300, "payload": {"entity": "prey_07", "x": 34.2, "y": 21.5, "size": 0.47}}
+{"seq": 2, "type": "arena.capture_attempt", "step": 302, "payload": {"fish_id": "fish_g000_ex01", "prey_id": "prey_07", "distance": 1.6, "size_ratio": 1.28, "threshold": 1.25, "capture_radius": 1.2, "result": "too_far"}}
+{"seq": 3, "type": "arena.prey_captured", "step": 304, "payload": {"fish_id": "fish_g000_ex01", "prey_id": "prey_07", "distance": 0.9, "size_ratio": 1.32, "food_reward": 0.12}}
+{"seq": 4, "type": "arena.escape", "step": 306, "payload": {"fish_id": "fish_g000_ex01", "threat_source": "predator_03", "reaction_latency_steps": 1}}

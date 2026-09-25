@@ -1,0 +1,27 @@
+{
+  "fish_id": "fish_g000_ex01",
+  "generation": 0,
+  "genome_id": "genome_ex_20260925_01",
+  "viable": true,
+  "energy": 0.85,
+  "size": 1.08,
+  "fitness": null,
+  "cell_counts": {
+    "sensory": 4,
+    "prey": 8,
+    "threat": 4,
+    "memory": 6,
+    "inhibitory": 12,
+    "motor": 8
+  },
+  "metrics": {
+    "neuron_count": 42,
+    "edge_count": 315,
+    "edge_density": 0.1606,
+    "tau_min": 1.42,
+    "tau_max": 8.87,
+    "tau_mean": 5.03,
+    "has_self_loops": false,
+    "dale_sign_violations": 0
+  }
+}

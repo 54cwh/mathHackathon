@@ -1,0 +1,9 @@
+{
+  "experiment_id": "exp_20260925_smoke_01",
+  "seed": 1103,
+  "model_config": "configs/default_model.yaml",
+  "arena_config": "configs/default_arena.yaml",
+  "evolution_config": "configs/evolution.yaml",
+  "git_commit": "b0886f0",
+  "environment": "food_rich"
+}
