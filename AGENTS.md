@@ -1,6 +1,6 @@
 # 项目公约
 - 使用uv, 不使用overleaf，latex写作采用本地编译链+github.
-- 如果准备用 AI 写文章，在正式写作前应阅读 `./ai-tone-boundaries.md`
+- 如果准备用 AI 写文章，在正式写作前应阅读 `docs/ai-tone-boundaries.md`
 - 每次代码写完或改完，提交前按 `docs/code-review.md` 做审查；阻断项复验关闭后方可提交。
 
 
@@ -25,7 +25,7 @@ mathHackathon/
 ├── tests/                      # 冒烟 + 单测
 ├── paper/                      # LaTeX 论文
 ├── schemas/                    # JSON Schema（genome / fish / experiment）
-├── docs/                       # 团队协作文档
+├── docs/                       # 团队协作文档（ai-tone-boundaries / code-review / THIRD_PARTY 等）
 │   └── design/                 # 方向设计规格与冻结文档（EvoGenesis 01–17 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── prompts/                    # AI 角色提示词
