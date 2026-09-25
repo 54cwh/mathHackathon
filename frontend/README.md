@@ -4,12 +4,12 @@
 
 ## 技术栈（版本已锁定）
 
-> 规则：`package.json` 写**精确版本**（不用 `^`/`~`），提交 `pnpm-lock.yaml`。升级须显式改版本并重测。
+> 规则：`package.json` 写**精确版本**（不用 `^`/`~`），提交 `package-lock.json`。升级须显式改版本并重测。
 
 | 类别 | 依赖 | 版本 |
 |---|---|---|
 | 运行时 | Node（nvm LTS） | 22.23.3 |
-| 包管理 | pnpm | 11.5.1 |
+| 包管理 | npm（随 Node） | 10.9.9 |
 | 构建 | vite | 5.4.21 |
 | 构建 | @vitejs/plugin-react | 4.7.0 |
 | 框架 | react / react-dom | 18.3.1 |
@@ -25,7 +25,7 @@
 | 图表 | echarts | 5.6.0 |
 | 脑图 | cytoscape | 3.34.3 |
 
-- **组件层**：shadcn/ui。它不是 npm 包，组件源码落在 `src/components/ui/`，用 CLI 添加（`pnpm dlx shadcn@latest add <name>`）。
+- **组件层**：shadcn/ui。它不是 npm 包，组件源码落在 `src/components/ui/`，用 CLI 添加（`npx shadcn@latest add <name>`）。
 - **Arena 渲染**：原生 **Canvas 2D**（不用 WebGL/PixiJS）。
 - **实时传输**：原生 `WebSocket` + `fetch`，不引 HTTP 客户端库。
 - **3D DNA**：CSS/SVG 动画（three.js 不做，移至 P1）。
@@ -35,7 +35,7 @@
 1. **不装训练语料外的库**；改 UI 时先读 `src/components/ui/` 里的**本地 shadcn 源码**，按真实 props 写，不凭记忆。
 2. **不引 CDN**：字体、图标、资源全部本地打包（现场离线）。
 3. **20Hz 热路径不走 React**：Arena 用 `requestAnimationFrame` + Canvas2D，状态放 `useRef`；zustand 只存低频摘要（选中鱼、代、指标），避免每帧 setState。
-4. **配置只由官方模板生成**：`vite`/`tsconfig`/`tailwind`/`postcss` 配置不手写，用 `pnpm create vite` + shadcn CLI 产出后再改。
+4. **配置只由官方模板生成**：`vite`/`tsconfig`/`tailwind`/`postcss` 配置不手写，用 `npm create vite@5` + shadcn CLI 产出后再改。
 5. **契约同源**：TS 类型对齐 `schemas/`（JSON 字段一律 `snake_case`）。
 
 ## 目录规划
@@ -44,10 +44,9 @@
 frontend/
 ├─ .nvmrc                     # 22
 ├─ index.html
-├─ package.json  pnpm-lock.yaml
+├─ package.json  package-lock.json
 ├─ vite.config.ts  tsconfig*.json
 ├─ tailwind.config.ts  postcss.config.js  components.json
-├─ pnpm-workspace.yaml        # allowBuilds（esbuild）
 ├─ public/fonts/              # 自托管字体（离线）
 └─ src/
    ├─ main.tsx  App.tsx  index.css
