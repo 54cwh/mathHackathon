@@ -8,7 +8,7 @@
 | 路径 | 类别 | 定位 | 入库 |
 |---|---|---|---|
 | `src/evogenesis/` | 代码 | 唯一可导入 Python 包 | 是 |
-| `frontend/` | 代码 | 演示 UI（栈待定） | 是 |
+| `frontend/` | 代码 | 演示 UI（Vite + React） | 是 |
 | `configs/` | 契约/配置 | yaml 实验配置 | 是 |
 | `schemas/` | 契约/配置 | JSON Schema 跨语言契约 | 是 |
 | `scripts/` | 工具 | 薄 CLI 入口 | 是 |
@@ -113,4 +113,4 @@ DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
 - **种子**：所有随机过程由 `core/` 的 seed manager 统一派生（Python `random` / NumPy / PyTorch CPU / PyTorch CUDA）。
 - **产物分级**：`artifacts/` 入库冻结资产；`results/` 忽略可重建；`data/raw/` 不入库。
 - **空目录**：Git 不跟踪空目录，用 `.gitkeep` 占位。被忽略的目录（`data/raw/`、`results/*/`）长期保留；一旦目录里有被跟踪的真实文件，`.gitkeep` 即可删除。
-- **前端**：仅 `frontend/`；技术栈尚未冻结，现有骨架仅供参考。
+- **前端**：仅 `frontend/`；技术栈与版本锁定见 `frontend/README.md`。

@@ -21,7 +21,7 @@ mathHackathon/
 │   ├── experiment/             # 实验协议、指标、run
 │   ├── viz/                    # 可视化（论文图、网络图）
 │   └── api/                    # FastAPI 路由 + WebSocket
-├── frontend/                   # Next.js 演示 UI（栈待定）
+├── frontend/                   # 演示 UI（Vite + React）
 ├── configs/                    # yaml 实验配置
 ├── scripts/                    # 薄 CLI 入口
 ├── notebooks/                  # 探索性分析
@@ -83,9 +83,11 @@ make tree   # 查看目录结构
 - NumPy / SciPy / pandas（数值与数据处理）
 - NetworkX（连接组分析）
 
-## 前端 / 演示（待定，未冻结）
-- 设计包候选（`docs/design/10_系统工程与接口.md`）：Next.js + TypeScript、Canvas / Phaser.js、Cytoscape.js、WebSocket
-- 具体框架与渲染库尚未拍板；`frontend/` 现有骨架仅作参考
+## 前端 / 演示
+- Vite 5 + React 18 + TypeScript 5；Tailwind 3.4 + shadcn/ui + lucide-react
+- 渲染：Canvas 2D（Arena）、Cytoscape.js 3（脑图）、ECharts 5（图表）；状态 zustand 4
+- 传输：原生 WebSocket / fetch；从 `schemas/` 对齐类型
+- 版本锁定与防坑约定见 `frontend/README.md`
 
 ## 数据 / 配置
 - YAML（`configs/`）
