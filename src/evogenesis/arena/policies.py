@@ -41,8 +41,9 @@ class PreyPolicy:
     turn_std: float = 0.8
     avoid_gain: float = 2.5
 
-    def act(self, rng: np.random.Generator,
-            obstacle_rel_bearing: float | None = None) -> tuple[float, float]:
+    def act(
+        self, rng: np.random.Generator, obstacle_rel_bearing: float | None = None
+    ) -> tuple[float, float]:
         omega = float(rng.normal(0.0, self.turn_std))
         if obstacle_rel_bearing is not None:
             # steer away: obstacle on the right (rel > 0) -> turn left (omega < 0)

@@ -13,7 +13,7 @@ import numpy as np
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.entities import Entity, Fish, Obstacle, Predator, Prey
 from evogenesis.arena.policies import PredatorPolicy, PreyPolicy
-from evogenesis.arena.sensing import observe
+from evogenesis.arena.sensing import nearest_predator_relative_size, observe
 
 
 @dataclass(frozen=True)
@@ -24,8 +24,7 @@ class Event:
     payload: dict
 
     def to_dict(self) -> dict:
-        return {"seq": self.seq, "type": self.type, "step": self.step,
-                "payload": self.payload}
+        return {"seq": self.seq, "type": self.type, "step": self.step, "payload": self.payload}
 
 
 @dataclass
@@ -48,58 +47,68 @@ class DanioArena:
         self.obstacles: list[Obstacle] = []
         self.step_idx = 0
         self._seq = 0
+        self._episode_ended = False
         self._rng = np.random.default_rng(master_seed)
         self._prey_policy = PreyPolicy(
-            speed=self.cfg.actors.prey_speed,
-            turn_std=self.cfg.actors.wander_turn_std)
+            speed=self.cfg.actors.prey_speed, turn_std=self.cfg.actors.wander_turn_std
+        )
         self._pred_policy = PredatorPolicy(
             cruise_speed=self.cfg.actors.predator_cruise_speed,
             chase_speed=self.cfg.actors.predator_chase_speed,
             detection_radius=self.cfg.actors.predator_detection_radius,
-            release_radius=self.cfg.actors.predator_release_radius)
+            release_radius=self.cfg.actors.predator_release_radius,
+        )
 
     def reset(self) -> None:
         self._rng = np.random.default_rng(self.master_seed)
         self.events.clear()
         self.step_idx = 0
         self._seq = 0
-        self.obstacles = self._spawn_obstacles()
+        self._episode_ended = False
+        self.obstacles = []
+        self._spawn_obstacles()
         self.fish = {
             f"fish_{i:02d}": Fish(
-                f"fish_{i:02d}", self._free_spot(2.0),
+                f"fish_{i:02d}",
+                self._free_spot(2.0),
                 float(self._rng.uniform(0, 2 * np.pi)),
                 size=self.cfg.growth.initial_size,
-                energy=self.cfg.energy.e_max)
+                energy=self.cfg.energy.e_max,
+            )
             for i in range(self.cfg.population.n_fish)
         }
         self.prey = {
             f"prey_{i:02d}": Prey(
-                f"prey_{i:02d}", self._free_spot(1.0),
+                f"prey_{i:02d}",
+                self._free_spot(1.0),
                 float(self._rng.uniform(0, 2 * np.pi)),
-                size=float(self._rng.uniform(
-                    self.cfg.actors.prey_size_min,
-                    self.cfg.actors.prey_size_max)))
+                size=float(
+                    self._rng.uniform(self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max)
+                ),
+            )
             for i in range(self.cfg.population.n_prey)
         }
         self.predators = {
             f"predator_{i:02d}": Predator(
-                f"predator_{i:02d}", self._free_spot(3.0),
+                f"predator_{i:02d}",
+                self._free_spot(3.0),
                 float(self._rng.uniform(0, 2 * np.pi)),
-                size=self.cfg.actors.predator_size)
+                size=self.cfg.actors.predator_size,
+            )
             for i in range(self.cfg.population.n_predators)
         }
         for eid in (*self.fish, *self.prey, *self.predators):
             self._emit("arena.spawn", {"entity_id": eid})
 
-    def _spawn_obstacles(self) -> list[Obstacle]:
-        obstacles = []
+    def _spawn_obstacles(self) -> None:
+        """Place obstacles one by one into ``self.obstacles`` (which must start
+        empty) so later obstacles avoid earlier ones; keeps ``reset`` idempotent."""
         lo = self.cfg.actors.obstacle_radius_min
         hi = self.cfg.actors.obstacle_radius_max
         for i in range(self.cfg.population.n_obstacles):
             r = float(self._rng.uniform(lo, hi))
             pos = self._free_spot(r + 1.0)
-            obstacles.append(Obstacle(f"obstacle_{i:02d}", pos, r))
-        return obstacles
+            self.obstacles.append(Obstacle(f"obstacle_{i:02d}", pos, r))
 
     def _free_spot(self, clearance: float) -> np.ndarray:
         """Rejection-sample a position inside the world, outside obstacles."""
@@ -124,13 +133,16 @@ class DanioArena:
 
     def _steer_away_from_obstacles(self, entity: Entity, gain: float = 0.5) -> None:
         """Rotate heading away from an obstacle we are about to hit."""
-        look = entity.pos + entity.speed * np.array(
-            [np.cos(entity.heading), np.sin(entity.heading)]) * 3.0
+        look = (
+            entity.pos
+            + entity.speed * np.array([np.cos(entity.heading), np.sin(entity.heading)]) * 3.0
+        )
         for o in self.obstacles:
             if o.contains(look):
                 away = np.arctan2(entity.pos[1] - o.pos[1], entity.pos[0] - o.pos[0])
-                diff = float(np.arctan2(np.sin(away - entity.heading),
-                                        np.cos(away - entity.heading)))
+                diff = float(
+                    np.arctan2(np.sin(away - entity.heading), np.cos(away - entity.heading))
+                )
                 entity.heading += float(np.sign(diff)) * gain
                 return
 
@@ -138,16 +150,20 @@ class DanioArena:
         fish = self.fish[fish_id]
         return observe(
             fish,
-            list(self.prey.values()), list(self.predators.values()),
+            list(self.prey.values()),
+            list(self.predators.values()),
             self.obstacles,
             radius=self.cfg.sensing.radius,
             fov_degrees=self.cfg.sensing.fov_degrees,
-            current_speed=fish.speed, e_max=self.cfg.energy.e_max,
+            current_speed=fish.speed,
+            e_max=self.cfg.energy.e_max,
             prev_predator_rel=fish._prev_predator_rel,
         )
 
     def step(self, actions: dict[str, tuple[float, float]] | None = None) -> StepResult:
         actions = actions or {}
+        if self._episode_ended:
+            return StepResult(self.step_idx, True, [])
         dt = self.cfg.world.dt
         new_events: list[Event] = []
 
@@ -167,9 +183,11 @@ class DanioArena:
             for o in self.obstacles:
                 if o.contains(fish.pos, 0.1):
                     fish.collisions += 1
-                    new_events.append(self._emit(
-                        "arena.collision",
-                        {"fish_id": fid, "obstacle_id": o.obstacle_id}))
+                    new_events.append(
+                        self._emit(
+                            "arena.collision", {"fish_id": fid, "obstacle_id": o.obstacle_id}
+                        )
+                    )
                     break
 
             # predation on prey (doc 07 section 8):
@@ -186,28 +204,46 @@ class DanioArena:
                     prey.alive = False
                     fish.captures += 1
                     fish.biomass += prey.size
-                    fish.size = min(self.cfg.growth.max_size,
-                                    fish.size
-                                    + self.cfg.growth.biomass_to_size_gain * prey.size)
-                    new_events.append(self._emit("arena.prey_captured", {
-                        "fish_id": fid, "prey_id": prey.entity_id,
-                        "distance": round(d, 3),
-                        "size_ratio": round(size_ratio, 3),
-                        "food_reward": self.cfg.energy.food_reward}))
+                    fish.size = min(
+                        self.cfg.growth.max_size,
+                        fish.size + self.cfg.growth.biomass_to_size_gain * prey.size,
+                    )
+                    new_events.append(
+                        self._emit(
+                            "arena.prey_captured",
+                            {
+                                "fish_id": fid,
+                                "prey_id": prey.entity_id,
+                                "distance": round(d, 3),
+                                "size_ratio": round(size_ratio, 3),
+                                "food_reward": self.cfg.energy.food_reward,
+                            },
+                        )
+                    )
                     break
-                new_events.append(self._emit("arena.capture_attempt", {
-                    "fish_id": fid, "prey_id": prey.entity_id,
-                    "distance": round(d, 3),
-                    "size_ratio": round(size_ratio, 3),
-                    "threshold": self.cfg.growth.capture_size_ratio,
-                    "capture_radius": self.cfg.growth.capture_radius,
-                    "result": "too_small_to_eat"}))
+                new_events.append(
+                    self._emit(
+                        "arena.capture_attempt",
+                        {
+                            "fish_id": fid,
+                            "prey_id": prey.entity_id,
+                            "distance": round(d, 3),
+                            "size_ratio": round(size_ratio, 3),
+                            "threshold": self.cfg.growth.capture_size_ratio,
+                            "capture_radius": self.cfg.growth.capture_radius,
+                            "result": "too_small_to_eat",
+                        },
+                    )
+                )
                 break  # one attempt per fish per step
 
             # energy (doc 07 section 6):
             # E = clip(E - C_base - C_move*v^2 + R_food, 0, E_max)
-            e = fish.energy - self.cfg.energy.base_cost_per_step \
+            e = (
+                fish.energy
+                - self.cfg.energy.base_cost_per_step
                 - self.cfg.energy.movement_cost_scale * v * v
+            )
             for ev in new_events:
                 if ev.type == "arena.prey_captured" and ev.payload["fish_id"] == fid:
                     e += self.cfg.energy.food_reward
@@ -218,8 +254,12 @@ class DanioArena:
 
             if fish.energy <= 0.0:
                 fish.alive = False
-                new_events.append(self._emit("arena.energy_depleted", {
-                    "fish_id": fid, "survival_steps": fish.survival_steps}))
+                new_events.append(
+                    self._emit(
+                        "arena.energy_depleted",
+                        {"fish_id": fid, "survival_steps": fish.survival_steps},
+                    )
+                )
                 continue
             fish.survival_steps += 1
 
@@ -229,18 +269,25 @@ class DanioArena:
                 continue
             fish_pos = {fid: f.pos for fid, f in self.fish.items() if f.alive}
             target, desired, speed = self._pred_policy.plan(
-                pred.pos, pred.heading, pred.target_fish_id, fish_pos)
-            if pred.target_fish_id is not None and target != pred.target_fish_id:
-                lost = pred.target_fish_id
-                new_events.append(self._emit(
-                    "arena.escape",
-                    {"fish_id": lost, "threat_source": pred.entity_id}))
-                if lost in self.fish:
-                    self.fish[lost].escape_successes += 1
+                pred.pos, pred.heading, pred.target_fish_id, fish_pos
+            )
+            prev_target = pred.target_fish_id
+            if prev_target is not None and target != prev_target:
+                lost_fish = self.fish.get(prev_target)
+                if lost_fish is not None and lost_fish.alive:
+                    new_events.append(
+                        self._emit(
+                            "arena.escape",
+                            {"fish_id": prev_target, "threat_source": pred.entity_id},
+                        )
+                    )
+                    lost_fish.escape_successes += 1
+            if target is not None and target != prev_target:
+                self.fish[target].predator_encounters += 1
             pred.target_fish_id = target
-            diff = float(np.arctan2(np.sin(desired - pred.heading),
-                                    np.cos(desired - pred.heading)))
-            pred.heading += float(np.clip(diff, -0.25, 0.25))
+            diff = float(np.arctan2(np.sin(desired - pred.heading), np.cos(desired - pred.heading)))
+            max_turn = self.cfg.actors.predator_turn_rate * dt
+            pred.heading += float(np.clip(diff, -max_turn, max_turn))
             pred.speed = speed
             self._steer_away_from_obstacles(pred)
             pred.advance(dt, self.cfg.world.width, self.cfg.world.height)
@@ -249,13 +296,22 @@ class DanioArena:
                 continue
             fish = self.fish[target]
             d = float(np.linalg.norm(fish.pos - pred.pos))
-            if d < self.cfg.growth.capture_radius and \
-                    pred.size > self.cfg.growth.capture_size_ratio * fish.size:
+            if (
+                d < self.cfg.growth.capture_radius
+                and pred.size > self.cfg.growth.capture_size_ratio * fish.size
+            ):
                 fish.alive = False
                 pred.target_fish_id = None
-                new_events.append(self._emit("arena.fish_captured", {
-                    "fish_id": target, "predator_id": pred.entity_id,
-                    "survival_steps": fish.survival_steps}))
+                new_events.append(
+                    self._emit(
+                        "arena.fish_captured",
+                        {
+                            "fish_id": target,
+                            "predator_id": pred.entity_id,
+                            "survival_steps": fish.survival_steps,
+                        },
+                    )
+                )
 
         # --- prey wander (doc 07 section 10)
         for prey in self.prey.values():
@@ -267,34 +323,32 @@ class DanioArena:
             self._steer_away_from_obstacles(prey, gain=2.0)
             prey.advance(dt, self.cfg.world.width, self.cfg.world.height)
 
-        # --- looming bookkeeping: prev nearest visible predator relative size
-        half_fov = float(np.deg2rad(self.cfg.sensing.fov_degrees)) / 2.0
+        # --- looming bookkeeping: reuse the encoder's own definition (nearest
+        #     visible predator), so the differential is a genuine rate of change
+        #     rather than a nearest-vs-largest aggregation artifact.
+        predators = list(self.predators.values())
         for fish in self.fish.values():
             if not fish.alive:
                 continue
-            best = 0.0
-            for pred in self.predators.values():
-                if not pred.alive:
-                    continue
-                delta = pred.pos - fish.pos
-                d = float(np.linalg.norm(delta))
-                if d > self.cfg.sensing.radius:
-                    continue
-                rel = float(np.arctan2(delta[1], delta[0]) - fish.heading)
-                rel = float(np.arctan2(np.sin(rel), np.cos(rel)))
-                if abs(rel) > half_fov:
-                    continue
-                best = max(best, min(pred.size / fish.size / 2.5, 1.0))
-            fish._prev_predator_rel = best
+            fish._prev_predator_rel = nearest_predator_relative_size(
+                fish, predators, self.cfg.sensing.radius, self.cfg.sensing.fov_degrees
+            )
 
         self.step_idx += 1
-        done = self.step_idx >= self.cfg.world.episode_steps or \
-            all(not f.alive for f in self.fish.values())
+        extinct = bool(self.fish) and all(not f.alive for f in self.fish.values())
+        done = self.step_idx >= self.cfg.world.episode_steps or extinct
         if done:
-            new_events.append(self._emit("arena.episode_end", {
-                "steps": self.step_idx,
-                "fish_alive": sum(1 for f in self.fish.values() if f.alive),
-                "prey_remaining": sum(1 for p in self.prey.values() if p.alive)}))
+            self._episode_ended = True
+            new_events.append(
+                self._emit(
+                    "arena.episode_end",
+                    {
+                        "steps": self.step_idx,
+                        "fish_alive": sum(1 for f in self.fish.values() if f.alive),
+                        "prey_remaining": sum(1 for p in self.prey.values() if p.alive),
+                    },
+                )
+            )
 
         new_events.sort(key=lambda e: e.seq)
         return StepResult(self.step_idx, done, new_events)

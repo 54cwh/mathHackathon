@@ -69,8 +69,8 @@ class DevelopmentRequest(BaseModel):
 
 class DevelopmentResult(BaseModel):
     genome_id: str
-    dev_trace: dict[str, Any]   # motif affinity, GRN trajectory, proliferation
-    phenotype: dict[str, Any]   # connectome summary
+    dev_trace: dict[str, Any]  # motif affinity, GRN trajectory, proliferation
+    phenotype: dict[str, Any]  # connectome summary
 
 
 # --- breedings -------------------------------------------------------------
@@ -102,7 +102,7 @@ class FishCard(BaseModel):
 class Snapshot(BaseModel):
     session_id: str
     step: int
-    fish: dict[str, dict[str, Any]]   # transforms + energy
+    fish: dict[str, dict[str, Any]]  # transforms + energy
     events: list[dict[str, Any]]
 
 
@@ -149,7 +149,7 @@ class ExperimentDetail(BaseModel):
 class JobStatus(BaseModel):
     job_id: str
     status: JobStatusKind
-    progress: float = 0.0   # 0..1
+    progress: float = 0.0  # 0..1
     detail: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -162,7 +162,7 @@ class Page(BaseModel):
 # --- WebSocket envelope (R11) ----------------------------------------------
 class WSMessage(BaseModel):
     v: int = 1
-    type: str                    # dot-hierarchical: arena.fish_state, ...
+    type: str  # dot-hierarchical: arena.fish_state, ...
     seq: int
     ts: float
     payload: dict[str, Any] = Field(default_factory=dict)

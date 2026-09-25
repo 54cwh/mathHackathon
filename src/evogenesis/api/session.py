@@ -39,21 +39,24 @@ class Session:
     def reset_arena(self) -> None:
         self.arena.reset()
         self.generation = 0
+        self.running = True
 
     # ---- arena interaction -------------------------------------------------
     def advance(self, steps: int = 1, use_expert: bool = True) -> None:
-        """Drive the arena forward. Default: ExpertPolicy steers every fish
-        (imitation data source + live demo default). Manual actions land here
-        once frontend control is in (P1)."""
+        """Drive the arena forward while the session is running. Default:
+        ExpertPolicy steers every fish (imitation data source + live demo
+        default). Manual actions land here once frontend control is in (P1)."""
+        if not self.running:
+            return
         for _ in range(steps):
+            if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
+                break
             actions = {}
             if use_expert:
                 for fid, fish in self.arena.fish.items():
                     if fish.alive:
                         actions[fid] = self.expert(self.arena.observe(fid))
             self.arena.step(actions)
-            if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
-                break
 
     def snapshot(self) -> Snapshot:
         fish_out = {}
@@ -80,14 +83,16 @@ class Session:
             fish_id=f.entity_id,
             generation=f.generation,
             genome_id=f.genome_id,
-            viable=f.alive,
+            viable=True,  # developmental viability; arena survival is in metrics
             energy=float(f.energy),
             size=float(f.size),
             fitness=None,
             cell_counts={},
             metrics={
+                "alive": f.alive,
                 "captures": f.captures,
                 "encounters": f.encounters,
+                "predator_encounters": f.predator_encounters,
                 "escape_successes": f.escape_successes,
                 "survival_steps": f.survival_steps,
             },
@@ -96,19 +101,23 @@ class Session:
     def leaderboard(self) -> Leaderboard:
         entries = []
         for rank, (fid, f) in enumerate(
-            sorted(self.arena.fish.items(),
-                   key=lambda kv: (kv[1].captures, kv[1].survival_steps),
-                   reverse=True),
+            sorted(
+                self.arena.fish.items(),
+                key=lambda kv: (kv[1].captures, kv[1].survival_steps),
+                reverse=True,
+            ),
             start=1,
         ):
-            entries.append(LeaderboardEntry(
-                rank=rank,
-                fish_id=fid,
-                captures=f.captures,
-                survival_steps=f.survival_steps,
-                energy=float(f.energy),
-                fitness=None,
-            ))
+            entries.append(
+                LeaderboardEntry(
+                    rank=rank,
+                    fish_id=fid,
+                    captures=f.captures,
+                    survival_steps=f.survival_steps,
+                    energy=float(f.energy),
+                    fitness=None,
+                )
+            )
         return Leaderboard(
             session_id=self.session_id,
             generation=self.generation,
@@ -147,7 +156,6 @@ class SessionManager:
             fish_alive=n_alive,
             prey_remaining=n_prey,
         )
-
 
 
 router = APIRouter(prefix="/v1")
@@ -215,4 +223,3 @@ def fish_card(session_id: str, fish_id: str):
 @router.get("/sessions/{session_id}/leaderboard", response_model=Leaderboard)
 def leaderboard(session_id: str):
     return _get_session(session_id).leaderboard()
-

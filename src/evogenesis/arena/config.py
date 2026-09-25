@@ -64,9 +64,10 @@ class ActorDefaults:
     predator_chase_speed: float = 0.65
     predator_detection_radius: float = 15.0
     predator_release_radius: float = 22.0  # hysteresis: target lost beyond this
+    predator_turn_rate: float = 5.0  # rad/s, same unit convention as fish omega
     obstacle_radius_min: float = 1.5
     obstacle_radius_max: float = 3.5
-    wander_turn_std: float = 0.8  # radians, std of prey heading jitter per step
+    wander_turn_std: float = 0.8  # rad/s, std of the prey turning-rate jitter
 
 
 @dataclass(frozen=True)

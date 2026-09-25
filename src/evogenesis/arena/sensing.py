@@ -22,11 +22,18 @@ SENSORY_DIM = 12
 
 #: human-readable names, index-aligned with the encoder output (schema ref)
 DIM_NAMES = (
-    "prey_left_signal", "prey_right_signal",
-    "threat_left_signal", "threat_right_signal",
-    "obstacle_left_signal", "obstacle_right_signal",
-    "prey_relative_size", "predator_relative_size",
-    "looming_rate", "current_speed", "energy", "hunger",
+    "prey_left_signal",
+    "prey_right_signal",
+    "threat_left_signal",
+    "threat_right_signal",
+    "obstacle_left_signal",
+    "obstacle_right_signal",
+    "prey_relative_size",
+    "predator_relative_size",
+    "looming_rate",
+    "current_speed",
+    "energy",
+    "hunger",
 )
 
 
@@ -45,7 +52,8 @@ def _bearing(pos: np.ndarray, fish: Fish) -> tuple[float, float] | None:
 def _split_channels(
     fish: Fish,
     candidates: list[tuple[np.ndarray, float]],
-    radius: float, half_fov: float,
+    radius: float,
+    half_fov: float,
 ) -> tuple[float, float]:
     """Sum linear-falloff intensities into (left, right) channels in [0, 1]."""
     left = right = 0.0
@@ -67,7 +75,8 @@ def _split_channels(
 def _nearest_visible(
     fish: Fish,
     candidates: list[tuple[np.ndarray, float]],
-    radius: float, half_fov: float,
+    radius: float,
+    half_fov: float,
 ) -> tuple[float, float] | None:
     """(distance, size) of the nearest visible candidate, or None."""
     best: tuple[float, float] | None = None
@@ -81,6 +90,23 @@ def _nearest_visible(
         if best is None or dist < best[0]:
             best = (dist, size)
     return best
+
+
+def nearest_predator_relative_size(
+    fish: Fish,
+    predators: list[Predator],
+    radius: float,
+    fov_degrees: float,
+) -> float:
+    """Relative size of the nearest visible predator, in [0, 1].
+
+    Single source of truth shared by the encoder's ``predator_relative_size``
+    and the env's looming bookkeeping, so the two can never drift apart.
+    """
+    half_fov = np.deg2rad(fov_degrees) / 2.0
+    cand = [(d.pos, d.size) for d in predators if d.alive]
+    nearest = _nearest_visible(fish, cand, radius, half_fov)
+    return min(nearest[1] / fish.size / 2.5, 1.0) if nearest else 0.0
 
 
 def observe(
@@ -108,8 +134,7 @@ def observe(
     nearest_prey = _nearest_visible(fish, prey_c, radius, half_fov)
     prey_rel = min(nearest_prey[1] / fish.size, 1.0) if nearest_prey else 0.0
 
-    nearest_pred = _nearest_visible(fish, pred_c, radius, half_fov)
-    pred_rel = min(nearest_pred[1] / fish.size / 2.5, 1.0) if nearest_pred else 0.0
+    pred_rel = nearest_predator_relative_size(fish, predators, radius, fov_degrees)
 
     # looming: positive rate of change of nearest predator relative size,
     # scaled so that closing-in within ~1 s saturates the channel (MVP approx).
@@ -118,15 +143,22 @@ def observe(
 
     energy_norm = min(max(fish.energy / e_max, 0.0), 1.0)
 
-    obs = np.array([
-        prey_l, prey_r,
-        threat_l, threat_r,
-        obst_l, obst_r,
-        prey_rel, pred_rel,
-        looming,
-        min(max(current_speed, 0.0), 1.0),
-        energy_norm,
-        1.0 - energy_norm,  # hunger (doc 07 section 6: H = 1 - E/Emax)
-    ], dtype=float)
+    obs = np.array(
+        [
+            prey_l,
+            prey_r,
+            threat_l,
+            threat_r,
+            obst_l,
+            obst_r,
+            prey_rel,
+            pred_rel,
+            looming,
+            min(max(current_speed, 0.0), 1.0),
+            energy_norm,
+            1.0 - energy_norm,  # hunger (doc 07 section 6: H = 1 - E/Emax)
+        ],
+        dtype=float,
+    )
     assert obs.shape == (SENSORY_DIM,)
     return obs

@@ -26,8 +26,9 @@ router = APIRouter(prefix="/v1")
 
 _NOT_IMPL = HTTPException(
     status_code=501,
-    detail=("Pipeline not implemented yet -- owned by 池伟豪 "
-            "(genome/development/breeding/evolution)."),
+    detail=(
+        "Pipeline not implemented yet -- owned by 池伟豪 (genome/development/breeding/evolution)."
+    ),
 )
 
 

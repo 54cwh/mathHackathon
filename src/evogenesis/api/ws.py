@@ -25,12 +25,14 @@ def _next_seq() -> int:
 @router.websocket("/v1/ws")
 async def ws_endpoint(ws: WebSocket) -> None:
     await ws.accept()
-    await ws.send_text(WSMessage(
-        type="sys.hello",
-        seq=_next_seq(),
-        ts=time.time(),
-        payload={"note": "EvoGenesis WS contract v1 (R11 envelope)"},
-    ).model_dump_json())
+    await ws.send_text(
+        WSMessage(
+            type="sys.hello",
+            seq=_next_seq(),
+            ts=time.time(),
+            payload={"note": "EvoGenesis WS contract v1 (R11 envelope)"},
+        ).model_dump_json()
+    )
     try:
         while True:
             raw = await ws.receive_text()
@@ -39,11 +41,13 @@ async def ws_endpoint(ws: WebSocket) -> None:
                 reply_type = "sys.echo"
             except Exception:
                 reply_type = "sys.error"
-            await ws.send_text(WSMessage(
-                type=reply_type,
-                seq=_next_seq(),
-                ts=time.time(),
-                payload={"echo": raw},
-            ).model_dump_json())
+            await ws.send_text(
+                WSMessage(
+                    type=reply_type,
+                    seq=_next_seq(),
+                    ts=time.time(),
+                    payload={"echo": raw},
+                ).model_dump_json()
+            )
     except WebSocketDisconnect:
         return

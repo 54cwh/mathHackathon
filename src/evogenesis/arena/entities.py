@@ -10,17 +10,17 @@ class Entity:
     """Base moving entity in continuous 2-D space."""
 
     entity_id: str
-    pos: np.ndarray            # [x, y]
-    heading: float             # theta, radians
+    pos: np.ndarray  # [x, y]
+    heading: float  # theta, radians
     speed: float = 0.0
     size: float = 1.0
 
     def advance(self, dt: float, world_w: float, world_h: float) -> None:
         """Doc 07 section 5: theta_{t+1} = theta_t + omega*dt was applied by caller;
         position uses the NEW heading."""
-        self.pos = self.pos + self.speed * np.array(
-            [np.cos(self.heading), np.sin(self.heading)]
-        ) * dt
+        self.pos = (
+            self.pos + self.speed * np.array([np.cos(self.heading), np.sin(self.heading)]) * dt
+        )
         self.pos[0] = min(max(self.pos[0], 0.0), world_w)
         self.pos[1] = min(max(self.pos[1], 0.0), world_h)
 
@@ -31,7 +31,7 @@ class Fish(Entity):
 
     generation: int = 0
     genome_id: str = "unknown"
-    energy: float = 1.0        # will be reset to e_max on spawn
+    energy: float = 1.0  # will be reset to e_max on spawn
     hunger: float = 0.0
     biomass: float = 0.0
     alive: bool = True

@@ -58,8 +58,13 @@ def test_reset_session():
 def test_missing_session_404():
     r = client.get("/v1/sessions/nope")
     assert r.status_code == 404
-    # RFC 7807 error body (R10)
-    assert "detail" in r.json()
+    body = r.json()
+    # RFC 7807 problem details (R10)
+    assert body["type"] == "about:blank"
+    assert body["title"] == "Not Found"
+    assert body["status"] == 404
+    assert "detail" in body
+    assert body["instance"] == "/v1/sessions/nope"
 
 
 def test_stubs_return_501():
@@ -75,7 +80,24 @@ def test_ws_envelope_contract():
         assert hello["v"] == 1
         assert hello["type"] == "sys.hello"
         assert "ts" in hello and "seq" in hello
-        ws.send_json({"v": 1, "type": "arena.fish_state", "seq": 2, "ts": 1.0,
-                      "payload": {"fish_id": "fish_00"}})
+        ws.send_json(
+            {
+                "v": 1,
+                "type": "arena.fish_state",
+                "seq": 2,
+                "ts": 1.0,
+                "payload": {"fish_id": "fish_00"},
+            }
+        )
         echo = ws.receive_json()
         assert echo["type"] == "sys.echo"
+
+
+def test_pause_blocks_advance():
+    sid = client.post("/v1/sessions", json={"master_seed": 11}).json()["session_id"]
+    assert client.post(f"/v1/sessions/{sid}/pause").json()["running"] is False
+    client.post(f"/v1/sessions/{sid}/release", params={"steps": 5})
+    assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 0
+    assert client.post(f"/v1/sessions/{sid}/pause").json()["running"] is True
+    client.post(f"/v1/sessions/{sid}/release", params={"steps": 5})
+    assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 5

@@ -8,9 +8,14 @@ from evogenesis.arena.entities import Fish
 from evogenesis.arena.env import DanioArena
 
 KNOWN_EVENTS = {
-    "arena.spawn", "arena.prey_captured", "arena.capture_attempt",
-    "arena.escape", "arena.energy_depleted", "arena.episode_end",
-    "arena.fish_captured", "arena.collision",
+    "arena.spawn",
+    "arena.prey_captured",
+    "arena.capture_attempt",
+    "arena.escape",
+    "arena.energy_depleted",
+    "arena.episode_end",
+    "arena.fish_captured",
+    "arena.collision",
 }
 
 
@@ -138,9 +143,70 @@ def test_per_fish_log_completeness():
     for _ in range(10):
         arena.step({})
     log = arena.per_fish_log()
-    required = {"generation", "encounters", "captures", "predator_encounters",
-                "escape_successes", "collisions", "energy_trajectory",
-                "size_trajectory", "survival_steps", "motor_commands"}
+    required = {
+        "generation",
+        "encounters",
+        "captures",
+        "predator_encounters",
+        "escape_successes",
+        "collisions",
+        "energy_trajectory",
+        "size_trajectory",
+        "survival_steps",
+        "motor_commands",
+    }
     for fid, rec in log.items():
         assert required.issubset(rec.keys()), fid
         assert len(rec["energy_trajectory"]) == rec["survival_steps"]
+
+
+def test_reset_idempotent_on_same_instance():
+    arena = make_arena(7)
+    arena.reset()
+    fish = {fid: f.pos.copy() for fid, f in arena.fish.items()}
+    obstacles = [(o.pos.copy(), o.radius) for o in arena.obstacles]
+    arena.reset()
+    for fid, pos in fish.items():
+        assert np.allclose(arena.fish[fid].pos, pos), fid
+    for obstacle, (pos, radius) in zip(arena.obstacles, obstacles, strict=True):
+        assert np.allclose(obstacle.pos, pos)
+        assert obstacle.radius == radius
+
+
+def test_step_after_episode_end_is_inert():
+    arena = make_arena()
+    arena.reset()
+    result = None
+    for _ in range(600):
+        result = arena.step({})
+    assert result is not None and result.done
+    assert arena.step_idx == 600
+    end_count = sum(1 for e in arena.events if e.type == "arena.episode_end")
+    result = arena.step({})
+    assert result.done
+    assert arena.step_idx == 600
+    assert sum(1 for e in arena.events if e.type == "arena.episode_end") == end_count
+
+
+def test_dead_fish_not_credited_escape():
+    arena = make_arena(3)
+    arena.reset()
+    pred = next(iter(arena.predators.values()))
+    pred.target_fish_id = "fish_00"
+    arena.fish["fish_00"].alive = False
+    result = arena.step({})
+    assert arena.fish["fish_00"].escape_successes == 0
+    assert not [e for e in result.events if e.type == "arena.escape"]
+
+
+def test_predator_encounter_recorded_on_acquisition():
+    arena = make_arena()
+    arena.reset()
+    pred = arena.predators["predator_00"]
+    pred.pos = np.array([50.0, 30.0])
+    pred.target_fish_id = None
+    for f in arena.fish.values():
+        f.pos = np.array([5.0, 5.0])
+    arena.fish["fish_00"].pos = np.array([52.0, 30.0])
+    arena.step({})
+    assert arena.fish["fish_00"].predator_encounters >= 1
