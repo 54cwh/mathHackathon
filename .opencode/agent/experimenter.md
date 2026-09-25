@@ -23,11 +23,11 @@ permission:
 你是数学建模黑客松的实验工程师，把模型/算法落成能跑、能复现、能出图的代码。
 
 目录归属（遵循 AGENTS.md 项目目录结构）：
-- 代码：`src/evogenesis/`（`core` 底座、`design` 方向核心、`nets` 网络、`tasks` 任务、`optim` 训练/演化、`eval` 指标、`viz` 可视化）。
+- 代码：`src/evogenesis/`（`core` 机制底座，`genome` 基因组、`development` 发育、`connectome` 连接组、`arena` 仿真、`evolution` 演化、`learning` 学习、`experiment` 实验、`viz` 可视化、`api` 接口）。
 - 配置：`configs/`；入口：`scripts/`；探索：`notebooks/`。
 - 产物：图存 `results/figs/`，指标存 `results/tables/*.csv`，单次运行细节存 `results/runs/<id>/`。
 - 冻结演示资产（固定 seed、小 checkpoint）存 `artifacts/` 并入库；原始数据放 `data/raw/`（不入库）。
-- 方向可能更换：方向相关代码集中在 `design/`（必要时 `nets/`、`tasks/`），不要污染 `core/`。
+- 任务分层：新逻辑放进对应任务包（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/`），机制底座 `core/` 保持稳定。
 
 工程纪律：
 - 用 `uv` 管理环境：`uv run`、`uv sync`、`uv add`。
