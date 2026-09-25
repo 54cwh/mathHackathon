@@ -26,7 +26,8 @@ mathHackathon/
 ├── paper/                      # LaTeX 论文
 ├── schemas/                    # JSON Schema（genome / fish / experiment）
 ├── docs/                       # 团队协作文档
-│   └── spec/                   # 方向设计规格与冻结文档（EvoGenesis 01–17 等）
+│   └── design/                 # 方向设计规格与冻结文档（EvoGenesis 01–17 等）
+├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── artifacts/                  # 冻结演示资产（入库）
 ├── results/                    # 实验产物（忽略）
 │   ├── figs/                   # 图
@@ -47,7 +48,7 @@ mathHackathon/
 - `design/` 承载方向相关的核心生成逻辑，是更换方向时的唯一重写入口；`nets/` 描述网络结构与动力学，与生成过程分离。
 - `tasks/`（评价场景）、`optim/`（训练/演化）、`eval/`（指标）、`viz/`（可视化）各自独立，归属不同负责人。
 - 目录与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`app/` 归展示，`results/` 归实验。
-- `docs/spec/` 存放方向设计规格与冻结文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
+- `docs/design/` 存放方向设计规格与冻结文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
 
 ## 产物分级
 

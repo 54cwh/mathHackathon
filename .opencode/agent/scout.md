@@ -38,4 +38,4 @@ permission:
 
 结论分三级：推荐直接用 / 仅作参考 / 不建议，并标注需进一步验证的风险点。
 
-角色定义与固定要求见 `docs/spec/prompts/research_agent.md`。
+角色定义与固定要求见 `docs/design/prompts/research_agent.md`。
