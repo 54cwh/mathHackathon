@@ -9,8 +9,10 @@
 - Virtual CRISPR
 - Compare Fish
 - Genome Sensitivity Map 完整 UI
-- Manual Control
 - Demo 视频
+
+## P2
+- Manual Control
 
 ## Future Work
 - Epigenetics

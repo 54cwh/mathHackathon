@@ -75,6 +75,14 @@ make frontend  # 构建前端产物到 frontend/dist
 make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实验 run
 ```
 
+## Git 分支策略
+
+- `main` 受保护：**禁止直接提交**，只通过合并 / PR 进入。
+- 个人长期分支：`cwh/dev`（池伟豪）、`lcz/dev`（李辰钊）；日常在此开发。
+- 任务分支：`<owner>/<topic>`（如 `cwh/api-skeleton`），从个人分支切出，完成后合回个人分支。
+- 合并进 `main` 前必须：`make lint && make test` 通过，且按 `docs/code-review.md` 完成审查。
+- 合并使用 `--no-ff`，保留合并记录。
+
 
 # 技术栈
 

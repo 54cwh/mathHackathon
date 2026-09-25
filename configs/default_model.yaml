@@ -10,7 +10,7 @@ grn:
   activation: sigmoid
 development:
   initial_precursors: 24
-  domains: [sensory, prey, threat, memory, inhibitory, motor]
+  domains: [sensory, prey, threat, integrator_memory, inhibitory, motor]
   precursors_per_domain: 4
   max_divisions_per_precursor: 1
   max_neurons: 48
