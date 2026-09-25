@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": ["AGENTS.md", "ai-tone-boundaries.md"],
+  "mcp": {
+    "arxiv": {
+      "type": "local",
+      "command": ["uvx", "arxiv-mcp-server"],
+      "enabled": true,
+      "timeout": 60000
+    }
+  }
+}
