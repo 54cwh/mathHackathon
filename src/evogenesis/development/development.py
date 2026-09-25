@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 import torch
 
-CELL_TYPES = ("sensory", "prey", "threat", "memory", "inhibitory", "motor")
+CELL_TYPES = ("sensory", "prey", "threat", "integrator_memory", "inhibitory", "motor")
 
 
 @dataclass

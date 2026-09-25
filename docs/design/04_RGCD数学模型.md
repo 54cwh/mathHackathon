@@ -47,7 +47,9 @@ N_0=24
 D_S,D_P,D_T,D_M,D_I,D_O
 \]
 
-分别对应 sensory / prey / threat / integrator-memory / inhibitory / motor。
+分别对应 sensory / prey / threat / integrator_memory / inhibitory / motor。
+
+（`D_M` 的显示名为 Integrator-Memory，机器可读 token 统一为 `integrator_memory`。）
 
 每个 precursor 有位置：
 
@@ -249,3 +251,17 @@ w_4\Delta Energy
 \]
 
 三个量并列展示，不强行混成单一总分。
+
+## 阅读问题（待确认）
+
+> 逐份阅读本文时发现的未定义点，需与 01 / 02 / 03 / 05 / 16 对齐后确认。
+
+1. **全部参数初始化未定义（G1）**：`W_g,B,P,b,U,c,w_d,b_d,ε_p,ε_g,γ,C,u,b_w,a,b_τ` 的形状与初始化方式未给；`b_A` 的 10%–20% density 校准流程未写。
+2. **`R(g_i,g_j,p_i,p_j)` 仅给出函数名（§8）**：连接概率中的 interaction 项具体形式未定义，无法实现。
+3. **motor 的 left/right 归属规则未定义（G2）**：§7 要求“至少一个 left-associated 与一个 right-associated motor”，但哪些细胞算 left/right、如何分配未写。
+4. **动作输出来源未指定（G3）**：doc05 的 `y_ω,y_v` 取自哪些 motor 细胞、左右两池如何合成未写。
+5. **motif 参数未给**：§2 的窗口长度 `|s|`、motif 长度、`TopK` 的 K 值未定义。
+6. **GRN 张量维度未给**：§4 的 `W_g / B / P / b` 维度、位置 `p_i` 如何嵌入（P 的编码方式）未写。
+7. **前体 domain 分配未定义**：§3 的 24 个前体如何分到 6 个 domain（是否均匀 4/domain）未写。
+8. **dynamical viability 阈值未给**：§7 “state norm 不爆炸”“不永久全饱和”的判据与阈值未写。
+9. **§12 ΔB 与“不混成单一总分”表述冲突**：§12 说三个量并列展示、不强行合成单一总分，但 `ΔB` 本身是 `w_1ΔCapture+…` 的加权总分；且权重 `w_1..w_4` 未给。

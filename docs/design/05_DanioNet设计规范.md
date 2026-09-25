@@ -4,7 +4,7 @@
 - Sensory
 - Prey
 - Threat
-- Integrator / Memory
+- Integrator-Memory（token: `integrator_memory`）
 - Inhibitory
 - Motor
 
@@ -107,3 +107,16 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 - homogeneous tau
 - w/o spatial wiring cost
 - P1：w/o epistasis
+
+## 阅读问题（待确认）
+
+> 逐份阅读本文时发现的未定义点，需与 04 / 07 / 16 对齐后确认。
+
+1. **12 维输入与 Arena 视野的对应未定义**：§2 列出 12 项，但各项如何由 doc07 的 left/right channel、radius、FOV 计算未写（doc07 阅读问题 #1 的另一侧）。
+2. **`U_i x_t`、`m_i H_t`、`b_i` 的来源未定义**：§3 动力学中这三项是发育得到、固定先验还是可学习未写（关联 G1）。
+3. **动作合成未定义（G3）**：§4 的 `y_ω,y_v` 取自哪些 motor 细胞、左右 pool 如何合成 `ω,v` 未写，与 §5“左右竞争”的衔接缺失。
+4. **左右 motor 标记规则未定义（G2）**：§5 称“Motor neurons 标记 left/right side”，但标记规则未写。
+5. **BC 超参与 Stage 1 专家未定义**：§6 的 `λ_ω,λ_v` 未给；ExpertPolicy 权重 `w_p0,k_H,w_d,w_o`（G4）不在 config。
+6. **baseline 参数量“同一数量级”未量化（G9）**：§8 未给容许倍数与对齐口径。
+7. **Ablation 实现未定**：§9 的 `w/o GRN`（随机固定结构？）、`homogeneous tau`（取何值）未写；`w/o epistasis` 需先确认 epistasis 已实现。
+8. **BC 训练数据与预算未定义**：每条 viable 网络的轨迹条数、K=20 的 batch 定义、是否含 padding/mask 处理未写。
