@@ -47,6 +47,7 @@ frontend/
 ├─ package.json  pnpm-lock.yaml
 ├─ vite.config.ts  tsconfig*.json
 ├─ tailwind.config.ts  postcss.config.js  components.json
+├─ pnpm-workspace.yaml        # allowBuilds（esbuild）
 ├─ public/fonts/              # 自托管字体（离线）
 └─ src/
    ├─ main.tsx  App.tsx  index.css
