@@ -1,0 +1,188 @@
+# 数据全流程规范（Data Pipeline）
+
+> 状态：v1.0 草案（待双方确认后冻结）
+> 上位文档：`docs/design/02_问题定义与研究假设.md`、`09_实验与评价体系.md`、`10_系统工程与接口.md`、`16_参数总表.md`
+> 本文档回答一个问题：**本项目的数据从哪里来、到哪里去、如何保证每个数字可复现。**
+
+---
+
+## 1. 数据哲学：仿真自生成，不依赖外部训练数据
+
+本项目**不使用任何外部数据集进行训练**。所有数据由受控仿真生成。
+
+**为什么这是正确做法而不是妥协：**
+
+1. **研究对象是生成系统本身。** 待检验的三条命题——不同 DNA ⇒ 不同架构 ⇒ 不同行为 ⇒ 不同环境不同演化结局——本质是受控对照实验：只有仿真可以做到"只改一个碱基、其余全同"。外部观测数据无法回答这些问题。
+2. **领域惯例。** 神经演化 / artificial life / 演化机器人的经典工作（NEAT、HyperNEAT 等）均采用"仿真自生成 + 种子可复现"的数据模式。
+3. **数据不是"编的"，是受控实验产生的。** 每个数字都能由 `(config, master seed)` 精确重放；在可复现性意义上优于不可重放的观测数据。
+
+**严谨性配置（继承自冻结文档，不可削减）：** 正式实验 ≥3 个随机种子（`formal_seeds = 3`）；baseline / ablation 对照；Mendel Mode 数值验证；Demo 固定种子离线可复现。
+
+---
+
+## 2. 数据流水线总览
+
+```text
+configs/*.yaml (含 seed)
+      │
+      ▼
+Seed Manager（10 号文档 §6：master seed 派生一切）
+      │
+      ▼
+Arena 仿真（20 Hz × 600 steps / episode）
+      ├──► 专家轨迹（ExpertPolicy）──────► BC 训练 ──► ΔW（当代，不遗传）
+      ├──► 事件日志（event log）─────────► 实验指标
+      └──► 帧快照（transforms/energy）───► WS 实时推送（仅演示用，不落盘为训练数据）
+      │
+      ▼
+results/runs/<run_id>/   （不入库：config 快照 + 指标 + 日志 + checkpoint）
+      │
+      ▼  仅 Demo 所需子集
+artifacts/               （入库：固定 seed、Demo 种群、小 checkpoint）
+```
+
+关键原则：**磁盘记录与 WS 推送同源**。演示看到的每个事件都必须能在落盘日志中找到，反之亦然。
+
+---
+
+## 3. 种子体系（可复现性的根）
+
+遵循 `10_系统工程与接口.md` §6 Seed Manager：
+
+| 项 | 约定 |
+|---|---|
+| 统一设置的随机源 | Python `random`、NumPy、PyTorch CPU、PyTorch CUDA |
+| 派生关系 | mutation / crossover / development / Arena spawn 的子种子全部由 master seed 派生 |
+| 正式实验 | `formal_seeds = 3`（`configs/experiment_seeds.yaml`），三个种子独立成表 |
+| 现场 Demo | `configs/demo_seed.yaml` 单独固定，与实验种子隔离 |
+| 复现判据 | 同一 `(config 文件, master seed)` ⇒ 逐字节一致的结果（对应验收清单"同一 genome + seed 产生同一 developmental trace"） |
+
+---
+
+## 4. 训练数据：ExpertPolicy 轨迹（BC Stage 1）
+
+唯一的"训练"环节是行为克隆（`05_DanioNet设计规范.md` §6），其数据流如下。
+
+### 4.1 生成方式
+
+- **教师**：透明 ExpertPolicy——手写规则控制器（视野内追踪最近猎物、检测到威胁时逃离），可解释、可写进论文。
+- **采集**：ExpertPolicy 在 Arena 正常 episode（30 s / 600 steps）中驱动鱼，逐 step 记录样本。
+
+### 4.2 样本记录字段（与冻结参数严格对齐）
+
+| 字段 | 类型 / 维度 | 说明 |
+|---|---|---|
+| `step` | int | 0–599 |
+| `fish_id` | str（稳定 ID，见 10 号文档 §3） | 禁止用数组下标当 identity |
+| `observation` | float[**12**]（`sensory_dim = 12`） | 感知向量，**维度顺序冻结**（验收清单硬性要求） |
+| `expert_action` | float[**2**]（`action_dim = 2`） | `(ω*, v*)` 转向角速度 + 推进 |
+
+### 4.3 训练预算与损失（公平性红线）
+
+- 每条 viable DanioNet 相同预算：`bc_updates = 20` 次 mini-batch 更新（`K = 20`）。
+- 损失：
+
+\[
+\mathcal{L} = \lambda_\omega \, MSE(\hat\omega, \omega^*) + \lambda_v \, MSE(\hat v, v^*)
+\]
+
+- 基线 / 消融实验必须满足：相同数据、相同训练预算、参数量同一数量级、相同 evaluation episodes（09 号文档 §控制）。
+
+### 4.4 遗传边界（论文核心卖点，不可破坏）
+
+训练产生的 \(\Delta W\) **不遗传**。后代只继承 DNA，从发育重新开始。BC 只影响当代个体表现型，绝不进入繁殖通路。
+
+### 4.5 存放
+
+- 位置：`results/runs/<run_id>/trajectories/`（**不入库**，随 run 归档）。
+- 格式：建议 JSONL 或 Parquet，逐 episode 一文件。
+- ⚠️ 对应的 `schemas/trajectory.schema.json` **尚未冻结**——按 `10_系统工程与接口.md` §10「schema/config 变更必须双方同步」，字段定稿前需池伟豪确认。字段草案即 §4.2 表格。
+
+---
+
+## 5. Arena 运行时数据：事件日志
+
+事件日志是 Arena 的验收硬项（17 号文档 Arena 节），也是全部实验指标的原始来源。
+
+### 5.1 事件类型（草案，待冻结）
+
+| 事件 | 载荷要点 |
+|---|---|
+| `spawn` | fish/prey/predator/obstacle 初始位置、尺寸 |
+| `prey_captured` | 捕食者 fish_id、prey_id、能量增量（`food_reward`） |
+| `escape` | 威胁源、反应时延 |
+| `energy_depleted` | fish_id、存活步数（= 死亡判定） |
+| `capture_attempt` | 距离、尺寸比（对照 `capture_size_ratio = 1.25` 阈值） |
+| `episode_end` | 存活列表、最终能量、fitness |
+
+命名风格与 WS 消息 `type` 的点分层约定（R11）保持一致，磁盘与推送共用同一词表。
+
+### 5.2 与 API 的关系
+
+- 实时演示经 WS `/v1/ws` 推送（信封 `{v, type, seq, ts, payload}`）；快照走 `GET /v1/sessions/{session_id}/snapshot`。
+- **不每帧发送 48×48 连接矩阵**（10 号文档 §5）；矩阵只存在于发育产物与落盘记录中。
+
+---
+
+## 6. 实验数据：记录什么
+
+全部按 `09_实验与评价体系.md` 执行，此处只列数据产出清单。
+
+| 实验 | 数据产出 |
+|---|---|
+| A — Genome → Architecture | motif affinity、GRN 终态、neuron count、cell-type 分布、edge density、τ 分布 |
+| B — Single-base Mutation | 代表性 haplotype 全部 256 位的确定性替换扫描结果 |
+| 演化 | 10–20 代；每代记录 allele frequency、phenotype frequency、viability、fitness、neuron count、edge count、τ 统计量 |
+| Mendel 验证 | 160 个 offspring（AaBb × AaBb）经验比例 vs 9:3:3:1 |
+| 基线/消融 | 指标：survival、prey capture、escape success、energy efficiency、inference latency |
+
+环境对照三组：Food Rich / Predator Rich / Resource Scarce。
+
+---
+
+## 7. 存储与产物分级（与 AGENTS.md 一致）
+
+| 位置 | 内容 | 入库？ | 生命周期 |
+|---|---|---|---|
+| `configs/*.yaml` | 全部参数与种子的**唯一事实来源**；"所有数值必须由 config 读取，报告记录实际版本"（16 号文档） | ✅ | 冻结后不改 |
+| `results/runs/<run_id>/` | config 快照、指标、事件日志、轨迹、实验 checkpoint | ❌（gitignore） | 实验期保留 |
+| `artifacts/` | Demo 固定 seed 种群、小 checkpoint、演示资产 | ✅ | 冻结，保证现场复现 |
+| `data/raw|processed|external/` | 外部或预处理数据（**本项目预期基本为空**） | raw/external ❌ | — |
+| `schemas/` | 跨语言数据契约（genome / fish / experiment；trajectory 待冻结） | ✅ | 变更须双方同步 |
+| `paper/`、`results/figs|tables/` | 论文与图表成品 | figures/tables ❌，paper/ ✅ | Phase E |
+
+---
+
+## 8. 外部公开数据的使用政策
+
+**原则：外部数据不用于训练，只用于两类用途——(a) 设计依据的文献引用；(b) 生物学合理性校验（可选加分项）。**
+
+| 资源 | 内容 | 允许的用法 | 禁止的用法 |
+|---|---|---|---|
+| Marques et al. 2018, *Curr. Biol.*（幼鱼运动 repertoire 运动学） | 游泳/转向/捕食 bout 的运动统计 | 校验图：Arena 鱼群转向角分布、bout 时长 vs 真实幼鱼（"Biological plausibility" 一节，P1 可选） | 任何形式的训练 |
+| Hildebrand et al. 2017, *Nature* 545（幼鱼全脑 ssEM） | 电镜体积、部分神经元重建 | 引用佐证六类 fate、连接密度、距离代价规则的生物学来源 | 导入模型（2.7 TB 图像栈，且违背"不做真实大脑逐神经元复刻"的冻结范围） |
+| ZBrain Atlas（Randlett et al. 2015） | 幼鱼脑区图谱 | 给 6 个 developmental domains 对应真实脑区命名 | — |
+
+**现场纪律（10 号文档 §7 Offline 红线，优先级最高）：** 演示现场不得依赖 OpenAI API、external model API、remote DB、remote asset CDN。若使用外部数据做校验图，**必须赛前预下载至 `data/external/` 并在报告中记录版本与来源**，现场零联网。
+
+---
+
+## 9. 复现性检查单（发布前逐项打勾）
+
+- [ ] 每张图表可由 `(config 文件 + master seed)` 重放得到
+- [ ] 3 个 formal seeds 全部跑通，图表使用全部种子（不只报最好的一次）
+- [ ] Demo 种群用 `demo_seed.yaml` 单独固定，资产已提交 `artifacts/`
+- [ ] 报告记录 config 实际版本与参数表快照
+- [ ] 事件日志完整覆盖 Arena 验收项（17 号文档）
+- [ ] `schemas/` 与 API JSON 字段命名一致（snake_case，R6）
+- [ ] 现场机器离线演练通过（10 号文档 §7）
+
+---
+
+## 10. 待冻结项（Open Items）
+
+| # | 事项 | 责任 | 依赖 |
+|---|---|---|---|
+| 1 | `schemas/trajectory.schema.json`（§4.2 字段表定稿） | 李辰钊起草，池伟豪确认 | ExpertPolicy 接口定型 |
+| 2 | 事件类型词表冻结（§5.1） | 双方（涉及 WS 与磁盘同源） | Arena 实现 |
+| 3 | 生物合理性校验图是否纳入正式报告 | 李辰钊（报告负责人） | Arena 稳定后有数据 |
