@@ -40,4 +40,4 @@ permission:
 
 协作：需求来自 modeler 的形式化目标；不擅自改数学定义，口径不明先问。
 
-角色定义与固定要求见 `docs/design/prompts/coding_agent.md`。
+角色定义与固定要求见 `prompts/coding_agent.md`。

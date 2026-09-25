@@ -28,6 +28,7 @@ mathHackathon/
 ├── docs/                       # 团队协作文档
 │   └── design/                 # 方向设计规格与冻结文档（EvoGenesis 01–17 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
+├── prompts/                    # AI 角色提示词
 ├── artifacts/                  # 冻结演示资产（入库）
 ├── results/                    # 实验产物（忽略）
 │   ├── figs/                   # 图
