@@ -1,6 +1,6 @@
 import random
 
-from evogenesis.design.genome import ChromosomePair, DiploidGenome, make_gamete
+from evogenesis.genome.genome import ChromosomePair, DiploidGenome, make_gamete
 
 
 def test_diploid_length():

@@ -6,19 +6,22 @@
 
 # 项目目录结构
 
-目录按“方向无关的机制”与“方向相关的实现”分层：机制固定在 `core/` 等层，方向实现集中在 `design/`，更换研究方向时重写方向层，其余层保持稳定。
+代码按任务分层：`core/` 是方向无关的机制底座，其余模块（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/`）各对应一项研发任务，彼此独立、可单独替换。
 
 ```text
 mathHackathon/
 ├── src/evogenesis/             # 唯一可导入包（hatchling editable）
-│   ├── core/                   # 方向无关底座：config / seed / logging / tracking / registry / io
-│   ├── design/                 # 方向核心：如何设计/生成网络（更换方向时重写此层）
-│   ├── nets/                   # 网络结构与动力学
-│   ├── tasks/                  # 环境/任务/fitness
-│   ├── optim/                  # 训练/演化/搜索
-│   ├── eval/                   # 指标、评测协议、统计
-│   └── viz/                    # 可视化（论文图、网络图）
-├── app/                        # 交互式演示 UI
+│   ├── core/                   # 机制底座：config / seed / logging / tracking / registry / io
+│   ├── genome/                 # 二倍体基因组、motif
+│   ├── development/            # GRN、precursor、RGCD 发育解码
+│   ├── connectome/             # 连接生成与 DanioNet 动力学
+│   ├── arena/                  # 二维生态仿真：感官 / 物理 / 规则
+│   ├── evolution/              # 繁殖、选择、drift
+│   ├── learning/               # Behavior Cloning 生命周期学习
+│   ├── experiment/             # 实验协议、指标、run
+│   ├── viz/                    # 可视化（论文图、网络图）
+│   └── api/                    # FastAPI 路由 + WebSocket
+├── frontend/                   # Next.js 演示 UI（栈待定）
 ├── configs/                    # yaml 实验配置
 ├── scripts/                    # 薄 CLI 入口
 ├── notebooks/                  # 探索性分析
@@ -45,10 +48,9 @@ mathHackathon/
 
 ## 分层与归属
 
-- `core/` 是唯一长期稳定的代码层，任何方向都复用。
-- `design/` 承载方向相关的核心生成逻辑，是更换方向时的唯一重写入口；`nets/` 描述网络结构与动力学，与生成过程分离。
-- `tasks/`（评价场景）、`optim/`（训练/演化）、`eval/`（指标）、`viz/`（可视化）各自独立，归属不同负责人。
-- 目录与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`app/` 归展示，`results/` 归实验。
+- `core/` 是唯一长期稳定的机制层，任何任务都复用。
+- `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/` 按任务划分，各模块彼此独立、可单独替换；`viz/` 负责出图。
+- 任务与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`frontend/` 归展示，`results/` 归实验。
 - `docs/design/` 存放方向设计规格与冻结文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
 
 ## 产物分级
@@ -66,6 +68,38 @@ make lint   # ruff 静态检查
 make fmt    # ruff 格式化
 make tree   # 查看目录结构
 ```
+
+
+# 技术栈
+
+除「前端 / 演示」外均为已冻结选型；依据 `docs/design/10_系统工程与接口.md`，要求 CPU 可运行、GPU 有则加速。
+
+## 后端 / 模型
+- Python 3.12（uv 管理，`requires-python >=3.12`）
+- PyTorch（CPU 可运行，GPU 加速）
+- FastAPI + Pydantic（API 契约）
+- NumPy / SciPy / pandas（数值与数据处理）
+- NetworkX（连接组分析）
+
+## 前端 / 演示（待定，未冻结）
+- 设计包候选（`docs/design/10_系统工程与接口.md`）：Next.js + TypeScript、Canvas / Phaser.js、Cytoscape.js、WebSocket
+- 具体框架与渲染库尚未拍板；`frontend/` 现有骨架仅作参考
+
+## 数据 / 配置
+- YAML（`configs/`）
+- JSON Schema（`schemas/`，跨语言契约）
+
+## 训练 / 演化
+- Behavior Cloning（Stage 2，`K=20` mini-batch imitation）
+- PPO / SAC 仅作 P2
+
+## 质量 / 复现
+- pytest、ruff
+- seed manager 统一派生（Python `random` / NumPy / PyTorch CPU / PyTorch CUDA）
+- uv、Makefile、Docker（复现用；现场优先本机运行）
+
+## 约束
+- 现场完全离线：不依赖 OpenAI API、外部模型 API、远程 DB、远程资产 CDN。
 
 
 # 通用工作原则

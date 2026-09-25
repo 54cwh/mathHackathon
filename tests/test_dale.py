@@ -1,6 +1,6 @@
 import torch
 
-from evogenesis.design.rgcd import apply_dale_sign
+from evogenesis.development.rgcd import apply_dale_sign
 
 
 def test_dale_sign():

@@ -10,7 +10,7 @@ dist/
 # --- uv / venv ---
 .venv/
 
-# --- Tool caches ---
+# --- 工具缓存 ---
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -20,7 +20,7 @@ htmlcov/
 # --- Jupyter ---
 .ipynb_checkpoints/
 
-# --- LaTeX build artifacts ---
+# --- LaTeX 编译产物（paper/）---
 *.aux
 *.log
 *.out
@@ -32,28 +32,33 @@ htmlcov/
 *.nav
 *.snm
 *.vrb
-paper/*.pdf
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+paper/**/*.pdf
 
-# --- Node (前端/演示 UI) ---
+# --- Node（app/ 前端与演示 UI）---
 node_modules/
 .next/
-dist/
+out/
+.turbo/
+.vercel/
+coverage/
 *.tsbuildinfo
 
-# --- 本地技能/资料货架（不入库）---
-refs/
-
-# --- 实验产物（可删）---
-results/*
+# --- 实验产物（可删重建）---
+results/**
 !results/figs/
 !results/runs/
 !results/tables/
-results/figs/*
-results/runs/*
-results/tables/*
-!results/figs/.gitkeep
-!results/runs/.gitkeep
-!results/tables/.gitkeep
+!results/**/.gitkeep
+
+# --- 训练/追踪日志 ---
+wandb/
+mlruns/
+lightning_logs/
+*.tfevents.*
 
 # --- 原始数据（大文件不入库）---
 data/raw/*
@@ -79,6 +84,9 @@ data/raw/*
 Thumbs.db
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 
 # --- opencode 运行产物 ---
 .opencode/node_modules/

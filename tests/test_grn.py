@@ -1,6 +1,6 @@
 import torch
 
-from evogenesis.design.grn import discrete_grn
+from evogenesis.development.grn import discrete_grn
 
 
 def test_grn_range_and_shape():

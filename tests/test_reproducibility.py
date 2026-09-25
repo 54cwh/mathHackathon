@@ -1,6 +1,6 @@
 import random
 
-from evogenesis.design.genome import mutate_sequence
+from evogenesis.genome.genome import mutate_sequence
 
 
 def test_mutation_reproducibility():
