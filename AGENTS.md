@@ -69,6 +69,10 @@ make test   # 运行测试
 make lint   # ruff 静态检查
 make fmt    # ruff 格式化
 make tree   # 查看目录结构
+make api    # 启动 API 服务（开发模式，热重载）
+make demo   # 一键启动现场 Demo（构建前端 + 起服务）
+make frontend  # 构建前端产物到 frontend/dist
+make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实验 run
 ```
 
 
