@@ -46,6 +46,8 @@ mathHackathon/
     └── notes/                  # 建模推导、符号表、决策记录
 ```
 
+> 每个目录的职责与"放什么 / 不放什么"见 `docs/directory-structure.md`。
+
 ## 分层与归属
 
 - `core/` 是唯一长期稳定的机制层，任何任务都复用。
