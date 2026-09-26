@@ -76,6 +76,7 @@ def test_namespaces_frozen():
         "motif_catalog": 4,
         "network_init": 5,
         "selection": 6,
+        "initial_population": 7,
     }
 
 

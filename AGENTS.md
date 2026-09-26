@@ -11,7 +11,7 @@
 
 # 项目目录结构
 
-代码按任务分层：`core/` 是方向无关的机制底座，其余模块（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/`）各对应一项研发任务，彼此独立、可单独替换。（`api/` 实现层已移除、待重写，仅存契约草案文档。）
+代码按任务分层：`core/` 是方向无关的机制底座，其余模块（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ pipeline/ api/`）各对应一项研发任务，彼此独立、可单独替换。（`pipeline/` 为编排层，消费 `genome/development/connectome` 等；`api/` 实现层已移除、待重写，仅存契约草案文档。）
 
 **文档随代码**：每个代码集群的文档就放在该模块目录内（如 `arena/Danio_Arena设计与实现说明.md`、`api/API与系统工程.md`），内容为**接口 / 目的 / 用法 + 与代码的映射**，是该模块的审计基准；代码一旦偏离同目录文档即视为缺陷。`docs/` 只放跨模块文档。任何代码改动都应在同一提交里同步对应模块文档。
 
@@ -36,6 +36,8 @@ mathHackathon/
 │   │   └── 行为克隆学习.md
 │   ├── experiment/             # 实验协议、指标、run
 │   │   └── 实验与评价体系.md
+│   ├── pipeline/               # 模型链装配（编排：config→种群→发育→DanioNet）
+│   │   └── 模型链装配.md
 │   ├── viz/                    # 可视化（论文图、网络图）
 │   └── api/                    # 对外服务层（实现层已移除、待重写，仅存契约草案 .md）
 │       ├── API与系统工程.md       # 命名/系统/部署约定
@@ -68,12 +70,12 @@ mathHackathon/
 
 根文件：`AGENTS.md`（本文件）、`opencode.json`、`README.md`、`LICENSE`、`pyproject.toml`/`uv.lock`/`.python-version`、`Makefile`、`.gitignore`。
 
-`src/evogenesis/` 采用 src-layout：必须 `uv sync`（editable）后才能 `import evogenesis`，导入前缀固定为 `evogenesis.`。依赖方向：`core/` 被所有任务包依赖，任务包彼此尽量不互相依赖，`api/` 为对外服务层（实现层已移除、待重写）。
+`src/evogenesis/` 采用 src-layout：必须 `uv sync`（editable）后才能 `import evogenesis`，导入前缀固定为 `evogenesis.`。依赖方向：`core/` 被所有任务包依赖，任务包彼此尽量不互相依赖（**唯一例外**：`pipeline/` 为编排层，可依赖 `genome/ development/ connectome` 等，但不被它们反向依赖），`api/` 为对外服务层（实现层已移除、待重写）。
 
 ## 分层与归属
 
 - `core/` 是唯一长期稳定的机制层，任何任务都复用。
-- `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/` 按任务划分，各模块彼此独立、可单独替换（`api/` 实现层已移除、待重写）；`viz/` 负责出图。
+- `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ pipeline/ api/` 按任务划分，各模块彼此独立、可单独替换（`pipeline/` 为编排层；`api/` 实现层已移除、待重写）；`viz/` 负责出图。
 - 任务与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`frontend/` 归展示，`results/` 归实验。
 - 文档与代码同目录（见上方树）：每个模块文档是该模块的接口/目的/用法与审计基准，代码偏离即缺陷。`docs/` 只放跨模块文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
 
@@ -88,6 +90,7 @@ mathHackathon/
 | 繁殖 / 选择 / drift | `src/evogenesis/evolution/` |
 | Behavior Cloning 训练 | `src/evogenesis/learning/` |
 | 指标、run、统计 | `src/evogenesis/experiment/` |
+| 模型链装配（编排） | `src/evogenesis/pipeline/` |
 | 出图 | `src/evogenesis/viz/` |
 | API 路由 / WebSocket | `src/evogenesis/api/`（实现层已移除、待重写） |
 | CLI / 一键脚本 | `scripts/` |
@@ -144,6 +147,7 @@ mathHackathon/
 | `evolution/遗传繁殖与演化模型.md` | 产出 fitness、下一代 genome |
 | `learning/行为克隆学习.md` | 产出 `ΔW`（横向，接 connectome） |
 | `experiment/实验与评价体系.md` | 拥有指标与 run 目录布局（横向） |
+| `pipeline/模型链装配.md` | 编排：把已冻结模块串成链路（消费 `genome/development/connectome`，不定义算法） |
 | `api/API与系统工程.md`、`api/API接口.md` | 对外：稳定 ID、端点、系统约定（实现层已移除、待重写） |
 | `viz/` | 出图（消费 `results/`，不做源定义） |
 

@@ -112,6 +112,24 @@ class DiploidGenome:
         return cls(pairs, genome_id, layout=layout)
 
 
+def random_genome(
+    layout: GenomeLayout = DEFAULT_LAYOUT,
+    *,
+    rng: np.random.Generator,
+    genome_id: str = "",
+) -> DiploidGenome:
+    """均匀 i.i.d. 初始基因组（genome §2 初始种群；命名空间 ``initial_population``）。"""
+    alphabet = "".join(layout.alphabet)
+    pairs: list[ChromosomePair] = []
+    for _ in range(layout.chromosome_pairs):
+        chains: list[str] = []
+        for _ in range(2):
+            codes = rng.integers(0, len(alphabet), size=layout.bp_per_haplotype_chromosome)
+            chains.append("".join(alphabet[int(code)] for code in codes))
+        pairs.append(ChromosomePair(chains[0], chains[1], layout=layout))
+    return DiploidGenome(tuple(pairs), genome_id=genome_id, layout=layout)
+
+
 # ---------------------------------------------------------------------------
 # motif affinity（genome §6；参数单向引用 RGCD §2）
 # ---------------------------------------------------------------------------
