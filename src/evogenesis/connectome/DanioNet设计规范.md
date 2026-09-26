@@ -1,7 +1,7 @@
 # DanioNet 设计规范
 
 > **管辖范围**：六类功能语义、12 维输入**语义**、神经动力学、连续动作、lifetime learning 与遗传边界、baselines/ablations。产出：activation / 动作 `(ω,v)` / `ΔW`。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.1 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
+> 状态：**v1.2 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
 
 ## 1. 六类神经元
 - Sensory
@@ -18,20 +18,29 @@
 **owner**：六类**功能语义**归本文件；`type_i` 如何由 GRN **产出**归 `development/RGCD数学模型.md` §6。⚠️ `argmax` 是离散化理想化（真实 fate 为连续谱 `[bib#75]`），实现宜同时记录 `z_i` 分布/熵。
 
 ## 2. 12 维输入
-1. prey_left_signal
-2. prey_right_signal
-3. threat_left_signal
-4. threat_right_signal
-5. obstacle_left_signal
-6. obstacle_right_signal
-7. prey_relative_size
-8. predator_relative_size
-9. looming_rate
-10. current_speed
-11. energy
-12. hunger
 
-依据：prey/threat 通道对应斑马鱼视觉捕食与威胁回避 `[bib#8]`；hunger/energy 对应内部状态调制决策 `[bib#9][bib#10]`；looming 为逃避触发量。维度顺序与值域冻结（**本文件为 12 维 observation 的语义 owner**）；由视野计算这 12 个数的**编码规则**归 `arena/Danio_Arena设计与实现说明.md` §4.1（Arena 产出满足本契约的向量）。
+**语义 / 顺序 / 值域由本文件冻结**（网络输入契约）；由视野计算这 12 个数的**编码规则**归 `arena/Danio_Arena设计与实现说明.md` §4.1（Arena 侧任何编码都必须产出满足本契约的向量）。
+
+| # | 名称 | 语义 | 值域 | dtype |
+|---|---|---|---|---|
+| 0 | `prey_left_signal` | 左视场猎物种群强度 | `[0,1]` | `float32` |
+| 1 | `prey_right_signal` | 右视场猎物种群强度 | `[0,1]` | `float32` |
+| 2 | `threat_left_signal` | 左视场天敌种群强度 | `[0,1]` | `float32` |
+| 3 | `threat_right_signal` | 右视场天敌种群强度 | `[0,1]` | `float32` |
+| 4 | `obstacle_left_signal` | 左视场障碍强度 | `[0,1]` | `float32` |
+| 5 | `obstacle_right_signal` | 右视场障碍强度 | `[0,1]` | `float32` |
+| 6 | `prey_relative_size` | 最近可见猎物相对自身体型 | `[0,1]` | `float32` |
+| 7 | `predator_relative_size` | 最近可见天敌相对自身体型 | `[0,1]` | `float32` |
+| 8 | `looming_rate` | 天敌视角扩张率（逼近速度） | `[0,1]` | `float32` |
+| 9 | `current_speed` | 上一步推进 \(v_{t-1}\)（\(v\in[0,1]\)） | `[0,1]` | `float32` |
+| 10 | `energy` | 归一化能量 \(E_t/E_{\max}\) | `[0,1]` | `float32` |
+| 11 | `hunger` | \(1-E_t/E_{\max}\) | `[0,1]` | `float32` |
+
+**值域约束（定稿）**：12 维一律为 `[0,1]` 的 `float32`；Arena 侧无论用线性距离核、相对尺寸还是角扩张率，都必须截断/归一化到该区间。其中 `energy` 与 `hunger` 互补（和恒为 1）；前 8 维与 `looming_rate` 为非负强度量。
+
+依据：prey/threat 通道对应斑马鱼视觉捕食与威胁回避 `[bib#8]`；hunger/energy 对应内部状态调制决策 `[bib#9][bib#10]`；looming 为逃避触发量。
+
+⚠️ **已知实现缺口**（跟踪于 `arena` 认领表 A1）：`looming_rate` 在当前调用序下除 `reset()` 首帧外恒为 0。值域契约不变，但该维暂不携带信息，须由 Arena 侧修复。
 
 ## 3. 神经动力学
 \[
