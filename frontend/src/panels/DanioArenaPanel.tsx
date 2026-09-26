@@ -4,7 +4,6 @@ import { Panel } from "@/components/Panel";
 import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
-import { clearFrames, pushFrame } from "@/visuals/replayBuffer";
 import { subscribe } from "@/api/ws";
 import {
   MASTER_SEED,
@@ -50,6 +49,7 @@ export function DanioArenaPanel() {
   const sessionId = useUiStore((s) => s.sessionId);
   const setSessionId = useUiStore((s) => s.setSessionId);
   const resetNonce = useUiStore((s) => s.resetNonce);
+  const activeView = useUiStore((s) => s.activeView);
   const selectedFishId = useUiStore((s) => s.selectedFishId);
   const setSelectedFish = useUiStore((s) => s.setSelectedFish);
   const setStats = useUiStore((s) => s.setStats);
@@ -88,7 +88,6 @@ export function DanioArenaPanel() {
           tickRef.current = 0;
           wsFishRef.current = null;
           sceneRef.current = null;
-          clearFrames();
         })
         .catch((e) => {
           if (cancelled) return;
@@ -118,7 +117,8 @@ export function DanioArenaPanel() {
 
   // ---- poll while running: one release step per tick ----------------------
   useEffect(() => {
-    if (!running || !sessionId) return;
+    // Playback 视图 = Manual Control 操场，由那个面板驱动同一条会话；此处让位，避免双驱动。
+    if (!running || !sessionId || activeView === "playback") return;
     let stop = false;
     let timer = 0;
 
@@ -145,7 +145,6 @@ export function DanioArenaPanel() {
           };
           sceneRef.current = composed;
           setScene(composed);
-          pushFrame(composed); // 回放缓冲（Playback 视图消费）
         }
 
         setStats({
@@ -175,7 +174,7 @@ export function DanioArenaPanel() {
       stop = true;
       window.clearTimeout(timer);
     };
-  }, [running, sessionId, setRunning, setStats]);
+  }, [running, sessionId, activeView, setRunning, setStats]);
 
   // ---- render -------------------------------------------------------------
   useEffect(() => {

@@ -1,167 +1,242 @@
-import { useEffect, useRef, useState } from "react";
-import { History, Pause, Play, Rewind } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Gamepad2 } from "lucide-react";
 import { Panel } from "@/components/Panel";
+import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
-import { drawArenaScene, type ArenaScene } from "@/visuals/ArenaScene";
-import { REPLAY_CAPACITY, frameCount, getFrame, latestFrame } from "@/visuals/replayBuffer";
+import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
+import { getFishCard, getSnapshot, release, type FishCard } from "@/api/arena";
 
 /**
- * Playback —— 回放**本次会话**（前端本地缓冲，`src/visuals/replayBuffer.ts`）。
+ * Playback —— **Manual Control 操场**（`交互与可视化.md` §10）。
  *
- * 语义状态：**草案待确认（2026-09-27）**。上游（`交互与可视化.md` §1）只有底栏词
- * 「Playback」，未定义正式契约；后端也**没有**回放端点（`app.py` 只挂前端 dist），
- * 而已定稿的整群回放资产 `behavior_trace`（`schemas/behavior_trace.schema.json`）
- * 尚无 HTTP 出口。故本轮实现为「回放刚看过的会话」：数据由 `DanioArenaPanel`
- * 逐 tick 写入环形缓冲，本面板只读。若后端补上 behavior_trace 端点，替换点只有
- * `replayBuffer` 一处。
+ * 玩什么：用键盘**临时操控一条鱼**在活着的 Arena 里游；其余鱼仍由 ExpertPolicy 驱动。
+ * `Manual Control 不进入正式实验数据`（§10），因此本面板只驱动当前会话，不落任何记录。
  *
- * 渲染复用 `ArenaScene` 原语（与 Arena 同源，命中半径/配色/取整都不重写）。
+ * 键位（最小集，本文与文档同步）：
+ *   ← / A  左转（ω = -1）        → / D  右转（ω = +1）
+ *   ↑ / W  全速（v = 1）         ↓ / S  停（v = 0）        不按上下 → 巡航 v = 0.5
+ * 动作语义：`ω ∈ [-1,1]` rad/s、`v ∈ [0,1]` 世界单位/秒（`arena §461 S1`），后端再裁剪一次。
+ *
+ * 会话与驱动：用 `store.sessionId`（与 Arena 同一条会话）。Arena 面板在 playback 视图下
+ * **让位不驱动**（见 `DanioArenaPanel` 的 `activeView` 判据），避免两处同时推进。
+ * 若会话处于暂停（底栏 Pause），后端 `advance` 短路 —— 本面板会给出提示而非默默不动。
  */
 
-/** 播放帧率：与 Arena 采集节奏一致（10Hz）。 */
-const FPS = 10;
+const TICK_MS = 100; // 与 Arena 一致：10 Hz 驱动，20 Hz 仿真按 1 步/次推进
+const CARD_EVERY = 10; // 每 10 tick ≈ 1s 刷新一次鱼卡
+/** 巡航速度：不按上下键时的默认 `v`（避免"一松手就停"，也不必长按）。 */
+const CRUISE_SPEED = 0.5;
+
+/** 键位 -> 舵量；返回 [omega, speed]。 */
+function actionFor(keys: Set<string>): { omega: number; speed: number } {
+  const left = keys.has("ArrowLeft") || keys.has("a") || keys.has("A");
+  const right = keys.has("ArrowRight") || keys.has("d") || keys.has("D");
+  const up = keys.has("ArrowUp") || keys.has("w") || keys.has("W");
+  const down = keys.has("ArrowDown") || keys.has("s") || keys.has("S");
+  const omega = (right ? 1 : 0) - (left ? 1 : 0);
+  const speed = up ? 1 : down ? 0 : CRUISE_SPEED;
+  return { omega, speed };
+}
 
 export function PlaybackPanel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [cursor, setCursor] = useState(0);
-  const [total, setTotal] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const cursorRef = useRef(0);
-  const playingRef = useRef(false);
+  const sessionId = useUiStore((s) => s.sessionId);
+  const running = useUiStore((s) => s.running);
+  const activeView = useUiStore((s) => s.activeView);
+  const stats = useUiStore((s) => s.stats);
+  const [scene, setScene] = useState<ArenaScene | null>(null);
+  const [controlledId, setControlledId] = useState<string | null>(null);
+  const [card, setCard] = useState<FishCard | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const keysRef = useRef<Set<string>>(new Set());
+  const controlledRef = useRef<string | null>(null);
+  const tickRef = useRef(0);
 
-  // 播放循环：只在本地读缓冲，不把逐帧数据放进 React state（README 防坑 3）。
+  const active = activeView === "playback";
+
+  // 键盘：只在 playback 视图监听；方向键要阻止页面滚动。
   useEffect(() => {
-    let raf = 0;
-    let last = 0;
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
-      const count = frameCount();
-      if (count !== total) setTotal(count);
-      if (!playingRef.current) return;
-      if (now - last < 1000 / FPS) return;
-      last = now;
-      const next = cursorRef.current + 1;
-      if (next >= count) {
-        // 追尾跟随：缓冲仍在增长时（Arena 还在记），停在最新帧继续播，而不是自动停。
-        // 记录停止增长后，cursor 自然停在末尾（等价于暂停在末帧）。
-        if (cursorRef.current !== count - 1) {
-          cursorRef.current = count - 1;
-          setCursor(count - 1);
+    if (!active) return;
+    const down = (e: KeyboardEvent) => {
+      const k = e.key;
+      if (/^(Arrow|wasdWASD)/.test(k)) {
+        e.preventDefault();
+        keysRef.current.add(k);
+      }
+    };
+    const keys = keysRef.current; // cleanup 里用局部引用（ref.current 那时可能已变）
+    const up = (e: KeyboardEvent) => keys.delete(e.key);
+    const clearKeys = () => keys.clear();
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    window.addEventListener("blur", clearKeys);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      window.removeEventListener("blur", clearKeys);
+      keys.clear();
+    };
+  }, [active]);
+
+  // 驱动循环：只有本视图激活时才推进（Arena 面板此时让位）。
+  useEffect(() => {
+    if (!active || !running || !sessionId) return;
+    let stop = false;
+    let timer = 0;
+
+    const tick = async () => {
+      try {
+        const { omega, speed } = actionFor(keysRef.current);
+        const target = controlledRef.current;
+        const summary = await release(
+          sessionId,
+          1,
+          true,
+          target ? { fishId: target, omega, speed } : undefined,
+        );
+        const snap = await getSnapshot(sessionId);
+        if (stop) return;
+        setScene({ ...snap });
+        // 首次进入或原被控鱼已死：自动接管第一条存活的鱼。
+        if (!controlledRef.current || !snap.fish[controlledRef.current]?.alive) {
+          const first = Object.entries(snap.fish).find(([, f]) => f.alive)?.[0] ?? null;
+          controlledRef.current = first;
+          setControlledId(first);
         }
+        tickRef.current += 1;
+        if (tickRef.current % CARD_EVERY === 0 && controlledRef.current) {
+          setCard(await getFishCard(sessionId, controlledRef.current));
+        }
+        void summary;
+      } catch (e) {
+        if (stop) return;
+        setError(String(e));
         return;
       }
-      cursorRef.current = next;
-      setCursor(next);
+      if (!stop) timer = window.setTimeout(tick, TICK_MS);
     };
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [total]);
 
-  // 绘制当前帧
+    tickRef.current = 0;
+    timer = window.setTimeout(tick, TICK_MS);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+    };
+  }, [active, running, sessionId]);
+
+  // 绘制：被控鱼高亮（复用 Arena 的选中样式）
   useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    const scene: ArenaScene | undefined = getFrame(Math.min(cursor, Math.max(0, total - 1)));
-    if (scene) drawArenaScene(ctx, scene);
-    else {
-      ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
-    }
-  }, [cursor, total]);
+    if (scene) drawArenaScene(ctx, scene, controlledId);
+    else ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+  }, [scene, controlledId]);
 
-  const atEnd = total > 0 && cursor >= total - 1;
+  const takeControl = useCallback((fishId: string | null) => {
+    controlledRef.current = fishId;
+    setControlledId(fishId);
+    setCard(null);
+  }, []);
 
-  function jumpTo(index: number) {
-    const clamped = Math.max(0, Math.min(total - 1, index));
-    cursorRef.current = clamped;
-    setCursor(clamped);
+  function handleClick(e: React.MouseEvent<HTMLCanvasElement>) {
+    if (!scene) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
+    const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
+    takeControl(hitTestFish(scene, mx, my, fishHitRadius(rect.width)));
   }
 
-  function togglePlay() {
-    if (total === 0) return;
-    // 已在末尾再点播放 = 从头放（与录像机行为一致）。
-    if (!playing && atEnd) jumpTo(0);
-    playingRef.current = !playingRef.current;
-    setPlaying(playingRef.current);
-  }
+  const alive = scene ? Object.entries(scene.fish).filter(([, f]) => f.alive) : [];
+  const held = actionFor(keysRef.current);
 
   return (
-    <Panel title="Playback" icon={<History className="size-4 text-primary" />}>
+    <Panel title="Playback" icon={<Gamepad2 className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         <div className="w-full shrink-0" style={{ aspectRatio: arenaAspect() }}>
           <canvas
             ref={canvasRef}
             width={CANVAS.w}
             height={CANVAS.h}
-            aria-hidden
-            className="pixelated h-full w-full"
+            onClick={handleClick}
+            className="pixelated h-full w-full cursor-crosshair"
           />
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            onClick={togglePlay}
-            disabled={total === 0}
-            className="inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
-          >
-            {playing ? <Pause className="size-3" /> : <Play className="size-3" />}
-            {playing ? "PAUSE" : "PLAY"}
-          </button>
-          <button
-            type="button"
-            onClick={() => jumpTo(0)}
-            disabled={total === 0}
-            className="inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
-          >
-            <Rewind className="size-3" />
-            START
-          </button>
-          <input
-            type="range"
-            min={0}
-            max={Math.max(0, total - 1)}
-            value={Math.min(cursor, Math.max(0, total - 1))}
-            onChange={(e) => jumpTo(Number(e.target.value))}
-            disabled={total === 0}
-            aria-label="replay position"
-            className="ml-1 min-w-0 flex-1"
-          />
-          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-            {total === 0 ? "0/0" : `${cursor + 1}/${total}`}
-          </span>
-        </div>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+          {/* 被控鱼：点画布上的鱼可切换；默认第一条存活的鱼 */}
+          <div className="border border-border p-2">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="font-pixel text-[10px] leading-none">CONTROLLED FISH</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {controlledId ?? "—"}
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {alive.map(([fid]) => (
+                <button
+                  key={fid}
+                  type="button"
+                  onClick={() => takeControl(fid)}
+                  className={`border border-border px-2 py-0.5 font-mono text-[10px] ${
+                    fid === controlledId ? "bg-brand-fish-navy text-brand-bone" : ""
+                  }`}
+                >
+                  {fid}
+                </button>
+              ))}
+              {alive.length === 0 && (
+                <span className="font-mono text-[10px] text-muted-foreground">
+                  {sessionId ? "等待会话场景…" : "无会话：Experiment 视图的 Arena 尚未连上后端"}
+                </span>
+              )}
+            </div>
+          </div>
 
-        <div className="min-h-0 flex-1 space-y-1 overflow-y-auto border border-border p-2 font-mono text-[10px]">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">buffered</span>
-            <span>
-              {total}/{REPLAY_CAPACITY} 帧
-            </span>
+          {/* 键位 + 当前动作 + 实时读数 */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="border border-border p-2">
+              <div className="mb-1 font-pixel text-[10px] leading-none">KEYS</div>
+              <div className="space-y-0.5 font-mono text-[10px] text-muted-foreground">
+                <div>← / A · → / D : turn (ω)</div>
+                <div>↑ / W · ↓ / S : speed (v)</div>
+                <div>click fish : take control</div>
+              </div>
+              <div className="mt-1 flex justify-between font-mono text-xs">
+                <span>ω {held.omega.toFixed(2)}</span>
+                <span>v {held.speed.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="border border-border p-2">
+              <div className="mb-1 font-pixel text-[10px] leading-none">READOUT</div>
+              {card ? (
+                <dl className="grid grid-cols-2 gap-x-2 font-mono text-xs">
+                  {[
+                    ["energy", card.energy.toFixed(3)],
+                    ["captures", String(card.metrics.captures)],
+                    ["steps", String(card.metrics.survival_steps)],
+                    ["alive", card.metrics.alive ? "yes" : "no"],
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-2">
+                      <dt className="text-muted-foreground">{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="text-xs text-muted-foreground">按 → 起步后出现读数</p>
+              )}
+            </div>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">step</span>
-            <span>{getFrame(cursor)?.step ?? latestFrame()?.step ?? "—"}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">fish alive</span>
-            <span>
-              {
-                Object.values(getFrame(cursor)?.fish ?? {}).filter((f) => f.alive).length
-              }
-            </span>
-          </div>
-          {total === 0 ? (
-            <p className="pt-1 font-sans text-xs text-brand-amber">
-              尚无回放数据。检查三处：① Arena 是否已连上后端（Experiment 视图右上角 session 是否显示、
-              有无 ⚠ 报错）；② 是否按了 Pause（暂停期间不再记录新帧）；③ 后端是否在运行
-              （顶栏健康灯为红则后端不可达）。会话建好后每 0.1s 记一帧，约 1s 后即可播放。
-            </p>
-          ) : (
-            <p className="pt-1 font-sans text-xs text-muted-foreground">
-              回放本次会话（缓冲上限 {REPLAY_CAPACITY} 帧 ≈ 1 episode）。切到 Experiment 视图继续跑，
-              缓冲会持续增长；Reset 会清空。
-            </p>
-          )}
+
+          <p className="text-xs text-muted-foreground">
+            {error
+              ? `⚠ ${error}`
+              : !running
+                ? "会话已暂停：底栏按 Release 恢复推进，再操控。"
+                : `Manual Control 操场（§10）：临时操控一条鱼，不进入正式实验数据。step ${
+                    stats?.step ?? scene?.step ?? "—"
+                  }`}
+          </p>
         </div>
       </div>
     </Panel>
