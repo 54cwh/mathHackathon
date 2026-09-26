@@ -9,6 +9,29 @@
      （npm run gen:design），勿手改。品牌 24 色在 src/design/palette.ts，两边互不复制。 */
   :root {
 /* @generated:design */
+    --background: 213 29% 6%;
+    --foreground: 208 35% 93%;
+    --card: 217 9% 10%;
+    --card-foreground: 208 35% 93%;
+    --popover: 217 9% 10%;
+    --popover-foreground: 208 35% 93%;
+    --primary: 188 86% 53%;
+    --primary-foreground: 213 29% 6%;
+    --secondary: 217 9% 16%;
+    --secondary-foreground: 208 35% 93%;
+    --muted: 217 9% 16%;
+    --muted-foreground: 214 15% 60%;
+    --accent: 217 9% 18%;
+    --accent-foreground: 208 35% 93%;
+    --destructive: 0 91% 71%;
+    --destructive-foreground: 213 29% 6%;
+    --border: 213 28% 17%;
+    --input: 213 28% 17%;
+    --ring: 188 86% 53%;
+    --success: 158 64% 52%;
+    --warning: 43 96% 56%;
+    --violet: 255 92% 76%;
+    --radius: 0;
 /* @end:design */
   }
 

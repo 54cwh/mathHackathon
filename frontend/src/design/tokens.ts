@@ -63,11 +63,18 @@ export function toCssRootBlock(): string {
 
 type ColorValue = string | { DEFAULT: string; foreground: string };
 
+/**
+ * Tokens kept for CSS completeness but **not** remapped into Tailwind. `violet`
+ * would override Tailwind's own violet scale (dead-token issue); the brand violet
+ * is `brand.mutation-violet` from `design/palette.ts` instead.
+ */
+const TAILWIND_OMIT = new Set<TokenName>(["violet"]);
+
 /** Render the Tailwind `theme.extend.colors` map from the tokens. */
 export function toTailwindColors(): Record<string, ColorValue> {
   const colors: Record<string, ColorValue> = {};
-  for (const name of Object.keys(tokens)) {
-    if (name.endsWith("-foreground")) continue;
+  for (const name of Object.keys(tokens) as TokenName[]) {
+    if (name.endsWith("-foreground") || TAILWIND_OMIT.has(name)) continue;
     const value = `hsl(var(--${name}))`;
     const foreground = tokens[`${name}-foreground` as TokenName];
     colors[name] = foreground ? { DEFAULT: value, foreground: `hsl(var(--${name}-foreground))` } : value;
