@@ -150,7 +150,7 @@ frontend/
 
 - 点击画布选中最近的鱼（画布坐标距离阈值 **20 px**，经 `getBoundingClientRect()` 换算），点空白处取消选中。
 - 头部统计栏（`App.tsx`）的 Generation / Fish / Prey / Step / Seed 由 `store/ui.ts` 的 `stats` 驱动，而 `stats` 每 tick 由**后端会话摘要**（`generation / population / fish_alive / prey_remaining / master_seed`）与 snapshot 的 `step` 写入，**不是前端自算**。
-- 唯一例外：`Env` 目前是硬编码字面量 `Food Rich`（对应 `createSession` 默认的 `environment="food_rich"`），**尚未从会话摘要读取** —— 待 `SessionSummary` 暴露环境后改为读摘要。
+- `Env` 取 `SessionSummary.environment`（经 `store.stats.environment`）；顶栏数值全部来自真实会话摘要，未起会话时显示 `—`。顶栏另有后端健康指示（`GET /v1/health`，10s 轮询）。
 
 ### 本机实测记录
 
