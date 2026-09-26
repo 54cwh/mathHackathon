@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://evogenesis.local/schemas/trajectory.schema.json",
-  "title": "EvoGenesis 行为克隆轨迹（逐 episode 一个 JSONL）",
-  "description": "每行是一个 JSON 对象：首行为 episode header（record_type=header），其后每行为 step 记录（record_type=step）。字段语义见 src/evogenesis/core/核心机制与数据流.md §4.2；决策见 research/notes/契约决策记录.md。",
+  "title": "EvoGenesis BC trajectory (JSONL, per episode)",
+  "description": "专家轨迹，逐 episode 一个 JSONL 文件：首行为 episode header（record_type=header），其后每行为一条 step 样本（record_type=step）。字段语义见 src/evogenesis/core/核心机制与数据流.md §4.2；决策见 research/notes/契约决策记录.md。落盘见 §4.5：results/runs/<experiment_id>/trajectories/episode_<episode_id>.jsonl。状态：已定稿。",
   "oneOf": [
     { "$ref": "#/$defs/header" },
     { "$ref": "#/$defs/step" }
@@ -10,25 +10,7 @@
   "$defs": {
     "header": {
       "type": "object",
-      "properties": {
-        "record_type": { "const": "header" },
-        "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
-        "experiment_id": { "type": "string" },
-        "episode_id": { "type": "string" },
-        "environment_id": { "type": "string" },
-        "generation_id": { "type": "integer", "minimum": 0 },
-        "episode_seed": { "type": "integer" },
-        "total_steps": { "type": "integer", "minimum": 1 },
-        "terminated": { "type": "boolean" },
-        "truncated": { "type": "boolean" },
-        "environment_config": { "type": "object" },
-        "obs_dim_names": {
-          "type": "array",
-          "items": { "type": "string" },
-          "minItems": 12,
-          "maxItems": 12
-        }
-      },
+      "additionalProperties": false,
       "required": [
         "record_type",
         "schema_version",
@@ -41,33 +23,65 @@
         "terminated",
         "truncated"
       ],
-      "additionalProperties": false
+      "properties": {
+        "record_type": { "const": "header" },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "轨迹 schema 版本，SemVer。兼容规则：加可选字段=MINOR，改必填=MAJOR（决策见 research/notes/契约决策记录.md）。"
+        },
+        "experiment_id": { "type": "string", "description": "稳定 ID（AGENTS「约定」；api/API与系统工程.md §3），join 回 run。" },
+        "episode_id": { "type": "string", "description": "稳定 ID，形如 ep0001。" },
+        "environment_id": { "type": "string", "description": "环境对照组（core §6）；取值集合待 §10 #4 定稿。" },
+        "generation_id": { "type": "integer", "description": "演化代数。" },
+        "episode_seed": { "type": "integer", "description": "本 episode 子种子（由 master seed 派生，core §3）。" },
+        "total_steps": { "type": "integer", "minimum": 1, "description": "本 episode 实际步数。" },
+        "terminated": { "type": "boolean", "description": "是否因任务终止（非截断）。" },
+        "truncated": { "type": "boolean", "description": "是否因步数/时限截断。" },
+        "environment_config": { "type": "object", "description": "可选：该 episode 的环境配置快照。" },
+        "obs_dim_names": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 12,
+          "maxItems": 12,
+          "description": "可选：12 维 observation 的分量名（顺序与 DanioNet §2 一致）。"
+        }
+      }
     },
     "step": {
       "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "fish_id",
+        "genome_id",
+        "step",
+        "observation",
+        "expert_action"
+      ],
       "properties": {
         "record_type": { "const": "step" },
-        "fish_id": { "type": "string" },
-        "genome_id": { "type": "string" },
-        "step": { "type": "integer", "minimum": 0 },
+        "fish_id": { "type": "string", "description": "稳定 ID（禁止用数组下标当 identity；api/API与系统工程.md §3）。" },
+        "genome_id": { "type": "string", "description": "稳定 ID；与 fish_id 为两个独立字段（schemas/fish.schema.json）。" },
+        "step": { "type": "integer", "minimum": 0, "maximum": 599, "description": "episode 内步序号 0–599（30 s @ 20 Hz，episode_steps=600）。" },
         "observation": {
           "type": "array",
-          "items": { "type": "number" },
           "minItems": 12,
-          "maxItems": 12
+          "maxItems": 12,
+          "items": { "type": "number" },
+          "description": "感知向量 float[12]（sensory_dim=12）。维度顺序冻结（DanioNet §2）：0 prey_left_signal / 1 prey_right_signal / 2 threat_left_signal / 3 threat_right_signal / 4 obstacle_left_signal / 5 obstacle_right_signal / 6 prey_relative_size / 7 predator_relative_size / 8 looming_rate / 9 current_speed / 10 energy / 11 hunger。编码规则见 arena/Danio_Arena设计规范.md §4.1。"
         },
         "expert_action": {
           "type": "array",
-          "items": { "type": "number" },
           "minItems": 2,
-          "maxItems": 2
+          "maxItems": 2,
+          "items": { "type": "number" },
+          "description": "专家动作 float[2]（action_dim=2）：(ω*, v*) 转向角速度 + 推进。"
         },
-        "reward": { "type": "number" },
-        "is_first": { "type": "boolean" },
-        "is_last": { "type": "boolean" }
-      },
-      "required": ["record_type", "fish_id", "genome_id", "step", "observation", "expert_action"],
-      "additionalProperties": false
+        "reward": { "type": "number", "description": "可选：该步回报（若记录）。" },
+        "is_first": { "type": "boolean", "description": "可选：episode 首步标记。" },
+        "is_last": { "type": "boolean", "description": "可选：episode 末步标记。" }
+      }
     }
   }
 }
