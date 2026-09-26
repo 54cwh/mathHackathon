@@ -20,6 +20,7 @@ from fastapi.staticfiles import StaticFiles
 
 from evogenesis.api.environmental_selections import router as selections_router
 from evogenesis.api.genomes import router as genomes_router
+from evogenesis.api.runs import router as runs_router
 from evogenesis.api.schemas import Problem
 from evogenesis.api.session import router as sessions_router
 from evogenesis.api.stubs import router as stubs_router
@@ -33,6 +34,7 @@ app.include_router(sessions_router)
 app.include_router(genomes_router)
 app.include_router(selections_router)
 app.include_router(stubs_router)
+app.include_router(runs_router)
 app.include_router(ws_router)
 
 
