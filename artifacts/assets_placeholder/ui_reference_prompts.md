@@ -318,6 +318,7 @@ Avoid: a dark background, antialiasing, gradients, rounded corners, glassmorphis
 
 **要点**：要的是「能复现这张图观感的一套调色板」，**不是像素直方图**——后者会吐出几百种近似色。
 另外顺手要回「像素刻度 + 描边粗细 + 分割线粗细」，这是重写 `index.css` 时要用的规格（见 §选定后的下一步）。
+**本轮补的一条**：另要「面板底色 + 正文色 + 次文字色」这三个 —— Q1(b) 让数值走等宽字体，而 9 项 Dashboard 与 Fish Card 都是**浅底小字**，可读性全押在这一对文本色上；原来的 `neutrals and highlights` 分组**不保证**覆盖到它们（多半只给白色高光）。
 
 ```text
 I want the exact colour palette from the image you just generated, to use as a fixed asset palette.
@@ -329,6 +330,7 @@ Rules:
 - Group them by role, in this order: outlines and darkest values; shadow tones; main material families (water, vegetation, wood and earth); accents; neutrals and highlights.
 - Order each group from darkest to lightest.
 - Do NOT include pure magenta FF00FF - it is reserved as a key colour for cutouts and must never appear in the palette.
+- Then list separately, as its own short block, the three colours a UI needs for readable text on a light panel: the panel background, the primary text colour, and the muted secondary text colour. Choose these so small monospace numerals stay comfortable to read - pick them for legibility, not for decoration.
 - If the image uses fewer than 32 colours, return exactly the colours it uses. If it uses more, merge the closest ones so the total is 32 or under.
 
 After the grouped list, output one final line containing only the comma-separated "name HEX" pairs on a single line, so I can paste it directly.
