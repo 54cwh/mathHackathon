@@ -1,5 +1,5 @@
 {
-  "experiment_id": "exp_20260925_smoke_01",
+  "experiment_id": "exp-example",
   "seed": 1103,
   "model_config": "configs/default_model.yaml",
   "arena_config": "configs/default_arena.yaml",

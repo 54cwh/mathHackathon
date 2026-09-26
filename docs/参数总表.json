@@ -455,7 +455,7 @@
       "source": "research/reference/design-basis-connectome.md",
       "config": "configs/default_arena.yaml → world.width",
       "sensitivity": null,
-      "suggest": "明确说明比例来源，或改正方形"
+      "suggest": "明确说明 5:3 比例的来源与量纲约定（world unit）"
     },
     {
       "name": "world_height",
@@ -1083,7 +1083,7 @@
       "grade": "B",
       "status": "confirmed",
       "basis": "binary tournament k=2：Blickle & Thiele 1996 证明在期望适应度分布上等价于最大线性排名；tournament 对适应度的平移/线性变换不变（Eiben & Smith 2015 §5.2.4）；替代比例/softmax 选择（其压力与尺度不可分离）",
-      "source": "[bib#136][bib#137] research/reference/ga-selection-methods.md",
+      "source": "[bib#136][bib#137]（`research/notes/bibliography.md`）",
       "config": "configs/evolution.yaml → tournament_size",
       "sensitivity": [
         2,
@@ -1602,7 +1602,7 @@
         6,
         12
       ],
-      "suggest": "E-F 首选：区分力已证（三处 d>1.8σ）"
+      "suggest": "三组在 12 鱼/n=3 下无稳健区分力（最大 |d|=1.79），须先过 experiment §3.6 pilot 功效门"
     },
     {
       "name": "env_resource_scarce",
@@ -1779,7 +1779,7 @@
     }
   ],
   "missing_required": {
-    "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。",
+    "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。 2026-09-26：`body_length_mm` 按方案 B（wu 不与 BL 固定换算）退役，不再作为世界换算基准。",
     "items": [
       "penetrance 观测量阈值 θ_N^obs、θ_H^obs 与 τ 异质性统计量（CV；genome §3；须在独立校准集上定，属报告量）"
     ]
@@ -1890,7 +1890,7 @@
       ]
     },
     {
-      "param": "capture_cone_deg（前向锥，待实现）",
+      "param": "capture_cone_degrees",
       "values": [
         60,
         120,

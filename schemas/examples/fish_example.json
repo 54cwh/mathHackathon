@@ -1,7 +1,7 @@
 {
-  "fish_id": "fish_g000_ex01",
+  "fish_id": "exp-example:g0:fish0000",
   "generation": 0,
-  "genome_id": "genome_ex_20260925_01",
+  "genome_id": "exp-example:g0:genome0000",
   "viable": true,
   "energy": 0.85,
   "size": 1.08,
@@ -10,7 +10,7 @@
     "sensory": 4,
     "prey": 8,
     "threat": 4,
-    "memory": 6,
+    "integrator_memory": 6,
     "inhibitory": 12,
     "motor": 8
   },

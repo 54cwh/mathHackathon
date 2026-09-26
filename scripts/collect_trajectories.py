@@ -19,6 +19,7 @@ import argparse
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
+from evogenesis.experiment import runlayout
 from evogenesis.experiment.collect import (
     collect_trajectories,
     default_trajectories,
@@ -72,11 +73,16 @@ def main(argv: list[str] | None = None) -> None:
         if args.trajectories is not None
         else default_trajectories(ROOT / DEFAULT_MODEL_CONFIG)
     )
-    out_dir = (
-        Path(args.out_dir)
-        if args.out_dir is not None
-        else ROOT / "results" / "runs" / f"{args.experiment_id}-s{args.seed}" / "trajectories"
-    )
+    if args.out_dir is not None:
+        out_dir = Path(args.out_dir)
+    else:
+        # 经 run 布局唯一实现建 run 根（metadata/config_snapshot/…），轨迹写其 trajectories/。
+        run_dir = runlayout.create_run_dir(
+            experiment_id=args.experiment_id,
+            seed=args.seed,
+            config_path=arena_config_path,
+        )
+        out_dir = run_dir / "trajectories"
 
     written = collect_trajectories(
         config,

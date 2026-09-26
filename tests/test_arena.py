@@ -334,6 +334,21 @@ def test_boundary_clamp_is_still_available():
     assert ent.pos[0] == 0.0
 
 
+def test_predator_respects_world_boundary_clamp(monkeypatch):
+    """section 2.1: prey/predator 与鱼适用同一 world.boundary（回归：predator 曾漏传 boundary）。"""
+    base = ArenaConfig()
+    cfg = dataclasses.replace(base, world=dataclasses.replace(base.world, boundary="clamp"))
+    arena = DanioArena(cfg, spawn_seed=7, dynamics_seed=7)
+    arena.reset()
+    pred = next(iter(arena.predators.values()))
+    pred.pos = np.array([0.05, 30.0])
+    pred.heading = float(np.pi)  # 指向 -x（墙外）
+    # 固定策略：无目标、朝 -x、巡航速度 → 只会撞左墙
+    monkeypatch.setattr(arena._pred_policy, "plan", lambda *a, **k: (None, float(np.pi), 1.0))
+    arena.step(None)
+    assert pred.pos[0] == 0.0  # clamp 贴墙，而非 reflect 弹回
+
+
 def test_boundary_config_default_and_validation():
     assert ArenaConfig().world.boundary == "reflect"
     with pytest.raises(ValueError, match="boundary"):

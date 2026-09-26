@@ -82,6 +82,7 @@ DEFAULT_N_GENOME_ATTEMPTS = 200
 #: §7 判据的失因词表（owner：`development/rgcd.py::viability_check`）。
 #: ``missing_fate`` 的取值来自 ``DEFAULT_CONFIG.domains``，不在此硬编码，避免与配置漂移。
 CRITERIA: tuple[str, ...] = (
+    "no_active_neurons",
     "weight_spectral_radius_not_contractive",
     "motor_side_empty",
     "no_sensory_to_motor_path",

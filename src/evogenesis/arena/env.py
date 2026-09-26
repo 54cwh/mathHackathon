@@ -437,7 +437,7 @@ class DanioArena:
             pred.heading += float(np.clip(diff, -max_turn, max_turn))
             pred.speed = speed
             self._steer_away_from_obstacles(pred, gain=self.cfg.actors.predator_obstacle_avoid_gain)
-            pred.advance(dt, self.cfg.world.width, self.cfg.world.height)
+            pred.advance(dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary)
 
             if target is None:
                 continue
