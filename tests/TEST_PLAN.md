@@ -19,7 +19,7 @@
 
 ## 实现落地补充（李辰钊，2026-09-26）
 
-> 本节是对上面「最低测试计划」14 项的**补充**，不是替换：14 项的编号、措辞与地位**原样保留**，仍是最低门槛。下表两套测试已随实现落地（Arena 侧 `tests/test_arena.py`、API / WS 侧 `tests/test_api_contract.py`），作用是把 14 项里的机制性要求、以及冻结的 HTTP / WS 契约，钉成可执行的断言。
+> 本节是对上面「最低测试计划」14 项的**补充**，不是替换：14 项的编号、措辞与地位**原样保留**，仍是最低门槛。下表两套测试已随实现落地（Arena 侧 `tests/test_arena.py`；API / WS 侧 `tests/test_api_contract.py` **已随 api 实现层移除而删除**，其 9 项仅存作历史记录），作用是把 14 项里的机制性要求、以及冻结的 HTTP / WS 契约，钉成可执行的断言。
 
 ### Arena 实现（`tests/test_arena.py`，15 项）
 
@@ -41,7 +41,7 @@
 | 14 | `test_dead_fish_not_credited_escape` | 把捕食者目标指向一条已死鱼后推进：该鱼 `escape_successes` 保持 0 且本步无 `arena.escape` —— 钉住「逃脱只记活鱼」，避免被吃掉的鱼反过来抬高逃脱指标。 |
 | 15 | `test_predator_encounter_recorded_on_acquisition` | 捕食者从「无目标」切换到目标鱼的下一步，该鱼 `predator_encounters >= 1` —— 让该字段可观测，并把口径钉在「目标获取」而非「近距接触」。 |
 
-### API / WS 契约（`tests/test_api_contract.py`，9 项）
+### API / WS 契约（`tests/test_api_contract.py`，9 项；**已随 api 实现层移除而删除，待 api 重写后恢复**）
 
 | # | 测试 | 守护的性质 |
 |---|---|---|
@@ -60,3 +60,4 @@
 - 事件名的**权威名单**是 `tests/test_arena.py::KNOWN_EVENTS`（`arena.spawn` / `arena.prey_captured` / `arena.capture_attempt` / `arena.escape` / `arena.energy_depleted` / `arena.episode_end` / `arena.fish_captured` / `arena.collision`）；新增事件必须先改该集合。**8 项，不多不少。**
 - 回归与契约加强用例：Arena 侧 #12–#15 与 API 侧 #9 共 5 个测试函数，分别覆盖 reset 幂等 / episode 幂等 / 死鱼不计逃脱 / 目标获取计数 / pause 阻塞推进；API 侧 #6 断言 RFC 7807 五字段（`type` / `title` / `status` / `detail` / `instance`）。
 - Arena 的完整契约与实现映射见 `src/evogenesis/arena/Danio_Arena设计与实现说明.md`；API 实现说明见 `src/evogenesis/api/API接口.md`。合并稿的前半部分描述规范，§18 描述实现现状与契约状态。
+- core / genome lane 单测：`test_seed` / `test_config` / `test_ids` / `test_tensors` / `test_genome` / `test_genome_config` / `test_motifs` / `test_dale` / `test_grn` / `test_reproducibility`（`test_ids`、`test_tensors` 为 core §3.1 / §7 新增）。

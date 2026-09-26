@@ -24,10 +24,6 @@ import numpy as np
 
 from evogenesis.genome.config import DEFAULT_LAYOUT, GenomeLayout
 
-ALPHABET = "".join(DEFAULT_LAYOUT.alphabet)
-BP_PER_HAPLOTYPE_CHROMOSOME = DEFAULT_LAYOUT.bp_per_haplotype_chromosome
-CHROMOSOME_PAIRS = DEFAULT_LAYOUT.chromosome_pairs
-
 Haplotype = tuple[str, ...]
 Gamete = Haplotype
 

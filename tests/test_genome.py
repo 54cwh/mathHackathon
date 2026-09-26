@@ -14,6 +14,7 @@ import pytest
 
 from evogenesis.core.seed import SeedManager
 from evogenesis.genome import genome as G
+from evogenesis.genome.config import DEFAULT_LAYOUT
 
 MASTER_SEED = 250927
 MOTIF_A = "AAACCC"
@@ -25,7 +26,7 @@ MARKER_POSITIONS = (10, 40, 70)
 
 
 def _chromosome_with(motif: str, positions: tuple[int, ...] = MARKER_POSITIONS) -> str:
-    seq = list(BACKBONE * G.BP_PER_HAPLOTYPE_CHROMOSOME)
+    seq = list(BACKBONE * DEFAULT_LAYOUT.bp_per_haplotype_chromosome)
     for start in positions:
         for offset, symbol in enumerate(motif):
             seq[start + offset] = symbol
@@ -34,7 +35,7 @@ def _chromosome_with(motif: str, positions: tuple[int, ...] = MARKER_POSITIONS) 
 
 FUNC_A = _chromosome_with(MOTIF_A)
 FUNC_B = _chromosome_with(MOTIF_B)
-LOSS = BACKBONE * G.BP_PER_HAPLOTYPE_CHROMOSOME
+LOSS = BACKBONE * DEFAULT_LAYOUT.bp_per_haplotype_chromosome
 
 
 def _genome(pair0: G.ChromosomePair, pair1: G.ChromosomePair) -> G.DiploidGenome:
@@ -94,8 +95,8 @@ def test_schema_exchange_shape_roundtrip():
     assert len(payload["chromosome_pairs"]) == 2
     for item in payload["chromosome_pairs"]:
         assert len(item["maternal"]) == 128 and len(item["paternal"]) == 128
-        assert set(item["maternal"]) <= set(G.ALPHABET)
-        assert set(item["paternal"]) <= set(G.ALPHABET)
+        assert set(item["maternal"]) <= set("".join(DEFAULT_LAYOUT.alphabet))
+        assert set(item["paternal"]) <= set("".join(DEFAULT_LAYOUT.alphabet))
     assert G.DiploidGenome.from_dict(payload) == genome
 
 
@@ -303,7 +304,7 @@ def test_mutation_only_substitutes_bases():
     rng = SeedManager(MASTER_SEED).rng("mutation")
     mutated = G.mutate_sequence("ACGT" * 32, 1.0, rng)
     assert len(mutated) == 128
-    assert set(mutated) <= set(G.ALPHABET)
+    assert set(mutated) <= set("".join(DEFAULT_LAYOUT.alphabet))
     assert all(original != changed for original, changed in zip("ACGT" * 32, mutated, strict=True))
 
 

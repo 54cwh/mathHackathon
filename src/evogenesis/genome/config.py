@@ -1,8 +1,9 @@
 """基因组布局参数：取值 owner 为 ``configs/default_model.yaml`` 的 ``genome`` 节。
 
 本模块**不新造数值**：``GenomeLayout`` 的默认值是冻结配置的镜像，由
-``tests/test_genome_config.py`` 的漂移守护测试断言与配置文件逐字段一致；
-运行期用 ``load_genome_config()`` 经 ``core`` 的 ``load_config`` 读取真实配置注入。
+``tests/test_genome_config.py`` 的漂移守护测试断言与配置文件逐字段一致。
+``load_genome_config()`` 已就绪，经 ``core`` 的 ``load_config`` 读取真实配置注入；
+当前**尚无生产调用方**（种群初始化 / 编排层未落地，接线待补）。
 参数依据与状态见 ``docs/参数总表.json``（``group=genome``）。
 """
 
@@ -16,8 +17,17 @@ from typing import Any
 
 from evogenesis.core.config import GenomeConfig, ModelConfig, load_config
 
-# 仓库根 = 本文件 ``src/evogenesis/genome/config.py`` 的上溯第 3 级。
-DEFAULT_MODEL_CONFIG_PATH = Path(__file__).resolve().parents[3] / "configs" / "default_model.yaml"
+
+def _resolve_default_model_config() -> Path:
+    """自本文件向上查找 ``configs/default_model.yaml``（源码 / editable 检出）。"""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / "configs" / "default_model.yaml"
+        if candidate.is_file():
+            return candidate
+    return Path(__file__).resolve().parents[3] / "configs" / "default_model.yaml"
+
+
+DEFAULT_MODEL_CONFIG_PATH = _resolve_default_model_config()
 
 
 @dataclass(frozen=True)
@@ -34,6 +44,8 @@ class GenomeLayout:
     motif_subset_B: int = 1
 
     def __post_init__(self) -> None:
+        if self.motif_count < 1 or self.motif_length < 1 or self.motif_topk < 1:
+            raise ValueError("motif_count / motif_length / motif_topk 必须 ≥ 1")
         for locus, index in (("A", self.motif_subset_A), ("B", self.motif_subset_B)):
             if not 0 <= index < self.motif_count:
                 raise ValueError(
