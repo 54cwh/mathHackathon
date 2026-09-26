@@ -301,4 +301,4 @@ Topologies*, Evol. Comput. 10(2):99–127 (2002) | peer-reviewed |
 - 出图业务逻辑自 `scripts/` 迁入 `src/evogenesis/viz/`：`make_figs`→`viz/figs.py`、`make_fig_connectome`→`viz/fig_connectome.py`、`make_fig_pipeline`→`viz/fig_pipeline.py`、`make_fig_viability`→`viz/fig_viability.py`、`make_env_compare`→`viz/env_compare.py`；`figdata.py` 由 `experiment/` 迁至 `viz/`。契约见 `viz/可视化.md`。
 - `scripts/` 保留同名**薄壳**，命令与参数不变。
 - `scripts/dump_connectome_matrix.py` / `probe_architecture.py` 为数据落盘层，**仍留 `scripts/`**（非 viz）。
-- **跨 lane 待办（paper 侧）**：`paper/图表-数据对照表.md` §1 仍写 `src/evogenesis/experiment/figdata.py`（应改 `viz/figdata.py`）；`paper/` 本轮未改（用户禁改），请 paper owner 同步。
+- **paper 路径已同步**（2026-09-26，用户授权）：`paper/图表-数据对照表.md` §1 的 `experiment/figdata.py` 已改 `viz/figdata.py`。
