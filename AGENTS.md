@@ -193,6 +193,19 @@ make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实
 - 提交前必须：`make lint && make test` 通过，且按本文件「代码审查」一节完成审查。
 - 提交信息遵循 `<type>(<scope>): <summary>`，并保留 `审查：` 留痕行。
 
+### 多人 / 多 AI 共用同一工作区
+
+默认执行者（人 / AI）在**同一工作区**协作，靠纪律而非隔离避免互相覆盖：
+
+- **单写者（硬约束）**：同一文件同一时刻只允许一个写者；跨 lane 只读，不改对方文件。动手前先声明将改动的文件范围。
+- **推前一律 rebase**：`git fetch origin && git pull --rebase origin main`；禁用无参数 `git pull`（会触发 `divergent branches` 或产生多余 merge）。
+- **推前先看对方提交**：`git log --oneline -5`；若发现同主题提交（同一个决策 / 文档 / 数值），**先对齐再动手**，禁止各写一版。
+- **禁止长时间挂未提交改动**：改完即 `make lint && make test` 后提交，避免他人 `git add -A` 把你的 WIP 卷进他的提交、造成归属错乱。
+- **身份与归属**：多个执行者可能共用同一 git 账号；提交信息正文须写清模块与主题，便于事后区分。
+- 个人 / AI 分支命名 `<name>/dev`（如 `cwh/dev`、`ai2/dev`）。
+- 需要真正并行时才用 `git worktree`（各自分支，**不可同一分支被两个 worktree 同时 checkout**）：`git worktree add -b <name>/dev ../<repo>-<name> origin/main`，用完 `git worktree remove`。
+- 冲突处理：`git status` 列出冲突文件后逐个人工合并，保持最终态（禁 `rm`，见「根因修复原则」），`make lint && make test` 复验后再提交。
+
 
 # 技术栈
 
