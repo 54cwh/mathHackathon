@@ -20,6 +20,7 @@
     "metrics",
     "per_seed",
     "aggregate",
+    "behavior_divergence",
     "degradation"
   ],
   "additionalProperties": false,
@@ -63,12 +64,22 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["fraction", "n_removed", "metrics"],
+              "required": ["fraction", "n_removed", "metrics", "divergence"],
               "additionalProperties": false,
               "properties": {
                 "fraction": { "type": "number", "minimum": 0, "maximum": 1 },
                 "n_removed": { "type": "integer", "minimum": 0 },
-                "metrics": { "type": "object" }
+                "metrics": { "type": "object" },
+                "divergence": {
+                  "type": "object",
+                  "required": ["mean_abs_omega", "mean_abs_v", "n_steps"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "mean_abs_omega": { "type": "number", "minimum": 0 },
+                    "mean_abs_v": { "type": "number", "minimum": 0 },
+                    "n_steps": { "type": "integer", "minimum": 0 }
+                  }
+                }
               }
             }
           },
@@ -77,6 +88,7 @@
       }
     },
     "aggregate": { "type": "object" },
+    "behavior_divergence": { "type": "object" },
     "degradation": { "type": "object" }
   }
 }
