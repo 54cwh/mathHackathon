@@ -71,6 +71,12 @@ def test_snapshot_is_run_ready():
     assert snapshot == asdict(cfg)
 
 
+def test_env_section_and_field_names_are_case_insensitive():
+    """core 的 env 层按 Pydantic 字段名大小写不敏感匹配；Arena 的镜像表由 dataclass 生成。"""
+    env = {"EVOGENESIS_Growth__Capture_Radius": "5.5"}
+    assert load_arena_config(ARENA_YAML, environ=env).growth.capture_radius == 5.5
+
+
 def test_missing_file_raises():
     with pytest.raises(FileNotFoundError):
         load_arena_config(REPO / "configs" / "does_not_exist.yaml")

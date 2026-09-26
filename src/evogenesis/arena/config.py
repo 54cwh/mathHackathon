@@ -11,6 +11,8 @@ from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel, create_model
+
 # 分层语义（CLI > env > file > default）的 owner 是 ``core §config``。此处**直接复用**
 # `core.config` 的 helper，不在本模块另写一版（AGENTS「不得在两处各写一版」）。
 # 若 core 把分层上提为公开 API，这里应改为公开导入。
@@ -107,6 +109,23 @@ ARENA_SECTIONS: dict[str, type] = {
 DERIVED_READONLY_KEYS: frozenset[tuple[str, str]] = frozenset({("world", "episode_seconds")})
 
 
+def _build_env_schema() -> type[BaseModel]:
+    """按 ``ARENA_SECTIONS`` **运行时生成** Pydantic 镜像，仅供 ``core`` 的 env 层做段名
+    大小写规范化（``_env_overrides(environ, model)``）。字段名的唯一 owner 仍是上面的
+    dataclass —— 本表不手写第二份，故不构成 AGENTS 所禁的「两处各写一版」。
+    """
+    sections = {
+        name: create_model(f"{cls.__name__}Env", **{f.name: (Any, None) for f in fields(cls)})
+        for name, cls in ARENA_SECTIONS.items()
+    }
+    return create_model(
+        "ArenaEnvSchema", **{name: (model, None) for name, model in sections.items()}
+    )
+
+
+_ENV_SCHEMA = _build_env_schema()
+
+
 def _build_arena_config(data: Mapping[str, Any]) -> ArenaConfig:
     """把已分层的嵌套 dict 严格构造成 ``ArenaConfig``（未知 section/键即报错）。"""
     unknown_sections = set(data) - set(ARENA_SECTIONS)
@@ -142,7 +161,7 @@ def load_arena_config(
     data: dict[str, Any] = {}
     if path is not None:
         _deep_update(data, _read_yaml(Path(path)))
-    _deep_update(data, _env_overrides(os.environ if environ is None else environ))
+    _deep_update(data, _env_overrides(os.environ if environ is None else environ, _ENV_SCHEMA))
     if overrides:
         _deep_update(data, overrides)
     return _build_arena_config(data)
