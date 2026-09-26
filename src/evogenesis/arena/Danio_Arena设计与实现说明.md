@@ -305,7 +305,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | 组 | 条款 |
 |---|---|
-| 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）；✅ 环境三组已改参数（§12，单因子 `n_prey`/`n_predators` + 派生 regrowth）。**余**：M4 空间场景布置 |
+| 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）；✅ 环境三组已改参数（§12，单因子 `n_prey`/`n_predators` + 派生 regrowth）。**余**：M4 空间场景布置（**2026-09-27 决定：不做**，保持参数级对照；列为已知限制） |
 | 编码接口 | ✅ A1 12 维归一化**已定稿**（含 looming 角尺寸扩张率、每通道截断口径）；`looming_norm`（R_loom）已冻结为设计选择（D） |
 | 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，已进参数总表）；✅ A4 growth/biomass（面积式；g 为设计选择（D））；A5 actors **17 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（已落 config，§11） |
 | 契约/工程 | ~~§18 实例事件~~ ✅ 已重生成（§18.4.4）；~~config 接线~~ ✅ 已闭合（loader + Arena 映射 + 调用方接线，2026-09-26）；~~api 语义 B1–B6~~ ✅ 已闭合（2026-09-27）；本文件的契约与实现映射分界 |
@@ -621,7 +621,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M1 | 神经控制 | 鱼由外部 `actions` 驱动，Arena 不内嵌网络；DanioNet 推理已由 `pipeline/arena_episode.py` 接入（`scripts/run_chain.py`，DanioNet 驱动模型评估）。`generation` 可由构造注入（缺省 0；代循环已接入）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
 | M3 | selected neural activity snapshots | 规范 §13 最后一项未实现；**owner = `connectome`/`DanioNet`（+ api 推送）**，arena 不缓存网络激活（见 §6） |
-| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；环境三组**已改变参数**（`configs/experiment_environments.yaml`，单因子：`n_prey`/`n_predators` + 派生 regrowth，登记参数总表 `env_*`）。仍未做：「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**空间场景布置**（现为参数级对照，无布局） |
+| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；环境三组**已改变参数**（`configs/experiment_environments.yaml`，单因子：`n_prey`/`n_predators` + 派生 regrowth，登记参数总表 `env_*`）。仍未做：「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**空间场景布置**（现为参数级对照，无布局）；**2026-09-27 决定：不做空间布置** |
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | ~~`PreyPolicy.avoid_gain`~~ | ✅ **已删除（2026-09-26）**（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
