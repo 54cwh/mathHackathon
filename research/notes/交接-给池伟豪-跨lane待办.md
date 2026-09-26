@@ -29,7 +29,7 @@
 | # | 事项 | 证据 | 建议 |
 |---|---|---|---|
 | C1 | **`predator_encounters` 口径** | arena S7=目标获取计数（owner）；`experiment §2.2` 写「与天敌接触计数」，且为 `escape_success` 分母 | 改 `experiment` 措辞 |
-| C2 | **评估驱动方** | `learning §5`「评估必须 DanioNet」vs `experiment §3.3`「evaluation episodes 即 `run_arena.py` 现状」（ExpertPolicy） | `experiment` 明确：`run_arena`=环境 pre-check/基线；模型评估走 `pipeline/run_arena_episode`(DanioNet) |
+| C2 | **评估驱动方（部分闭合）** | 新增 `scripts/run_chain.py`（DanioNet 驱动 Arena，落 metrics/events/seed_summary）已提供模型评估入口；`experiment §3.3`「即 `run_arena.py` 现状」措辞待改（`run_arena`=ExpertPolicy pre-check/基线） | `experiment` 改措辞并指向 `run_chain.py` |
 | C3 | **规模口径** | `experiment §4` 泛述「n_fish=12 不变」与 Exp F 48-genome 协议张力（arena §3 已澄清两种规模） | `experiment` 同步限定「12=ExpertPolicy pre-check；48=演化评估」 |
 | C4 | **`configs/experiment_environments.yaml` 注释** | 称「填 `missing_required` 第 1 项」，但该项已变 penetrance | 修注释 |
 
@@ -49,6 +49,19 @@
 - `PreyPolicy.avoid_gain` 死参数（S12/F2/M6）。
 - `arena.collision` 默认场景仍多为 0（`§18.9`/A7）→ 需专门「密集障碍」对照场景；活鱼 escape、空种群终止、`_free_spot` 回退分支缺专项测试。
 - `api` 端点残留引用（`/v1/sessions/...snapshot`、`API接口.md §7.2`、`arena_config_path`）随 `api/` 重写一体处理（= B3）。
+
+## 五·补、arena ↔ 上游接线（2026-09-26 查验并补齐）
+
+| 上游 | 接线点 | 状态 |
+|---|---|---|
+| `core` seed | `pipeline/arena_episode.py::arena_seed_for` → `SeedManager.seed("arena_spawn",0)` 传入 `DanioArena(master_seed=...)` | ✅ 本轮修复（此前直传根部 seed） |
+| `core` 稳定 ID | `fish_ids`/`genome_ids` 注入（collect / run_arena / run_chain / pipeline） | ✅ |
+| `core §3.1` generation | `DanioArena(generation=)` 透传 | ✅ |
+| `core` config | `load_arena_config`（run_arena / collect / run_experiment / run_chain） | ✅ |
+| `connectome §2` obs→DanioNet | `pipeline/run_arena_episode` 组 `float32` 批量投喂；`DanioNet.step` 经 `to_float32_tensor` | ✅ |
+| **驱动方（Expert/DanioNet）** | ExpertPolicy：`run_arena`/`collect`；**DanioNet：`scripts/run_chain.py`（新，生产入口）** | ✅ |
+
+> `run_chain.py`：`uv run python scripts/run_chain.py --experiment-id <id> --seed <s> [--n N --steps S --generation G]`；实跑 `exp-chain-smoke`（n=12, 30 步）viable 1/12、events 28、events.jsonl 过 schema。
 
 ## 六、已冻结、可直接依赖（供对齐）
 

@@ -18,6 +18,7 @@ import torch
 
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena, Event
+from evogenesis.core.seed import SeedManager
 from evogenesis.development.config import DEFAULT_CONFIG as DEFAULT_RGCD_CONFIG
 from evogenesis.development.config import RGCDConfig
 from evogenesis.development.rgcd import ConnectomePhenotype
@@ -38,6 +39,15 @@ class ArenaEpisodeResult:
     steps: int
     per_fish: dict[str, dict]
     events: tuple[Event, ...]
+
+
+def arena_seed_for(master_seed: int) -> int:
+    """Arena 的整数子种子（`core §3`）：``SeedManager.seed("arena_spawn", 0)``。
+
+    Arena 只接受整数种子（`core §3` 例外条款），由编排层派生后传入；**不得**把
+    `master_seed` 根部直接交给 Arena（会与 `development` / `network_init` 等命名空间同根）。
+    """
+    return SeedManager(master_seed).seed("arena_spawn", 0)
 
 
 def viable_pairs(
@@ -84,7 +94,7 @@ def run_arena_episode(
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
     arena = DanioArena(
         config,
-        master_seed=master_seed,
+        master_seed=arena_seed_for(master_seed),
         fish_ids=fish_ids,
         genome_ids=genome_ids,
         generation=generation,

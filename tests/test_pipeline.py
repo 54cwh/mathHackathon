@@ -8,6 +8,7 @@ import pytest
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.core.ids import mint_id
+from evogenesis.core.seed import SeedManager
 from evogenesis.pipeline.arena_episode import run_arena_episode
 from evogenesis.pipeline.model_chain import (
     danionet_of,
@@ -119,3 +120,10 @@ def test_run_arena_episode_propagates_generation():
     )
     assert result.per_fish
     assert all(rec["generation"] == 3 for rec in result.per_fish.values())
+
+
+def test_arena_seed_is_namespaced():
+    from evogenesis.pipeline.arena_episode import arena_seed_for
+
+    assert arena_seed_for(MASTER_SEED) == SeedManager(MASTER_SEED).seed("arena_spawn", 0)
+    assert arena_seed_for(MASTER_SEED) != MASTER_SEED
