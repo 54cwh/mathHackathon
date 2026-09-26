@@ -10,6 +10,7 @@ import {
   listSelections,
 } from "@/api/selections";
 import { useUiStore } from "@/store/ui";
+import { subscribe } from "@/api/ws";
 import type {
   EnvironmentalSelectionDetail,
   EnvironmentalSelectionSummary,
@@ -88,6 +89,26 @@ export function EvolutionDashboardPanel() {
   useEffect(() => {
     void refreshList();
   }, [refreshList]);
+
+  // WS 优先：`job.progress` 是**全局**推送（session_id=None，所有订阅者都收），
+  // 有活动会话就顺带订阅，实时更新进度；无会话时纯靠下面的轮询兜底。
+  useEffect(() => {
+    if (!sessionId || !job || job.status === "done" || job.status === "failed" || job.status === "cancelled") {
+      return;
+    }
+    return subscribe(sessionId, {
+      jobProgress: (payload) => {
+        setJob((current) => {
+          if (!current || current.job_id !== payload.job_id) return current;
+          return {
+            ...current,
+            status: payload.status as JobStatusKind,
+            progress: payload.progress,
+          };
+        });
+      },
+    });
+  }, [sessionId, job]);
 
   // 轮询当前 job 到终态；终态后刷新列表并展开该实验的详情。
   useEffect(() => {
