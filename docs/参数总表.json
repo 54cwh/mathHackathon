@@ -1268,7 +1268,11 @@
       "basis": "前向锥**总**锥角（半锥 60°），设计选择。依据：开源机制对照报告 T2「建议至少加目标位于捕食者前向锥」；锥角属设计选择、非实测。",
       "source": "research/reference/open-source-fish-games-机制对照.md",
       "config": "configs/default_arena.yaml → growth.capture_cone_degrees",
-      "sensitivity": null,
+      "sensitivity": [
+        60,
+        120,
+        180
+      ],
       "suggest": null
     },
     {
@@ -1806,6 +1810,24 @@
       "config": "configs/demo_seed.yaml → master_seed",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "generation_buttons",
+      "value": [
+        1,
+        5,
+        10,
+        20
+      ],
+      "unit": "—",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "UI 可控的演化代按钮（现场「Evolve 1/5/10/20」）。非行为算法参数；读取方为前端/演示层（api 实现层待重写），当前无 src 消费。",
+      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md §10",
+      "config": "configs/evolution.yaml → generation_buttons",
+      "sensitivity": null,
+      "suggest": "随 api/frontend 重写接线为单代循环的 `generations` 覆盖"
     }
   ],
   "missing_required": {
@@ -1941,6 +1963,125 @@
       "values": [
         12,
         18,
+        24
+      ]
+    },
+    {
+      "param": "capture_size_ratio",
+      "values": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ]
+    },
+    {
+      "param": "capture_radius",
+      "values": [
+        2.88,
+        4.61,
+        7.38
+      ]
+    },
+    {
+      "param": "predator_size",
+      "values": [
+        2.5,
+        3.125,
+        3.75,
+        5.0
+      ]
+    },
+    {
+      "param": "generations",
+      "values": [
+        10,
+        20
+      ]
+    },
+    {
+      "param": "motif_length",
+      "values": [
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "param": "motif_topk",
+      "values": [
+        1,
+        3,
+        5
+      ]
+    },
+    {
+      "param": "grn_spectral_radius",
+      "values": [
+        0.8,
+        0.9,
+        0.95
+      ]
+    },
+    {
+      "param": "regulatory_gamma",
+      "values": [
+        0.5,
+        1.0,
+        2.0
+      ]
+    },
+    {
+      "param": "tournament_size",
+      "values": [
+        2,
+        3
+      ]
+    },
+    {
+      "param": "bc_lr",
+      "values": [
+        0.0003,
+        0.001
+      ]
+    },
+    {
+      "param": "bc_batch_size",
+      "values": [
+        32,
+        64,
+        128
+      ]
+    },
+    {
+      "param": "bc_trajectories",
+      "values": [
+        10,
+        50,
+        200
+      ]
+    },
+    {
+      "param": "env_food_rich",
+      "values": [
+        24,
+        48,
+        96
+      ]
+    },
+    {
+      "param": "env_predator_rich",
+      "values": [
+        3,
+        6,
+        12
+      ]
+    },
+    {
+      "param": "env_resource_scarce",
+      "values": [
+        6,
+        12,
         24
       ]
     }

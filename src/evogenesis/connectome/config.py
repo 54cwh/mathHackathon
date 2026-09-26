@@ -16,17 +16,19 @@ from pathlib import Path
 from typing import Any
 
 from evogenesis.core.config import ModelConfig, load_config
+from evogenesis.development.config import DOMAIN_ORDER  # 单一来源（development 拥有 domains）
 
-DEFAULT_MODEL_CONFIG_PATH = Path(__file__).resolve().parents[3] / "configs" / "default_model.yaml"
 
-DOMAIN_ORDER: tuple[str, ...] = (
-    "sensory",
-    "prey",
-    "threat",
-    "integrator_memory",
-    "inhibitory",
-    "motor",
-)
+def _resolve_default_model_config() -> Path:
+    """自本文件向上查找 ``configs/default_model.yaml``（源码 / editable 检出）。"""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / "configs" / "default_model.yaml"
+        if candidate.is_file():
+            return candidate
+    return Path(__file__).resolve().parents[3] / "configs" / "default_model.yaml"
+
+
+DEFAULT_MODEL_CONFIG_PATH = _resolve_default_model_config()
 
 
 @dataclass(frozen=True)

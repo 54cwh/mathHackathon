@@ -4,7 +4,7 @@
   "title": "FishState",
   "meta": {
     "owns": "FishState 快照字段：fish_id/generation/genome_id/viable/energy/size/fitness/cell_counts/metrics",
-    "status": "已冻结",
+    "status": "已定稿",
     "producer": {
       "fish_id": "core §3.1 稳定 ID（arena 经 fish_ids 注入）",
       "genome_id": "core §3.1 稳定 ID（arena 经 genome_ids 注入，或 evolution Individual）",
@@ -64,5 +64,6 @@
     "metrics": {
       "type": "object"
     }
-  }
+  },
+  "additionalProperties": false
 }

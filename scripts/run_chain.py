@@ -10,6 +10,7 @@ run 目录布局见 `experiment/实验与评价体系.md` §5.1）。本脚本�
 
 用法：
     uv run python scripts/run_chain.py --experiment-id exp-chain --seed 1103
+    uv run python scripts/run_chain.py --experiment-id exp-chain --seeds 1103,2207,3301  # 跨 seed 汇总
 """
 
 from __future__ import annotations
@@ -23,7 +24,11 @@ from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.environments import BASELINE, load_environment
 from evogenesis.experiment.events import episode_event_header, write_event_log
-from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
+from evogenesis.experiment.metrics import (
+    aggregate_by_seed,
+    episode_metrics,
+    summarise_over_seeds,
+)
 from evogenesis.experiment.overrides import parse_overrides
 from evogenesis.experiment.run_artifacts import dump_json, write_metrics_csv
 from evogenesis.pipeline import (
@@ -53,6 +58,9 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="DanioNet 驱动 Arena 跑一代评估")
     parser.add_argument("--experiment-id", required=True)
     parser.add_argument("--seed", type=int, default=1103)
+    parser.add_argument(
+        "--seeds", default=None, help="逗号分隔多 seed（Experiment C 跨 seed 汇总）；缺省=单 --seed"
+    )
     parser.add_argument("--generation", type=int, default=0)
     parser.add_argument("--n", type=int, default=None, help="种群规模；缺省取 evolution.yaml")
     parser.add_argument("--steps", type=int, default=None, help="缺省取 world.episode_steps")
@@ -73,35 +81,32 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    args = _parse_args()
-    # 两类覆盖正交：`--override` 只进 model chain（genome/grn/development/connectome/network），
-    # `--environment` 只进 Arena 配置（population/world/...）。
-    cli_overrides = parse_overrides(args.override) or None
-    env_overrides = None if args.environment == BASELINE else load_environment(args.environment)
-    chain = load_model_chain_config(args.model_config, overrides=cli_overrides)
-    arena_config = load_arena_config(args.arena_config, overrides=env_overrides)
-    steps = arena_config.world.episode_steps if args.steps is None else args.steps
-    n = _default_population_size() if args.n is None else args.n
-
+def _run_seed(
+    *,
+    args: argparse.Namespace,
+    seed: int,
+    chain,
+    arena_config,
+    steps: int,
+    n: int,
+    cli_overrides,
+    env_overrides,
+) -> list[dict]:
+    """跑单个 seed 的 DanioNet 评估并落 run 产物，返回该 seed 的逐个体指标行。"""
     population = initial_population(
-        master_seed=args.seed,
-        experiment_id=args.experiment_id,
-        n=n,
-        layout=chain.layout,
+        master_seed=seed, experiment_id=args.experiment_id, n=n, layout=chain.layout
     )
     result = run_arena_episode(
         population,
-        master_seed=args.seed,
+        master_seed=seed,
         chain=chain,
         arena_config=arena_config,
         steps=steps,
         generation=args.generation,
     )
-
     run_dir = runlayout.create_run_dir(
         experiment_id=args.experiment_id,
-        seed=args.seed,
+        seed=seed,
         config_path=args.arena_config,
         overrides=env_overrides,
         out_root=args.out_root,
@@ -109,7 +114,7 @@ def main() -> None:
     )
     if cli_overrides:
         dump_json(run_dir / "model_overrides.json", cli_overrides, indent=2)
-    spawn_seed, _ = arena_seeds_for(args.seed, args.generation)
+    spawn_seed, _ = arena_seeds_for(seed, args.generation)
     weights = load_evolution_config().fitness_weights.model_dump()
     write_event_log(
         run_dir / "events.jsonl",
@@ -125,7 +130,7 @@ def main() -> None:
     )
     rows = [
         {
-            "seed": args.seed,
+            "seed": seed,
             "fish_id": fish_id,
             **episode_metrics(
                 rec,
@@ -144,6 +149,60 @@ def main() -> None:
         f"chain run: {run_dir}｜viable {result.evaluated_individuals}/{n}"
         f"｜steps {result.steps}｜events {len(result.events)}"
     )
+    return rows
+
+
+def main() -> None:
+    args = _parse_args()
+    # 两类覆盖正交：`--override` 只进 model chain（genome/grn/development/connectome/network），
+    # `--environment` 只进 Arena 配置（population/world/...）。
+    cli_overrides = parse_overrides(args.override) or None
+    env_overrides = None if args.environment == BASELINE else load_environment(args.environment)
+    chain = load_model_chain_config(args.model_config, overrides=cli_overrides)
+    arena_config = load_arena_config(args.arena_config, overrides=env_overrides)
+    steps = arena_config.world.episode_steps if args.steps is None else args.steps
+    n = _default_population_size() if args.n is None else args.n
+
+    if args.seeds is not None:
+        seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
+    else:
+        seeds = [args.seed]
+
+    all_rows: list[dict] = []
+    seed_rows: list[dict] = []
+    for seed in seeds:
+        rows = _run_seed(
+            args=args,
+            seed=seed,
+            chain=chain,
+            arena_config=arena_config,
+            steps=steps,
+            n=n,
+            cli_overrides=cli_overrides,
+            env_overrides=env_overrides,
+        )
+        all_rows.extend(rows)
+        seed_rows.extend(aggregate_by_seed(rows))
+
+    if len(seeds) > 1:
+        summary = summarise_over_seeds(seed_rows)
+        tables = ROOT / "results" / "tables"
+        tables.mkdir(parents=True, exist_ok=True)
+        out = tables / f"{args.experiment_id}_summary.json"
+        dump_json(
+            out,
+            {
+                "experiment_id": args.experiment_id,
+                "environment": args.environment,
+                "emit_behavior_trace": False,
+                "seeds": seeds,
+                "steps": steps,
+                "n_individuals": len(all_rows),
+                "per_metric": summary,
+            },
+            indent=2,
+        )
+        print(f"跨 seed 汇总（n={len(seeds)}）→ {out.relative_to(ROOT)}")
 
 
 if __name__ == "__main__":

@@ -101,3 +101,37 @@ def test_chain_cli_episode_seed_matches_generation(tmp_path: Path):
     header = json.loads((run_dir / "events.jsonl").read_text(encoding="utf-8").splitlines()[0])
     assert header["generation"] == generation
     assert header["episode_seed"] == arena_seeds_for(SEED, generation)[0]
+
+
+def test_chain_cli_multi_seed_writes_cross_seed_summary(tmp_path: Path):
+    """`--seeds` 多 seed：3 seed 汇总表（Experiment C）。"""
+    experiment_id = "cli-chain-sweep"
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--experiment-id",
+            experiment_id,
+            "--seeds",
+            "1103,2207",
+            "--n",
+            "8",
+            "--steps",
+            "8",
+            "--out-root",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert proc.returncode == 0, proc.stderr
+    summary_path = ROOT / "results" / "tables" / f"{experiment_id}_summary.json"
+    try:
+        assert summary_path.is_file()
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        assert summary["seeds"] == [1103, 2207]
+        assert "per_metric" in summary
+    finally:
+        summary_path.unlink(missing_ok=True)
