@@ -35,6 +35,8 @@ const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
 const LEADERBOARD_EVERY = 20;
 /** 场景层（猎物/捕食者/障碍）刷新节奏：每 5 tick ≈ 0.5s。 */
 const SCENE_EVERY = 5;
+/** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
+const SESSION_RETRY_MS = 3000;
 
 /** 稳定 ID 可能很长；截断只影响显示，不影响 identity。 */
 function shortId(id: string): string {
@@ -62,29 +64,43 @@ export function DanioArenaPanel() {
   const sceneRef = useRef<ArenaScene | null>(null);
 
   // ---- session lifecycle: one live session per mount / reset ---------------
+  //  失败要**自愈**：后端未起 / 端口上还是旧进程时，会话创建会失败；若只建一次，
+  //  用户不动 Reset 就永远没有会话（Arena 空、Playback 无数据）。故失败后按
+  //  `SESSION_RETRY_MS` 重试，直到成功或组件卸载（/ Reset）。
   useEffect(() => {
     let cancelled = false;
     let created: string | null = null;
-    createSession(MASTER_SEED)
-      .then((s) => {
-        if (cancelled) {
-          void deleteSession(s.session_id).catch(() => undefined);
-          return;
-        }
-        created = s.session_id;
-        setSessionId(s.session_id);
-        setRunning(true);
-        setError(null);
-        setCard(null);
-        setBoard(null);
-        tickRef.current = 0;
-        wsFishRef.current = null;
-        sceneRef.current = null;
-        clearFrames();
-      })
-      .catch((e) => !cancelled && setError(String(e)));
+    let timer = 0;
+
+    const attempt = () => {
+      createSession(MASTER_SEED)
+        .then((s) => {
+          if (cancelled) {
+            void deleteSession(s.session_id).catch(() => undefined);
+            return;
+          }
+          created = s.session_id;
+          setSessionId(s.session_id);
+          setRunning(true);
+          setError(null);
+          setCard(null);
+          setBoard(null);
+          tickRef.current = 0;
+          wsFishRef.current = null;
+          sceneRef.current = null;
+          clearFrames();
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          setError(`${String(e)} · 重试中`);
+          timer = window.setTimeout(attempt, SESSION_RETRY_MS);
+        });
+    };
+
+    attempt();
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
       setSessionId(null);
       if (created) void deleteSession(created).catch(() => undefined);
     };
@@ -204,7 +220,9 @@ export function DanioArenaPanel() {
             width={CANVAS.w}
             height={CANVAS.h}
             onClick={handleClick}
-            className="h-full w-full cursor-crosshair"
+            // .pixelated：只管画布→屏幕的缩放（`imageSmoothingEnabled=false` 只管位图内部）。
+            // 640 位图在窄列里被缩小显示，不加会被双线性插值糊掉（§15.4 #10）。
+            className="pixelated h-full w-full cursor-crosshair"
           />
         </div>
 

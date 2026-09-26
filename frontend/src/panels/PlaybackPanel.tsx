@@ -42,8 +42,12 @@ export function PlaybackPanel() {
       last = now;
       const next = cursorRef.current + 1;
       if (next >= count) {
-        playingRef.current = false;
-        setPlaying(false);
+        // 追尾跟随：缓冲仍在增长时（Arena 还在记），停在最新帧继续播，而不是自动停。
+        // 记录停止增长后，cursor 自然停在末尾（等价于暂停在末帧）。
+        if (cursorRef.current !== count - 1) {
+          cursorRef.current = count - 1;
+          setCursor(count - 1);
+        }
         return;
       }
       cursorRef.current = next;
@@ -146,10 +150,18 @@ export function PlaybackPanel() {
               }
             </span>
           </div>
-          <p className="pt-1 font-sans text-xs text-muted-foreground">
-            回放本次会话（缓冲上限 {REPLAY_CAPACITY} 帧 ≈ 1 episode）。切到 Experiment 视图继续跑，
-            缓冲会持续增长；Reset 会清空。
-          </p>
+          {total === 0 ? (
+            <p className="pt-1 font-sans text-xs text-brand-amber">
+              尚无回放数据。检查三处：① Arena 是否已连上后端（Experiment 视图右上角 session 是否显示、
+              有无 ⚠ 报错）；② 是否按了 Pause（暂停期间不再记录新帧）；③ 后端是否在运行
+              （顶栏健康灯为红则后端不可达）。会话建好后每 0.1s 记一帧，约 1s 后即可播放。
+            </p>
+          ) : (
+            <p className="pt-1 font-sans text-xs text-muted-foreground">
+              回放本次会话（缓冲上限 {REPLAY_CAPACITY} 帧 ≈ 1 episode）。切到 Experiment 视图继续跑，
+              缓冲会持续增长；Reset 会清空。
+            </p>
+          )}
         </div>
       </div>
     </Panel>
