@@ -5,9 +5,9 @@
   \texttt{src/evogenesis/connectome/baselines.py}（\texttt{MLPPolicy} / \texttt{GRUPolicy} /
   \texttt{FixedSparseRNNPolicy} + \texttt{build\_baselines}），守护测试
   \texttt{tests/test\_baselines.py}，初始化命名空间 \texttt{baseline\_init} 已在
-  \texttt{core} \S{}3 注册。但\textbf{尚无训练/评估脚本与落盘结果}，故本章暂无对照数字。}
+  \texttt{core} \S{}3 注册。但\textbf{尚无正式落盘结果}；编排 \texttt{experiment/baseline\_run.py} 与 CLI \texttt{scripts/run\_baselines.py} 已接（Experiment C）。基线连接数按 $N_{\text{ours}}$ 反解为 $154$ / $141$ / $154$（2026-09-26 §8 重解，见 \texttt{connectome/DanioNet设计规范.md} \S8）。}
 \todo{判据：trainable parameter count 同一数量级（按连接数，$|\Delta\log_{10}|\le 1$）。}
-\todo{实测可训练连接数中位 186（$\Theta$ 张量 $48\times48=2304$，有效支撑内 186；个体间 94--287）。}
+\todo{实测可训练连接数中位 195（$\Theta$ 张量 $48\times48=2304$，有效支撑内 195；个体间 105--289）。}
 
 \subsection{消融}
 \todo{w/o GRN；allele 聚合（mean vs max）；homogeneous $\tau$；}

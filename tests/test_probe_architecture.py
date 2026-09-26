@@ -28,8 +28,9 @@ SCRIPT = ROOT / "scripts" / "probe_architecture.py"
 
 #: 小样本 probe 的固定 seed（正式 seed 轴的第一项，见 `configs/experiment_seeds.yaml`）。
 PROBE_SEED = 1103
-#: 主样本规模：这一档同时覆盖三条分支 —— 可构造 12 / 不可构造 2 / viable 1
-#: （``n=3`` 时 viable 为 0，``n=1`` 时三者都退化，故不选）。
+#: 主样本规模：2026-09-26 实测本档 14 个体**全部可构造且全部通过 viability**
+#: （§7 修复前该档为 可构造 12 / 不可构造 2 / viable 1，且 ``n=3`` 时 viable 为 0）。
+#: 旧分档已不可达，故「失败 / 空子集」两条分支改由下方**显式注入**钉住，与真实读数解耦。
 PROBE_N = 14
 
 #: 密度是 6 位小数舍入后的值，容差取 1e-6（舍入误差上界 5e-7）。
@@ -85,24 +86,28 @@ def test_different_seed_gives_different_architecture(probe, payload):
     ]
 
 
-def test_empty_subset_degrades_gracefully(probe):
-    """子集可能**一个个体都没有**（seed 1103 的前 3 个：viable = 0）——
-    汇总块必须降级成 ``n = 0`` + ``None``，而不是让整个 probe 崩掉。
+def test_empty_subset_degrades_gracefully(probe, payload):
+    """子集可能**一个个体都没有** —— 汇总块必须降级成 ``n = 0`` + ``None``，而不是崩掉。
 
-    这是本次 probe 踩到的真实崩溃路径（``min() arg is an empty sequence``），
-    不是假想边界。
+    这是本次 probe 踩到的真实崩溃路径（``min() arg is an empty sequence``），不是假想边界。
+    2026-09-26 起 §7 修复使本档 14/14 全部 viable、全部可构造，真实数据**再也不会**产出空子集，
+    故这里改用**显式注入**空行表来钉住该降级路径（否则这条守护会因前提消失而静默失效）；
+    同时把真实子集的当前读数一并钉住。
     """
-    tiny = probe.probe_architecture([PROBE_SEED], n_individuals=3)
     empty = {"n": 0, "min": None, "median": None, "mean": None, "max": None}
+    domains = tuple(payload["domains"])
 
-    assert tiny["pooled_viable"]["n_individuals"] == 0
-    assert tiny["pooled_viable"]["n_neurons"] == empty
-    assert tiny["pooled_viable"]["cell_type_counts"]["motor"] == empty
-    # 空子集不影响其余分支
+    injected = probe._aggregate([], domains)
+    assert injected["n_individuals"] == 0
+    assert injected["n_neurons"] == empty
+    assert injected["cell_type_counts"]["motor"] == empty
+    assert injected["n_viable"] == 0 and injected["n_danionet_built"] == 0
+
+    # 真实 n=3 子集的当前读数：全 viable（旧档此处为 0 —— 见 PROBE_N 注）
+    tiny = probe.probe_architecture([PROBE_SEED], n_individuals=3)
+    assert tiny["pooled_viable"]["n_individuals"] == 3
     assert tiny["pooled"]["n_individuals"] == 3
-    assert tiny["pooled"]["n_viable"] == 0
-
-
+    assert tiny["pooled"]["n_viable"] == 3
 # ---------------------------------------------------------------------------
 # 2. 字段齐全 + 自洽
 # ---------------------------------------------------------------------------
@@ -189,31 +194,60 @@ def test_pooled_aggregates_match_rows(payload):
     assert payload["pooled_danionet_built"]["n_individuals"] == pooled["n_danionet_built"]
 
 
-def test_unbuildable_individuals_are_recorded_not_skipped(payload):
-    """构造 `DanioNet` 失败的个体必须留痕（`danionet_built=false` + 原因 + 空 trainable）。
+def test_individuals_are_never_silently_dropped(payload):
+    """个体只增不减：``pooled`` 的 n 与 ``per_individual`` 长度一致，不漏也不插补。
 
-    seed 1103 x 14 里确有 2 个（motor 池为空的个体）；「一个都没失败」说明发育口径变了，
-    也要在本测试里暴露出来 —— 否则这条守护会悄悄失效。
+    2026-09-26 实测：§7 发育门禁修复后 motor 池恒非空，本档 14/14 **全部可构造且全部 viable**
+    （旧档为 12 可构造 / 1 viable）。**数值本身即是守护** —— 口径再变时这里红灯，而不是静默通过。
     """
     rows = payload["per_individual"]
-    built = [r for r in rows if r["danionet_built"]]
-    unbuilt = [r for r in rows if not r["danionet_built"]]
+    assert payload["pooled"]["n_individuals"] == len(rows) == PROBE_N
+    assert payload["pooled"]["n_danionet_built"] == len(rows)
+    assert payload["pooled"]["n_viable"] == len(rows)
 
-    assert built and unbuilt, "本档样本应同时含可构造与不可构造个体"
-
-    for row in built:
+    for row in rows:
+        assert row["danionet_built"] is True
         assert row["danionet_error"] is None
-        assert row["theta_shape"] is not None
+        assert row["theta_shape"] == [1, payload["max_nodes"], payload["max_nodes"]]
         assert isinstance(row["trainable_elements"], int)
-
-    for row in unbuilt:
-        assert row["danionet_error"], "构造失败必须记下原因"
-        assert "motor" in row["danionet_error"], row
-        assert row["theta_shape"] is None
-        assert row["trainable_elements"] is None
-        assert row["support_edges"] > 0, "支撑本身仍应可测（失败只发生在 DanioNet 装配）"
+        assert row["trainable_elements"] == row["support_edges"]
+        assert row["support_edges"] > 0
 
 
+def test_unbuildable_rows_are_recorded_not_imputed(probe, payload):
+    """构造 `DanioNet` 失败的个体必须留痕（``danionet_built=false`` + 原因 + **不插补**可训练数）。
+
+    本档已无失败个体（见上一条），故这里**显式注入**一行失败记录走 `_aggregate`，钉住三件事：
+    (i) 失败行仍计入 ``n_individuals``（不静默丢）、(ii) 不计入 ``n_danionet_built`` / ``n_viable``、
+    (iii) 其余数值字段照常参与统计。注入行的字段形状照 `_probe_individual` 的失败分支构造。
+    """
+    domains = tuple(payload["domains"])
+    built = {
+        "master_seed": PROBE_SEED, "index": 0, "genome_id": "g", "fish_id": "f",
+        "n_neurons": 40, "active_neurons": 40, "support_edges": 238,
+        "support_density": round(238 / (40 * 39), 6),
+        "cell_type_counts": {d: 6 for d in domains},
+        "motor_left": 3, "motor_right": 3,
+        "phenotype_viable": True, "viability_reason": None,
+        "danionet_built": True, "danionet_error": None,
+        "theta_shape": [1, 48, 48], "trainable_elements": 238,
+    }
+    failed = dict(built)
+    failed.update({
+        "index": 1, "n_neurons": 36, "active_neurons": 36, "support_edges": 195,
+        "support_density": round(195 / (36 * 35), 6),
+        "motor_left": 0, "motor_right": 0,
+        "phenotype_viable": False, "viability_reason": "missing_fate:motor",
+        "danionet_built": False, "danionet_error": "motor pool empty",
+        "theta_shape": None, "trainable_elements": None,
+    })
+
+    agg = probe._aggregate([built, failed], domains)
+    assert agg["n_individuals"] == 2, "失败行不得被静默丢弃"
+    assert agg["n_danionet_built"] == 1
+    assert agg["n_viable"] == 1
+    assert agg["n_neurons"]["n"] == 2
+    assert (agg["n_neurons"]["min"], agg["n_neurons"]["max"]) == (36, 40)
 # ---------------------------------------------------------------------------
 # 3. Theta 张量与可训练元素数
 # ---------------------------------------------------------------------------

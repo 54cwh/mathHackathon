@@ -4,8 +4,8 @@
 ``n_neurons`` / ``active_counts`` / ``theta``（唯一 ``nn.Parameter``）/ ``sign_constrained=False`` /
 ``reset()`` / ``step(observations) -> (ω, v)`` / ``complexity()``。
 
-连接数（仅权重，不含 bias）按 §8 反解：MLP \\(H=14\\)→196；GRU \\(H=4\\)→200；
-Fixed Sparse RNN \\(H=12\\), 递归密度 \\(\\rho=0.15\\) → ≈190（以实际 mask 计）。
+连接数（仅权重，不含 bias）按 §8 反解：MLP \\(H=11\\)→154；GRU \\(H=3\\)→141；
+Fixed Sparse RNN \\(H=10\\), 递归密度 \\(\\rho=0.15\\) → ≈154（以实际 mask 计）。
 初始化尺度用 Glorot 均匀、bias 置 0，属 §8 标明的**设计选择（D）**。
 """
 
@@ -22,8 +22,9 @@ from evogenesis.core.seed import SeedManager
 from evogenesis.core.tensors import to_float32_tensor
 
 # N_ours（§8 的公平性基准）不在此：它是 DanioNet 的**实测参考值**（seed 250927 / index 12，
-# 支撑边数 190），登记于 docs/参数总表.json 的 reference_magnitudes，并由
-# tests/test_baselines.py 实测守护（避免支撑口径变动后静默过期）。
+# 支撑边数 154；2026-09-26 §7 发育门禁修复后由 190 移至 154），登记于 docs/参数总表.json 的
+# reference_magnitudes，并由 tests/test_baselines.py 实测守护（避免支撑口径变动后静默过期）。
+# 基线宽度按 §8 反解流程跟随该值重解（H = 11 / 3 / 10）。
 SPARSE_DENSITY = 0.15
 DEFAULT_SENSORY_DIM = 12
 ACTION_DIM = 2
@@ -134,9 +135,9 @@ class BaselinePolicy(nn.Module):
 
 
 class MLPPolicy(BaselinePolicy):
-    """单隐层 MLP（§8；\\(H = 14\\) ⇒ 196 连接）。"""
+    """单隐层 MLP（§8；\\(H = 11\\) ⇒ 154 连接）。"""
 
-    HIDDEN = 14
+    HIDDEN = 11
 
     def __init__(
         self,
@@ -197,9 +198,9 @@ class MLPPolicy(BaselinePolicy):
 
 
 class FixedSparseRNNPolicy(BaselinePolicy):
-    """固定稀疏递归网络（§8；\\(H = 12\\)、递归密度 \\(\\rho = 0.15\\) ⇒ ≈190 连接）。"""
+    """固定稀疏递归网络（§8；\\(H = 10\\)、递归密度 \\(\\rho = 0.15\\) ⇒ ≈154 连接）。"""
 
-    HIDDEN = 12
+    HIDDEN = 10
 
     def __init__(
         self,
@@ -271,9 +272,9 @@ class FixedSparseRNNPolicy(BaselinePolicy):
 
 
 class GRUPolicy(BaselinePolicy):
-    """单层 GRU（§8；\\(H = 4\\) ⇒ 200 连接）。"""
+    """单层 GRU（§8；\\(H = 3\\) ⇒ 141 连接）。"""
 
-    HIDDEN = 4
+    HIDDEN = 3
 
     def __init__(
         self,

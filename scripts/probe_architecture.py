@@ -23,8 +23,9 @@
 口径说明（引用本文件的数字前必读）：
 
 - 统计单位是**个体**（generation-0 种群里的一个 genome），不是 seed。
-  ``N`` / 边数 / cell type 计数在个体间**方差很大**（另有若干个体 motor 池为空或缺失 fate，
-  无法构造 `DanioNet`）；引用时**必须并列分布**（``pooled`` 块给 min/median/mean/max），
+  ``N`` / 边数 / cell type 计数在个体间**方差很大**（2026-09-26 §7 修复前另有若干个体 motor
+  池为空或缺失 fate、无法构造 `DanioNet`；修复后本档已无此类个体，字段与守护仍保留）；
+  引用时**必须并列分布**（``pooled`` 块给 min/median/mean/max），
   只报一个数会把读者引到「架构是固定的」这一错误印象。
 - ``phenotype_viable`` 是本次 probe 的**副产品**（`develop` 本就返回该字段）。
   发育通过率的**正式交付物**是 ``scripts/make_fig_viability.py``（F6），两者口径不同、不互相替代。
@@ -79,9 +80,10 @@ def _stats(values: list[int] | list[float]) -> dict[str, Any]:
     """min / median / mean / max；整数输入保持整数（只在 ``mean`` 上取整到 6 位）。
 
     **空子集返回 ``None`` 而非抛异常**：小样本下 ``pooled_viable`` /
-    ``pooled_danionet_built`` 完全可能一个个体都没有（发育通过率约 1/10，
-    且 motor 池为空的个体无法构造 `DanioNet`）。此时 ``n = 0`` 就是结论本身，
-    不该让整个 probe 崩掉。
+    ``pooled_danionet_built`` 完全可能一个个体都没有 —— 历史成因是发育通过率低（约 1/10）
+    且 motor 池为空的个体无法构造 `DanioNet`；2026-09-26 §7 修复后真实数据已不产出空子集，
+    但该降级路径仍须成立（`tests/test_probe_architecture.py` 以显式注入守护）。
+    此时 ``n = 0`` 就是结论本身，不该让整个 probe 崩掉。
     """
     if not values:
         return {"n": 0, "min": None, "median": None, "mean": None, "max": None}

@@ -170,7 +170,7 @@ def test_manifest_carries_traceable_provenance(figmod, payload, built):
     assert "connectome_matrix.json" in texts
     assert provenance["matrix_json_digest"] == payload["digest"]
     assert provenance["tensor_cells_per_individual"] == str(payload["max_nodes"] ** 2)
-    assert provenance["primary_representative"] == "seed 1103 index 2"
+    assert provenance["primary_representative"] == "seed 1103 index 4"
 
     rep = figmod.primary_representative(payload)
     assert provenance["primary_n_neurons"] == str(rep["n_neurons"])
@@ -231,8 +231,12 @@ def test_representatives_sheet_cross_checks_the_probe_caliber(figmod, payload, b
         assert 0.0 < row.support_share_of_tensor < 0.5
 
 
-def test_summary_sheet_keeps_unbuildable_individuals(figmod, payload, built):
-    """`summary` 是 probe 的逐个体记录原样搬运：构造失败的个体必须留痕，不静默丢。"""
+def test_summary_sheet_is_the_probe_records_verbatim(figmod, payload, built):
+    """`summary` 是 probe 的逐个体记录原样搬运：不漏个体、不插补可训练数。
+
+    2026-09-26 实测：本档 14/14 全部可构造（旧档含 2 个 motor 池为空的失败者），
+    故「失败行留痕」改由下一条**显式注入**守护；此处钉住逐个体搬运与「数值即守护」。
+    """
     _fig_path, _workbook, sheets, _provenance = built
     frame = sheets["summary"]
     records = payload["architecture_probe"]["per_individual"]
@@ -240,15 +244,41 @@ def test_summary_sheet_keeps_unbuildable_individuals(figmod, payload, built):
     assert int(frame["danionet_built"].sum()) == sum(1 for r in records if r["danionet_built"])
     assert int(frame["is_representative"].sum()) == len(payload["representatives"])
 
-    unbuildable = frame[~frame["danionet_built"]]
-    assert len(unbuildable) > 0, "本档样本应含构造失败的个体（否则这条守护会悄悄失效）"
+    # 数值即守护：本档全部可构造，口径再变时这里红灯
+    assert int(frame["danionet_built"].sum()) == len(records)
     for row in frame.itertuples():
-        if row.danionet_built:
-            assert row.trainable_elements == row.support_edges
-        else:
-            # None 经 Excel 往返变 NaN；构造失败的个体**不插补**可训练数
-            assert pd.isna(row.trainable_elements)
-            assert row.support_edges > 0, "支撑本身仍应可测（失败只发生在 DanioNet 装配）"
+        assert row.danionet_built
+        assert row.trainable_elements == row.support_edges
+
+
+def test_summary_sheet_does_not_drop_unbuildable_rows(figmod, dump, payload):
+    """注入一行构造失败记录：`summary_records` 必须保留它，且**不插补**可训练数。
+
+    「不静默丢 + 不插补」是 `summary` sheet 的核心承诺；本档真实数据已无失败个体，
+    故显式构造最小 payload 走 `dump.summary_records` 直接验证该承诺。
+    """
+    domains = tuple(payload["domains"])
+    good = {
+        "master_seed": PROBE_SEED, "index": 0, "n_neurons": 40, "active_neurons": 40,
+        "support_edges": 238, "support_density": 0.152564, "trainable_elements": 238,
+        "phenotype_viable": True, "danionet_built": True,
+        "cell_type_counts": {d: 6 for d in domains},
+    }
+    bad = dict(good)
+    bad.update({
+        "index": 1, "n_neurons": 36, "active_neurons": 36, "support_edges": 195,
+        "support_density": 0.154762, "trainable_elements": None,
+        "phenotype_viable": False, "danionet_built": False,
+    })
+    rows = dump.summary_records({
+        "representatives": [],
+        "architecture_probe": {"per_individual": [good, bad]},
+    })
+    assert len(rows) == 2, "失败行不得被静默丢弃"
+    assert [r["danionet_built"] for r in rows] == [True, False]
+    assert rows[1]["trainable_elements"] is None, "失败行不得插补可训练数"
+    assert rows[1]["support_edges"] > 0, "支撑本身仍应可测（失败只发生在 DanioNet 装配）"
+    assert all(r["is_representative"] is False for r in rows)
 
 
 def test_cell_types_sheet_covers_all_six_types(figmod, payload, built):

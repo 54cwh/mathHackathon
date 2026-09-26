@@ -139,15 +139,15 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 - GRU
 - Fixed Sparse RNN
 
-**公平性判据（定稿）**：`|log10(N_base) − log10(N_ours)| ≤ 1`，统一按**连接（权重）数**比较（不计 bias），不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。对照基准取本规范实例 `N_ours = E_A = 190`（支撑边数，`seed 250927` / `initial_population` 的 `index 12`；2026-09-27 更正：原记 `index 6` 实测为 162，无 viable 个体，190 出现在 `index 12`）。
+**公平性判据（定稿）**：`|log10(N_base) − log10(N_ours)| ≤ 1`，统一按**连接（权重）数**比较（不计 bias），不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。对照基准取本规范实例 `N_ours = E_A = 154`（支撑边数，`seed 250927` / `initial_population` 的 `index 12`；2026-09-27 更正：原记 `index 6` 实测为 162，无 viable 个体，190 出现在 `index 12`；2026-09-26 更新：§7 发育门禁修复后同一 index 实测由 190 移至 **154**，下表基线宽度按同一反解流程重解）。
 
-**尺寸反解（定稿；按「连接数最接近 190 且满足判据」求解）**：
+**尺寸反解（定稿；按「连接数最接近 154 且满足判据」求解）**：
 
 | baseline | 连接数公式（权重） | 解 | 连接数 | `|log10 差|` |
 |---|---|---|---|
-| MLP | \(14H\)（\(12H + 2H\)） | \(H = 14\) | 196 | 0.013 |
-| GRU | \(3H^2 + 38H\)（\(3H\cdot12 + 3H\cdot H + 2H\)） | \(H = 4\) | 200 | 0.022 |
-| Fixed Sparse RNN | \(\lvert\text{mask}\rvert + 14H\)（见下） | \(H = 12\)，递归密度 \(\rho = 0.15\) | ≈190（实测 mask 决定） | ≈0 |
+| MLP | \(14H\)（\(12H + 2H\)） | \(H = 11\) | 154 | 0.000 |
+| GRU | \(3H^2 + 38H\)（\(3H\cdot12 + 3H\cdot H + 2H\)） | \(H = 3\) | 141 | 0.038 |
+| Fixed Sparse RNN | \(\lvert\text{mask}\rvert + 14H\)（见下） | \(H = 10\)，递归密度 \(\rho = 0.15\) | ≈154（实测 mask 决定） | ≈0 |
 
 - **Fixed Sparse RNN**：递归矩阵 \(W_{rec}\) 为**固定稀疏**（mask 于初始化时按 \(\mathrm{Bernoulli}(0.15)\) 抽样后**冻结**，与 §9 `w/o GRN` 同密度；禁 self-loop 不加限制），输入/读出为稠密；\(\rho\) 属**设计选择（D）**，无外部依据。
 - **符号约束**：三个 baseline **均不施加 Dale 符号约束**（等价 `sign_constrained=False`）；DanioNet 的 Dale 约束视作其归纳偏置计入对比，§9 另设「BC 有/无 Dale」消融单独隔离该变量。

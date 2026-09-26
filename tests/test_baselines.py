@@ -18,13 +18,13 @@ from evogenesis.pipeline import (
 
 MASTER_SEED = 250927
 SENSORY_DIM = 12
-HIDDEN = {"mlp": 14, "gru": 4, "fixed_sparse_rnn": 12}
+HIDDEN = {"mlp": 11, "gru": 3, "fixed_sparse_rnn": 10}
 #: §8 公平性基准 N_ours 的 provenance：seed 250927 / index 12（参数总表 reference_magnitudes）
 N_OURS_INDEX = 12
 
 
 def _reference_support_edges() -> int:
-    """§8 `N_ours = E_A`：seed 250927 / index 12 的支撑边数（实测 190）。
+    """§8 `N_ours = E_A`：seed 250927 / index 12 的支撑边数（实测 154）。
 
     从 DanioNet 管线**实测**而非硬编码：支撑口径（`RGCD §8`）一旦变动，会在
     `test_n_ours_reference_is_reproducible` 失败，提醒同步 `connectome §8` 与参数总表。
@@ -66,8 +66,8 @@ def test_connection_count_within_one_order_of_magnitude(baseline):
 
 
 def test_n_ours_reference_is_reproducible():
-    """§8 / 参数总表 `reference_magnitudes`：`N_ours` 实测为 190（seed 250927 / index 12）。"""
-    assert _reference_support_edges() == 190
+    """§8 / 参数总表 `reference_magnitudes`：`N_ours` 实测为 154（seed 250927 / index 12；2026-09-26 §7 修复后由 190 移至 154）。"""
+    assert _reference_support_edges() == 154
 
 
 def test_hidden_width_matches_spec(baseline):
@@ -128,7 +128,7 @@ def test_sparse_rnn_mask_is_frozen_and_masked_grad_zero():
         omega, v = net.step(_obs())
         loss = loss + omega.sum() + v.sum()
     loss.backward()
-    rec = net.theta.grad[: net.hidden * net.hidden].view(12, 12)
+    rec = net.theta.grad[: net.hidden * net.hidden].view(net.hidden, net.hidden)
     assert float(rec[~net.support].abs().sum()) == 0.0
     assert float(rec[net.support].abs().sum()) > 0.0
 
