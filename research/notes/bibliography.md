@@ -952,3 +952,66 @@
 214. Ross S, Gordon G, Bagnell D. **A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning (DAgger).** *Proceedings of the 14th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 15, 627–635 (2011). `peer-reviewed`.
     链接: https://proceedings.mlr.press/v15/ross11a.html
     用途：证明朴素 BC 存在协变量偏移与误差累积（quadratic horizon dependence），需在线交互纠正；本题 Stage 2 为纯离线 BC，须在论文中显式声明该局限。非超参文献。PMLR 页码已核验。
+
+
+## 开源「大鱼吃小鱼」项目（工程参考，非学术文献）
+
+
+> 来源：workbuddy（Olivia）只读精读报告（入库副本 `research/reference/open-source-fish-games-机制对照.md`）。
+> **本组为开源项目，非 `peer-reviewed`、亦非 `preprint`，故不得作为「设计依据」，仅作机制对照的 Tier 6 证据。**
+> 6 个仓库均于 2026-09-26 以 `git ls-remote` 核验存在，HEAD 记录于下（锁定所读版本）。
+> **License 红线**：仅 #215/#218 为 MIT；其余未声明或仅教育用途。全部只作「读机制、自行重写」，**不复制代码与素材**。
+
+
+215. Test1609. **big-fish-eat-small-fish.** GitHub 开源项目（MIT），核验 HEAD `95aa3c7f`｜非同行评审
+
+
+   链接: https://github.com/Test1609/big-fish-eat-small-fish
+
+
+   用途：机制对照（Tier 6 证据，**非设计依据**）：面积守恒生长 `r=√(r²+r_prey²·0.35)`（index.html:371-375）、体型分层生成权重、逃/追不对称检测半径（逃 d<180 / 追 d<300）、NPC 环绕回卷（:293,:355-358）。对照认领表 A2/A4/A5/A6。
+
+
+216. ahmedehhab. **Feeding-Frenzy-Game.** GitHub 开源项目（仅教育用途（未声明标准许可证）），核验 HEAD `0802918d`｜非同行评审
+
+
+   链接: https://github.com/ahmedehhab/Feeding-Frenzy-Game
+
+
+   用途：机制对照：`config/config.js` 分层生成权重与危险物调度（`js/Spawner.js:29-64` 按等级动态调权：同级 ×2.0、高一级 ×1.5、低一级 0.3^diff）。仅供「难度自适应」设想参考；**未采纳入本项目**。
+
+
+217. tghbrk. **fish-eat-fish.** GitHub 开源项目（未声明许可证），核验 HEAD `0b3fc6ab`｜非同行评审
+
+
+   链接: https://github.com/tghbrk/fish-eat-fish
+
+
+   用途：机制对照：三色可食性描边（0.8×可食 / 1.2×危险，`js/enemy.js:228,241`）与 AI 三态状态机 wander/hunt/flee + `stateTimer` 滞后 + 追击扰动（`js/ai-player.js:121-232`）。后者为 ExpertPolicy 平滑化（BC 数据质量）的对照来源。
+
+
+218. MonkWarrior08. **Interactive_Fish_Eating_Game.** GitHub 开源项目（MIT），核验 HEAD `cf3cdf30`｜非同行评审
+
+
+   链接: https://github.com/MonkWarrior08/Interactive_Fish_Eating_Game
+
+
+   用途：机制对照：**限时追击** `max_chase_time` 180–300 帧（3–5 s @60fps，`fish.py:124,205-208`）超时放弃目标；谱系最严体型门 κ=1.5（`fish.py:145,331`）；NPC 出界即移除+补生成（`fish.py:82-83,323-326`）。对照认领表 A2/A8 与 §12 prey 再生。
+
+
+219. chen4546. **Fish-Eat.** GitHub 开源项目（未声明许可证），核验 HEAD `afaf787d`｜非同行评审
+
+
+   链接: https://github.com/chen4546/Fish-Eat
+
+
+   用途：机制对照：显式边际递减生长 `growth = prey.size × (0.2 − 0.01×size/10)`（`character/FishPlayer.py:142`）与耐力制（移动 −2/帧、静止 +0.5/帧，:111-115）。对照认领表 A3/A4。
+
+
+220. HuiDBK. **DragonFeast.** GitHub 开源项目（未声明许可证），核验 HEAD `7af27fbe`｜非同行评审
+
+
+   链接: https://github.com/HuiDBK/DragonFeast
+
+
+   用途：机制对照：时间驱动生精灵调度器（定时 + 保底数量双触发，`src/game_main.py:310-334`）；障碍物为伤害性事件（`game_settings.py`）——后者支持「障碍=负奖励事件」而非改 Arena 的接法。对照认领表 A7 与 §12。

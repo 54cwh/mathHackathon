@@ -32,34 +32,41 @@
 - 现状：`initial_size=1.0`、`max_size=2.5`、`biomass_to_size_gain=0.02`；实现为 `size += gain*prey.size`，`biomass` 是只写不读的镜像量。
 - 文档：`arena/Danio_Arena设计与实现说明.md §7` 只说"缓慢增长并设上限"；`docs/参数总表.json` 无 `biomass_to_size_gain`。实测单局 size 几乎不动（1.00→1.01）。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
+- **裁决（李辰钊，2026-09-26）**：按建议：单状态 `biomass` + 饱和生长。⚠️ **待确认一个分歧**：workbuddy 报告 P0 建议面积守恒式 `size=√(size²+prey²·g)`（g≈0.1–0.35），其「局内生长可见」与本节的「局内生长不可观测」声明**方向相反**；见 `契约决策记录.md`。
 
 ### A5 actors 整组 `arena/config.py`
 - 现状：`prey_speed=0.35`、`prey_size 0.30–0.60`、`predator_size=2.0`、`cruise=0.40`、`chase=0.65`、`detect=15`、`release=22`、`obstacle_radius 1.5–3.5`、`wander_turn_std=0.8`。
 - 文档：`arena/Danio_Arena设计与实现说明.md` 说最终值来自 play-test；现全为代码自定，`configs/default_arena.yaml` 里根本没有 `actors` 段。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
+- **裁决（李辰钊，2026-09-26）**：按建议：**接受并登记**为 play-test 旋钮（12 项已进 `configs/default_arena.yaml` 的 `actors:` 段）；11 项待补 `docs/参数总表.json`。
 
 ### A6 边界策略 `arena/entities.py:24-25`
 - 现状：clamp 到 `[0,W]×[0,H]`（贴墙卡住、持续耗能）。
 - 文档：`arena/Danio_Arena设计与实现说明.md` §17 待裁决条款说"边界行为未定义"。
 - [ ] 接受 clamp  [ ] 改：反弹 / 出界即死 / 其他：____
+- **裁决（李辰钊，2026-09-26）**：按建议：**改反弹** —— 新增显式 `world.boundary`，正式实验默认 `reflect`；禁用静默 clamp（隐性耗能致跨 seed 能量不可比）。实现约束：反弹须为**镜面反射**（确定性），不得用「角度重采样」。
 
 ### A7 碰撞语义 `arena/env.py:167-173`
 - 现状：仅"鱼–障碍"，只要重叠就**每步 +1**；无位移、无能量后果；鱼可穿模。prey/predator 有转向避障，鱼没有（鱼由网络驱动）。
 - 文档：`arena/Danio_Arena设计与实现说明.md` §17 待裁决条款说"碰撞后果未定义"。实测（当前默认场景，5 seed × 600 步）均为 **0 次**（见 `Danio_Arena设计与实现说明.md` §18.11；旧基线"84 次"已失效，因障碍生成方式变更）。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
+- **裁决（李辰钊，2026-09-26）**：按建议：**硬不穿透 + 软惩罚** —— 投影回障碍表面（零反弹）+ 按穿透深度扣能量 `c_pen·max(0, r_obs+r_fish−d)·Δt`；`c_pen` 仅作标定占位。另采纳报告：障碍可作「负奖励事件」（fitness 侧扣分），不必改 Arena 的碰撞计数语义。
 
 ### A8 escape 判定 `arena/env.py:233-239`
 - 现状：捕食者**目标切换**即算被弃目标"逃脱成功"。死亡导致的切换已不再计入（本轮修复，见 C 表）。
 - 你的本意：[ ] 切换目标即算逃脱（现行）  [ ] 逃出 `release_radius` 才算  [ ] 其他：____
+- **裁决（李辰钊，2026-09-26）**：按建议：**威胁结局制** —— 曾被锁定 且 捕食者放弃后继续存活 ≥ `T_hold`（默认 20 步，占位）才计逃脱。另叠加报告 P0：捕食者加 `max_chase_steps`（限时追击，占位；@20 Hz 约 60–100 步），使「放弃」有明确因果。
 
 ### A9 团灭提前结束 `arena/env.py`
 - 现状：`step_idx>=600` **或** 全部鱼死 → episode 结束。
 - 文档：`arena/Danio_Arena设计与实现说明.md` 未定义；提前结束影响跨 episode 可比性（fitness 的 survival 项）。
 - [ ] 有意（保留）  [ ] 应固定跑满 600 步  [ ] 其他：____
+- **裁决（李辰钊，2026-09-26）**：按建议：**一律跑满 600 步**（个体死亡只冻结该个体）；若日后恢复提前结束，须落盘 `truncated` + 实际 `episode_length` 并做协变量校正。
 
 ### A10 天敌/猎物转向量纲 `arena/env.py:243,265`、`config.py`
 - 现状：原代码天敌 `heading += clip(diff,-0.25,+0.25)`（rad/step），鱼 `omega*dt`（rad/s），量纲不统一。本轮已把天敌改为 `predator_turn_rate=5.0 rad/s`（等价原值）并修正猎物注释。
 - 确认该口径：[ ] 接受 5.0 rad/s  [ ] 改：____
+- **裁决（李辰钊，2026-09-26）**：按建议：**接受 5.0 rad/s**（原 `rad/step` 值的等价换算）。
 
 ---
 
