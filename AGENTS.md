@@ -105,7 +105,7 @@ mathHackathon/
 
 - `configs/`：实验参数（yaml）。所有数值以 config 为准，报告记录实际版本；`demo_seed.yaml` 与 `experiment_seeds.yaml` 分离 demo 与正式种子。
 - `schemas/`：跨语言 JSON Schema（`genome` / `fish` / `experiment`），Python 后端与 TS 前端共用；改契约必须双方同步。
-- `scripts/`：薄 CLI 入口，只做参数解析与调用包逻辑（`start_demo.sh`、`serve_api.py`、`run_experiment.py`），**不放业务逻辑**。
+- `scripts/`：薄 CLI 入口，只做参数解析与调用包逻辑（`run_experiment.py`），**不放业务逻辑**。
 - `tests/`：冒烟 + 单测；`TEST_PLAN.md` 是测试计划，`test_*.py` 是现状。
 - `data/`：`raw/`（忽略）、`processed/`、`external/`；`notebooks/` 放探索性分析。
 
@@ -181,10 +181,8 @@ make test   # 运行测试
 make lint   # ruff 静态检查
 make fmt    # ruff 格式化
 make tree   # 查看目录结构
-make api    # 启动 API 服务（开发模式，热重载）
-make demo   # 一键启动现场 Demo（构建前端 + 起服务）
 make frontend  # 构建前端产物到 frontend/dist
-make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实验 run
+make experiment ARGS='--config configs/default_arena.yaml --seed 1 --experiment-id exp-0001'  # 创建实验 run
 ```
 
 ## Git 分支策略

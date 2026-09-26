@@ -372,7 +372,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 已全部进 `configs/default_arena.yaml`**（2026-09-26 补入 `actors:` 段；此前共 13 项无 YAML 归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`（与 `core/config.py::ModelConfig` 的「section 名 = dataclass 名、键名 = 字段名」约定一致）。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
 2. **`../../../docs/参数总表.json` 现收录 Arena 侧 **15 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `capture_radius` / `predator_size` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
-3. **`configs/default_arena.yaml` 目前没有任何调用方读取它。** **Arena 侧加载已落地（2026-09-26）**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**但调用方仍未接线**：`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，`scripts/run_experiment.py` 与 `api/session.py` 均未调用 loader，故仿真目前仍走 **Python 硬编码默认值**，YAML 是并行的、可能漂移的副本（漂移已被上述测试挡住）。**代码内**对 `default_arena` 的引用仍只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
+3. **`configs/default_arena.yaml` 目前没有任何调用方读取它。** **Arena 侧加载已落地（2026-09-26）**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**但调用方仍未接线**：`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，`scripts/run_experiment.py` 未调用 loader（`api/` 服务层已移除，待重写），故仿真目前仍走 **Python 硬编码默认值**，YAML 是并行的、可能漂移的副本（漂移已被上述测试挡住）。**代码内**对 `default_arena` 的引用仅剩 `arena/config.py` docstring 的注释（原 `api/schemas.py::SessionCreate.arena_config_path` 默认值随 `api/` 服务层移除）。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
 
 ---
 
@@ -392,7 +392,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | §8 | Predation | `env.py::step()`（鱼吃猎物 + 捕食者吃鱼两段） | 双向同一判据：$d < r_{capture}$ **且** $size_{hunter} \ge \kappa \cdot size_{target}$ |
 | §9 | PredatorPolicy | `policies.py::PredatorPolicy.plan()` + `env.py::step()` 捕食者段 | 巡游 → 追击 → 避障 → 恢复巡游；滞回由 `release_radius` 实现；转向速率限制在 env 不在 policy |
 | §10 | PreyPolicy | `policies.py::PreyPolicy.act()` + `env.py::_steer_away_from_obstacles(prey, gain=2.0)` | 随机游走 + 避障；**MVP 无主动逃跑**（不被鱼感知） |
-| §11 | ExpertPolicy | `policies.py::ExpertPolicy.__call__()`、`src/evogenesis/api/session.py::Session.advance()` | 仅用于模仿学习与现场 Demo 驱动；不参与 DanioNet scoring |
+| §11 | ExpertPolicy | `policies.py::ExpertPolicy.__call__()`（对外服务层的 `ExpertPolicy`→`DanioNet` 切换点待随 `api/` 重写落地） | 仅用于模仿学习与现场 Demo 驱动；不参与 DanioNet scoring |
 | §12 | 风险—收益冲突 | （未实现） | 高价值 prey 靠近 predator 等场景布置属后续迭代 |
 | §13 | 事件日志 / 每鱼记录 | `env.py::per_fish_log()`、`entities.py::Fish` 缓冲字段 | 规范列 11 项，代码实现 10 项（1 项已声明未实现，见 §6） |
 
@@ -577,7 +577,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | `PreyPolicy.avoid_gain` | 死参数（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
-| M8 | 配置加载 | **部分闭合**（2026-09-26）：`arena/config.py::load_arena_config()` 已落地（严格构造 + 分层），YAML↔dataclass 键名已对齐；**但调用方仍未接线**（`DanioArena.__init__` 走 `config or ArenaConfig()`，`scripts/run_experiment.py` / `api/session.py` 未调用 loader），故仿真仍走 Python 硬编码默认值 |
+| M8 | 配置加载 | **部分闭合**（2026-09-26）：`arena/config.py::load_arena_config()` 已落地（严格构造 + 分层），YAML↔dataclass 键名已对齐；**但调用方仍未接线**（`DanioArena.__init__` 走 `config or ArenaConfig()`，`scripts/run_experiment.py` 未调用 loader（`api/` 服务层已移除）），故仿真仍走 Python 硬编码默认值 |
 | M9 | 障碍物为非凸形状 | 障碍只用圆 `contains`，无多边形/复杂几何 |
 | M10 | 流体动力学 | 规范 §1 已明确排除，非遗漏 |
 | M11 | ~~episode 内重生成猎物~~ | ✅ **已实现**（2026-09-26，§12 R2）：每 `prey_regrowth_steps`（占位 25）补 1 只至 `n_prey`；新个体以 `arena.spawn` 事件落盘 |

@@ -1,8 +1,10 @@
 import argparse
 import json
 import subprocess
-import time
 from pathlib import Path
+
+from evogenesis.core.config import read_yaml
+from evogenesis.core.io import now_iso
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -21,7 +23,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Create an EvoGenesis experiment run.")
     parser.add_argument("--config", required=True, help="configs/ 下的 yaml 路径")
     parser.add_argument("--seed", type=int, required=True)
-    parser.add_argument("--tag", default="run", help="run 目录后缀标签")
+    parser.add_argument(
+        "--experiment-id",
+        required=True,
+        help="稳定实验 ID，即 results/runs/<experiment_id>/ 的目录名（核心契约，调用方给定）",
+    )
     args = parser.parse_args()
 
     config_path = Path(args.config)
@@ -30,20 +36,24 @@ def main() -> None:
     if not config_path.is_file():
         parser.error(f"配置不存在: {config_path}")
 
-    run_id = f"{time.strftime('%Y%m%d-%H%M%S')}-{args.tag}"
-    run_dir = ROOT / "results" / "runs" / run_id
-    (run_dir / "config_snapshot").mkdir(parents=True, exist_ok=True)
+    # 各 configs/*.yaml 的节 schema 不同，这里只做 YAML 解析校验，不套用单一模型。
+    read_yaml(config_path)
+
+    run_dir = ROOT / "results" / "runs" / args.experiment_id
+    if run_dir.exists():
+        parser.error(f"run 目录已存在（experiment_id 需唯一）: {run_dir.relative_to(ROOT)}")
+    (run_dir / "config_snapshot").mkdir(parents=True)
     (run_dir / "config_snapshot" / config_path.name).write_text(
         config_path.read_text(encoding="utf-8"), encoding="utf-8"
     )
     (run_dir / "seed.txt").write_text(f"{args.seed}\n", encoding="utf-8")
     (run_dir / "git_commit.txt").write_text(git_commit() + "\n", encoding="utf-8")
     metadata = {
-        "run_id": run_id,
+        "experiment_id": args.experiment_id,
         "config": str(config_path.relative_to(ROOT)),
         "seed": args.seed,
         "status": "created",
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+        "created_at": now_iso(),
     }
     (run_dir / "metadata.json").write_text(
         json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
