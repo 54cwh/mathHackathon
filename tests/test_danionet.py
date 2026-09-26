@@ -218,3 +218,22 @@ def test_active_mask_from_rgcd_is_honored():
     assert int(net.left_mask.sum()) == 2 and int(net.right_mask.sum()) == 2
     net.step(np.zeros((1, DEFAULT_NETWORK_CONFIG.sensory_dim), dtype=np.float32))
     assert float(net.h[0, 6].abs()) == 0.0
+
+
+def test_mismatched_shapes_rejected():
+    n = 4
+    phenotype = ConnectomePhenotype(
+        adjacency=torch.zeros((n, n), dtype=torch.float32),
+        weights0=torch.zeros((n, n + 1), dtype=torch.float32),  # 形状不一致
+        tau=torch.ones(n, dtype=torch.float32),
+        cell_type=torch.tensor([0, 5, 5, 5], dtype=torch.long),
+        positions=torch.tensor(
+            [[0.1, 0.1], [0.3, 0.1], [0.5, 0.1], [0.7, 0.1]], dtype=torch.float32
+        ),
+        active_mask=torch.ones(n, dtype=torch.bool),
+        viable=True,
+        viability_reason="ok",
+        z=torch.zeros((n, 6), dtype=torch.float32),
+    )
+    with pytest.raises(ValueError):
+        DanioNet([phenotype], master_seed=MASTER_SEED)

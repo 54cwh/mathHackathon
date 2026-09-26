@@ -121,6 +121,21 @@ class DanioNet(torch.nn.Module):
             n = int(phenotype.adjacency.shape[0])
             if n > max_nodes:
                 raise ValueError(f"个体 {b} 的神经元数 {n} 超过 max_nodes {max_nodes}")
+            if phenotype.adjacency.shape != (n, n):
+                raise ValueError(
+                    f"个体 {b} 的 adjacency 必须为方阵，实际 {tuple(phenotype.adjacency.shape)}"
+                )
+            if phenotype.weights0.shape != (n, n):
+                raise ValueError(f"个体 {b} 的 weights0 形状应与 adjacency 一致 (n, n)")
+            if (
+                phenotype.tau.shape != (n,)
+                or phenotype.cell_type.shape != (n,)
+                or phenotype.active_mask.shape != (n,)
+                or phenotype.positions.shape != (n, 2)
+            ):
+                raise ValueError(
+                    f"个体 {b} 的 tau/cell_type/active_mask/positions 长度与 n={n} 不一致"
+                )
             adjacency[b, :n, :n] = to_float32_tensor(phenotype.adjacency, device=device)
             weights0[b, :n, :n] = to_float32_tensor(phenotype.weights0, device=device)
             tau[b, :n] = to_float32_tensor(phenotype.tau, device=device)
