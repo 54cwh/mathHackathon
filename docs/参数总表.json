@@ -21,7 +21,6 @@
       "derived": "由 A/B 派生，不单独讨论",
       "in_range": "有区间依据但无来源恰用该值，保留",
       "no_basis": "找不到依据，标设计选择",
-      "proposed_change": "依据与本项目取值不符，建议改值",
       "missing": "参数总表原缺、实现必须补"
     },
     "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。",
@@ -31,7 +30,8 @@
       "missing_required 必须先补进文档与 config 才能实现 RGCD",
       "sensitivity_plan 中的参数须报敏感性"
     ],
-    "owns": "参数取值与依据/状态的单一来源：**取值以 configs/*.yaml 为准**，本表记录依据、状态与敏感性。"
+    "owns": "参数取值与依据/状态的单一来源：**取值以 configs/*.yaml 为准**，本表记录依据、状态与敏感性。",
+    "legend_status_note": "2026-09-26 移除：该档从未被任何条目使用，且不在允许词表内（审计 A12）；如需「建议改值」请用 changes_pending。"
   },
   "parameters": [
     {
@@ -456,8 +456,8 @@
       "unit": "s",
       "group": "arena",
       "grade": "D",
-      "status": "in_range",
-      "basis": "常见 20–50 s（MuJoCo 50 s、robosuite 25 s）",
+      "status": "derived",
+      "basis": "常见 20–50 s（MuJoCo 50 s、robosuite 25 s）。**派生只读**：`episode_seconds = episode_steps / hz`（arena 文档 §18.2.1；`arena/config.py::DERIVED_READONLY_KEYS`），不是独立旋钮 —— 2026-09-26 按审计 A5 更正 status。",
       "source": "research/reference/param-basis-engineering.md:108-114",
       "config": "configs/default_arena.yaml → world.episode_seconds",
       "sensitivity": null,
@@ -587,9 +587,9 @@
       "group": "arena",
       "grade": "C",
       "status": "derived",
-      "basis": "耦合约束 predator_size ≥ κ·max_size = 1.25×2.5 = 3.125（§8）。低于此值则被 min(max_size,·) 钳住的最大体型个体永久不可捕食（吸收态）。未进 configs/default_arena.yaml（actors 段缺失，见 arena 文档 §18.2.3 / 认领表 A5）。",
+      "basis": "耦合约束 predator_size ≥ κ·max_size = 1.25×2.5 = 3.125（§8）。低于此值则被 min(max_size,·) 钳住的最大体型个体永久不可捕食（吸收态）。**已进 `configs/default_arena.yaml` 的 `actors.predator_size`**（2026-09-26 补入 `actors:` 段；本条此前记为「未进 configs」已过期，2026-09-26 按审计 A1 更正）。",
       "source": "arena/Danio_Arena设计与实现说明.md §8（内部耦合约束）",
-      "config": null,
+      "config": "configs/default_arena.yaml → actors.predator_size",
       "sensitivity": [
         2.5,
         3.125,
@@ -633,7 +633,7 @@
       "status": "no_basis",
       "basis": "斑马鱼 C 形逃避 6,000–21,200 deg/s 是体弯曲角速度，非航向 yaw 率，不可直接套用",
       "source": "research/reference/param-basis-biology.md:74-84",
-      "config": "src/evogenesis/arena/config.py → actors.predator_turn_rate（默认值）",
+      "config": "configs/default_arena.yaml → actors.predator_turn_rate",
       "sensitivity": null,
       "suggest": "航向率需另取依据"
     },
@@ -1228,8 +1228,8 @@
       "unit": "step",
       "group": "arena",
       "grade": "C",
-      "status": "derived",
-      "basis": "由 episode_steps / n_prey = 600/24 派生，使再生速率与消耗速率同量级（dossier T3 §3.1 资源核算：24 prey/12 fish 使 prey_capture 后半段饱和、fitness 漂移）。无生物学锚点，属设计选择。",
+      "status": "no_basis",
+      "basis": "由 episode_steps / n_prey = 600/24 派生，使再生速率与消耗速率同量级（dossier T3 §3.1 资源核算：24 prey/12 fish 使 prey_capture 后半段饱和、fitness 漂移）。无生物学锚点，属设计选择。 **标定占位**（`arena/config.py` 注释 `# placeholder`、arena 文档 §16 列为标定占位），按 `status=no_basis` 处理，**play-test 标定前不得冻结**（2026-09-26 按审计 A8 更正 status）。",
       "source": "research/reference/zebrafish-escape-capture.md",
       "config": "configs/default_arena.yaml → population.prey_regrowth_steps",
       "sensitivity": null,

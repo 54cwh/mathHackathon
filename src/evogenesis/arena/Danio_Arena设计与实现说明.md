@@ -252,7 +252,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | 种群（Live） | 12 / 24 / 3 / 6 | 个 | 已定稿 |
 | Fast Evolution | 48 | 个 | 已定稿 |
 | `world.boundary` | reflect | — | 已定稿（2026-09-26，A6） |
-| sensing.radius / fov | 18.0 / 220.0 | world unit / ° | 已定稿（`proposed_change` 待认领） |
+| sensing.radius / fov | 18.0 / 220.0 | world unit / ° | 已定稿（**2026-09-26 按审计 A12 更正**：`proposed_change` 已不在参数总表的允许词表内、且无任何条目使用该档，已从 legend 移除；若需「建议改值」请用该表的 `changes_pending`） |
 | κ（capture_size_ratio） | 1.25 | — | 已定稿（设计选择） |
 | r_capture | 4.61 | world unit | 已定稿（方案 B） |
 | θ_cone（capture_cone_degrees） | 120 | °（**总**锥角） | 已定稿（设计选择） |
@@ -274,7 +274,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 |---|---|
 | 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）。**余**：M4 环境三组仍不改变任何参数 |
 | 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；**looming 恒 0 的修法（M13）——仍开放** |
-| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，待补参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors 12 项（已签，待补参数总表）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（待落 config） |
+| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，待补参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors **14 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（待落 config） |
 | 契约/工程 | §18 实例事件（重生成 vs 降级）；~~config 接线~~ ✅ 已闭合（loader + Arena 映射 + 调用方接线，2026-09-26）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 ## 18. 实现映射（原 Danio Arena 实现说明）
@@ -374,7 +374,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 #### 18.2.3 三条必须写明的结论
 
-1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 已全部进 `configs/default_arena.yaml`**（2026-09-26 补入 `actors:` 段；此前共 13 项无 YAML 归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`（与 `core/config.py::ModelConfig` 的「section 名 = dataclass 名、键名 = 字段名」约定一致）。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
+1. **`ActorDefaults` 整块（**14 项**）已全部进 `configs/default_arena.yaml` 的 `actors:` 段**（2026-09-26 补入；此前这 14 项在 YAML 中无归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`。**更正（2026-09-26，审计 A13）**：本节原写「12 项 + `growth.biomass_to_size_gain`」，但该字段已随 A4 面积式**删除**（现为 `growth.prey_area_gain`），且 `ActorDefaults` 实为 **14** 个字段、YAML `actors:` 段亦为 **14** 个键 —— 三种说法（12 项 / 14 项 / 含 biomass）已统一为本句。
 2. **`../../../docs/参数总表.json` 现收录 Arena 侧 **15 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `capture_radius` / `predator_size` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
 3. **`configs/default_arena.yaml` 已有调用方读取它 —— 该实现债 2026-09-26 闭合。** **Arena 侧加载已落地**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**调用方接线已完成**：`scripts/run_experiment.py` 对 Arena 型配置（顶层键 ⊆ `ARENA_SECTIONS`）调用 loader，并落盘 **`arena_config_resolved.json`（已解析值快照）** —— 因为「原始 YAML 副本」与实际生效值可能漂移（默认值 / env / overrides）。**原对外服务层 `api/session.py` 已按用户决定移除**，故 arena 配置当前唯一调用方是 `scripts/run_experiment.py`。与「所有数值必须由 config 读取」（`../../../docs/参数总表.json` 末行）的要求**已闭环**（见 §8 M8、认领表 B7）。
 
