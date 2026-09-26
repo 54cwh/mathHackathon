@@ -522,13 +522,22 @@ def test_ws_pushes_fish_state_and_events() -> None:
         assert hello["type"] == "sys.hello" and hello["seq"] == 1
         assert hello["payload"]["session_id"] == sid
         client.post(f"/v1/sessions/{sid}/release?steps=3")
-        # §1.1 后默认会话也有逐鱼网 ⇒ 额外推 `brain.activation`（共 3 帧）
-        msgs = [ws.receive_json(), ws.receive_json(), ws.receive_json()]
-        by_type = {m["type"]: m for m in msgs}
-        assert {"arena.fish_state", "arena.events", "brain.activation"} <= set(by_type)
+        # §1.1 后默认会话也有逐鱼网 ⇒ 额外推 `brain.activation`（本会话共 3 帧）。
+        # 但 WS 上还有 `session_id=None` 的全局帧（`job.progress`），可能来自其他测试遗留的后台
+        # job —— 故按类型收集、容忍无关帧，直到三件套齐或达上限。
+        want = {"arena.fish_state", "arena.events", "brain.activation"}
+        by_type: dict[str, dict] = {}
+        seqs: list[int] = []
+        for _ in range(10):
+            m = ws.receive_json()
+            seqs.append(m["seq"])
+            by_type.setdefault(m["type"], m)
+            if want <= set(by_type):
+                break
+        assert want <= set(by_type), f"缺帧：{want - set(by_type)}"
         fs = by_type["arena.fish_state"]["payload"]
         assert fs["session_id"] == sid and fs["step"] == 3 and len(fs["fish"]) == 12
-        assert sorted(m["seq"] for m in msgs) == [2, 3, 4]  # 每连接单调
+        assert seqs == sorted(seqs)  # 每连接单调
 
 
 def test_ws_does_not_push_other_session() -> None:
@@ -538,7 +547,14 @@ def test_ws_does_not_push_other_session() -> None:
         ws.receive_json()  # hello
         client.post(f"/v1/sessions/{b}/release?steps=2")
         ws.send_text('{"probe": 1}')  # invalid envelope -> immediate sys.error
-        assert ws.receive_json()["type"] == "sys.error"  # 未收到 b 的推送
+        # 容忍全局帧（`job.progress`）；断言收不到 b 的 `arena.*`
+        for _ in range(10):
+            m = ws.receive_json()
+            assert not (m["type"].startswith("arena.") and m["payload"].get("session_id") == b)
+            if m["type"] == "sys.error":
+                break
+        else:
+            raise AssertionError("未收到 sys.error")
 
 
 def test_ws_job_progress_push(tmp_path, monkeypatch) -> None:
