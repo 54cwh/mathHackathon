@@ -120,6 +120,7 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 ## 9. Ablations
 - w/o GRN
+- allele 聚合：加性（mean）vs 完全显性（max）
 - homogeneous tau（基线取异质 τ 的均值；另做 τ 网格扫描防选值偏袒）`[bib#27][bib#28]`
 - w/o spatial wiring cost
 - BC 有 / 无 Dale 符号约束 `[bib#30][bib#31]`

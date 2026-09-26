@@ -664,7 +664,8 @@
       "dynamical viability 判据阈值（RGCD数学模型.md 阅读问题 #8）",
       "位置 p_i 的分布",
       "BC 损失权重 λ_ω、λ_v（core §4.3）",
-      "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id"
+      "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id",
+      "二基因位点表型阈值 θ_N、θ_H（genome §6，G12；需 pilot 反解）"
     ]
   },
   "citation_risks": [
