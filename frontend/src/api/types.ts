@@ -66,6 +66,19 @@ export interface ArenaSnapshot {
 /** DNA bases (`genome §3.1`); `MutationRequest.base` is restricted to these. */
 export type Base = "A" | "C" | "G" | "T";
 
+/**
+ * The six development cell types (`development` 契约). `FishCard.cell_counts`
+ * carries these as keys; typed as `Record<string, number>` because the backend
+ * declares an open dict, not a closed key set.
+ */
+export type CellType =
+  | "sensory"
+  | "prey"
+  | "threat"
+  | "memory"
+  | "inhibitory"
+  | "motor";
+
 /** Job lifecycle (`api/schemas.py::JobStatusKind`). */
 export type JobStatusKind = "queued" | "running" | "done" | "failed" | "cancelled";
 

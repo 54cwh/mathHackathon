@@ -100,7 +100,7 @@ export const RADIUS = "0" as const;
  * Brain Forge 的**装饰性**配色（程序化视觉，非拓扑图）。
  *
  * ⚠️ **这三色不是「三类 cell type」，也不要被读成 cell type 契约。**
- * 真实的 `CellType` 有**六**类（`frontend/types.ts:7`：
+ * 真实的 `CellType` 有**六**类（`src/api/types.ts` 的 `CellType`：
  * `sensory|prey|threat|memory|inhibitory|motor`），且 `core §10` 把
  * 「六类 cell type owner」列为**未定契约**。按 `AGENTS.md`「未定契约不得被下游依赖」，
  * 本视觉**故意不绑定**该契约 —— 这三色只是**装饰分组**，用于让纹理有三档明度层次。
@@ -118,7 +118,7 @@ export const BRAIN = {
 
 /**
  * Nucleotide strip 的碱基配色（真实数据渲染，A/C/G/T 由 DOM/Canvas 画出，**不进图片**）。
- * 类型对齐 `frontend/types.ts:1` 的 `Base`。
+ * 类型对齐 `src/api/types.ts` 的 `Base`。
  */
 export const STRIP = {
   /** A / C / G / T 四色 */

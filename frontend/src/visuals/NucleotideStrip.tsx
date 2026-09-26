@@ -1,30 +1,22 @@
 import { cn } from "@/lib/utils";
 import { STRIP } from "@/design/palette";
+import type { Base } from "@/api/types";
 
 /* ===========================================================================
    Nucleotide strip —— 用**真实数据**渲染 A/C/G/T。
 
-   类型口径（必须写清，避免"悄悄新增契约"）：
-     契约 owner 是 frontend/types.ts:1 的
-         export type Base = "A" | "C" | "G" | "T";
-     但该文件当前**不在** tsconfig.app.json 的 include 内（include 只有 ["src"]，
-     而 types.ts 在 frontend/ 根下），且全库没有任何文件 import 它。
-     故此处**镜像**同一个字面量联合，**不 import、不新增契约**。
-     若将来 types.ts 移入 src/，本文件应改为
-         import type { Base } from "../types";
-     并删除下面这个镜像。
+   类型口径：`Base`（`"A" | "C" | "G" | "T"`）的契约 owner 是 `src/api/types.ts`，
+   本文件 import，**不自带副本、不新增契约**。
 
    数据来源现状（**不要为了好看去造数据**）：
      当前前端**没有**碱基序列的真实来源。GET /v1/sessions/{id}/snapshot 的响应
-     不含 genotype / chromosome / sequence 字段（见 frontend/src/api/arena.ts 的
+     不含 genotype / chromosome / sequence 字段（见 frontend/src/api/types.ts 的
      ArenaSnapshot 类型；research/notes/前端驱动-API实现清单.md 记录了这一取捨）。
      因此在后端补上该字段之前，本组件在调用方不传 sequence 时会**一直**显示
      未初始化状态 —— 这是刻意的，不是遗漏。
 
    颜色：全部取自 @/design/palette 的 STRIP，本文件**没有**任何 hex 字面量。
    =========================================================================== */
-
-type Base = "A" | "C" | "G" | "T";
 
 /** 四色的唯一映射表；查表比 switch 更难写漏。 */
 const BASE_FILL: Record<Base, string> = {

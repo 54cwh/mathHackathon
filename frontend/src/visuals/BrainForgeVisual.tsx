@@ -12,7 +12,7 @@ import { BRAIN } from "@/design/palette";
 
    2) 下面 BRAIN 的三色（particleA / particleB / particleC）是**装饰分组**，
       只为让纹理有三档明度层次，**不是 cell type 契约**。真实 CellType 有**六**类
-      （frontend/types.ts:7：sensory|prey|threat|memory|inhibitory|motor），
+      （src/api/types.ts 的 CellType：sensory|prey|threat|memory|inhibitory|motor），
       且 core §10 把「六类 cell type owner」列为**未定契约**。按 AGENTS.md
       「未定契约不得被下游依赖」，本视觉**故意不绑定**该契约：三色与六类之间没有
       任何映射，将来 cell type 定稿也**不需要**改本文件。
