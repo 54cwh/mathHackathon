@@ -409,3 +409,28 @@ def test_same_seed_reproducible_and_different_seed_differs():
 
     assert draw(MASTER_SEED) == draw(MASTER_SEED)
     assert draw(MASTER_SEED) != draw(MASTER_SEED + 1)
+
+
+def test_haplotype_affinity_is_union_of_chromosome_windows():
+    """genome §6：单倍型 q 取本 haplotype **两条染色体窗口并集**的 TopKMean（不跨染色体）。"""
+    genome = G.random_genome(
+        DEFAULT_LAYOUT, rng=np.random.default_rng(3), genome_id="exp:g0:genome0000"
+    )
+    motifs = tuple("AAAAAA" if i else "CCCCCC" for i in range(8))
+    for haplotype in (genome.maternal_haplotype, genome.paternal_haplotype):
+        q = G.haplotype_affinity(haplotype, motifs)
+        expected = np.array(
+            [
+                G.top_k_mean(
+                    np.concatenate([G.window_affinities(chain, motif) for chain in haplotype]),
+                    DEFAULT_LAYOUT.motif_topk,
+                )
+                for motif in motifs
+            ],
+            dtype=np.float32,
+        )
+        assert np.allclose(q, expected)
+        # 并集 ⊇ 单链窗口 → 每个 motif 的 q 不低于任一单链
+        for motif_index, motif in enumerate(motifs):
+            per_chain = [G.chain_affinity(chain, motif) for chain in haplotype]
+            assert q[motif_index] >= max(per_chain) - 1e-6
