@@ -3,7 +3,7 @@
 覆盖优先级 **CLI > env > file > default**（core §0）。
 - file 层：``configs/*.yaml``（运行期取值的唯一来源，core §7）。
 - env 层：前缀 ``EVOGENESIS_``，嵌套用双下划线 ``__``（沿用 pydantic-settings 的命名约定）；
-  段名对 Pydantic 字段名大小写不敏感匹配；值按 YAML 标量解析（本实现自选）。
+  段名对 Pydantic 字段名大小写不敏感匹配；值按 YAML 标量解析（契约见 core §0）。
 - CLI 层：点分键（如 ``learning.lr``）或嵌套 dict。
 - default 层：Pydantic 字段默认值；**数值参数一律必填**，此处不发明取值（core §7 禁止）。
 
@@ -117,8 +117,6 @@ class ModelConfig(_Section):
     connectome: ConnectomeConfig
     network: NetworkConfig
     learning: LearningConfig
-
-
 
 
 def _deep_update(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
