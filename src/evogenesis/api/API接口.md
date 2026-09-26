@@ -4,7 +4,7 @@
 
 > **管辖范围**：逐端点接口参考（请求/响应/错误/实现细节）。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
 
-> 状态：v1.2 接口参考 + 实现现状（对应 `main` 提交 `d414e05`）
+> 状态：v1.2 接口参考（**契约**）。§6–§11「实现现状」为 `d894cbb` 移除前实现的**历史记录**，非现状（`api/` 实现层已移除、待重写）。
 > 归属：李辰钊（Arena / 系统）
 > 上游契约：同目录 `API与系统工程.md`（命名规范 R1–R11、系统与部署约定）、`../arena/Danio_Arena设计与实现说明.md`、`../core/核心机制与数据流.md`、`../../../docs/参数总表.json`
 > ⚠️ 本文件 **§0–§5 讲"接口是什么"（契约参考）**，**§6–§11 讲"实现现在是什么样"（现状与契约边界）**。
@@ -27,7 +27,9 @@
 
 ---
 
-## 1. Arena 会话接口（已实现）
+## 1. Arena 会话接口（契约；实现层已移除，待重写）
+
+> 本节 §1.1–§1.10 为**接口契约**（路径/参数/响应/错误），不表示现状：`api/` 实现已于 `d894cbb` 移除，待重写。重写后按本节字段实现即满足前端契约。
 
 ### 1.1 POST `/v1/sessions` — 创建会话
 
@@ -136,7 +138,7 @@
 
 ### 1.8 GET `/v1/sessions/{session_id}/snapshot` — 快照
 
-返回当前帧的鱼位姿、能量与最近事件。
+返回当前帧的**全场实体**（鱼 + 猎物 + 捕食者 + 障碍）与最近事件。
 
 - **路径参数**：`session_id`（string，必填）。
 - **成功响应** `200` → `Snapshot`
@@ -146,15 +148,23 @@
   | `session_id` | string | 会话 ID |
   | `step` | int | 当前步 |
   | `fish` | object | key 为 `fish_id`，值见下 |
+  | `prey` | object | key 为 `prey_id`，值 `{x, y, size, alive}` |
+  | `predators` | object | key 为 `predator_id`，值 `{x, y, size}` |
+  | `obstacles` | array | 元素 `{x, y, radius}` |
   | `events` | array | 最近 200 条事件 |
 
   `fish[<id>]` 字段：`x`、`y`、`heading`、`speed`、`energy`、`size`、`alive`。
+
+  > ⚠️ **`prey` / `predators` / `obstacles` 不可省**：前端渲染**硬依赖**这三个键（`frontend/src/panels/DanioArenaPanel.tsx` 对 `snap.obstacles` 直接 `for...of`、对 `snap.prey` / `snap.predators` 直接 `Object.values`，**无 `undefined` 保护**）；缺任一键会抛 `TypeError` 致画布全黑。数据来源 = `DanioArena.prey` / `.predators` / `.obstacles`（`arena/env.py`），与 `API与系统工程.md §4.3` 的「全场快照」一致。
 
   示例：
   ```json
   {"session_id":"session_e31164c2b25c","step":300,
    "fish":{"fish_00":{"x":10.639,"y":37.117,"heading":6.589,
                       "speed":0.54,"energy":0.742,"size":1.008,"alive":true}},
+   "prey":{"prey_00":{"x":22.301,"y":12.874,"size":1.0,"alive":true}},
+   "predators":{"predator_00":{"x":80.0,"y":30.0,"size":2.4}},
+   "obstacles":[{"x":50.0,"y":30.0,"radius":4.0}],
    "events":[{"seq":1,"type":"arena.spawn","step":0,"payload":{"entity_id":"fish_00"}}]}
   ```
 
@@ -186,7 +196,7 @@
 
 ---
 
-## 2. 模型与实验接口（契约已定，当前返回 501）
+## 2. 模型与实验接口（契约已定；实现层待重写）
 
 这些端点由 `stubs.py` 定义请求/响应形状（`schemas.py`），在模型与实验管线落地前统一返回：
 
@@ -229,6 +239,8 @@
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
 
+> 下表的「已实现」为 `d894cbb` 移除前的**历史状态**；`api/` 实现层已移除、待重写。业务推送（`arena.*` / `brain.*` / `job.*`）仍未定义（`§5` 阻塞：采样率与推送清单未定）。
+
 | type | 方向 | payload | 触发 | 状态 |
 |---|---|---|---|---|
 | `sys.hello` | 服务端 → 客户端 | `{note}` | 连接建立时一次 | 已实现 |
@@ -270,6 +282,8 @@
 ---
 
 ## 6. 端点总览：functional / 501 × 归属
+
+> **本表为历史记录（`d894cbb` 移除前的实现）**：状态列（functional / 501）与归属列描述的是**已移除的实现**，非现状；`api/` 实现层待重写，重写后须逐行重填。归属列的现行裁定见 `research/notes/前端驱动-API实现清单.md §6`（待与 `AGENTS.md`「池伟豪写 api」的安排对齐）。
 
 §1 / §2 按端点逐个说明；本表给出**实现状态 × 归属**的一览，用于快速判断"某端点现在归谁、能不能用"。
 
@@ -316,7 +330,7 @@
 | TTL / 淘汰 | **无**。不设过期、不设上限、不 LRU |
 | 进程重启 | **全部会话丢失**。这是 MVP 的明确取舍（`SessionManager` docstring："Holds live sessions in memory (MVP; no persistence)"） |
 | 并发 | 单进程内共享该 dict，**无锁**。uvicorn 默认单 worker 下安全；多 worker（`--workers >1`）会让同一 `session_id` 落到不同进程而表现为随机 404 |
-| `session_id` 规则 | `f"session_{uuid.uuid4().hex[:12]}"` —— 前缀 `session_` + **12 位十六进制**（48 bit 随机）。**不是顺序号**，调用方不得解析其结构 |
+| `session_id` 规则 | `f"session_{uuid.uuid4().hex[:12]}"` —— 前缀 `session_` + **12 位十六进制**（48 bit 随机）。**不是顺序号**；调用方**不得据其结构推断顺序或身份**，仅可作展示用途剥离前缀（`frontend/src/panels/DanioArenaPanel.tsx` 即仅做前缀剥离 + 截断展示）。注意这是**运行期会话令牌**，与 `core §3.1` 的稳定 ID（`fish_id` / `genome_id` …）不是同一物 |
 | 不存在时行为 | 所有 `/v1/sessions/{session_id}/*` 端点走 `_get_session()`，未命中抛 `HTTPException(404, detail=f"session {session_id} not found")`，响应体为 RFC 7807（见 §4） |
 
 ### 7.2 `SessionCreate`：被接收但未生效的字段
@@ -413,6 +427,8 @@ class SessionCreate(BaseModel):
 ---
 
 ## 10. 测试覆盖（`tests/test_api_contract.py`）
+
+> ⚠️ `tests/test_api_contract.py` 已随 `d894cbb` 删除；下表为**历史记录**（移除前的 9 项）。重写后须重建等价契约测试。
 
 **当前 9 项**（`pytest tests/test_api_contract.py` → 9 passed）。
 

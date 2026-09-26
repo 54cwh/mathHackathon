@@ -135,6 +135,11 @@ make demo          # 等价于 ./scripts/start_demo.sh
 
 构建前端（若 `frontend/dist` 缺失）并启动服务，浏览器打开 `http://127.0.0.1:8000`。
 
+**端口 / CORS / 托管约定（对齐已交付前端）**：
+- **生产（`make demo`）**：由 FastAPI **单 worker** 托管 `frontend/dist`（同源，免 CORS）；固定端口 `8000`。
+- **开发**：`npm run dev` 起 vite `5173`，经 `vite.config.ts` 的 proxy 把 `/v1 → http://127.0.0.1:8000`（dev 期同源 `/v1`）。
+- **单 worker 为硬约束**：会话为纯内存（`API接口.md §7.1`），多 worker 会使同一 `session_id` 落到不同进程而随机 `404`。
+
 ## 10. Git
 开发期 private；提交时按比赛要求 public。schema/config 变更必须双方同步。
 
