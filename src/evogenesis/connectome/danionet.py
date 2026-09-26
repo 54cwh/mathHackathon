@@ -109,7 +109,6 @@ class DanioNet(torch.nn.Module):
         weights0 = torch.zeros((batch, max_nodes, max_nodes), dtype=dtype, device=device)
         tau = torch.ones((batch, max_nodes), dtype=dtype, device=device)
         cell_type = torch.zeros((batch, max_nodes), dtype=torch.long, device=device)
-        x_coord = torch.zeros((batch, max_nodes), dtype=dtype, device=device)
         positions = torch.zeros((batch, max_nodes, 2), dtype=dtype, device=device)
         neuron_mask = torch.zeros((batch, max_nodes), dtype=torch.bool, device=device)
         left_mask = torch.zeros((batch, max_nodes), dtype=torch.bool, device=device)
@@ -127,7 +126,6 @@ class DanioNet(torch.nn.Module):
             tau[b, :n] = to_float32_tensor(phenotype.tau, device=device)
             cell_type[b, :n] = phenotype.cell_type.to(torch.long)
             positions[b, :n] = to_float32_tensor(phenotype.positions, device=device)
-            x_coord[b, :n] = positions[b, :n, 0]
             neuron_mask[b, :n] = True
             self._n_neurons.append(n)
 
@@ -147,7 +145,6 @@ class DanioNet(torch.nn.Module):
         self.register_buffer("support", support)
         self.register_buffer("tau", tau)
         self.register_buffer("cell_type", cell_type)
-        self.register_buffer("x_coord", x_coord)
         self.register_buffer("positions", positions)
         self.register_buffer("neuron_mask", neuron_mask)
         self.register_buffer("left_mask", left_mask)
@@ -185,7 +182,7 @@ class DanioNet(torch.nn.Module):
         return self.effective_weights - self.weights0
 
     def reset(self) -> None:
-        self.h.zero_()
+        self.h = torch.zeros_like(self.h)
 
     def _drive(self) -> torch.Tensor:
         weights = self.effective_weights
@@ -256,5 +253,4 @@ __all__ = [
     "NetworkPriors",
     "build_priors",
     "motor_sides",
-    "zero_observation",
 ]

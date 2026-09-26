@@ -11,7 +11,6 @@ from evogenesis.connectome.danionet import (
     NetworkPriors,
     build_priors,
     motor_sides,
-    zero_observation,
 )
 
 __all__ = [
@@ -23,5 +22,4 @@ __all__ = [
     "build_priors",
     "load_network_config",
     "motor_sides",
-    "zero_observation",
 ]
