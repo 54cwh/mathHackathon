@@ -44,7 +44,6 @@ from dataclasses import asdict
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
-from evogenesis.core.io import write_jsonl
 from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.behavior_trace import (
@@ -53,18 +52,17 @@ from evogenesis.experiment.behavior_trace import (
 )
 from evogenesis.experiment.config import load_formal_seeds
 from evogenesis.experiment.environments import load_environment
-from evogenesis.experiment.events import episode_event_header, write_event_log
+from evogenesis.experiment.events import write_episode_log
 from evogenesis.experiment.expert_run import run_episode
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
-    episode_metrics,
     summarise_over_seeds,
 )
 from evogenesis.experiment.run_artifacts import (
     dump_json,
-    episode_row,
-    write_metrics_csv,
-    write_population,
+    individual_metric_rows,
+    run_summary_payload,
+    write_seed_artifacts,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -142,17 +140,13 @@ def main() -> None:
         )
         per_fish, events, elapsed = episode.per_fish, episode.events, episode.elapsed
         gen = next(iter(per_fish.values()), {}).get("generation") or 0
-        write_event_log(
+        write_episode_log(
             run_dir / "events.jsonl",
-            episode_event_header(
-                experiment_id=args.experiment_id,
-                episode_id="ep0001",
-                environment_id=args.environment or "default",
-                generation=int(gen),
-                episode_seed=episode.spawn_seed,
-                n_events=len(events),
-            ),
-            events,
+            experiment_id=args.experiment_id,
+            environment_id=args.environment or "default",
+            generation=int(gen),
+            episode_seed=episode.spawn_seed,
+            events=events,
         )
         if args.emit_behavior_trace:
             write_trace(
@@ -172,24 +166,22 @@ def main() -> None:
                 ),
                 episode.trace,
             )
-        rows = [
-            {
-                "seed": seed,
-                "fish_id": fid,
-                **episode_metrics(
-                    rec,
-                    episode_steps=steps,
-                    e_max=e_max,
-                    capture_success_prob=cfg.growth.capture_success_prob,
-                    weights=weights,
-                ),
-            }
-            for fid, rec in sorted(per_fish.items())
-        ]
-        write_metrics_csv(run_dir, rows)
-        write_population(run_dir, seed, per_fish)
-        write_jsonl(
-            run_dir / "episodes.jsonl", [episode_row(seed, events, per_fish, steps, elapsed)]
+        rows = individual_metric_rows(
+            per_fish,
+            seed=seed,
+            episode_steps=steps,
+            e_max=e_max,
+            capture_success_prob=cfg.growth.capture_success_prob,
+            weights=weights,
+        )
+        write_seed_artifacts(
+            run_dir,
+            rows=rows,
+            seed=seed,
+            per_fish=per_fish,
+            events=events,
+            steps=steps,
+            elapsed=elapsed,
         )
         by_seed = aggregate_by_seed(rows)
         dump_json(run_dir / "seed_summary.json", by_seed, indent=2)
@@ -204,15 +196,15 @@ def main() -> None:
     out = tables / f"{args.experiment_id}_summary.json"
     dump_json(
         out,
-        {
-            "experiment_id": args.experiment_id,
-            "environment": args.environment or "default",
-            "emit_behavior_trace": bool(args.emit_behavior_trace),
-            "seeds": seeds,
-            "steps": steps,
-            "n_individuals": len(all_rows),
-            "per_metric": summary,
-        },
+        run_summary_payload(
+            experiment_id=args.experiment_id,
+            environment=args.environment or "default",
+            emit_behavior_trace=bool(args.emit_behavior_trace),
+            seeds=seeds,
+            steps=steps,
+            n_individuals=len(all_rows),
+            per_metric=summary,
+        ),
         indent=2,
     )
     print()

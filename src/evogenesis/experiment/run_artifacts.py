@@ -7,10 +7,11 @@ run（`run_arena.py`）与代循环（`evolution_run.py`）共用同一套产物
 from __future__ import annotations
 
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from evogenesis.core.io import write_csv, write_jsonl
+from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
 
 #: Arena 事件词表（权威 = `arena §18.4.2` + `tests::KNOWN_EVENTS`）；用于 episodes.jsonl 计数列。
 EVENT_KEYS: tuple[str, ...] = (
@@ -92,7 +93,7 @@ def population_record(seed: int, fish_id: str, rec: dict) -> dict:
     }
 
 
-def write_population(run_dir: Path, seed: int, per_fish: dict[str, dict]) -> None:
+def write_population(run_dir: Path, seed: int, per_fish: Mapping[str, dict]) -> None:
     """写 `population.jsonl`（逐个体一行，按 `fish_id` 排序；经 `core.io.write_jsonl`）。"""
     write_jsonl(
         run_dir / "population.jsonl",
@@ -100,8 +101,78 @@ def write_population(run_dir: Path, seed: int, per_fish: dict[str, dict]) -> Non
     )
 
 
+def individual_metric_rows(
+    per_fish: Mapping[str, dict],
+    *,
+    seed: int,
+    episode_steps: int,
+    e_max: float,
+    capture_success_prob: float,
+    weights: dict[str, float],
+) -> list[dict]:
+    """逐个体一行指标（`seed`/`fish_id` + `episode_metrics`）；`run_arena` / `run_chain` /
+    代循环共用，避免三处口径漂移（`实验与评价体系.md` §5.2）。"""
+    return [
+        {
+            "seed": seed,
+            "fish_id": fish_id,
+            **episode_metrics(
+                rec,
+                episode_steps=episode_steps,
+                e_max=e_max,
+                capture_success_prob=capture_success_prob,
+                weights=weights,
+            ),
+        }
+        for fish_id, rec in sorted(per_fish.items())
+    ]
+
+
+def write_seed_artifacts(
+    out_dir: Path,
+    *,
+    rows: list[dict],
+    seed: int,
+    per_fish: Mapping[str, dict],
+    events: Sequence,
+    steps: int,
+    elapsed: float,
+) -> None:
+    """写一个 episode 目录的核心产物：`metrics.csv` / `population.jsonl` / `episodes.jsonl` /
+    `seed_summary.json`（`run_arena` / `run_chain` / 代循环逐代共用）。`events.jsonl` 由
+    `experiment/events.py` 落盘，不在此处。"""
+    write_metrics_csv(out_dir, rows)
+    write_population(out_dir, seed, per_fish)
+    write_jsonl(
+        out_dir / "episodes.jsonl", [episode_row(seed, list(events), per_fish, steps, elapsed)]
+    )
+    dump_json(out_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
+
+
+def run_summary_payload(
+    *,
+    experiment_id: str,
+    environment: str,
+    emit_behavior_trace: bool,
+    seeds: Sequence[int],
+    steps: int,
+    n_individuals: int,
+    per_metric: dict,
+) -> dict:
+    """`results/tables/<id>_summary.json` 的 payload（跨 seed，`run_arena` / `run_chain` 共用）。"""
+    return {
+        "experiment_id": experiment_id,
+        "environment": environment,
+        "emit_behavior_trace": emit_behavior_trace,
+        "seeds": list(seeds),
+        "steps": steps,
+        "n_individuals": n_individuals,
+        "per_metric": per_metric,
+    }
+
+
 def episode_row(
-    seed: int, events: Sequence, per_fish: dict[str, dict], steps: int, elapsed: float
+    seed: int, events: Sequence, per_fish: Mapping[str, dict], steps: int, elapsed: float
 ) -> dict:
     """`episodes.jsonl` 的一行：事件计数 + 吞吐 + 末步存活数。"""
     counts = {key: 0 for key in EVENT_KEYS}
@@ -121,7 +192,10 @@ __all__ = [
     "METRIC_COLUMNS",
     "dump_json",
     "episode_row",
+    "individual_metric_rows",
     "population_record",
+    "run_summary_payload",
     "write_metrics_csv",
     "write_population",
+    "write_seed_artifacts",
 ]

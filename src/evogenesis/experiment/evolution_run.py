@@ -25,17 +25,13 @@ from evogenesis.evolution.population import (
     advance_generation,
 )
 from evogenesis.experiment import runlayout
-from evogenesis.experiment.events import episode_event_header, write_event_log
+from evogenesis.experiment.events import write_episode_log
 from evogenesis.experiment.metrics import (
-    aggregate_by_seed,
     energy_efficiency,
-    episode_metrics,
 )
 from evogenesis.experiment.run_artifacts import (
-    dump_json,
-    episode_row,
-    write_metrics_csv,
-    write_population,
+    individual_metric_rows,
+    write_seed_artifacts,
 )
 from evogenesis.pipeline.arena_episode import (
     PopulationEvaluation,
@@ -162,40 +158,32 @@ def _write_generation_artifacts(
     gen_dir = run_dir / "generations" / f"g{generation:04d}"
     gen_dir.mkdir(parents=True, exist_ok=True)
     episode = evaluation.episode
-    rows: list[dict] = []
     if episode is not None:
-        rows = [
-            {
-                "seed": seed,
-                "fish_id": fish_id,
-                **episode_metrics(
-                    rec,
-                    episode_steps=steps,
-                    e_max=arena_config.energy.e_max,
-                    capture_success_prob=arena_config.growth.capture_success_prob,
-                    weights=weights,
-                ),
-            }
-            for fish_id, rec in sorted(episode.per_fish.items())
-        ]
         spawn_seed, _ = arena_seeds_for(seed, generation)
-        write_event_log(
+        write_episode_log(
             gen_dir / "events.jsonl",
-            episode_event_header(
-                experiment_id=experiment_id,
-                episode_id="ep0001",
-                environment_id=environment_id,
-                generation=generation,
-                episode_seed=spawn_seed,
-                n_events=len(episode.events),
-            ),
-            episode.events,
+            experiment_id=experiment_id,
+            environment_id=environment_id,
+            generation=generation,
+            episode_seed=spawn_seed,
+            events=episode.events,
         )
-        write_metrics_csv(gen_dir, rows)
-        write_population(gen_dir, seed, episode.per_fish)
-        write_jsonl(
-            gen_dir / "episodes.jsonl",
-            [episode_row(seed, list(episode.events), episode.per_fish, steps, elapsed)],
+        rows = individual_metric_rows(
+            episode.per_fish,
+            seed=seed,
+            episode_steps=steps,
+            e_max=arena_config.energy.e_max,
+            capture_success_prob=arena_config.growth.capture_success_prob,
+            weights=weights,
+        )
+        write_seed_artifacts(
+            gen_dir,
+            rows=rows,
+            seed=seed,
+            per_fish=episode.per_fish,
+            events=episode.events,
+            steps=steps,
+            elapsed=elapsed,
         )
     write_jsonl(
         gen_dir / "fitness.jsonl",
@@ -211,8 +199,6 @@ def _write_generation_artifacts(
             for individual in individuals
         ),
     )
-    if episode is not None:
-        dump_json(gen_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
 
 
 def run_evolution(
