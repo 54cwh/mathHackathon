@@ -2,6 +2,7 @@
 
 from evogenesis.pipeline.arena_episode import (
     ArenaEpisodeResult,
+    arena_seeds_for,
     run_arena_episode,
     viable_pairs,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "ArenaEpisodeResult",
     "ChainIndividual",
     "ModelChainConfig",
+    "arena_seeds_for",
     "danionet_of",
     "initial_population",
     "load_model_chain_config",

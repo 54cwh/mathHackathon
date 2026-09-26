@@ -4,7 +4,7 @@ from typing import cast
 
 import pytest
 
-from evogenesis.core.ids import mint_id
+from evogenesis.core.ids import mint_id, parse_id, parse_index
 
 
 def test_mint_id_format_and_determinism():
@@ -33,3 +33,17 @@ def test_mint_id_rejects_bad_inputs():
         mint_id("exp", "genome", cast(int, 1.5), 0)
     with pytest.raises(ValueError):
         mint_id("exp", "genome", 0, True)
+
+
+def test_parse_id_roundtrip():
+    for role in ("genome", "fish"):
+        for generation, index in ((0, 0), (3, 7), (19, 12345)):
+            stable_id = mint_id("exp-0001", role, generation, index)
+            assert parse_id(stable_id) == ("exp-0001", generation, role, index)
+            assert parse_index(stable_id) == index
+
+
+def test_parse_id_rejects_bad_inputs():
+    for bad in ("", "exp:g0:fish", "exp:g0:fish00", "exp:g-1:fish0000", "exp:g0:bird0000"):
+        with pytest.raises(ValueError):
+            parse_id(bad)

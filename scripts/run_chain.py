@@ -21,9 +21,15 @@ from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
 from evogenesis.core.config import read_yaml
+from evogenesis.experiment import runlayout
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
-from evogenesis.pipeline import initial_population, load_model_chain_config, run_arena_episode
+from evogenesis.pipeline import (
+    arena_seeds_for,
+    initial_population,
+    load_model_chain_config,
+    run_arena_episode,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL = ROOT / "configs" / "default_model.yaml"
@@ -83,8 +89,13 @@ def main() -> None:
         generation=args.generation,
     )
 
-    run_dir = Path(args.out_root) / f"{args.experiment_id}-s{args.seed}"
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir = runlayout.create_run_dir(
+        experiment_id=args.experiment_id,
+        seed=args.seed,
+        config_path=args.arena_config,
+        out_root=args.out_root,
+    )
+    spawn_seed, _ = arena_seeds_for(args.seed)
     write_event_log(
         run_dir / "events.jsonl",
         episode_event_header(
@@ -92,7 +103,7 @@ def main() -> None:
             episode_id="ep0001",
             environment_id="default",
             generation=args.generation,
-            episode_seed=args.seed,
+            episode_seed=spawn_seed,
             n_events=len(result.events),
         ),
         result.events,

@@ -219,6 +219,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | genome_id | ⚠️ 不在 `per_fish_log()`；`Fish.genome_id` 由构造注入（`genome_ids`，P0-9），供轨迹落盘读取 |
 | encounters | ✅（\(d<r_{capture}\) 的近距接触计数；**＝`实验与评价体系.md` §2.1 `prey_capture` 分母**） |
 | captures | ✅ |
+| capture attempts | ✅（诊断列：进过前向锥的口，含「太小吃不下」；分母改用 encounters，见 §8/§18.6） |
 | predator encounters | ✅（口径＝捕食者**获得新目标**（被锁定）计数，非近距接触；S7 已定稿） |
 | escape successes | ✅（口径见 §15 逃脱判定） |
 | collisions | ✅ |
@@ -310,20 +311,20 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 **事实来源优先级：代码 > `configs/default_arena.yaml` > 本文档。** 本文档只做映射与记录，不发明规则；与代码冲突以代码为准（发现冲突请直接改本文档）。
 
-**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，参数总表 v0.9 中 `group="arena"` 共 **40** 项，其中 `sim_hz` 为 `confirmed`、`predator_size`/`episode_steps`/`capture_radius`/`episode_seconds` 为 `derived`，余为 `no_basis`，`body_length_mm` 为 `missing`）。
+**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，参数总表 v0.11 中 `group="arena"` 共 **41** 项，其中 `sim_hz` 为 `confirmed`、`predator_size`/`episode_steps`/`capture_radius`/`episode_seconds` 为 `derived`，余为 `no_basis`，`body_length_mm` 为 `missing`）。
 
 ---
 
 ### 18.1 模块清单
 | 文件 | 职责 | 行数 | 对外接口 |
 |---|---|---|---|
-| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 182 | `ArenaConfig()`、`load_arena_config()` |
+| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 189 | `ArenaConfig()`、`load_arena_config()` |
 | `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
 | `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
-| `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 109 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
-| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 517 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造 **必传** `spawn_seed` / `dynamics_seed`，可注入 `fish_ids` / `genome_ids` / `generation` |
-| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方已接线**（`scripts/run_experiment.py`，见 §18.2.3） | 45 | — |
-| `tests/test_arena.py` | 29 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 465 | — |
+| `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 105 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
+| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 544 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造 **必传** `spawn_seed` / `dynamics_seed`，可注入 `fish_ids` / `genome_ids` / `generation` |
+| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，run 目录由 `experiment/runlayout.py` 建（`scripts/run_arena.py` / `run_chain.py` 调用） | 46 | — |
+| `tests/test_arena.py` | 29 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 503 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
 
@@ -347,7 +348,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `world.height` | 60.0 | `world.height` | 60.0 | ✅ | ✅ `world_height` |
 | `world.hz` | 20 | `world.hz` | 20 | ✅ | ✅ `sim_hz` |
 | `world.episode_steps` | 600 | `world.episode_steps` | 600 | ✅ | ✅ `episode_steps` |
-| `world.boundary` | 'reflect' | `world.boundary` | 'reflect' | ✅ | ❌ |
+| `world.boundary` | 'reflect' | `world.boundary` | 'reflect' | ✅ | ✅ `world_boundary` |
 | `population.n_fish` | 12 | `population.n_fish` | 12 | ✅ | ✅ `live_fish` |
 | `population.n_prey` | 24 | `population.n_prey` | 24 | ✅ | ✅ `live_prey` |
 | `population.n_predators` | 3 | `population.n_predators` | 3 | ✅ | ✅ `live_predators` |
@@ -373,6 +374,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `growth.capture_radius` | 4.61 | `growth.capture_radius` | 4.61 | ✅ | ✅ `capture_radius` |
 | `growth.capture_cone_degrees` | 120.0 | `growth.capture_cone_degrees` | 120.0 | ✅ | ✅ `capture_cone_degrees` |
 | `growth.turn_inertia_scale` | 0.35 | `growth.turn_inertia_scale` | 0.35 | ✅ | ✅ `turn_inertia_scale` |
+| `growth.capture_success_prob` | 1.0 | `growth.capture_success_prob` | 1.0 | ✅ | ✅ `capture_success_prob` |
 | `growth.prey_area_gain` | 0.2 | `growth.prey_area_gain` | 0.2 | ✅ | ✅ `prey_area_gain` |
 | `actors.prey_speed` | 0.35 | `actors.prey_speed` | 0.35 | ✅ | ✅ `prey_speed` |
 | `actors.prey_size_min` | 0.3 | `actors.prey_size_min` | 0.3 | ✅ | ✅ `prey_size_min` |
@@ -392,7 +394,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 #### 18.2.3 三条必须写明的结论
 
 1. **`ActorDefaults` 整块（**14 项**）已全部进 `configs/default_arena.yaml` 的 `actors:` 段**（2026-09-26 补入；此前这 14 项在 YAML 中无归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`。**更正（2026-09-26，审计 A13）**：本节原写「12 项 + `growth.biomass_to_size_gain`」，但该字段已随 A4 面积式**删除**（现为 `growth.prey_area_gain`），且 `ActorDefaults` 实为 **14** 个字段、YAML `actors:` 段亦为 **14** 个键 —— 三种说法（12 项 / 14 项 / 含 biomass）已统一为本句。
-2. **`../../../docs/参数总表.json`（v0.9）已收录 `group="arena"` 共 40 项**，覆盖 `world` / `population` / `sensing` / `energy`（含 `collision_penalty`）/ `growth`（含 `prey_area_gain`）/ `actors` 全部字段。其中 `sim_hz` 为 `confirmed`，`predator_size` / `episode_steps` / `capture_radius` / `episode_seconds` 为 `derived`，其余为 `no_basis`（依据 D＝设计选择，**非「未登记」**）；`status` 描述**依据强度**、不表示冻结与否（冻结与否见本文件条款状态）。`body_length_mm` 记为 `missing`（属 DanioNet 侧长度契约，不是 Arena 世界参数）；`world.boundary` 未进表（§2.1 表 ❌）。
+2. **`../../../docs/参数总表.json`（v0.11）已收录 `group="arena"` 共 41 项**，覆盖 `world` / `population` / `sensing` / `energy`（含 `collision_penalty`）/ `growth`（含 `prey_area_gain`）/ `actors` 全部字段。其中 `sim_hz` 为 `confirmed`，`predator_size` / `episode_steps` / `capture_radius` / `episode_seconds` 为 `derived`，其余为 `no_basis`（依据 D＝设计选择，**非「未登记」**）；`status` 描述**依据强度**、不表示冻结与否（冻结与否见本文件条款状态）。`body_length_mm` 记为 `missing`（属 DanioNet 侧长度契约，不是 Arena 世界参数）；`world.boundary` 已进表（`world_boundary`，§2.1 表 ✅）。
 3. **`configs/default_arena.yaml` 已有调用方读取它 —— 该实现债 2026-09-26 闭合。** **Arena 侧加载已落地**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**调用方接线已完成**：`scripts/run_experiment.py` 对 Arena 型配置（顶层键 ⊆ `ARENA_SECTIONS`）调用 loader，并落盘 **`arena_config_resolved.json`（已解析值快照）** —— 因为「原始 YAML 副本」与实际生效值可能漂移（默认值 / env / overrides）。**原对外服务层 `api/session.py` 已按用户决定移除**；arena 配置现行调用方为 `scripts/run_experiment.py`（落盘 `arena_config_resolved.json`）、`scripts/run_arena.py`、`scripts/collect_trajectories.py`、`src/evogenesis/experiment/environments.py` 与 `src/evogenesis/pipeline/arena_episode.py`。与「所有数值必须由 config 读取」（`../../../docs/参数总表.json` 末行）的要求**已闭环**（见 §8 M8、认领表 B7）。
 
 ---
@@ -413,9 +415,9 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | §8 | Predation | `env.py::step()`（鱼吃猎物 + 捕食者吃鱼两段） | 双向同一判据：$d < r_{capture}$ **且** $size_{hunter} \ge \kappa \cdot size_{target}$ **且**目标在猎人前向锥（总锥角 $\theta_{cone}=120^{\circ}$）内 |
 | §9 | PredatorPolicy | `policies.py::PredatorPolicy.plan()` + `env.py::step()` 捕食者段 | 巡游 → 追击 → 避障 → 恢复巡游；滞回由 `release_radius` 实现；转向速率限制在 env 不在 policy |
 | §10 | PreyPolicy | `policies.py::PreyPolicy.act()` + `env.py::_steer_away_from_obstacles(prey, gain=2.0)` | 随机游走 + 避障；**MVP 无主动逃跑**（不被鱼感知） |
-| §11 | ExpertPolicy | `policies.py::ExpertPolicy.__call__()`（对外服务层的 `ExpertPolicy`→`DanioNet` 切换点待随 `api/` 重写落地） | 仅用于模仿学习与现场 Demo 驱动；不参与 DanioNet scoring |
+| §11 | ExpertPolicy | `policies.py::ExpertPolicy.__call__()`（`ExpertPolicy`→`DanioNet` 切换点已由 `pipeline/arena_episode.py` 接入，`scripts/run_chain.py` 为模型评估入口；对外服务层 `api/` 待重写） | 仅用于模仿学习与现场 Demo 驱动；不参与 DanioNet scoring |
 | §12 | 风险—收益冲突 | `env.py::reset()`/`step()`（prey 再生）、`_prey_reward()` | R2 开放可再生（每 `prey_regrowth_steps` 补 1）、高价值＝size 75th 分位、回报随体型（$f(s)=s/\bar{s}$）均已落地；仅「高价值 prey 靠近 predator」的**场景布置**未做 |
-| §13 | 事件日志 / 每鱼记录 | `env.py::per_fish_log()`、`entities.py::Fish` 缓冲字段 | 规范列 11 项，代码实现 10 项（1 项已声明未实现，见 §6） |
+| §13 | 事件日志 / 每鱼记录 | `env.py::per_fish_log()`、`entities.py::Fish` 缓冲字段 | 规范列 12 项，代码实现 11 项（1 项已声明未实现，见 §6） |
 
 #### 18.3.2 规范未逐字规定、但代码已定型的补充细节
 
@@ -583,7 +585,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | # | 未做项 | 说明 |
 |---|---|---|
-| M1 | 神经控制 | 鱼由外部 `actions` 驱动；DanioNet 推理未接入。`generation` 可由构造注入（缺省 0，多代演化未接）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
+| M1 | 神经控制 | 鱼由外部 `actions` 驱动，Arena 不内嵌网络；DanioNet 推理已由 `pipeline/arena_episode.py` 接入（`scripts/run_chain.py`，DanioNet 驱动模型评估）。`generation` 可由构造注入（缺省 0，多代演化未接）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
 | M3 | selected neural activity snapshots | 规范 §13 最后一项未实现；**owner = `connectome`/`DanioNet`（+ api 推送）**，arena 不缓存网络激活（见 §6） |
 | M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；但「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**场景布置仍未做**，`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |

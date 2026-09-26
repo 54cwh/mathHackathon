@@ -2,7 +2,7 @@
 #
 # owner：`experiment/实验与评价体系.md` §4（`core/核心机制与数据流.md` §10 登记：
 #        「环境对照三组的取值与 environment_id」归该文件）。
-# 状态：**草案待确认（2026-09-26）** —— 属**设计选择**（无文献实测依据），
+# 状态：**已定稿（2026-09-26 用户裁定采用）** —— 属**设计选择**（无文献实测依据，参数总表 `status=no_basis`），
 #       三组取值已登记 `docs/参数总表.json`（`env_food_rich` / `env_predator_rich` / `env_resource_scarce`）；当前 `missing_required` 仅剩 `penetrance`。
 #
 # 设计原则：**单因子对照**。每个环境相对 `default_arena.yaml`（n_prey=24,

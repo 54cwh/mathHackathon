@@ -3,8 +3,9 @@
 owner：`pipeline/模型链装配.md`。上游：`core`（seed / ids）、`genome`、`development`、
 `connectome`。本模块**只做编排**：不新造数值、不定义算法、不复制各模块契约。
 
-本期范围：把 `configs/default_model.yaml` 一路跑到 DanioNet 动作 `(ω, v)`。
-Arena 驱动、逐代演化、BC 与 run 落盘均**未接**（见 owner 文档「未接」）。
+本期范围：`configs/default_model.yaml` → DanioNet 动作 `(ω, v)`，以及**Arena 单 episode
+驱动**（`pipeline/arena_episode.py`，入口 `scripts/run_chain.py`）。逐代演化、BC 与 run 落盘
+未接（见 `pipeline/模型链装配.md` §4）。
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ from evogenesis.connectome.config import (
     load_network_config,
 )
 from evogenesis.connectome.danionet import DanioNet
-from evogenesis.core.ids import mint_id
+from evogenesis.core.ids import mint_id, parse_index
 from evogenesis.core.seed import SeedManager
 from evogenesis.development.config import DEFAULT_CONFIG as DEFAULT_RGCD_CONFIG
 from evogenesis.development.config import RGCDConfig, load_development_config
@@ -111,17 +112,20 @@ def phenotypes_of(
     config: RGCDConfig = DEFAULT_RGCD_CONFIG,
     device: str = "cpu",
 ) -> list[ConnectomePhenotype]:
-    """批量发育：`index` 取个体在种群中的稳定序号（不得用调用顺序，`core §3`）。"""
+    """批量发育：`index` 由各 `genome_id` 确定性解析（`core §3`：不得用调用顺序）。
+
+    个体序列可任意重排/子集化——同 `genome_id` 恒得同 `index`，故发育随机流不变。
+    """
     return [
         phenotype_of(
             individual.genome,
             motifs,
             master_seed=master_seed,
-            index=index,
+            index=parse_index(individual.genome_id),
             config=config,
             device=device,
         )
-        for index, individual in enumerate(individuals)
+        for individual in individuals
     ]
 
 

@@ -7,7 +7,13 @@
 
 from __future__ import annotations
 
+import re
+
 _ROLES = ("fish", "genome")
+
+_ID_RE = re.compile(
+    r"^(?P<experiment>[^:]+):g(?P<generation>\d+):(?P<role>fish|genome)(?P<index>\d{4,})$"
+)
 
 
 def mint_id(experiment_id: str, role: str, generation: int, index: int) -> str:
@@ -27,3 +33,25 @@ def mint_id(experiment_id: str, role: str, generation: int, index: int) -> str:
     if index < 0:
         raise ValueError("index 必须 ≥ 0")
     return f"{experiment_id}:g{generation}:{role}{index:04d}"
+
+
+def parse_id(stable_id: str) -> tuple[str, int, str, int]:
+    """`mint_id` 的逆：`<experiment_id>:g<generation>:<role><index:04d>` → 四元组。
+
+    供需要「由稳定 ID 确定性取得实体序号 `t`」的消费方使用（`core §3`：`t` 不得取调用
+    顺序）。对非法格式抛 `ValueError`。
+    """
+    match = _ID_RE.match(stable_id)
+    if match is None:
+        raise ValueError(f"非法稳定 ID: {stable_id!r}（期望 <exp>:g<gen>:<role><index>）")
+    return (
+        match.group("experiment"),
+        int(match.group("generation")),
+        match.group("role"),
+        int(match.group("index")),
+    )
+
+
+def parse_index(stable_id: str) -> int:
+    """由稳定 ID 取该代内序号 `index`（`core §3` 实体序号 `t` 的确定性来源）。"""
+    return parse_id(stable_id)[3]

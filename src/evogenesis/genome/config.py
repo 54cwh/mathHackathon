@@ -2,8 +2,8 @@
 
 本模块**不新造数值**：``GenomeLayout`` 的默认值是冻结配置的镜像，由
 ``tests/test_genome_config.py`` 的漂移守护测试断言与配置文件逐字段一致。
-``load_genome_config()`` 已就绪，经 ``core`` 的 ``load_config`` 读取真实配置注入；
-当前**尚无生产调用方**（种群初始化 / 编排层未落地，接线待补）。
+``load_genome_config()`` 经 ``core`` 的 ``load_config`` 读取真实配置注入；生产调用方为
+``pipeline/model_chain.py::load_model_chain_config``（入口 ``scripts/run_chain.py``）。
 参数依据与状态见 ``docs/参数总表.json``（``group=genome``）。
 """
 

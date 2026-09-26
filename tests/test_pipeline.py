@@ -4,6 +4,7 @@ from dataclasses import replace
 
 import numpy as np
 import pytest
+import torch
 
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
@@ -16,6 +17,7 @@ from evogenesis.pipeline.model_chain import (
     load_model_chain_config,
     motif_catalog,
     phenotype_of,
+    phenotypes_of,
 )
 
 MASTER_SEED = 250927
@@ -124,6 +126,23 @@ def test_run_arena_episode_propagates_generation():
     )
     assert result.per_fish
     assert all(rec["generation"] == 3 for rec in result.per_fish.values())
+
+
+def test_phenotypes_of_is_reorder_invariant():
+    """`index` 由 `genome_id` 解析（`core §3`）：重排输入不改变同个体的发育结果。"""
+    chain = load_model_chain_config()
+    motifs = motif_catalog(MASTER_SEED)
+    population = initial_population(master_seed=MASTER_SEED, experiment_id=EXPERIMENT_ID, n=5)
+    forward = phenotypes_of(population, motifs, master_seed=MASTER_SEED, config=chain.rgcd)
+    backward_individuals = tuple(reversed(population))
+    backward = phenotypes_of(
+        backward_individuals, motifs, master_seed=MASTER_SEED, config=chain.rgcd
+    )
+    by_genome = {ind.genome_id: phen for ind, phen in zip(population, forward, strict=True)}
+    for ind, phen in zip(backward_individuals, backward, strict=True):
+        reference = by_genome[ind.genome_id]
+        assert torch.equal(phen.adjacency, reference.adjacency)
+        assert torch.equal(phen.weights0, reference.weights0)
 
 
 def test_arena_seeds_are_namespaced():

@@ -4,15 +4,16 @@
 **模型评估**（BC/DanioNet）用 `scripts/run_chain.py`（DanioNet 驱动），
 本脚本不用于模型评估。规模：默认 `n_fish=12`（Live/ExpertPolicy）。
 
-每个 seed 一个 run 目录（`<experiment_id>-s<seed>`），目录布局由 `scripts/run_experiment.py`
-创建（它是 run 目录布局的唯一 owner；本脚本只负责补 Arena 侧产物）：
+每个 seed 一个 run 目录（`<experiment_id>-s<seed>`），目录布局由
+`experiment/runlayout.py::create_run_dir` 创建（它是 run 目录布局的唯一实现；本脚本只负责
+补 Arena 侧产物）：
 
 ```text
 results/runs/<experiment_id>-s<seed>/
-  metadata.json               (由 run_experiment.py 写)
+  metadata.json               (由 runlayout 写)
   trajectories/               (仅在 --emit-trajectories 时写：
                                episode_<id>.jsonl，契约见 schemas/trajectory.schema.json)
-  arena_config_resolved.json  (由 run_experiment.py 写：实际生效的 ArenaConfig 快照)
+  arena_config_resolved.json  (由 runlayout 写：实际生效的 ArenaConfig 快照)
   config_snapshot/  seed.txt  git_commit.txt
   metrics.csv                 逐个体一行：指标 + 原始计数
   population.jsonl            逐个体一行：轨迹幅度等，供作图
@@ -40,9 +41,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import os
-import subprocess
-import sys
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -52,10 +50,8 @@ from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
 from evogenesis.core.ids import mint_id
 from evogenesis.core.seed import SeedManager
-from evogenesis.experiment.environments import (
-    environment_env_vars,
-    load_environment,
-)
+from evogenesis.experiment import runlayout
+from evogenesis.experiment.environments import load_environment
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
@@ -101,33 +97,13 @@ METRIC_COLUMNS = (
 def create_run_dir(
     experiment_id: str, config: str, seed: int, overrides: dict | None = None
 ) -> Path:
-    """委托 `run_experiment.py` 建目录（布局唯一 owner），返回运行目录。"""
-    script = ROOT / "scripts" / "run_experiment.py"
-    cmd = [
-        sys.executable,
-        str(script),
-        "--config",
-        config,
-        "--seed",
-        str(seed),
-        "--experiment-id",
-        experiment_id,
-    ]
-    proc = subprocess.run(
-        cmd,
-        cwd=ROOT,
-        env={**os.environ, **environment_env_vars(overrides)},
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
+    """经布局 owner `experiment/runlayout.py` 建目录，返回 `<experiment_id>-s<seed>/`。"""
+    return runlayout.create_run_dir(
+        experiment_id=experiment_id,
+        seed=seed,
+        config_path=config,
+        overrides=overrides,
     )
-    if proc.returncode != 0:
-        raise SystemExit(
-            "run_experiment.py 建目录失败（experiment_id 需唯一）："
-            + (proc.stderr.strip() or proc.stdout.strip())
-        )
-    return ROOT / "results" / "runs" / experiment_id
 
 
 def run_episode(
@@ -294,7 +270,7 @@ def main() -> None:
     seed_rows: list[dict] = []
     for seed in seeds:
         run_id = f"{args.experiment_id}-s{seed}"
-        run_dir = create_run_dir(run_id, args.config, seed, overrides)
+        run_dir = create_run_dir(args.experiment_id, args.config, seed, overrides)
         per_fish, events, elapsed, traj = run_episode(
             cfg_path,
             seed,
