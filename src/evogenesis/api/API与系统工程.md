@@ -91,9 +91,7 @@
 | GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
 | POST | `/v1/sessions/{session_id}/evolutions` | **会话内演化（过渡：复用环境选择 job，已实现）**，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
-| POST | `/v1/experiments` | 启动正式实验（**多协议，未实现**），`202` + `job_id` |
-| GET | `/v1/experiments` | 实验列表（分页，未实现） |
-| GET | `/v1/experiments/{experiment_id}` | 实验元数据 + 指标（未实现） |
+> **通用多协议实验资源 `/v1/experiments` 不在端点草案**（已由 `/v1/environmental-selections` 取代；无消费者、`protocol` 契约未定）。如需通用启动器，须先定义 `protocol` 参数与各协议参数契约再引入。
 | POST | `/v1/environmental-selections` | **启动环境选择实验（Experiment F，已实现）**，`202` + `job_id` |
 | GET | `/v1/environmental-selections` | 环境选择实验列表（分页，已实现） |
 | GET | `/v1/environmental-selections/{experiment_id}` | 环境选择实验详情（已实现） |
@@ -114,7 +112,7 @@
 | `arena.fish_state` | `{session_id, step, fish:{fish_id:{x,y,heading,speed,energy,size,alive}}}` | 订阅会话每次 `release` 推进后 | 已实现 |
 | `arena.events` | `{session_id, events:[{seq,type,step,payload}]}` | 同上（本次新增事件） | 已实现 |
 | `job.progress` | `{job_id, status, progress}` | 实验/任务进度或状态变化 | 已实现 |
-| `brain.activation` | `{session_id, fish_id, activation:[...]}` | 选中鱼的神经激活 | **未接**（需模型驱动会话/DanioNet；当前会话由 `ExpertPolicy` 驱动，无 activation 生产者） |
+| `brain.activation` | `{session_id, step, fish:{fish_id: activation[]}}` | **模型驱动会话**（`model_driven=true`）`release` 后；选中鱼由客户端按 `fish` 键取 | 已实现（仅模型驱动会话） |
 
 - **采样率**：**事件驱动**，不做定时采样 —— `arena.*` 由订阅会话的 `release` 触发；不每帧发送全部 48×48 matrix（保持）。
 - **`seq`**：**每连接**单调递增（原进程级全局已废弃）。

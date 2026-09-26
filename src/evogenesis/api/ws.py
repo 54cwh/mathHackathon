@@ -78,6 +78,15 @@ def publish_events(session_id: str, events: list[dict]) -> None:
     publish("arena.events", {"session_id": session_id, "events": events}, session_id=session_id)
 
 
+def publish_brain_activation(session_id: str, step: int, fish: dict[str, list[float]]) -> None:
+    """模型驱动会话的逐鱼激活（`API与系统工程.md` §5；`选中鱼` 由 payload.fish 键选取）。"""
+    publish(
+        "brain.activation",
+        {"session_id": session_id, "step": step, "fish": fish},
+        session_id=session_id,
+    )
+
+
 def publish_job_progress(job_id: str, status: str, progress: float) -> None:
     publish("job.progress", {"job_id": job_id, "status": status, "progress": progress})
 

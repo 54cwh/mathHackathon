@@ -12,8 +12,10 @@ from __future__ import annotations
 
 import threading
 import uuid
+from dataclasses import replace
 from pathlib import Path
 
+import numpy as np
 from fastapi import APIRouter, HTTPException
 
 from evogenesis.api import environmental_selections as selections
@@ -32,7 +34,14 @@ from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.experiment.config import load_experiment_config
-from evogenesis.pipeline import arena_seeds_for
+from evogenesis.pipeline import (
+    arena_seeds_for,
+    danionet_of,
+    initial_population,
+    load_model_chain_config,
+    motif_catalog,
+    phenotypes_of,
+)
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -57,14 +66,39 @@ class Session:
         self.environment = create.environment
         self.master_seed = create.master_seed
         self.arena_config_path = create.arena_config_path
-        # model_config_path 为占位契约（`API接口.md` §7.2）：Demo 用 ExpertPolicy 驱动，
-        # 不加载 DanioNet，故该字段被接收但不参与本层行为。
         self.model_config_path = create.model_config_path
         self.generation = 0
         self.running = True
         cfg = load_arena_config(_resolve(create.arena_config_path))
         spawn_seed, dynamics_seed = arena_seeds_for(create.master_seed, _SESSION_ARENA_INDEX)
-        self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)
+        # 模型驱动会话（`API接口.md` §7.2，草案待确认）：由 DanioNet 驱动并推送 `brain.activation`。
+        self.model_driven = bool(create.model_driven)
+        self.net = None
+        self._activation: dict[str, list[float]] = {}
+        if self.model_driven:
+            chain = load_model_chain_config(_resolve(create.model_config_path))
+            motifs = motif_catalog(create.master_seed, chain.layout)
+            individuals = initial_population(
+                master_seed=create.master_seed,
+                experiment_id=session_id,
+                n=cfg.population.n_fish,
+                layout=chain.layout,
+            )
+            phenotypes = phenotypes_of(individuals, motifs, master_seed=create.master_seed)
+            keep = [i for i, p in enumerate(phenotypes) if p.viable]
+            if not keep:
+                raise ValueError("模型驱动会话：该 seed 无 viable 个体（RGCD §7）")
+            self.net = danionet_of([phenotypes[i] for i in keep], master_seed=create.master_seed)
+            cfg = replace(cfg, population=replace(cfg.population, n_fish=len(keep)))
+            self.arena = DanioArena(
+                cfg,
+                spawn_seed=spawn_seed,
+                dynamics_seed=dynamics_seed,
+                fish_ids=[individuals[i].fish_id for i in keep],
+                genome_ids=[individuals[i].genome_id for i in keep],
+            )
+        else:
+            self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)
         self.expert = expert_policy_from_config(self.arena.cfg)
         # 同步 `def` 路由由 FastAPI 丢进线程池并发执行，单 worker ≠ 单线程；同一会话的
         # 并发调用须串行化（见 `API接口.md` §7.1）。
@@ -74,6 +108,9 @@ class Session:
     def reset_arena(self) -> None:
         with self._lock:
             self.arena.reset()
+            if self.net is not None:
+                self.net.reset()
+            self._activation = {}
             self.generation = 0
             self.running = True
 
@@ -87,7 +124,18 @@ class Session:
                 if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
                     break
                 actions: dict[str, tuple[float, float]] = {}
-                if use_expert:
+                if self.net is not None:
+                    fish_ids = list(self.arena.fish)
+                    obs = np.stack([self.arena.observe(fid) for fid in fish_ids])
+                    omega, speed = self.net.step(obs)
+                    omega = omega.detach()
+                    speed = speed.detach()
+                    activation = self.net.h.detach()
+                    for index, fid in enumerate(fish_ids):
+                        if self.arena.fish[fid].alive:
+                            actions[fid] = (float(omega[index]), float(speed[index]))
+                            self._activation[fid] = [float(x) for x in activation[index]]
+                elif use_expert:
                     for fid, fish in self.arena.fish.items():
                         if fish.alive:
                             actions[fid] = self.expert(self.arena.observe(fid))
@@ -96,6 +144,11 @@ class Session:
                 if result.done:
                     break
         return new_events
+
+    def activation(self) -> dict[str, list[float]]:
+        """最近一步的逐鱼激活（模型驱动会话；`brain.activation` 推送用）。"""
+        with self._lock:
+            return dict(self._activation)
 
     def snapshot(self) -> Snapshot:
         with self._lock:
@@ -273,6 +326,8 @@ def delete_session(session_id: str) -> None:
 def release(session_id: str, steps: int = 1, use_expert: bool = True) -> SessionSummary:
     s = _get_session(session_id)
     events = s.advance(steps=steps, use_expert=use_expert)
+    if s.net is not None:
+        ws_hub.publish_brain_activation(s.session_id, s.arena.step_idx, s.activation())
     if events:
         ws_hub.publish_fish_state(s.session_id, s.arena.step_idx, s.fish_state())
         ws_hub.publish_events(s.session_id, [e.to_dict() for e in events])

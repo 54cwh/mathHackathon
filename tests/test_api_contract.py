@@ -411,3 +411,22 @@ def test_session_evolution_launches_job(tmp_path, monkeypatch) -> None:
     resp = client.post(f"/v1/sessions/{sid}/evolutions?generations=0")
     assert resp.status_code == 202
     assert _wait_job(resp.json()["job_id"])["status"] == "done"
+
+
+def test_model_driven_session_pushes_brain_activation() -> None:
+    """模型驱动会话（DanioNet）release 后经 WS 推 brain.activation。"""
+    resp = client.post("/v1/sessions", json={"master_seed": 1103, "model_driven": True})
+    assert resp.status_code == 201, resp.text
+    sid = resp.json()["session_id"]
+    with client.websocket_connect(f"/v1/ws?session_id={sid}") as ws:
+        assert ws.receive_json()["type"] == "sys.hello"
+        client.post(f"/v1/sessions/{sid}/release?steps=2")
+        frames = []
+        for _ in range(6):
+            frames.append(ws.receive_json())
+            if any(f["type"] == "brain.activation" for f in frames):
+                break
+        ba = next(f for f in frames if f["type"] == "brain.activation")
+        assert ba["payload"]["session_id"] == sid
+        fish = ba["payload"]["fish"]
+        assert fish and all(isinstance(v, list) and v for v in fish.values())

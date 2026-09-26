@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
@@ -274,6 +275,7 @@ def run_evolution(
     environment_id: str = "default",
     steps: int | None = None,
     device: str = "cpu",
+    forced_by_generation: Mapping[int, tuple[str, str]] | None = None,
 ) -> EvolutionRunResult:
     """跑 `generations` 代；`run_dir` 须已由 `runlayout.create_run_dir` 建好。
 
@@ -357,6 +359,7 @@ def run_evolution(
             seed_manager=seed_manager,
             config=evolution_config,
             layout=chain.layout,
+            forced_pair=(forced_by_generation.get(generation) if forced_by_generation else None),
         )
         if not result.success:
             bottleneck = True

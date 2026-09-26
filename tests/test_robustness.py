@@ -67,13 +67,13 @@ def test_run_robustness_payload_matches_schema_and_conditions():
         chain=chain,
         arena_config=arena_config,
         n_danio=48,
-        steps=60,
+        steps=120,
     )
     jsonschema.validate(payload, SCHEMA)
 
-    assert payload["status"] == "草案待确认"
+    assert payload["status"] == "confirmed"
     assert payload["fractions"] == list(FRACTIONS)
-    assert payload["steps"] == 60
+    assert payload["steps"] == 120
     entry = payload["per_seed"][str(SEED_WITH_VIABLE)]
     assert entry["substrate"] is not None, "该 seed 应有 viable 底物"
     conditions = {c["fraction"]: c for c in entry["conditions"]}
@@ -81,6 +81,12 @@ def test_run_robustness_payload_matches_schema_and_conditions():
     assert conditions[0.0]["n_removed"] == 0
     n_edges = entry["n_edges"]
     assert conditions[0.05]["n_removed"] == dropped_edge_count(n_edges, 0.05)
+    # 行为发散（主指标）：对照恒 ~0，删边 > 0；聚合表含全部比例
+    assert conditions[0.0]["divergence"]["mean_abs_omega"] == 0.0
+    assert conditions[0.0]["divergence"]["mean_abs_v"] == 0.0
+    assert conditions[0.2]["divergence"]["mean_abs_v"] > 0.0
+    assert set(payload["behavior_divergence"]) == {"0", "0.05", "0.1", "0.2"}
+    assert payload["behavior_divergence"]["0.2"]["mean_abs_v"]["n"] == 1
     # 退化量表不含量基线 0，含 0.05/0.1/0.2
     assert set(payload["degradation"]) == {"0.05", "0.1", "0.2"}
     assert payload["degradation"]["0.05"]["composite_fitness"]["n"] == 1
