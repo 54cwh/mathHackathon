@@ -72,7 +72,7 @@ rng = numpy.random.default_rng([NAMESPACE[name], MASTER_SEED])
 **(B) spawn 树法（等价，适合层级/实体级种子）**
 
 ```python
-children = numpy.random.SeedSequence(MASTER_SEED).spawn(K)   # 只 spawn 一次，缓存
+children = numpy.random.SeedSequence(MASTER_SEED).spawn(K)  # 只 spawn 一次，缓存
 rng = numpy.random.default_rng(children[IDX[name]])
 ```
 
