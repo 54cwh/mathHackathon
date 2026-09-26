@@ -144,6 +144,24 @@
 ## 5. 与现有文档/代码的冲突点（仅指出，未修改）
 
 - `src/evogenesis/arena/Danio_Arena设计与实现说明.md` §8 自述「与生物量级冲突」；本调研确认冲突的根因是**单位约定缺失**，建议优先补这一条，再谈 κ/radius 数值。
-- `danio_arena` config 与 `docs/参数总表.json` 中 `capture_size_ratio`、`sensing_radius` 均为 `proposed_change`；本调研为它们提供了比率锚点（capture/sensing ≈0.16–0.41）与 κ 设计区间（2.0–2.5），但不构成定稿依据。
+- `danio_arena` config 与 `docs/参数总表.json` 中 `capture_size_ratio`、`sensing_radius` 均为 `proposed_change`（**2026-09-26 更新**：两者已转 `no_basis`——`capture_size_ratio` 保持 1.25、`sensing_radius` 保持 18 wu；本调研的比率锚点已用于**新增**的 `capture_radius = 4.61`。见 §6）；本调研为它们提供了比率锚点（capture/sensing ≈0.16–0.41）与 κ 设计区间（2.0–2.5），但不构成定稿依据。
 - `env.py` 的 `food_reward` 为常数、prey 无主动逃跑（`PreyPolicy.avoid_gain` 为死参数）：若采用「prey 逃避降低捕获成功率」或「高价值 prey」，两处都需先改文档再改代码。
 - 所有建议涉及具体数值者均应在 `configs/` 与设计规范中标注 `草案待确认`，不得作为 `已定稿` 契约被依赖。
+
+## 6. 裁决结果（2026-09-26）
+
+本节记录 §1–§3 建议的处置。裁决来源：`research/notes/契约决策记录.md`「Arena 世界尺度」；落地点：`arena/Danio_Arena设计与实现说明.md` §2/§8。
+
+| 本文建议 | 裁决 | 落地 |
+|---|---|---|
+| T2「先写死 world unit ↔ BL 换算」 | **不写换算，改方案 B**：wu 不与 BL 固定换算，只按无量纲比率校准 | ✅（§2 尺度声明【已定稿】） |
+| `capture_radius / sensing.radius ≈ 0.16–0.41` | **采纳**：几何中心 0.256 → `capture_radius = 4.61 wu`（域 2.88–7.38） | ✅ |
+| κ 由绝对门改「尺寸不对称门 2.0–2.5」 | **未采纳**：κ 保持 1.25 | ✅（保持） |
+| 补朝向锥 | **已裁决增加**：总锥角 120° | ⏳ 待实现 |
+| 补随机捕获失败率 0.5–0.7 | **未采纳**：`P_capture_success` 保持 1.0 | ✅（保持） |
+| T1 逃脱改威胁结局制（`T_hold = 20`） | 本次裁决未涉及 | ⏳（A8 待认领） |
+| T3 respawn、高价值 prey、`food_reward` 随 size 单调 | 本次裁决未涉及 | ⏳（§12 待认领） |
+
+**κ 未采纳的原因（对本文原始描述的一处更正）**：本文建议的 2.0–2.5 隐含「捕食者须绝对地大于猎物」的读法，但实际判据是 `size_hunter ≥ κ·size_target`，等价 `prey_size ≤ predator_size / κ`——κ 乘的是**猎物**尺寸，κ 越大判定越**严格**（可吞猎物上限 = `predator_size / κ` 越低）。因此本文早期「1.25 允许猎物大于自身」的描述方向相反，已由 `docs/参数总表.json` v0.4 更正。κ 保持 1.25，并以耦合约束 `predator_size ≥ κ·max_size`（= 3.125）保证最大体型个体仍可被捕食。
+
+**仍然成立的部分**：打击/探测距离的量级与比值区间、gape limitation 的方向性、捕获成功率并非 100% 这三点不受本次裁决影响；只是不再以「成鱼 BL」为口径，而作为**无量纲先验**使用。

@@ -127,12 +127,12 @@ size\leftarrow\min\big(size_{max},\ size+k_{growth}\cdot size_{prey}\big)
 必须同时满足：
 
 \[
-d<r_{capture}\quad\text{且}\quad size_{hunter}>\kappa\, size_{target}
+d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}
 \]
 
-**【已定稿】** 判据形式与 \(\kappa=1.25\)（\(\kappa\) 状态 `proposed_change`，最终由 play-test 标定）；**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。距判据为**纯距离，无朝向/口部角度**；每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
+**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。\(\kappa=1.25\) 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。距判据为**纯距离，无朝向/口部角度**（前向锥待实现，见 §17 A2）；每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
 
-**【草案待确认】** \(r_{capture}=1.2\)（现状；待认领表 A2——是否采用、是否加朝向/口部角度）。
+**【已定稿】** $r_{capture}=4.61$（方案 B：按 $r_{capture}/sensing.radius=\sqrt{0.16\times0.41}=0.256$ 校准，可接受域 2.88–7.38；见 `research/notes/契约决策记录.md`）。**前向锥（总锥角 120°）仍待实现**，见 §17 A2。
 
 > ⚠️ 原记「与生物量级冲突」。**根因＝`world unit ↔ BL` 换算缺失，已由 §2 尺度声明闭合**（方案 B：不建立固定换算，只按无量纲比率校准）。故本节参数不再与成鱼 BL 直接比对；校准口径是 `r_capture / sensing.radius` 与 \(\kappa\) 的无量纲关系（见 §17 A2 余下子项）。
 
@@ -237,7 +237,7 @@ Complex Scene 可设置：【草案待确认】
 |---|---|
 | 行为语义 | A6 边界策略；A7 碰撞后果（现状默认不触发，需重评指标）；A8 逃脱判定；A9 团灭提前结束；捕食双向/被吃后果（§8 已建议固定为双向，待确认）；prey 重生/守恒；survival 定义（§15） |
 | 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；looming 恒 0 的修法 |
-| 参数 | A2 \(r_{capture}\)（**方案 B 已裁决**：按 `r_capture/sensing` 无量纲比率校准；余一子项——判据边界 `<` vs `≤` 与 `predator_size` 最小值联动，见 §8）；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
+| 参数 | A2 \(r_{capture}\)（**已裁决并定稿**：`r_capture=4.61`、判据含边界 `≥` 从而锁定 `predator_size=3.125`；余**前向锥 120°** 待实现）；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
 | 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8，**阻断**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 
@@ -261,7 +261,7 @@ Complex Scene 可设置：【草案待确认】
 
 **事实来源优先级：代码 > `configs/default_arena.yaml` > 本文档。** 本文档只做映射与记录，不发明规则；与代码冲突以代码为准（发现冲突请直接改本文档）。
 
-**上游参数表**：`../../../docs/参数总表.json`（当前 73 项 + `missing_required` 5 项；计数以该文件为准）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，Arena 侧收录量 **13**）。
+**上游参数表**：`../../../docs/参数总表.json`（当前 75 项 + `missing_required` 5 项；计数以该文件为准）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，Arena 侧收录量 **13**）。
 
 ---
 
@@ -318,13 +318,13 @@ Complex Scene 可设置：【草案待确认】
 | `growth.initial_size` | 1.0 | `growth.initial_size` | 1.0 | ✅ | ❌ | 实现值 |
 | `growth.max_size` | 2.5 | `growth.max_size` | 2.5 | ✅ | ❌ | 实现值 |
 | `growth.capture_size_ratio` | 1.25 | `growth.capture_size_ratio` | 1.25 | ✅ | ✅ `capture_size_ratio` | 已进表，`status=proposed_change`（规范 §8 当前取值 $\kappa = 1.25$，待 play-test 标定） |
-| `growth.capture_radius` | 1.2 | `growth.capture_radius` | 1.2 | ✅ | ❌ | 实现值 |
+| `growth.capture_radius` | 4.61 | `growth.capture_radius` | 4.61 | ✅ | ❌ | **已定稿**（方案 B：$r_{capture}/sensing.radius=0.256$，见 §8） |
 | `growth.turn_inertia_scale` | 0.35 | `growth.turn_inertia_scale` | 0.35 | ✅ | ❌ | 实现值（$k_{turn}$） |
 | `growth.biomass_to_size_gain` | 0.02 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮**（规范只说"缓慢增长并设上限"，未给数值） |
 | `actors.prey_speed` | 0.35 | **缺失**（无 `actors:` 块） | — | ❌ | ❌ | **MVP 标定旋钮** |
 | `actors.prey_size_min` | 0.30 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
 | `actors.prey_size_max` | 0.60 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_size` | 2.0 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
+| `actors.predator_size` | 3.125 | **缺失** | — | ❌ | ❌ | **已定稿**（$=\kappa\cdot size_{max}=1.25\times2.5$，耦合约束见 §8；仍未进 YAML，见 §18.2.3） |
 | `actors.predator_cruise_speed` | 0.40 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
 | `actors.predator_chase_speed` | 0.65 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
 | `actors.predator_detection_radius` | 15.0 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
@@ -337,7 +337,7 @@ Complex Scene 可设置：【草案待确认】
 #### 18.2.3 三条必须写明的结论
 
 1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 在 `configs/default_arena.yaml` 中不存在。** 即共 **13 项**未进 YAML。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
-2. **`../../../docs/参数总表.json` 现收录 Arena 侧 13 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
+2. **`../../../docs/参数总表.json` 现收录 Arena 侧 **15 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `capture_radius` / `predator_size` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
 3. **`configs/default_arena.yaml` 目前没有任何代码读取它。** 全仓库对 `default_arena` 的引用只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，即**用 Python 硬编码默认值跑仿真**，YAML 是并行的、可能漂移的副本。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
 
 ---
@@ -355,7 +355,7 @@ Complex Scene 可设置：【草案待确认】
 | §5 | 连续运动 | `Entity.advance()`、`DanioArena._omega_eff()`、`env.py::step()` 鱼循环 | $\theta \mathrel{+}= \omega_{eff} \cdot dt$，**位移用新航向**；$\omega_{eff} = \omega / (1 + k_{turn}(size-1))$；越界裁剪不反弹 |
 | §6 | Energy / Hunger | `env.py::step()` 能量段、`config.py::EnergyConfig` | $E' = \mathrm{clip}(E - C_{base} - C_{move}v^2 + R_{food}\cdot\mathbb{1}[\text{本步捕获}], 0, E_{max})$；$H = 1 - E/E_{max}$；$E \le 0$ 判死 |
 | §7 | Growth | `env.py::step()` 捕食段 | `biomass += prey.size`；`size = min(max_size, size + gain * prey.size)`；"大"同时带来更大 prey 与更大转向惯性。`biomass` 只写不读（认领表 A4） |
-| §8 | Predation | `env.py::step()`（鱼吃猎物 + 捕食者吃鱼两段） | 双向同一判据：$d < r_{capture}$ **且** $size_{hunter} > \kappa \cdot size_{target}$ |
+| §8 | Predation | `env.py::step()`（鱼吃猎物 + 捕食者吃鱼两段） | 双向同一判据：$d < r_{capture}$ **且** $size_{hunter} \ge \kappa \cdot size_{target}$ |
 | §9 | PredatorPolicy | `policies.py::PredatorPolicy.plan()` + `env.py::step()` 捕食者段 | 巡游 → 追击 → 避障 → 恢复巡游；滞回由 `release_radius` 实现；转向速率限制在 env 不在 policy |
 | §10 | PreyPolicy | `policies.py::PreyPolicy.act()` + `env.py::_steer_away_from_obstacles(prey, gain=2.0)` | 随机游走 + 避障；**MVP 无主动逃跑**（不被鱼感知） |
 | §11 | ExpertPolicy | `policies.py::ExpertPolicy.__call__()`、`src/evogenesis/api/session.py::Session.advance()` | 仅用于模仿学习与现场 Demo 驱动；不参与 DanioNet scoring |
@@ -418,7 +418,7 @@ Complex Scene 可设置：【草案待确认】
 | # | `type` | 触发时机 | payload |
 |---|---|---|---|
 | 1 | `arena.spawn` | `reset()` 为每个 fish / prey / predator 各发一次（$12+24+3 = 39$ 条） | `entity_id` |
-| 2 | `arena.capture_attempt` | 鱼与某猎物 $d <$ `capture_radius`(1.2) 且尺寸比 $\le \kappa$(1.25)；每鱼每步至多一条 | `fish_id, prey_id, distance, size_ratio, threshold, capture_radius, result` |
+| 2 | `arena.capture_attempt` | 鱼与某猎物 $d <$ `capture_radius`(4.61) 且尺寸比 $\le \kappa$(1.25)；每鱼每步至多一条 | `fish_id, prey_id, distance, size_ratio, threshold, capture_radius, result` |
 | 3 | `arena.prey_captured` | 鱼吃掉猎物（$d < 1.2$ 且 $size_{fish} > 1.25 \cdot size_{prey}$） | `fish_id, prey_id, distance, size_ratio, food_reward` |
 | 4 | `arena.escape` | 捕食者**换掉**已锁定目标，且**该目标仍存活**（见 S17） | `fish_id, threat_source` |
 | 5 | `arena.collision` | 鱼撞障碍（每鱼每步最多一次，命中即 `break`） | `fish_id, obstacle_id` |
@@ -511,7 +511,7 @@ Complex Scene 可设置：【草案待确认】
 | 认领编号 | 未认领的内容 | 本文档对应节 | 实现现状 |
 |---|---|---|---|
 | **A1** | 12 维感官编码的归一化公式（线性衰减、$rel$ 尺寸、looming 系数 10、左右分侧规则） | §4、S20 | 已实现、已固化；**looming 通道在现状调用序下恒 0**（S20 实测），须一并认领 |
-| **A2** | 捕食几何：`capture_radius = 1.2`（纯距离，无朝向/口部角度）、$\kappa = 1.25$ | §2.1、§2.2、§3.1 §8 | $\kappa$ 已进 `../../../docs/参数总表.json`；半径 1.2 未认领 |
+| **A2** | 捕食几何：`capture_radius = 4.61`（纯距离；前向锥 120° 待实现）、$\kappa = 1.25$（判据含边界） | §2.1、§2.2、§3.1 §8 | **2026-09-26 已裁决**（台账「Arena 世界尺度」）；半径与 $\kappa$ 均已进 `../../../docs/参数总表.json` |
 | **A3** | 能量四系数：`e_max` / `base_cost_per_step` / `movement_cost_scale` / `food_reward` | §2.1 | 已实现，未进 `../../../docs/参数总表.json` |
 | **A4** | 生长：`initial_size` / `max_size` / `biomass_to_size_gain`；`biomass` 为只写不读的镜像量 | §2.2、§3.1 §7 | 已实现；实测单局 size 几乎不动 |
 | **A5** | `actors` 整组 12 项（含 `predator_turn_rate`） | §2.2 | 已实现；YAML 无 `actors:` 段，未进 `../../../docs/参数总表.json` |
@@ -596,27 +596,27 @@ Complex Scene 可设置：【草案待确认】
 
 ### 18.11 冒烟基线
 
-本文件自测基线：`master_seed = 250927`、600 步、12 条 ExpertPolicy 鱼、默认 `ArenaConfig()`。
+本文件自测基线：`master_seed = 250927`、600 步、12 条 ExpertPolicy 鱼、默认 `ArenaConfig()`（`r_capture=4.61`、`predator_size=3.125`、κ=1.25、§8 判据含边界）。
 
 | 项 | 值 |
 |---|---|
-| 猎物捕获 | 5 / 24（`arena.prey_captured` 计数亦为 5） |
-| 存活 | 12 / 12 |
-| 事件计数 | `arena.spawn` 39 + `arena.prey_captured` 5 + `arena.episode_end` 1 = **45** |
-| 吞吐 | 约 267 steps/s（单进程、CPU） |
-| 测试 | `pytest tests/test_arena.py tests/test_api_contract.py` → **24 passed**（`test_arena.py` 15 + `test_api_contract.py` 9） |
+| 猎物捕获 | 12 / 24（`arena.prey_captured` 计数亦为 12） |
+| 存活 | 9 / 12（`arena.fish_captured` = 3） |
+| 事件计数 | `arena.spawn` 39 + `arena.prey_captured` 12 + `arena.episode_end` 1 = **52** |
+| 吞吐 | 约 327 steps/s（单进程、CPU） |
+| 测试 | `pytest tests/test_arena.py tests/test_api_contract.py` → **27 passed**（`test_arena.py` 18 + `test_api_contract.py` 9） |
 
-⚠️ **历史基线（9 / 24 猎物捕获、约 236 steps/s）不可与本节数值直接对比**：障碍生成方式（S9）一旦变动，同一 seed 下的初始世界即不同（D5）。
+⚠️ **本次基线因参数变更重跑**：`r_capture` 1.2 → **4.61**、`predator_size` 2.0 → **3.125**、§8 判据改为**含边界**（方案 B，2026-09-26）。`r_capture` 改变遭遇/捕获几何，`predator_size` 改变可捕食体型集合，故**先前基线（5 / 24 猎物捕获、0 条鱼被捕食、约 267 steps/s）不可与本表直接对比**；更早的历史基线（9 / 24、约 236 steps/s）同理。另注：障碍生成方式一旦变动，同一 seed 下的初始世界即不同（§18.5 D5）。
 
 **多 seed 实测（600 步，12 条 ExpertPolicy 鱼，默认配置）**：
 
 | seed | `arena.prey_captured` | `arena.fish_captured` | `arena.collision` | `arena.escape` | `arena.energy_depleted` | 存活 |
 |---|---|---|---|---|---|---|
-| 1 | 10 | 2 | 0 | 0 | 0 | 10 |
-| 7 | 12 | 1 | 0 | 0 | 0 | 11 |
-| 42 | 8 | 2 | 0 | 0 | 0 | 10 |
-| 1234 | 5 | 2 | 0 | 0 | 0 | 10 |
-| 250927 | 5 | 0 | 0 | 0 | 0 | 12 |
+| 1 | 14 | 3 | 0 | 0 | 0 | 9 |
+| 7 | 17 | 1 | 0 | 0 | 0 | 11 |
+| 42 | 9 | 3 | 0 | 0 | 0 | 9 |
+| 1234 | 14 | 2 | 0 | 0 | 0 | 10 |
+| 250927 | 12 | 3 | 0 | 0 | 0 | 9 |
 
 **三条给指标口径的提醒**：① 默认场景下 `arena.collision` 与 `arena.escape` **一次都不触发**（A7 / A8 待认领）；② 饥饿在 600 步内不会发生（$C_{base} \times 600 = 0.48 < E_{max} = 1.0$，且有食物奖励补回），因此"饿死"路径在默认配置下同样观测不到；③ 死亡全部来自捕食者。
 
@@ -628,7 +628,7 @@ Complex Scene 可设置：【草案待确认】
 
 1. **配置单一事实源（B7/M8）**：`configs/default_arena.yaml` 仍未被代码读取，`SessionCreate.arena_config_path` 仍被静默忽略。必须定义 YAML 键名到 `ArenaConfig` 的映射、类型校验、默认值和覆盖优先级，并新增加载器测试；否则参数表和实验配置不能复现。
 2. **12 维 observation（A1）**：必须逐维写出值域、归一化公式、截断/聚合规则及设计选择状态。`looming_rate` 不能继续使用当前会退化为常数的 `10·Δrelative_size`；建议按 `research/notes/arena-设计意见-给李辰钊.md` 的意见采用角尺寸扩张率，并明确 `R_loom`、离散时间口径、不可见天敌的 prev 重置和多天敌聚合规则。该改动会影响已冻结 DanioNet v1.0 的输入分布，必须补输入统计与回归基线。
-3. **世界尺度与捕食几何**：必须明确 world unit 与 BL 的关系（意见稿推荐保留竞技场尺度、只校准比率，或明确标为抽象尺度），并分别定稿 `capture_radius`、`sensing.radius`、尺寸不对称门 `κ`、朝向锥和捕获成功率是否存在。当前 `κ=1.25` 与 `r_capture=1.2` 的状态仍不一致。
+3. **世界尺度与捕食几何**：**已闭合**（2026-09-26，方案 B）——wu 不与 BL 固定换算（§2 尺度声明），`capture_radius = 4.61`、`sensing.radius = 18`、`κ = 1.25`（判据含边界 `≥`、耦合约束 `predator_size ≥ κ·max_size`）均已定稿。**余**：前向锥 120° 实现、捕获成功率是否引入随机失败。
 
 ### P1：正式实验前必须明确
 

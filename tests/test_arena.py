@@ -1,5 +1,7 @@
 """Arena smoke + unit tests (Danio_Arena设计与实现说明.md + acceptance checklist Arena section)."""
 
+import dataclasses
+
 import numpy as np
 import pytest
 
@@ -210,3 +212,76 @@ def test_predator_encounter_recorded_on_acquisition():
     arena.fish["fish_00"].pos = np.array([52.0, 30.0])
     arena.step({})
     assert arena.fish["fish_00"].predator_encounters >= 1
+
+
+def _cfg(pred_size: float | None = None, kappa: float | None = None,
+         cap_r: float | None = None) -> ArenaConfig:
+    """Default config with selected growth/actor fields overridden."""
+    cfg = ArenaConfig()
+    return dataclasses.replace(
+        cfg,
+        growth=dataclasses.replace(
+            cfg.growth,
+            capture_radius=cfg.growth.capture_radius if cap_r is None else cap_r,
+            capture_size_ratio=cfg.growth.capture_size_ratio if kappa is None else kappa,
+        ),
+        actors=dataclasses.replace(
+            cfg.actors,
+            predator_size=cfg.actors.predator_size if pred_size is None else pred_size,
+        ),
+    )
+
+
+def _fish_captured(cfg: ArenaConfig, size: float) -> bool:
+    """Put one predator next to one fish of the given size; was it eaten?"""
+    arena = DanioArena(cfg, master_seed=7)
+    arena.reset()
+    for pid in list(arena.predators)[1:]:
+        arena.predators[pid].pos = np.array([0.0, 0.0])
+        arena.predators[pid].target_fish_id = None
+    victim, hunter = arena.fish["fish_00"], arena.predators["predator_00"]
+    victim.size = size
+    victim.pos = np.array([50.0, 30.0])
+    hunter.pos = np.array([50.05, 30.0])
+    hunter.target_fish_id = "fish_00"
+    res = arena.step({})
+    return any(
+        e.type == "arena.fish_captured" and e.payload["fish_id"] == "fish_00"
+        for e in res.events
+    )
+
+
+def test_predator_size_coupling_invariant():
+    """section 8: predator_size >= kappa * max_size, else the biggest fish is immune.
+
+    size is clamped at max_size, so an immune max-size fish stays immune.
+    """
+    cfg = ArenaConfig()
+    assert cfg.actors.predator_size >= cfg.growth.capture_size_ratio * cfg.growth.max_size
+
+
+def test_capture_boundary_is_inclusive_at_max_size():
+    """section 8 judgement must include its boundary (regression guard)."""
+    cfg = _cfg(pred_size=3.125, kappa=1.25, cap_r=4.61)
+    assert cfg.actors.predator_size == cfg.growth.capture_size_ratio * cfg.growth.max_size
+    assert _fish_captured(cfg, cfg.growth.max_size - 1e-6) is True
+    assert _fish_captured(cfg, cfg.growth.max_size) is True
+    assert _fish_captured(cfg, cfg.growth.max_size + 1e-6) is False
+
+
+def test_prey_capture_boundary_is_inclusive():
+    """section 8 judgement, fish-eats-prey side: size_ratio == kappa still eats."""
+    cfg = _cfg(cap_r=10.0)
+    for size, expect_alive in ((1.0, False), (1.0 * (1 + 1e-6), True)):
+        arena = DanioArena(cfg, master_seed=7)
+        arena.reset()
+        for pid in list(arena.prey)[1:]:
+            arena.prey[pid].pos = np.array([0.0, 0.0])
+        fish = arena.fish["fish_00"]
+        fish.size = 1.25
+        prey = arena.prey["prey_00"]
+        prey.size = size
+        fish.pos = np.array([50.0, 30.0])
+        prey.pos = np.array([50.5, 30.0])
+        arena.step({})
+        assert prey.alive is expect_alive, f"prey.size={size}"

@@ -47,7 +47,7 @@ class GrowthConfig:
     initial_size: float = 1.0
     max_size: float = 2.5
     capture_size_ratio: float = 1.25  # kappa (Danio_Arena设计与实现说明.md section 8)
-    capture_radius: float = 1.2
+    capture_radius: float = 4.61
     turn_inertia_scale: float = 0.35  # k_turn (Danio_Arena设计与实现说明.md section 5)
     biomass_to_size_gain: float = 0.02  # MVP calibration knob (play-test later)
 
@@ -59,7 +59,7 @@ class ActorDefaults:
     prey_speed: float = 0.35
     prey_size_min: float = 0.30
     prey_size_max: float = 0.60
-    predator_size: float = 2.0
+    predator_size: float = 3.125
     predator_cruise_speed: float = 0.40
     predator_chase_speed: float = 0.65
     predator_detection_radius: float = 15.0
