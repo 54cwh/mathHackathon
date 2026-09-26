@@ -90,6 +90,26 @@ def _nearest_visible(
     return best
 
 
+def nearest_visible_prey(
+    fish: Fish,
+    prey: list[Prey],
+    radius: float,
+    fov_degrees: float,
+) -> tuple[str, np.ndarray] | None:
+    """最近可见猎物的 `(prey_id, pos)`，无则 `None`（H3 探针用，`arena §14`）。"""
+    half_fov = np.deg2rad(fov_degrees) / 2.0
+    best: tuple[float, str, np.ndarray] | None = None
+    for candidate in prey:
+        if not candidate.alive:
+            continue
+        dist, rel = _bearing(candidate.pos, fish)
+        if dist > radius or abs(rel) > half_fov:
+            continue
+        if best is None or dist < best[0]:
+            best = (dist, candidate.entity_id, np.array(candidate.pos, dtype=float))
+    return None if best is None else (best[1], best[2])
+
+
 def nearest_predator_relative_size(
     fish: Fish,
     predators: list[Predator],

@@ -57,3 +57,11 @@ expert:
   speed_base: 0.45
   speed_hunger_gain: 0.35
   speed_threat_gain: 0.30
+
+# H3 历史依赖探针（arena §14；默认关闭、测量层、不新增事件；数值为草案待确认 D）
+probe:
+  enabled: false
+  delay_steps: 40
+  return_radius: 3.0
+  window_steps: 60
+  shuffle_history: false
