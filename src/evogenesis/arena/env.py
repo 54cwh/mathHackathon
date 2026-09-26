@@ -48,6 +48,7 @@ class DanioArena:
         config: ArenaConfig | None = None,
         master_seed: int = 0,
         fish_ids: Sequence[str] | None = None,
+        genome_ids: Sequence[str] | None = None,
     ):
         self.cfg = config or ArenaConfig()
         self.master_seed = master_seed
@@ -63,6 +64,18 @@ class DanioArena:
             if len(set(ids)) != len(ids):
                 raise ValueError("fish_ids 必须互异（core §3.1 稳定 ID）")
             self._fish_ids = ids
+        if genome_ids is None:
+            self._genome_ids: tuple[str, ...] | None = None
+        else:
+            gids = tuple(genome_ids)
+            if len(gids) != self.cfg.population.n_fish:
+                raise ValueError(
+                    f"genome_ids 数量 {len(gids)} 与 population.n_fish "
+                    f"{self.cfg.population.n_fish} 不一致"
+                )
+            if len(set(gids)) != len(gids):
+                raise ValueError("genome_ids 必须互异（core §3.1 稳定 ID）")
+            self._genome_ids = gids
         self.events: list[Event] = []
         self.fish: dict[str, Fish] = {}
         self.prey: dict[str, Prey] = {}
@@ -98,14 +111,20 @@ class DanioArena:
             if self._fish_ids is not None
             else tuple(f"fish_{i:02d}" for i in range(self.cfg.population.n_fish))
         )
+        gids = (
+            self._genome_ids
+            if self._genome_ids is not None
+            else tuple("unknown" for _ in range(self.cfg.population.n_fish))
+        )
         self.fish = {}
-        for fid in ids:
+        for fid, gid in zip(ids, gids, strict=True):
             self.fish[fid] = Fish(
                 fid,
                 self._free_spot(2.0),
                 float(self._rng.uniform(0, 2 * np.pi)),
                 size=self.cfg.growth.initial_size,
                 energy=self.cfg.energy.e_max,
+                genome_id=gid,
             )
         self.prey = {
             f"prey_{i:02d}": Prey(

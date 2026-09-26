@@ -1,8 +1,12 @@
 """模型链装配（`pipeline/模型链装配.md`）：config → 种群 → q(G) → 发育 → DanioNet 动作。"""
 
+from dataclasses import replace
+
 import numpy as np
+import pytest
 
 from evogenesis.arena.config import load_arena_config
+from evogenesis.arena.env import DanioArena
 from evogenesis.core.ids import mint_id
 from evogenesis.pipeline.arena_episode import run_arena_episode
 from evogenesis.pipeline.model_chain import (
@@ -78,3 +82,16 @@ def test_run_arena_episode_is_deterministic():
     stable_fish_ids = {ind.fish_id for ind in population}
     assert set(first.per_fish) <= stable_fish_ids
     assert first.per_fish == second.per_fish
+
+
+def test_arena_accepts_stable_fish_and_genome_ids():
+    base = load_arena_config(None)
+    config = replace(base, population=replace(base.population, n_fish=2))
+    fish_ids = ["exp:g0:fish0000", "exp:g0:fish0001"]
+    genome_ids = ["exp:g0:genome0000", "exp:g0:genome0001"]
+    arena = DanioArena(config, master_seed=7, fish_ids=fish_ids, genome_ids=genome_ids)
+    arena.reset()
+    assert set(arena.fish) == set(fish_ids)
+    assert [arena.fish[fid].genome_id for fid in fish_ids] == genome_ids
+    with pytest.raises(ValueError):
+        DanioArena(config, master_seed=7, fish_ids=fish_ids, genome_ids=["only-one"])

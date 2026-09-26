@@ -312,7 +312,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
 
-**实体 id（定稿）**：`DanioArena(config, master_seed, fish_ids=None)` 可注入 `fish_ids`——传 `core §3.1` 的稳定 `fish_id`（`Individual.fish_id`，`pipeline/` 负责铸造）时，`self.fish` 与 `per_fish_log()` 即以该稳定 id 为键；不传时保留旧默认 `fish_XX`（向后兼容，`tests/test_arena.py` 沿用）。`fish_ids` 长度须等于 `population.n_fish` 且互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。
+**实体 id（定稿）**：`DanioArena(config, master_seed, fish_ids=None, genome_ids=None)` 可注入 `fish_ids`（实体 id）与 `genome_ids`（写入 `Fish.genome_id`，供 `schemas/trajectory.schema.json` 的 `genome_id` 字段）——均取 `core §3.1` 稳定 ID（`pipeline/` 负责铸造）。传入时 `self.fish` 与 `per_fish_log()` 以稳定 `fish_id` 为键、`Fish.genome_id` 为稳定 `genome_id`；不传时保留旧默认（`fish_XX` / `"unknown"`，向后兼容，`tests/test_arena.py` 沿用）。两者长度须等于 `population.n_fish` 且各自互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。
 
 ### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 

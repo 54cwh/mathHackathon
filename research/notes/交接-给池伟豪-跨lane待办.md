@@ -3,7 +3,7 @@
 > 来源：四项**只读**审计（`research/notes/参数一致性审计.md`、`引用登记缺口.md`、`前端对接需求清单.md`、
 > `验收清单-落差审计.md`）+ Arena / experiment 侧落地。**我未改动你 lane 的任何文件**（单写者约束）。
 > 每条都带证据位置。**已解决项已删除**（2026-09-26 更新）：P0-2 DanioNet、P0-4 学习层（BC，`173f911`）、
-> P0-5 选择机制与 loader、A3/A4/A6/A12 参数总表形态、A11 `default_model.yaml` 读取方 —— 均已在 `main` 上闭合。
+> P0-5 选择机制与 loader、A3/A4/A6/A12 参数总表形态、A11 `default_model.yaml` 读取方、P0-9 `Fish.genome_id` 占位 —— 均已在 `main` 上闭合。
 
 ## 一、仍阻断正式实验 / 论文主线
 
@@ -23,7 +23,6 @@
 
 | # | 事项 | 证据 | 建议 |
 |---|---|---|---|
-| P0-9 | **轨迹 `genome_id` 恒 `"unknown"`** | `arena/entities.py:55` `Fish.genome_id = "unknown"`；鱼不从 `Individual` 出生，该字段没被填 | 给 `DanioArena` 加 `genome_ids`（同 `fish_ids` 做法，缺省保留旧值），`pipeline` 传 `Individual.genome_id`。**我方可做**，使 BC 轨迹可做「基因型 × 行为」关联、满足 `schemas/fish.schema.json` |
 | 接线 | **逐代演化闭环** | `advance_generation` 就绪但无 caller | 编排：`pipeline` 评估 → fitness 回填 `Individual` → `advance_generation` 产下一代（见上「代循环」） |
 
 ---

@@ -77,10 +77,11 @@ def run_arena_episode(
         raise ValueError("没有 viable 个体可进 Arena（RGCD §7）")
     phenotypes = [phenotype for _, phenotype in pairs]
     fish_ids = [individual.fish_id for individual, _ in pairs]
+    genome_ids = [individual.genome_id for individual, _ in pairs]
     n_eval = len(phenotypes)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
-    arena = DanioArena(config, master_seed=master_seed, fish_ids=fish_ids)
+    arena = DanioArena(config, master_seed=master_seed, fish_ids=fish_ids, genome_ids=genome_ids)
     arena.reset()
     net = danionet_of(phenotypes, master_seed=master_seed, config=chain.network, device=device)
 
