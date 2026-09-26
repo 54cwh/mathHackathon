@@ -70,9 +70,9 @@ m_iH_t
 
 **与发育期 viability 的关系**：`development/RGCD数学模型.md` §7 的零输入动力学检查在发育期以 \(b_i=0\) 近似（该处不产出 \(b_i\)）；本模块用它自己的 \(b_{type_i}\) 对同一组 §7 判据复核，作为最终判定；复核沿用发育期结构 \(W^{(0)}\)（\(\Delta W\) 不遗传，§7，故不参与 viability 判定）。
 
-**初始化与 padding（定稿）**：初始激活 \(h_i^{0}=0\)（`float32`，形状 `(N,)`，batch 内 padding）。padding 宽度取 `development.max_neurons`（`configs/default_model.yaml`，现 48），不在此硬编码。`U/m/b` 为按 cell type 的**全局单表**（全体个体共享同一张表），在 `network_init` 命名空间（`core §3`，id=5）下由 master seed 初始化一次；其标准差取 `network.input_weight_std` / `network.hunger_gain_std` / `network.neuron_bias_std`（现 0.289 / 0.1 / 0.1；文档式 `U~N(0,(1/√12)²)` 的 σ=0.28868，config 取整为 0.289）。
+**初始化与 padding（定稿）**：初始激活 \(h_i^{0}=0\)（`float32`，形状 `(N,)`，batch 内 padding）。padding 宽度取 `development.max_neurons`（`configs/default_model.yaml`，现 48），不在此硬编码。`U/m/b` 为按 cell type 的**全局单表**（全体个体共享同一张表），在 `network_init` 命名空间（`core §3`，id=5，`index=0`）下由 master seed 初始化一次；其标准差取 `network.input_weight_std` / `network.hunger_gain_std` / `network.neuron_bias_std`（现 0.289 / 0.1 / 0.1；文档式 `U~N(0,(1/√12)²)` 的 σ=0.28868，config 取整为 0.289）。
 
-所有网络 padding 到 `development.max_neurons` nodes，通过 neuron mask / adjacency mask batch。
+所有网络 padding 到 `development.max_neurons` nodes，通过 neuron mask / adjacency mask batch：**neuron mask 即 RGCD 输出的 \(M\)（active neuron mask，padding 位为 0）**，adjacency mask 即支撑 \(A\)；二者共同界定参与动力学与动作池的神经元（非活跃神经元的行/列恒 0，\(h\) 保持 0，不进入 motor 池与 viability 复核）。
 
 ## 4. 连续动作
 \[

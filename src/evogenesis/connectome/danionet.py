@@ -126,16 +126,21 @@ class DanioNet(torch.nn.Module):
             tau[b, :n] = to_float32_tensor(phenotype.tau, device=device)
             cell_type[b, :n] = phenotype.cell_type.to(torch.long)
             positions[b, :n] = to_float32_tensor(phenotype.positions, device=device)
-            neuron_mask[b, :n] = True
+            neuron_mask[b, :n] = phenotype.active_mask.to(torch.bool)
             self._n_neurons.append(n)
 
             types = phenotype.cell_type.to(torch.long)
-            left_local, right_local = motor_sides(phenotype.positions, types, motor_index)
+            active = phenotype.active_mask.to(torch.bool)
+            motor_local = torch.nonzero((types == motor_index) & active, as_tuple=False).squeeze(-1)
+            left_local, right_local = motor_sides(
+                phenotype.positions[motor_local], types[motor_local], motor_index
+            )
+            left_local = motor_local[left_local]
+            right_local = motor_local[right_local]
             if left_local.numel() == 0 or right_local.numel() == 0:
                 raise ValueError(f"个体 {b} 的 motor 左右池为空（§5 / RGCD §7）")
             left_mask[b, left_local] = True
             right_mask[b, right_local] = True
-            motor_local = torch.nonzero(types == motor_index, as_tuple=False).squeeze(-1)
             motor_mask[b, motor_local] = True
 
         support = (adjacency != 0) & neuron_mask[:, :, None] & neuron_mask[:, None, :]

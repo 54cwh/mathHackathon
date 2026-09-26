@@ -181,3 +181,40 @@ def test_empty_motor_pool_rejected():
     )
     with pytest.raises(ValueError):
         DanioNet([phenotype], master_seed=MASTER_SEED)
+
+
+def test_active_mask_from_rgcd_is_honored():
+    """DanioNet 的 neuron mask 必须取自 RGCD 的 M（active_mask），而非假设全部活跃。"""
+    n = 7
+    types = torch.tensor([0, 0, 5, 5, 5, 5, 5], dtype=torch.long)  # 2 sensory + 5 motor
+    active = torch.tensor([True, True, True, True, True, True, False])
+    adjacency = torch.zeros((n, n), dtype=torch.float32)
+    adjacency[2, 6] = 1.0  # 指向非活跃神经元的连接应被屏蔽
+    weights0 = torch.zeros((n, n), dtype=torch.float32)
+    weights0[2, 6] = 0.5
+    phenotype = ConnectomePhenotype(
+        adjacency=adjacency,
+        weights0=weights0,
+        tau=torch.ones(n, dtype=torch.float32),
+        cell_type=types,
+        positions=torch.tensor(
+            [[0.1, 0.1], [0.2, 0.1], [0.3, 0.1], [0.4, 0.1], [0.5, 0.1], [0.6, 0.1], [0.7, 0.1]],
+            dtype=torch.float32,
+        ),
+        active_mask=active,
+        viable=True,
+        viability_reason="ok",
+        z=torch.zeros((n, 6), dtype=torch.float32),
+    )
+    net = DanioNet([phenotype], master_seed=MASTER_SEED)
+    assert int(net.neuron_mask.sum()) == 6
+    assert not bool(net.neuron_mask[0, 6])
+    # 非活跃神经元的行/列被屏蔽
+    assert float(net.effective_weights[0, 6, :].abs().sum()) == 0.0
+    assert float(net.effective_weights[0, :, 6].abs().sum()) == 0.0
+    assert not bool(net.support[0, 2, 6])
+    # 动作池只由活跃 motor 组成，且左右非空
+    assert int(net.motor_mask.sum()) == 4
+    assert int(net.left_mask.sum()) == 2 and int(net.right_mask.sum()) == 2
+    net.step(np.zeros((1, DEFAULT_NETWORK_CONFIG.sensory_dim), dtype=np.float32))
+    assert float(net.h[0, 6].abs()) == 0.0
