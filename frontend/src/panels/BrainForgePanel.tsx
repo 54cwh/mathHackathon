@@ -4,6 +4,7 @@ import { Panel } from "@/components/Panel";
 import { StatusPlaceholder } from "@/components/StatusPlaceholder";
 import { BrainForgeVisual } from "@/visuals/BrainForgeVisual";
 import { subscribe, type BrainActivationPayload } from "@/api/ws";
+import { DevelopmentPipeline } from "@/panels/DevelopmentPipeline";
 import { useUiStore } from "@/store/ui";
 
 /**
@@ -50,8 +51,14 @@ export function BrainForgePanel() {
     <Panel title="Brain Forge" icon={<Brain className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* min-h-40：矮面板下视觉区不被读数块挤没（与 DNA 面板同因）。 */}
-        <div className="min-h-40 flex-[3] overflow-hidden">
+        <div className="min-h-32 flex-[2] overflow-hidden">
           <BrainForgeVisual activation={vector ?? undefined} />
+        </div>
+
+        {/* §4 发育管线（真实逐阶段轨迹；数据来自 DNA 实验室的 with_trace 发育）。
+            shrink-0 = 按内容高，避免与下方 ACTIVATION 之间出现空档。 */}
+        <div className="min-h-0 shrink-0">
+          <DevelopmentPipeline />
         </div>
 
         <div className="shrink-0 space-y-2 overflow-y-auto border border-border p-2">

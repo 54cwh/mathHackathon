@@ -44,8 +44,16 @@ export function mutateGenome(
   });
 }
 
-export function develop(request: DevelopmentRequest): Promise<DevelopmentResult> {
-  return req<DevelopmentResult>("/v1/developments", {
+/**
+ * 发育。`withTrace=true` 时后端额外返回逐阶段轨迹（`API接口.md` §2.3）：
+ * 记录只读、不抽随机数，故开/关该参数的表型逐位相同（后端有回归测试守护）。
+ */
+export function develop(
+  request: DevelopmentRequest,
+  withTrace = false,
+): Promise<DevelopmentResult> {
+  const path = withTrace ? "/v1/developments?with_trace=true" : "/v1/developments";
+  return req<DevelopmentResult>(path, {
     method: "POST",
     body: JSON.stringify(request),
   });

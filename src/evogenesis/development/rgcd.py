@@ -56,6 +56,10 @@ class ConnectomePhenotype:
     viable: bool
     viability_reason: str
     z: torch.Tensor
+    #: 可选发育轨迹（`collect_trace=True` 时才有）：见 `develop` 的 docstring。
+    #: 键：`stage`(grn|proliferate|connectome) / `step` / `n_neurons` / `n_divisions` /
+    #: `n_edges` / `mean_abs` / `max_abs`；早期阶段无的量记 `None`。
+    trace: tuple[dict, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -119,8 +123,9 @@ def _clamp_domain_identity_spread(
     恒等于谱系域，``missing_fate`` 在默认配置下不再触发；判因词表仍保留该 token（非默认
     配置或更大的 ``U`` 仍需它上报）。
 
-    ``scale``（κ）来自 ``configs/default_model.yaml`` → ``development.domain_identity_spread_scale``，
-    把重定目标从「解析安全界」放大为 ``κ · c_domain_bonus / √dim``。**默认 1.0 与原行为逐位一致**。
+    ``scale``（κ）来自 ``configs/default_model.yaml`` →
+    ``development.domain_identity_spread_scale``，把重定目标从「解析安全界」放大为
+    ``κ · c_domain_bonus / √dim``。**默认 1.0 与原行为逐位一致**。
 
     实测（2026-09-26，seed 1103 / 2207 / 3301 各 400 个体，以 κ 标定替代恒真钳制）——
     **本判据不存在可用的工作点**：
@@ -505,15 +510,20 @@ def develop(
     index: int,
     config: RGCDConfig = DEFAULT_CONFIG,
     device: str = "cpu",
+    collect_trace: bool = False,
 ) -> ConnectomePhenotype:
     """§1–§11 单个体发育入口：``q(G) → (A, Z, tau, W^0, M)`` + viability。
 
+    ``collect_trace=True`` 时**额外**返回逐阶段轨迹（`connectome §4` 的动画顺序：
+    GRN 逐步 → 增殖 → 连接组）。记录**只读张量、不抽随机数**，故开/关 trace 的
+    发育结果逐位相同（`tests/test_rgcd.py::test_trace_does_not_change_development` 钉住）。
     ``q`` 为 genome 侧 ``q(G) ∈ [0,1]^8``（NumPy ``float32`` 或 ``torch.float32``）；
     ``index`` 为命名空间内稳定实体序号（`core §3`，不得用调用顺序）。
 
     §7 动力学检查在发育期以 ``b_i = 0`` 近似（``b_i`` 归 DanioNet §3，本模块不产出）；
     最终 viability 由 DanioNet 用其 ``b_{type_i}`` 复核。
     """
+    trace: list[dict] | None = [] if collect_trace else None
     if q.shape[-1] != config.grn_dim:
         raise ValueError(f"q(G) 维数 {q.shape[-1]} 与 grn.dim {config.grn_dim} 不一致")
     if config.distance_space != "unit_square":
@@ -557,6 +567,7 @@ def develop(
         params.b,
         rho=config.grn_rho,
         steps=config.development_steps,
+        trace=trace,
     )
     state = proliferate(
         grn,
@@ -568,6 +579,7 @@ def develop(
         gene_noise=config.gene_noise,
         max_divisions_per_precursor=config.max_divisions_per_precursor,
         generator=generator,
+        trace=trace,
     )
     if state.grn.shape[0] > config.max_neurons:
         raise ValueError(
@@ -638,6 +650,23 @@ def develop(
         saturation_eps=config.saturation_eps,
         activation=config.network_activation,
     )
+    if trace is not None:
+        active = state.active_mask
+        with torch.no_grad():
+            trace.append(
+                {
+                    "stage": "connectome",
+                    "step": 0,
+                    "n_neurons": int(state.grn.shape[0]),
+                    "n_divisions": None,
+                    "n_edges": int((adjacency != 0).sum().item()),
+                    "mean_abs": float(state.grn[active].abs().mean().item())
+                    if bool(active.any())
+                    else 0.0,
+                    "max_abs": float(state.grn.abs().max().item()),
+                }
+            )
+
     return ConnectomePhenotype(
         adjacency=adjacency,
         weights0=weights0,
@@ -648,4 +677,5 @@ def develop(
         viable=viable,
         viability_reason=reason,
         z=z,
+        trace=tuple(trace) if trace is not None else None,
     )

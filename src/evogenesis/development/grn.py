@@ -36,6 +36,7 @@ def discrete_grn(
     bias: torch.Tensor,
     rho: float = 0.35,
     steps: int = 12,
+    trace: list[dict] | None = None,
 ) -> torch.Tensor:
     """按 §4 字面迭代 ``steps`` 步并返回 ``g``（``(..., N, dim)``）。
 
@@ -56,10 +57,33 @@ def discrete_grn(
     B = B.to(torch.float32)
     P = P.to(torch.float32)
     bias = bias.to(torch.float32)
-    for _ in range(steps):
+    if trace is not None:
+        trace.append(_grn_sample(g, step=0, stage="grn"))
+    for step in range(steps):
         recurrent = torch.einsum("...nd,de->...ne", g, Wg)
         genome_term = torch.einsum("...d,ed->...e", q, B).unsqueeze(-2)
         pos_term = torch.einsum("...np,ep->...ne", pos, P)
         target = torch.sigmoid(recurrent + genome_term + pos_term + bias)
         g = (1.0 - rho) * g + rho * target
+        if trace is not None:
+            trace.append(_grn_sample(g, step=step + 1, stage="grn"))
     return g
+
+
+def _grn_sample(g: torch.Tensor, *, step: int, stage: str) -> dict:
+    """逐步状态摘要（**只读**：不抽随机数，故开关 trace 不改变任何数值）。
+
+    统一键集合，便于前端把三个阶段画成同一条时间线：
+    ``stage`` / ``step`` / ``n_neurons`` / ``n_divisions`` / ``n_edges`` /
+    ``mean_abs`` / ``max_abs``；早期阶段没有的量记 ``None``（缺失 ≠ 0）。
+    """
+    with torch.no_grad():
+        return {
+            "stage": stage,
+            "step": int(step),
+            "n_neurons": int(g.shape[-2]),
+            "n_divisions": None,
+            "n_edges": None,
+            "mean_abs": float(g.abs().mean().item()),
+            "max_abs": float(g.abs().max().item()),
+        }

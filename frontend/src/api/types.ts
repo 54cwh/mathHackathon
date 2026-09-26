@@ -205,10 +205,25 @@ export interface DevelopmentPhenotype {
   viable: boolean;
 }
 
+/** 发育轨迹采样点（`API接口.md` §2.3；`交互与可视化.md` §4 的动画顺序）。 */
+export interface DevelopmentTraceSample {
+  stage: "grn" | "proliferate" | "connectome";
+  step: number;
+  n_neurons: number;
+  /** 仅 proliferate 阶段。 */
+  n_divisions: number | null;
+  /** 仅 connectome 阶段。 */
+  n_edges: number | null;
+  mean_abs: number;
+  max_abs: number;
+}
+
 export interface DevelopmentResult {
   genome_id: string;
   dev_trace: DevelopmentTrace;
   phenotype: DevelopmentPhenotype;
+  /** 仅 `?with_trace=true` 时给出。 */
+  trace?: DevelopmentTraceSample[] | null;
 }
 
 export interface BreedingRequest {

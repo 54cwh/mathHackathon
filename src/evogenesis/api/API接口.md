@@ -267,7 +267,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `/v1/genomes` | POST | 请求 `GenomeCreate`（`{seed?}`，缺省参考种子）→ `201` `GenomeRecord` |
 | `/v1/genomes/{genome_id}` | GET | `GenomeRecord` |
 | `/v1/genomes/{genome_id}/mutations` | POST | 请求 `MutationRequest` → `201` `MutationResult`（单点 Free Edit） |
-| `/v1/developments` | POST | 请求 `DevelopmentRequest` → `DevelopmentResult` |
+| `/v1/developments` | POST | 请求 `DevelopmentRequest` → `DevelopmentResult`；`?with_trace=true` 时**额外**返回 `trace` |
 | `/v1/breedings` | POST | 请求 `BreedingRequest` → `201` `BreedingResult` |
 | `/v1/sessions/{session_id}/evolutions` | POST | 会话内演化（**过渡**：复用环境选择 job）→ `202` `JobStatus`；`?generations=` 缺省取 `configs/experiment.yaml` |
 
@@ -279,6 +279,24 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 - **随机源**：经 `SeedManager(参考种子)` 的**已注册命名空间**（创建=`initial_population`；繁殖=`crossover`/`mutation`）；不新建命名空间（`core §3`）。
 - **`dev_trace` / `phenotype` 字段**：`dev_trace`={`q`(8)、`cell_type_counts`、`tau`({mean,std})、`n_neurons`、`n_edges`、`viable`、`viability_reason`}；`phenotype`={`n_neurons`、`n_edges`、`edge_density`、`tau_mean`、`tau_std`、`viable`}。
 - **store**：纯内存、无持久化（同会话语义）；`GenomeRecord` 含 `lineage`（父 id）。
+
+**发育轨迹 `?with_trace=true`（2026-09-27 新增，已定稿）**：返回 `trace: DevelopmentTraceSample[]`，
+供前端画 `交互与可视化.md` §4 的「动画顺序」（真实中间态，非叙事）：
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `stage` | `"grn" \| "proliferate" \| "connectome"` | 阶段（顺序即列表顺序） |
+| `step` | int | grn 为步序号 `0..development_steps`；proliferate 为轮次；connectome 为 0 |
+| `n_neurons` | int | 该阶段神经元数（单调不减） |
+| `n_divisions` | int \| null | 仅 proliferate：本代分裂出的子代数 |
+| `n_edges` | int \| null | 仅 connectome：真实连接数（`(A≠0).sum()`） |
+| `mean_abs` / `max_abs` | float | 状态张量绝对值的均值/峰值（"表达量"标量代理） |
+
+> **两条硬约束（有测试守护）**：① **默认关**（不传 `with_trace` 时 `trace=null`）；
+> ② 记录**只读张量、不抽随机数**，故开/关该参数的表型与 `dev_trace` **逐位相同**
+> （`tests/test_rgcd.py::test_trace_does_not_change_development`、
+> `tests/test_api_contract.py::test_develop_trace_is_opt_in_and_ordered`）。
+> 采样数 = `development_steps + 1`（grn）+ 1（proliferate）+ 1（connectome）。
 
 - **代码位置**：`genomes.py`（端点）、`genome_lab.py`（store 与原语）。
 

@@ -78,6 +78,22 @@ class MutationResult(BaseModel):
 
 
 # --- developments ----------------------------------------------------------
+class DevelopmentTraceSample(BaseModel):
+    """发育轨迹的一个采样点（`API接口.md` §2.3；`交互与可视化.md` §4 的动画顺序）。
+
+    键集合固定，便于前端把三阶段画成同一条时间线；该阶段不存在的量记 ``None``（缺失 ≠ 0）。
+    """
+
+    stage: Literal["grn", "proliferate", "connectome"]
+    #: grn 阶段为步序号（0..development_steps）；proliferate 为轮次；connectome 为 0。
+    step: int
+    n_neurons: int
+    n_divisions: int | None = None
+    n_edges: int | None = None
+    mean_abs: float
+    max_abs: float
+
+
 class DevelopmentRequest(BaseModel):
     genome_id: str
     seed: int = 0
@@ -87,6 +103,8 @@ class DevelopmentResult(BaseModel):
     genome_id: str
     dev_trace: dict[str, Any]
     phenotype: dict[str, Any]
+    #: 仅 `?with_trace=true` 时给出（`API接口.md` §2.3）：逐阶段发育轨迹。
+    trace: list[DevelopmentTraceSample] | None = None
 
 
 # --- breedings -------------------------------------------------------------

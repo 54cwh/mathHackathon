@@ -302,6 +302,52 @@ def test_same_seed_reproducible():
     assert first.viability_reason == second.viability_reason
 
 
+def test_trace_does_not_change_development():
+    """开/关 `collect_trace` 的发育结果**逐位相同**（护栏：记录只读张量、不抽随机数）。
+
+    这是本特性最重要的约束：trace 是给前端画「§4 动画顺序」用的观测口，
+    一旦它扰动随机流，全项目的发育数值就不再可复现。
+    """
+    plain = develop(Q, master_seed=42, index=0)
+    traced = develop(Q, master_seed=42, index=0, collect_trace=True)
+    assert plain.trace is None
+    assert traced.trace is not None
+    assert torch.equal(plain.adjacency, traced.adjacency)
+    assert torch.equal(plain.weights0, traced.weights0)
+    assert torch.equal(plain.tau, traced.tau)
+    assert torch.equal(plain.cell_type, traced.cell_type)
+    assert torch.equal(plain.positions, traced.positions)
+    assert torch.equal(plain.z, traced.z)
+    assert plain.viable == traced.viable
+    assert plain.viability_reason == traced.viability_reason
+
+
+def test_trace_stages_cover_the_pipeline_in_order():
+    """轨迹阶段顺序与 `交互与可视化.md` §4 的动画顺序一致，且数量守恒可对账。"""
+    phenotype = develop(Q, master_seed=42, index=0, collect_trace=True)
+    trace = list(phenotype.trace or [])
+    stages = [sample["stage"] for sample in trace]
+    assert stages[0] == "grn"
+    assert stages[-1] == "connectome"
+    assert "proliferate" in stages
+    # GRN 采样 = 初态 + 每步一个（development_steps）
+    assert stages.count("grn") == DEFAULT_CONFIG.development_steps + 1
+    assert stages.count("proliferate") == 1
+    assert stages.count("connectome") == 1
+
+    # 神经元数单调不减（precursor -> 分裂子代），且与最终一致
+    counts = [sample["n_neurons"] for sample in trace]
+    assert counts == sorted(counts)
+    assert counts[-1] == int(phenotype.cell_type.numel())
+
+    # 终点采样必须对上真实连接数（不能是另算的一版）
+    assert trace[-1]["n_edges"] == int((phenotype.adjacency != 0).sum().item())
+    # 早期阶段没有的量记 None（缺失 ≠ 0）
+    assert trace[0]["n_edges"] is None
+    assert trace[0]["n_divisions"] is None
+    assert trace[-1]["mean_abs"] >= 0.0
+
+
 def test_different_seed_differs():
     first = develop(Q, master_seed=42, index=0)
     second = develop(Q, master_seed=43, index=0)

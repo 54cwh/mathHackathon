@@ -139,6 +139,32 @@ export function drawHistogram(
   return true;
 }
 
+/** 单序列柱状图（Brain Forge 的 motif affinity / 细胞组成概览用）。 */
+export function drawBars(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  values: (number | null)[],
+  color: string = ARENA.fishUnselected,
+): boolean {
+  clearChart(ctx, w, h);
+  const f = frame(w, h);
+  if (values.length === 0) return false;
+  const numeric = values.filter((v): v is number => typeof v === "number");
+  if (numeric.length === 0) return false;
+  const peak = Math.max(...numeric.map((v) => Math.abs(v))) || 1;
+  const usable = Math.max(1, h - 2 * f.pad);
+  const slot = Math.max(2, Math.floor((w - 2 * f.pad) / values.length));
+  const barW = Math.max(1, slot - 1);
+  values.forEach((value, index) => {
+    if (typeof value !== "number") return;
+    const height = Math.max(1, Math.round((Math.abs(value) / peak) * usable));
+    ctx.fillStyle = color;
+    ctx.fillRect(f.pad + index * slot, h - f.pad - height, barW, height);
+  });
+  return true;
+}
+
 /**
  * 成对柱状图（Before/After 对比用）：每个 index 画两根相邻竖柱。
  * `values` 为 null 的项不画（缺失 ≠ 0）；`max` 缺省取两组最大值。

@@ -192,6 +192,27 @@ def test_release_manual_control_clamps_and_ignores_unknown_fish() -> None:
     assert snap["step"] == 2
 
 
+def test_develop_trace_is_opt_in_and_ordered() -> None:
+    """`?with_trace=true` 才返回轨迹；阶段顺序与数量守恒可对账（`API接口.md` §2.3）。"""
+    genome = client.post("/v1/genomes", json={}).json()
+    plain = client.post(
+        "/v1/developments", json={"genome_id": genome["genome_id"], "seed": 0}
+    ).json()
+    assert plain.get("trace") is None, "默认不得返回轨迹（契约：可选）"
+
+    traced = client.post(
+        "/v1/developments?with_trace=true", json={"genome_id": genome["genome_id"], "seed": 0}
+    ).json()
+    trace = traced["trace"]
+    assert trace is not None and len(trace) > 2
+    assert trace[0]["stage"] == "grn" and trace[-1]["stage"] == "connectome"
+    assert trace[-1]["n_edges"] == traced["phenotype"]["n_edges"]
+    assert trace[-1]["n_neurons"] == traced["phenotype"]["n_neurons"]
+    # 同一 genome/seed：开关 trace 的表型必须逐位一致
+    assert plain["phenotype"] == traced["phenotype"]
+    assert plain["dev_trace"] == traced["dev_trace"]
+
+
 def test_develop_cell_type_counts_are_real_counts() -> None:
     """`dev_trace.cell_type_counts` 必须是**真实计数**（键=fate 序号，值=个体数）。
 

@@ -94,6 +94,7 @@ def proliferate(
     gene_noise: float,
     max_divisions_per_precursor: int,
     generator: torch.Generator,
+    trace: list[dict] | None = None,
 ) -> DevelopmentState:
     """§5 增殖：每个 precursor 至多分裂一次，子代 ``p+ε_p``（裁 ``[0,1]^2``）、``g+ε_g``。
 
@@ -118,6 +119,19 @@ def proliferate(
         grn = torch.cat([grn, daughter_grn], dim=0)
         domain_index = torch.cat([domain_index, daughter_domain], dim=0)
     active_mask = torch.ones(grn.shape[0], dtype=torch.bool)
+    if trace is not None:
+        with torch.no_grad():
+            trace.append(
+                {
+                    "stage": "proliferate",
+                    "step": 1,
+                    "n_neurons": int(grn.shape[0]),
+                    "n_divisions": int(k),
+                    "n_edges": None,
+                    "mean_abs": float(grn.abs().mean().item()),
+                    "max_abs": float(grn.abs().max().item()),
+                }
+            )
     return DevelopmentState(
         grn=grn, positions=positions, domain_index=domain_index, active_mask=active_mask
     )

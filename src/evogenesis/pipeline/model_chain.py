@@ -118,10 +118,21 @@ def phenotype_of(
     index: int,
     config: RGCDConfig = DEFAULT_RGCD_CONFIG,
     device: str = "cpu",
+    collect_trace: bool = False,
 ) -> ConnectomePhenotype:
-    """单个体：`q(G)=genome_affinity` → `develop`（`RGCD数学模型.md` §1–§11）。"""
+    """单个体：`q(G)=genome_affinity` → `develop`（`RGCD数学模型.md` §1–§11）。
+
+    ``collect_trace=True`` 时透传给 `develop`（发育轨迹只读，不改变结果）。
+    """
     q = genome_affinity(genome, motifs)
-    return develop(q, master_seed=master_seed, index=index, config=config, device=device)
+    return develop(
+        q,
+        master_seed=master_seed,
+        index=index,
+        config=config,
+        device=device,
+        collect_trace=collect_trace,
+    )
 
 
 def phenotypes_of(

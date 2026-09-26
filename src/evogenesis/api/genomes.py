@@ -19,6 +19,7 @@ from evogenesis.api.schemas import (
     BreedingResult,
     DevelopmentRequest,
     DevelopmentResult,
+    DevelopmentTraceSample,
     GenomeCreate,
     GenomeRecord,
     MutationRequest,
@@ -76,13 +77,19 @@ def mutate_genome(genome_id: str, req: MutationRequest) -> MutationResult:
 
 
 @router.post("/developments", response_model=DevelopmentResult)
-def develop(req: DevelopmentRequest) -> DevelopmentResult:
+def develop(req: DevelopmentRequest, with_trace: bool = False) -> DevelopmentResult:
+    """发育。
+
+    ``with_trace=true`` 时额外返回逐阶段轨迹（`API接口.md` §2.3）：记录**只读张量、
+    不抽随机数**，故开/关该参数的表型结果逐位相同（`tests/test_rgcd.py` 有回归守护）。
+    """
     genome = _get(req.genome_id)
     phenotype = phenotype_of(
         genome,
         lab.motifs(),
         master_seed=req.seed,
         index=lab.stable_index(req.genome_id),
+        collect_trace=with_trace,
     )
     active = phenotype.active_mask.bool()
     adjacency = phenotype.adjacency
@@ -110,7 +117,14 @@ def develop(req: DevelopmentRequest) -> DevelopmentResult:
         "viable": bool(phenotype.viable),
         "viability_reason": phenotype.viability_reason,
     }
-    return DevelopmentResult(genome_id=req.genome_id, dev_trace=trace, phenotype=summary)
+    return DevelopmentResult(
+        genome_id=req.genome_id,
+        dev_trace=trace,
+        phenotype=summary,
+        trace=[DevelopmentTraceSample(**sample) for sample in (phenotype.trace or [])]
+        if with_trace
+        else None,
+    )
 
 
 @router.post("/breedings", status_code=201, response_model=BreedingResult)

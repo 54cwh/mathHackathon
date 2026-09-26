@@ -6,6 +6,7 @@ import { NucleotideStrip } from "@/visuals/NucleotideStrip";
 import { createGenome, develop, getGenome, mutateGenome } from "@/api/lab";
 import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResult } from "@/api/types";
 import { DevCompare } from "@/panels/DevCompare";
+import { publishDevelopment } from "@/store/labBus";
 import { BreedingLab } from "@/panels/BreedingLab";
 
 /**
@@ -73,6 +74,7 @@ export function DNA2BrainPanel() {
       setBaseline(null);
       setMutations([]);
       setPosition(0);
+      publishDevelopment(fresh.genome_id, null); // 新基因组尚未发育
     } catch (e) {
       setError(String(e));
     } finally {
@@ -112,9 +114,10 @@ export function DNA2BrainPanel() {
         setMutation(null);
         setMutations([]);
         setPosition(0);
-        const result = await develop({ genome_id: genomeId, seed: DEV_SEED });
+        const result = await develop({ genome_id: genomeId, seed: DEV_SEED }, true);
         setBaseline(result);
         setDevelopment(result);
+        publishDevelopment(genomeId, result, result.trace ?? null);
       } catch (e) {
         setError(String(e));
       } finally {
@@ -129,10 +132,12 @@ export function DNA2BrainPanel() {
     setBusy(true);
     setError(null);
     try {
-      const result = await develop({ genome_id: genome.genome_id, seed: DEV_SEED });
+      const result = await develop({ genome_id: genome.genome_id, seed: DEV_SEED }, true);
       // 首次 DEVELOP = 基线；之后每次都是「改后」，与基线对比（§5）。
       setBaseline((current) => current ?? result);
       setDevelopment(result);
+      // → Brain Forge 的 §4 分阶段动画（真实过程，见 API接口.md §2.3）
+      publishDevelopment(genome.genome_id, result, result.trace ?? null);
     } catch (e) {
       setError(String(e));
     } finally {
