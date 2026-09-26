@@ -2,34 +2,49 @@
 - 使用uv, 不使用overleaf，latex写作采用本地编译链+github.
 - 如果准备用 AI 写文章，在正式写作前应阅读 `docs/ai-tone-boundaries.md`
 - 每次代码写完或改完，提交前按 `docs/code-review.md` 做审查；阻断项复验关闭后方可提交。
+- 文档修改优先于代码编写，代码不方便审计，文档是审计的硬标准，也是合作与演示的核心，任何超出文档的代码修改，ai应当提醒用户应当修改文档。文档当且仅当用户许可的情况下进行修改，不能”顺便“修改未经许可的文档。
 
 
 # 项目目录结构
 
 代码按任务分层：`core/` 是方向无关的机制底座，其余模块（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/`）各对应一项研发任务，彼此独立、可单独替换。
 
+**文档随代码**：每个代码集群的文档就放在该模块目录内（如 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`），内容为**接口 / 目的 / 用法 + 与代码的映射**，是该模块的审计基准；代码一旦偏离同目录文档即视为缺陷。`docs/` 只放跨模块文档。任何代码改动都应在同一提交里同步对应模块文档。
+
 ```text
 mathHackathon/
 ├── src/evogenesis/             # 唯一可导入包（hatchling editable）
+│   ├── EvoGenesis项目总纲.md      # 项目总交接 + 模块索引
+│   ├── 问题定义与研究假设.md      # 建模总纲
 │   ├── core/                   # 机制底座：config / seed / logging / tracking / registry / io
+│   │   └── 核心机制与数据流.md
 │   ├── genome/                 # 二倍体基因组、motif
+│   │   └── 生物学与进化遗传学基础.md
 │   ├── development/            # GRN、precursor、RGCD 发育解码
+│   │   └── RGCD数学模型.md
 │   ├── connectome/             # 连接生成与 DanioNet 动力学
+│   │   └── DanioNet设计规范.md
 │   ├── arena/                  # 二维生态仿真：感官 / 物理 / 规则
+│   │   └── Danio_Arena设计规范.md
 │   ├── evolution/              # 繁殖、选择、drift
+│   │   └── 遗传繁殖与演化模型.md
 │   ├── learning/               # Behavior Cloning 生命周期学习
+│   │   └── 行为克隆学习.md
 │   ├── experiment/             # 实验协议、指标、run
+│   │   └── 实验与评价体系.md
 │   ├── viz/                    # 可视化（论文图、网络图）
 │   └── api/                    # FastAPI 路由 + WebSocket
+│       └── API与系统工程.md
 ├── frontend/                   # 演示 UI（Vite + React）
+│   ├── README.md               # 版本锁定与构建
+│   └── 交互与可视化.md
 ├── configs/                    # yaml 实验配置
 ├── scripts/                    # 薄 CLI 入口
 ├── notebooks/                  # 探索性分析
 ├── tests/                      # 冒烟 + 单测
 ├── paper/                      # LaTeX 论文
 ├── schemas/                    # JSON Schema（genome / fish / experiment）
-├── docs/                       # 团队协作文档（ai-tone-boundaries / code-review / THIRD_PARTY 等）
-│   └── design/                 # 方向设计规格与冻结文档（EvoGenesis 01–17 等）
+├── docs/                       # 跨模块协作文档（code-review / AI工作流 / 参数总表 / 验收清单 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── prompts/                    # AI 角色提示词
 ├── artifacts/                  # 冻结演示资产（入库）
@@ -53,7 +68,7 @@ mathHackathon/
 - `core/` 是唯一长期稳定的机制层，任何任务都复用。
 - `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/` 按任务划分，各模块彼此独立、可单独替换；`viz/` 负责出图。
 - 任务与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`frontend/` 归展示，`results/` 归实验。
-- `docs/design/` 存放方向设计规格与冻结文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
+- 文档与代码同目录（见上方树）：每个模块文档是该模块的接口/目的/用法与审计基准，代码偏离即缺陷。`docs/` 只放跨模块文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
 
 ## 产物分级
 
@@ -86,7 +101,7 @@ make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实
 
 # 技术栈
 
-除「前端 / 演示」外均为已冻结选型；依据 `docs/design/10_系统工程与接口.md`，要求 CPU 可运行、GPU 有则加速。
+除「前端 / 演示」外均为已冻结选型；依据 `api/API与系统工程.md`，要求 CPU 可运行、GPU 有则加速。
 
 ## 后端 / 模型
 - Python 3.12（uv 管理，`requires-python >=3.12`）

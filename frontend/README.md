@@ -78,5 +78,5 @@ frontend/
 
 ## 与后端的接口
 
-- REST 命名规范与端点见 `docs/design/10_系统工程与接口.md §4`（`/v1`、资源式、JSON `snake_case`）。
+- REST 命名规范与端点见 `api/API与系统工程.md §4`（`/v1`、资源式、JSON `snake_case`）。
 - 实时流走 `/v1/ws`，消息信封 `{v,type,seq,ts,payload}`，`type` 为点分层（`arena.fish_state` 等）。

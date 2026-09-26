@@ -142,8 +142,8 @@ EvoGenesis 不是把遗传算法套在一个现成神经网络外面，而是把
 
 > 逐份阅读本文时发现的未定义点，需与 04 / 05 / 07 / 16 对齐后确认。
 
-1. **W 的合成方式与 doc05 动力学未对齐**：§4 写 `W = W^(0) + ΔW`（加性），但 doc05 §3 动力学使用 `A_ij w_ij`，未说明 ΔW 以加性还是其他方式进入、是否受 Dale sign 约束。
+1. **W 的合成方式与 connectome/DanioNet设计规范.md 动力学未对齐**：§4 写 `W = W^(0) + ΔW`（加性），但 connectome/DanioNet设计规范.md §3 动力学使用 `A_ij w_ij`，未说明 ΔW 以加性还是其他方式进入、是否受 Dale sign 约束。
 2. **“四类 neural phenotype”未定义**：§7 Mendel Mode 输出“四类 neural phenotype”，但四类指什么、如何由 genotype 判定未写（G12）。
-3. **epistasis 的实现状态需明确**：§5 将 epistasis 列为“optional”，而 doc05 §9 已有 `w/o epistasis` 消融项；需确认 MVP 是否实现该机制，否则该消融无对象。
+3. **epistasis 的实现状态需明确**：§5 将 epistasis 列为“optional”，而 connectome/DanioNet设计规范.md §9 已有 `w/o epistasis` 消融项；需确认 MVP 是否实现该机制，否则该消融无对象。
 4. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
-5. **connectivity density 目标值未定**：§6 给范围 10%–20%，doc16 / config 为单值 0.15，`b_A` 校准对齐到哪个目标未写（关联 G1）。
+5. **connectivity density 目标值未定**：§6 给范围 10%–20%，docs/参数总表.md / config 为单值 0.15，`b_A` 校准对齐到哪个目标未写（关联 G1）。

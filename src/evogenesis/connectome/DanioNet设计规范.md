@@ -112,7 +112,7 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 > 逐份阅读本文时发现的未定义点，需与 04 / 07 / 16 对齐后确认。
 
-1. **12 维输入与 Arena 视野的对应未定义**：§2 列出 12 项，但各项如何由 doc07 的 left/right channel、radius、FOV 计算未写（doc07 阅读问题 #1 的另一侧）。
+1. **12 维输入与 Arena 视野的对应未定义**：§2 列出 12 项，但各项如何由 arena/Danio_Arena设计规范.md 的 left/right channel、radius、FOV 计算未写（arena/Danio_Arena设计规范.md 阅读问题 #1 的另一侧）。
 2. **`U_i x_t`、`m_i H_t`、`b_i` 的来源未定义**：§3 动力学中这三项是发育得到、固定先验还是可学习未写（关联 G1）。
 3. **动作合成未定义（G3）**：§4 的 `y_ω,y_v` 取自哪些 motor 细胞、左右 pool 如何合成 `ω,v` 未写，与 §5“左右竞争”的衔接缺失。
 4. **左右 motor 标记规则未定义（G2）**：§5 称“Motor neurons 标记 left/right side”，但标记规则未写。

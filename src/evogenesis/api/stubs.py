@@ -3,7 +3,7 @@ evolution/experiments/jobs).
 
 These endpoints define the request/response SHAPE (schemas.py) and return
 HTTP 501 so both sides can develop against the frozen contract before the
-pipeline lands (doc 10 section 4.3, R7).
+pipeline lands (API与系统工程.md section 4.3, R7).
 """
 
 from fastapi import APIRouter, HTTPException

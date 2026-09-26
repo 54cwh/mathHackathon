@@ -259,7 +259,7 @@ w_4\Delta Energy
 1. **全部参数初始化未定义（G1）**：`W_g,B,P,b,U,c,w_d,b_d,ε_p,ε_g,γ,C,u,b_w,a,b_τ` 的形状与初始化方式未给；`b_A` 的 10%–20% density 校准流程未写。
 2. **`R(g_i,g_j,p_i,p_j)` 仅给出函数名（§8）**：连接概率中的 interaction 项具体形式未定义，无法实现。
 3. **motor 的 left/right 归属规则未定义（G2）**：§7 要求“至少一个 left-associated 与一个 right-associated motor”，但哪些细胞算 left/right、如何分配未写。
-4. **动作输出来源未指定（G3）**：doc05 的 `y_ω,y_v` 取自哪些 motor 细胞、左右两池如何合成未写。
+4. **动作输出来源未指定（G3）**：connectome/DanioNet设计规范.md 的 `y_ω,y_v` 取自哪些 motor 细胞、左右两池如何合成未写。
 5. **motif 参数未给**：§2 的窗口长度 `|s|`、motif 长度、`TopK` 的 K 值未定义。
 6. **GRN 张量维度未给**：§4 的 `W_g / B / P / b` 维度、位置 `p_i` 如何嵌入（P 的编码方式）未写。
 7. **前体 domain 分配未定义**：§3 的 24 个前体如何分到 6 个 domain（是否均匀 4/domain）未写。

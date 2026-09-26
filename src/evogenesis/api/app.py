@@ -1,4 +1,4 @@
-"""EvoGenesis FastAPI app (doc 10 section 4/5).
+"""EvoGenesis FastAPI app (API与系统工程.md section 4/5).
 
 Mounts the contract routers:
   - /v1/sessions*           functional (Arena is owned by 李辰钊)
@@ -35,7 +35,7 @@ def health() -> dict[str, str]:
 def _problem(
     request: Request, status: int, detail: str, type_uri: str = "about:blank"
 ) -> JSONResponse:
-    """RFC 7807 problem details (doc 10 R10)."""
+    """RFC 7807 problem details (API与系统工程.md R10)."""
     return JSONResponse(
         status_code=status,
         media_type="application/problem+json",

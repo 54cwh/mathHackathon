@@ -24,7 +24,7 @@ ENV_KEYS = ("food_rich", "predator_rich", "resource_scarce")
 
 
 class Session:
-    """One live Arena session bound to a master seed (doc 10 §3 stable IDs)."""
+    """One live Arena session bound to a master seed (API与系统工程.md §3 stable IDs)."""
 
     def __init__(self, session_id: str, create: SessionCreate):
         self.session_id = session_id

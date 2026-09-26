@@ -1,6 +1,6 @@
 """Arena configuration.
 
-Defaults mirror ``configs/default_arena.yaml`` (frozen values, doc 16).
+Defaults mirror ``configs/default_arena.yaml`` (frozen values, docs/参数总表.md).
 All numbers MUST stay in sync with that file; the config object exists so
 experiments can override knobs without touching the frozen defaults.
 """
@@ -46,15 +46,15 @@ class EnergyConfig:
 class GrowthConfig:
     initial_size: float = 1.0
     max_size: float = 2.5
-    capture_size_ratio: float = 1.25  # kappa (doc 07 section 8)
+    capture_size_ratio: float = 1.25  # kappa (Danio_Arena设计规范.md section 8)
     capture_radius: float = 1.2
-    turn_inertia_scale: float = 0.35  # k_turn (doc 07 section 5)
+    turn_inertia_scale: float = 0.35  # k_turn (Danio_Arena设计规范.md section 5)
     biomass_to_size_gain: float = 0.02  # MVP calibration knob (play-test later)
 
 
 @dataclass(frozen=True)
 class ActorDefaults:
-    """MVP calibration knobs -- doc 07 says final values come from play-testing."""
+    """MVP calibration knobs -- Danio_Arena设计规范.md says final values come from play-testing."""
 
     prey_speed: float = 0.35
     prey_size_min: float = 0.30

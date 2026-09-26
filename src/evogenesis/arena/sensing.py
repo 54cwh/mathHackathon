@@ -1,4 +1,5 @@
-"""12-dim sensory encoder (doc 05 section 2, doc 07 section 4).
+"""12-dim sensory encoder (connectome/DanioNet设计规范.md section 2,
+Danio_Arena设计规范.md section 4).
 
 Dimension order is FROZEN (acceptance checklist: "12 维输入顺序固定"):
 
@@ -11,7 +12,7 @@ Dimension order is FROZEN (acceptance checklist: "12 维输入顺序固定"):
 
 All values are in [0, 1]. Left/right split is by the sign of the entity's
 bearing sine in the fish's heading frame; only entities inside the sensory
-radius AND the FOV cone contribute (doc 07 section 4: no full-map knowledge).
+radius AND the FOV cone contribute (Danio_Arena设计规范.md section 4: no full-map knowledge).
 """
 
 import numpy as np
@@ -156,7 +157,7 @@ def observe(
             looming,
             min(max(current_speed, 0.0), 1.0),
             energy_norm,
-            1.0 - energy_norm,  # hunger (doc 07 section 6: H = 1 - E/Emax)
+            1.0 - energy_norm,  # hunger (Danio_Arena设计规范.md section 6: H = 1 - E/Emax)
         ],
         dtype=float,
     )

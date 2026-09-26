@@ -1,7 +1,7 @@
 # 目录说明
 
 > 本文是 `AGENTS.md`「项目目录结构」的展开版，给出每个目录的职责、"放什么 / 不放什么"、归属与数据流。
-> 设计包的目录映射见 `docs/design/10_系统工程与接口.md §2`；两者与本文保持同一事实。
+> 设计包的目录映射见 `api/API与系统工程.md §2`；两者与本文保持同一事实。
 
 ## 1. 顶层速览
 
@@ -13,7 +13,7 @@
 | `schemas/` | 契约/配置 | JSON Schema 跨语言契约 | 是 |
 | `scripts/` | 工具 | 薄 CLI 入口 | 是 |
 | `tests/` | 工具 | 冒烟 + 单测 | 是 |
-| `docs/` | 文档 | 协作文档 + 方向设计规格 | 是 |
+| `docs/` | 文档 | 跨模块协作文档 | 是 |
 | `prompts/` | 文档 | AI 角色提示词 | 是 |
 | `paper/` | 文档 | LaTeX 论文 | 是 |
 | `notebooks/` | 文档 | 探索性分析 | 是 |
@@ -31,21 +31,34 @@
 
 依赖方向：`core/` 被所有任务包依赖；任务包彼此尽量不互相依赖；`api/` 是唯一对外服务层。
 
+**每个模块的文档与该模块同目录**（文档随代码）：
+
 ```text
 core/                # 机制底座：config / seed / logging / tracking / registry / io（最稳定）
+  └ 核心机制与数据流.md
 genome/              # 二倍体基因组、motif 匹配、遗传表示
+  └ 生物学与进化遗传学基础.md
 development/         # GRN 离散动力学、precursor、RGCD 发育解码
+  └ RGCD数学模型.md
 connectome/          # 连接生成与 DanioNet 结构、动力学
+  └ DanioNet设计规范.md
 arena/               # 二维生态仿真：感官、物理、规则
+  └ Danio_Arena设计规范.md
 evolution/           # 繁殖、选择、drift、代际更新
+  └ 遗传繁殖与演化模型.md
 learning/            # 生命周期学习（Behavior Cloning）
+  └ 行为克隆学习.md
 experiment/          # 实验协议、指标、run、统计
+  └ 实验与评价体系.md
 viz/                 # 出图（论文图、网络图）
 api/                 # FastAPI 路由 + WebSocket
+  └ API与系统工程.md
 ```
 
-- **放**：本任务的建模与实现代码。
-- **不放**：实验产物（→ `results/`）、论文与文档（→ `docs/`、`paper/`）、探索脚本（→ `notebooks/`）、可执行入口（→ `scripts/`）。
+`src/evogenesis/` 根另有 `EvoGenesis项目总纲.md`（总交接 + 模块索引）与 `问题定义与研究假设.md`（建模总纲）。
+
+- **放**：本任务的建模与实现代码，以及该模块的接口/目的/用法文档。
+- **不放**：实验产物（→ `results/`）、跨模块文档与论文（→ `docs/`、`paper/`）、探索脚本（→ `notebooks/`）、可执行入口（→ `scripts/`）。
 
 ## 3. 契约与配置
 
@@ -60,7 +73,7 @@ api/                 # FastAPI 路由 + WebSocket
 
 ## 5. 文档与资料
 
-- `docs/`：团队协作文档，含 `ai-tone-boundaries.md`、`code-review.md`、`search-spec.md`、`ai-use-declaration.md`、`directory-structure.md`（本文）、`THIRD_PARTY.md`；`docs/design/` 存放方向设计规格与冻结文档（EvoGenesis 01–17、`PROJECT_STATUS.md`）。
+- `docs/`：跨模块协作文档——`ai-tone-boundaries.md`、`code-review.md`、`search-spec.md`、`ai-use-declaration.md`、`directory-structure.md`（本文）、`THIRD_PARTY.md`、`AI工作流.md`、`开发排期与人员分工.md`、`路演与答辩.md`、`相关工作与开源参考.md`、`局限与未来路线.md`、`参数总表.md`、`验收清单.md`、`项目状态.md`。**各模块的接口/目的/用法文档不在这里**，而是与代码同目录（见 §2）。
 - `prompts/`：AI 角色提示词。
 - `paper/`：LaTeX 论文（本地编译链 + GitHub，不用 Overleaf）。
 - `notebooks/`：探索性分析。
@@ -104,7 +117,8 @@ DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
 | 实验产物（图 / 指标 / run 日志） | `results/` |
 | 建模推导 / 符号表 / 决策 | `research/notes/` |
 | 调研 JSON | `research/reference/` |
-| 设计规格 | `docs/design/` |
+| 模块接口/规格文档 | 对应模块目录（如 `arena/Danio_Arena设计规范.md`） |
+| 跨模块文档（工作流 / 排期 / 参数索引 / 验收） | `docs/` |
 | 论文 | `paper/` |
 
 ## 9. 约定

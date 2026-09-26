@@ -174,7 +174,7 @@ Complex Scene 可设置：
 
 ### A. Arena ↔ DanioNet 接口（最关键）
 1. **12 维 sensory 如何由视野算出未定义**
-   - config 已给 `sensing.radius=18`、`fov_degrees=220`，但 left/right channel 如何编码（距离、方位、对象类型、相对朝向）以及如何拼成 12 维向量未写（对应 doc05 `sensory_dim=12`）。
+   - config 已给 `sensing.radius=18`、`fov_degrees=220`，但 left/right channel 如何编码（距离、方位、对象类型、相对朝向）以及如何拼成 12 维向量未写（对应 connectome/DanioNet设计规范.md `sensory_dim=12`）。
    - 影响：DanioNet 输入语义无法确定，感官回路与可视化无从实现。
 
 ### B. 规则未闭合
@@ -184,13 +184,13 @@ Complex Scene 可设置：
 4. **捕食关系是否双向未定义**：§8 给出通用捕食条件（`d<capture_radius` 且 `size_hunter>κ·size_target`），但 predator(3) 能否吃 Danio fish、被吃鱼的后果（死亡或扣分）未写。
 5. **prey 是否重生 / 数量是否守恒未定义**：`live_prey=24` 是初始值；被吃后是否补充、能量是否守恒未写。
 6. **escape success 判定未定义**：§13 记录 escape successes，但“怎样算一次成功逃脱”（脱离 radius、保持 N 步、存活至 episode 结束）未定义。
-   - 影响：直接决定 doc06 fitness 的 E 分量。
+   - 影响：直接决定 evolution/遗传繁殖与演化模型.md fitness 的 E 分量。
 7. **episode 结束与 survival 判定未定义**：30s/600 步结束后 survival 如何定义、与 energy=0 死亡如何交互、survival steps 如何归一化进 S 未写。
-   - 影响：doc06 的 S 分量与跨 episode 可比性。
+   - 影响：evolution/遗传繁殖与演化模型.md 的 S 分量与跨 episode 可比性。
 
 ### C. 参数缺失
 8. **Δt 与 ω 单位未定**：hz=20 可推 Δt=0.05s，但 ω 是 rad/s 还是 rad/step 未写明；公式含 Δt 但未给值。
 9. **初始布局未定义**：fish / prey / predator / obstacle 的初始位置（随机分布、固定 seed 布局、对称布置）未写。
-   - 影响：固定 seed 可复现（doc15 要求）。
+   - 影响：固定 seed 可复现（docs/开发排期与人员分工.md 要求）。
 10. **“高价值 prey” 未定义**：§12 使用 high-value prey，但 §3 只有单一类 24 prey，无价值分级参数。
 11. **PredatorPolicy / PreyPolicy / ExpertPolicy 参数缺失**：巡游与追踪速度、避障半径，以及 ExpertPolicy 的 `w_p0 / k_H / w_d / w_o` 均未落在 config（后四个即 G4）。

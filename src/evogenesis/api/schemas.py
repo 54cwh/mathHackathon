@@ -1,7 +1,7 @@
-"""API contract models (doc 10 section 4.2/4.3, R6/R9/R10/R11).
+"""API contract models (API与系统工程.md section 4.2/4.3, R6/R9/R10/R11).
 
 Field names are snake_case (R6) and mirror ``schemas/*.json`` where they
-exist. Endpoint list follows the frozen API draft in doc 10 section 4.3.
+exist. Endpoint list follows the frozen API draft in API与系统工程.md section 4.3.
 """
 
 from typing import Any, Literal
@@ -85,7 +85,7 @@ class BreedingResult(BaseModel):
     meiosis_trace: dict[str, Any]
 
 
-# --- fish card (doc 10 4.3: GET sessions/{id}/fish/{fish_id}) --------------
+# --- fish card (API与系统工程.md 4.3: GET sessions/{id}/fish/{fish_id}) --------------
 class FishCard(BaseModel):
     fish_id: str
     generation: int
@@ -98,7 +98,7 @@ class FishCard(BaseModel):
     metrics: dict[str, Any] = Field(default_factory=dict)
 
 
-# --- snapshot (doc 10 4.3: GET sessions/{id}/snapshot) ---------------------
+# --- snapshot (API与系统工程.md 4.3: GET sessions/{id}/snapshot) ---------------------
 class Snapshot(BaseModel):
     session_id: str
     step: int

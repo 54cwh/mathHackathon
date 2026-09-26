@@ -1,8 +1,8 @@
 # Schema Examples（契约示例）
 
 > 状态：示例数据（**draft**）。`trajectory_*` 与 `event_log_*` 的字段格式是
-> `docs/data-pipeline.md` §10 待冻结项的草案实例，**冻结前不可被代码依赖**；
-> 冻结需双方同步（`10_系统工程与接口.md` §10）。
+> `core/核心机制与数据流.md` §10 待冻结项的草案实例，**冻结前不可被代码依赖**；
+> 冻结需双方同步（`api/API与系统工程.md` §10）。
 >
 > 本目录是**契约示例**，不是仿真运行产物——真实 run 数据属于
 > `results/runs/`（不入库）。
@@ -31,7 +31,7 @@
 - `experiment_example.json` 中的 `seed: 1103` 取自
   `configs/experiment_seeds.yaml` 的第一个正式种子。
 
-## trajectory 观测向量的 12 维语义（05 号文档 §2）
+## trajectory 观测向量的 12 维语义（connectome/DanioNet设计规范.md §2）
 
 | idx | 字段 | idx | 字段 |
 |---|---|---|---|

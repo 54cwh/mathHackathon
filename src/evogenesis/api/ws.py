@@ -1,4 +1,4 @@
-"""WebSocket contract endpoint (doc 10 section 5, R11).
+"""WebSocket contract endpoint (API与系统工程.md section 5, R11).
 
 MVP: establishes the envelope contract -- every WS message is a WSMessage
 {v, type, seq, ts, payload}. This endpoint echoes any received message back

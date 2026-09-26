@@ -1,4 +1,4 @@
-"""API contract smoke tests (doc 10 section 4/5)."""
+"""API contract smoke tests (api/API与系统工程.md section 4/5)."""
 
 from fastapi.testclient import TestClient
 

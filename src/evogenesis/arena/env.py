@@ -1,7 +1,7 @@
-"""Danio Arena: continuous 2-D ecology env (doc 07).
+"""Danio Arena: continuous 2-D ecology env (Danio_Arena设计规范.md).
 
 Deterministic given (config, master_seed). Emits the draft event vocabulary
-from docs/data-pipeline.md section 5.1 in dot form (arena.*, R11) plus
+from core/核心机制与数据流.md section 5.1 in dot form (arena.*, R11) plus
 arena.fish_captured / arena.collision (vocabulary still DRAFT pending
 joint freeze).
 """
@@ -127,7 +127,7 @@ class DanioArena:
         return ev
 
     def _omega_eff(self, fish: Fish, omega: float) -> float:
-        """Doc 07 section 5: turning flexibility drops as size grows."""
+        """Danio_Arena设计规范.md section 5: turning flexibility drops as size grows."""
         k = self.cfg.growth.turn_inertia_scale
         return omega / (1.0 + k * (fish.size - 1.0))
 
@@ -167,7 +167,7 @@ class DanioArena:
         dt = self.cfg.world.dt
         new_events: list[Event] = []
 
-        # --- fish: turn, move, eat, pay energy (doc 07 sections 5-8)
+        # --- fish: turn, move, eat, pay energy (Danio_Arena设计规范.md sections 5-8)
         for fid, fish in self.fish.items():
             if not fish.alive:
                 continue
@@ -190,7 +190,7 @@ class DanioArena:
                     )
                     break
 
-            # predation on prey (doc 07 section 8):
+            # predation on prey (Danio_Arena设计规范.md section 8):
             # d < r_capture AND size > kappa * prey_size
             for prey in self.prey.values():
                 if not prey.alive:
@@ -237,7 +237,7 @@ class DanioArena:
                 )
                 break  # one attempt per fish per step
 
-            # energy (doc 07 section 6):
+            # energy (Danio_Arena设计规范.md section 6):
             # E = clip(E - C_base - C_move*v^2 + R_food, 0, E_max)
             e = (
                 fish.energy
@@ -263,7 +263,7 @@ class DanioArena:
                 continue
             fish.survival_steps += 1
 
-        # --- predator capture of fish (doc 07 section 8 applies both ways)
+        # --- predator capture of fish (Danio_Arena设计规范.md section 8 applies both ways)
         for pred in self.predators.values():
             if not pred.alive:
                 continue
@@ -313,7 +313,7 @@ class DanioArena:
                     )
                 )
 
-        # --- prey wander (doc 07 section 10)
+        # --- prey wander (Danio_Arena设计规范.md section 10)
         for prey in self.prey.values():
             if not prey.alive:
                 continue
@@ -354,7 +354,7 @@ class DanioArena:
         return StepResult(self.step_idx, done, new_events)
 
     def per_fish_log(self) -> dict[str, dict]:
-        """Doc 07 section 13 per-fish record."""
+        """Danio_Arena设计规范.md section 13 per-fish record."""
         return {
             fid: {
                 "generation": f.generation,
