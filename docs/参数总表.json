@@ -1022,8 +1022,6 @@
   "missing_required": {
     "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。",
     "items": [
-      "动作合成 y_ω, y_v 的左右池合成规则（G3）",
-      "motor 左/右归属规则（G2）",
       "BC 损失权重 λ_ω、λ_v（core §4.3）",
       "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id",
       "二基因位点表型阈值 θ_N、θ_H（genome §3/§6，G12；需 pilot 反解；约束 θ∈(0,0.5)，否则 Aa 退化为完全隐性）"
