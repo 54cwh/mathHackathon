@@ -58,7 +58,7 @@ const SEGMENT_BUDGET_FACTOR = 100;
 /** 帧率上限：低帧率足够表现"放电"，且不抢 CPU（也不进 React 热路径）。 */
 const FPS = 12;
 /** 无激活数据时的环境放电概率（让纹理"呼吸"而不是死图）。 */
-const AMBIENT_FIRE = 0.05;
+const AMBIENT_FIRE = 0.14;
 /** 有激活数据时的基础放电概率。 */
 const BASE_FIRE = 0.06;
 
@@ -126,6 +126,8 @@ interface MicroSegment {
 interface Cell {
   x: number;
   y: number;
+  /** 所属装饰簇（-1 = 非簇，如线段垫底）；逐帧"呼吸"按簇整体调制。 */
+  cluster: number;
 }
 interface Layout {
   w: number;
@@ -182,7 +184,7 @@ function buildBrainForgeLayout(w: number, h: number): Layout {
   /* --- 2) 装饰簇：3 处局部密集团块（clusterBase 作极暗垫底） -------------
      簇只抬升**局部**密度；边界用 16 个扇区的随机半径做硬边抖动（不做平滑衰减，
      以保持像素风的硬边），所以簇看上去是不规则的密集团，而不是圆"节点"。 */
-  for (const spot of CLUSTER_SPOTS) {
+  CLUSTER_SPOTS.forEach((spot, spotIndex) => {
     const cx = Math.round(spot.fx * w);
     const cy = Math.round(spot.fy * h);
     const rx = Math.max(3, Math.round(w * (CLUSTER_RX[0] + rnd() * CLUSTER_RX[1])));
@@ -203,7 +205,7 @@ function buildBrainForgeLayout(w: number, h: number): Layout {
         const x = cx + dx;
         const y = cy + dy;
         if (x < 0 || x >= w || y < 0 || y >= h) continue;
-        clusterBase.push({ x, y });
+        clusterBase.push({ x, y, cluster: spotIndex });
         if (rnd() < 0.72) {
           const size: ParticleSize = rnd() < 0.8 ? 1 : 2;
           particles.push({ x, y, size, lane: pickLane() });
@@ -211,7 +213,7 @@ function buildBrainForgeLayout(w: number, h: number): Layout {
         }
       }
     }
-  }
+  });
 
   /* --- 3) 断开的微小线段：2-5 px，横竖各半 ------------------------------
      「断开」怎么保证：fits() 检查线段自身 Cell **加上 1 px 的方形膨胀邻域**，
@@ -249,8 +251,8 @@ function buildBrainForgeLayout(w: number, h: number): Layout {
 }
 
 /**
- * 静态层：簇底 + 断开线段。它们不随时间变化，画一次缓存到离屏画布，
- * 每帧只 drawImage 一次（省掉每帧上千次 fillRect）。
+ * 静态层：**只缓存断开线段**（逐帧不变）。装饰簇改为逐帧"呼吸"，故不进静态层
+ * （原先把簇画进静态层，用户实测反馈"几个大色块一直不变化"）。
  */
 function buildStaticLayer(layout: Layout): HTMLCanvasElement {
   const layer = document.createElement("canvas");
@@ -259,9 +261,6 @@ function buildStaticLayer(layout: Layout): HTMLCanvasElement {
   const ctx = layer.getContext("2d");
   if (!ctx) return layer;
   ctx.imageSmoothingEnabled = false;
-
-  ctx.fillStyle = BRAIN.clusterBase;
-  for (const c of layout.clusterBase) ctx.fillRect(c.x, c.y, 1, 1);
 
   ctx.fillStyle = BRAIN.microSegment;
   for (const s of layout.segments) {
@@ -290,6 +289,18 @@ function drawBrainForge(
   ctx.clearRect(0, 0, layout.w, layout.h);
   if (staticLayer) ctx.drawImage(staticLayer, 0, 0);
 
+  // 1) 装饰簇垫底：每簇按自己的相位在暗档之间缓慢切换 —— 簇会"呼吸"，不再是一块死色。
+  const shades = [BRAIN.clusterBase, BRAIN.microSegment] as const;
+  for (let cluster = 0; cluster < CLUSTER_SPOTS.length; cluster++) {
+    const phase = Math.sin((bucket / 18) * Math.PI * 2 + cluster * 2.1);
+    ctx.fillStyle = shades[phase > 0 ? 1 : 0];
+    for (const cell of layout.clusterBase) {
+      if (cell.cluster !== cluster) continue;
+      ctx.fillRect(cell.x, cell.y, 1, 1);
+    }
+  }
+
+  // 2) 断开线段（静态层已缓存，见 drawImage）
   const n = activation?.length ?? 0;
   const dim = LANES.length - 1; // 最亮档的下标：放电时用
 

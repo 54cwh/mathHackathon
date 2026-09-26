@@ -139,6 +139,46 @@ export function drawHistogram(
   return true;
 }
 
+/**
+ * 成对柱状图（Before/After 对比用）：每个 index 画两根相邻竖柱。
+ * `values` 为 null 的项不画（缺失 ≠ 0）；`max` 缺省取两组最大值。
+ */
+export function drawPairedBars(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  before: (number | null)[],
+  after: (number | null)[],
+  beforeColor: string = BRAND.blueGrey,
+  afterColor: string = ARENA.fishSelected,
+): boolean {
+  clearChart(ctx, w, h);
+  const f = frame(w, h);
+  const count = Math.max(before.length, after.length);
+  if (count === 0) return false;
+  const all = [...before, ...after].filter((v): v is number => typeof v === "number");
+  if (all.length === 0) return false;
+  const peak = Math.max(...all.map((v) => Math.abs(v))) || 1;
+  const usable = Math.max(1, h - 2 * f.pad);
+  const slot = Math.max(2, Math.floor((w - 2 * f.pad) / count));
+  const barW = Math.max(1, Math.floor((slot - 1) / 2));
+
+  for (let i = 0; i < count; i++) {
+    const x = f.pad + i * slot;
+    const pair: Array<[number | null, string, number]> = [
+      [before[i] ?? null, beforeColor, 0],
+      [after[i] ?? null, afterColor, barW],
+    ];
+    for (const [value, color, offset] of pair) {
+      if (typeof value !== "number") continue;
+      const height = Math.max(1, Math.round((Math.abs(value) / peak) * usable));
+      ctx.fillStyle = color;
+      ctx.fillRect(x + offset, h - f.pad - height, barW, height);
+    }
+  }
+  return true;
+}
+
 /** 环境变更标记：在指定索引处画 1px 竖线（只画有标记的那些 x）。 */
 export function drawEventMarkers(
   ctx: CanvasRenderingContext2D,

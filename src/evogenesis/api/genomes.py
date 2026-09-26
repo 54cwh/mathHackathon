@@ -101,7 +101,9 @@ def develop(req: DevelopmentRequest) -> DevelopmentResult:
     }
     trace = {
         "q": [float(value) for value in lab.affinity(genome)],
-        "cell_type_counts": {str(i): int(c) for i, c in enumerate(cell_counts)},
+        # Counter 的迭代产出的是 **key**，用 enumerate 会把 key 当计数写出去
+        # （旧实现恒得 {"0":0,"1":1,...}）。必须按键取计数。
+        "cell_type_counts": {str(k): int(v) for k, v in sorted(cell_counts.items())},
         "tau": {"mean": summary["tau_mean"], "std": summary["tau_std"]},
         "n_neurons": n_neurons,
         "n_edges": n_edges,
