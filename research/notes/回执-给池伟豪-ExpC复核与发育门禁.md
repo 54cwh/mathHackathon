@@ -93,3 +93,20 @@ for seed in (1103, 2207, 3301):
 
 证据留档：`results/runs/expC_viability_probe.json`（v1）、`results/runs/expC_launch_provenance_v2.json`（v2）。
 （均在 `results/`，按 `.gitignore:53` 不入库，故结论写在本文件里。）
+
+---
+
+## 追加（同日稍后）—— §4 与 §6 已由你闭合，本轮 provenance 升级为「可由 commit 复现」
+
+发出上文的同一天，你已落地 `3ab3e0e fix(development): Θ_D 改每-seed，并修 ρ(W⁰) 与 U 跨域散布两处校准失配`。核对后：
+
+- **§4 不必再做**：那 9 个文件已随 `3ab3e0e` 提交（我逐一核对了 worktree 与 `HEAD:` 的 blob 一致）。
+- **§6 的顾虑解除**：Exp C v2 启动时依赖的 6 个上游模块 blob 与 `3ab3e0e` **逐一相同**
+  （`core/seed.py`、`core/config.py`、`development/{config,grn,rgcd}.py`、`configs/default_model.yaml`），
+  故本轮 run **可由该 commit 复现**，不再依赖未提交工作区；原先记的
+  `results/runs/expC_launch_provenance_v2.json` 仍是准确的来源快照。
+- 因此 §6 里「跑完前别改 rgcd.py / development/config.py」**已无必要**——它们已在 `3ab3e0e` 冻结；
+  若你后续再改，请告诉我，我按新 commit 重跑。
+
+上文 §4「请你拍板」一节据此视为**已闭合**。§3 的两个连带影响（`n_danio=200` 依据失效、
+§3.3 旧 viable 数失效）仍待我在 Exp C 跑完后回写。
