@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.9",
+    "version": "v0.10",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -23,7 +23,7 @@
       "no_basis": "找不到依据，标设计选择",
       "missing": "参数总表原缺、实现必须补"
     },
-    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。",
+    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。",
     "workflow": [
       "表 A/B/C 锁定不动",
       "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
@@ -1675,12 +1675,13 @@
       "use": "looming 阈值（口径二选一）"
     }
   ],
-  "changes_pending": [
+  "changes_pending": [],
+  "changes_pending_resolved": [
     {
       "param": "world",
       "from": "100×60",
-      "to": "保留或正方形",
-      "reason": "无依据，疑似 Canvas 比例"
+      "to": "保留",
+      "resolution": "2026-09-26 按 arena §2 定稿关闭：保留 100×60（`world_width` / `world_height` status=no_basis，设计选择）；原「或正方形」不再考虑。"
     }
   ],
   "sensitivity_plan": [

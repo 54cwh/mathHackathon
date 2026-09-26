@@ -1016,6 +1016,11 @@
 
    用途：机制对照：时间驱动生精灵调度器（定时 + 保底数量双触发，`src/game_main.py:310-334`）；障碍物为伤害性事件（`game_settings.py`）——后者支持「障碍=负奖励事件」而非改 Arena 的接法。对照认领表 A7 与 §12。
 
+
+221. Mihalitsis M, Bellwood DR. **A morphological and functional basis for maximum prey size in piscivorous fishes.** *PLoS ONE* 12(9), e0184679 (2017). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pone.0184679
+    用途：**替代物种**最大可吞咽猎物**体高**（depth）= 捕食者 SL 的 **20%（P. forsteri）–27%（C. urodeta）**。**限定条件必须随引**：度量对象是**猎物体高**、物种为 4 种替代掠食鱼（*Cephalopholis urodeta / Paracirrhites forsteri / Pterois volitans / Lates calcarifer*），**不可**倒数为本项目的 `capture_size_ratio κ=1.25`（κ 属**设计选择**，见 `arena/Danio_Arena设计与实现说明.md` §8）。核验：OpenAlex `W2753764258`（2017-09-08；OA gold，CC-BY）。
+
 ---
 
 ## 待登记（未核验；**P0 债**，2026-09-26 由只读审计 `research/notes/引用登记缺口.md` 提出）
@@ -1023,11 +1028,7 @@
 > 本节条目**尚未**按本文件开头第 1–3 条规则完成核验（离线环境无法做 OpenAlex 核验），因此**不占正式编号、
 > 不得按 `[bib#n]` 引用**。补完核验后移入正式序列。
 
-**（待登记-1）Mihalitsis & Bellwood 2017** —— PLOS ONE，DOI `10.1371/journal.pone.0184679`（同行评议，待核验）
-
-    用途：**替代物种**最大可吞咽猎物体高 = SL 的 20–27%。**限定条件必须随引**：度量对象是**猎物体高**、物种为替代物种，
-    **不可**倒数为本项目的 `capture_size_ratio κ=1.25`（本项目 κ 属**设计选择**，见 `arena/Danio_Arena设计与实现说明.md` §8）。
-    首次出现处：`research/reference/zebrafish-escape-capture.md:71,94,101`（该处亦写明不可直接用于斑马鱼）。
+~~**（待登记-1）Mihalitsis & Bellwood 2017**~~ ✅ **已核验并登记为 `[bib#221]`（2026-09-26）** —— 见正式序列 221。
 
 **（待登记-2）Arena 生物学调研共 5 组** —— `research/reference/` 下 `zebrafish-escape-capture.md`、`param-basis-biology.md`、
 `looming-and-growth.md`、`arena-boundary-collision.md`、`episode-termination-fitness.md` 所引文献**一条都未登记**

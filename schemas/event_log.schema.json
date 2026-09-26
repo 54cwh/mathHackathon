@@ -1,0 +1,131 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/event_log.schema.json",
+  "title": "ArenaEventLog",
+  "meta": {
+    "owns": "Arena 事件日志文件：首行 header（run 级上下文）+ 逐条 arena 事件（信封 owner = arena §18.4.1，词表 v1）",
+    "status": "已冻结",
+    "producer": "src/evogenesis/experiment/events.py（落盘层）；事件记录本身由 arena §18.4（`Event.to_dict()`）产出",
+    "note": "文件路径：results/runs/<experiment_id>-s<seed>/events.jsonl（run 目录布局 owner = experiment §5.1）。run 级上下文只在 header 写一次，不逐事件重复（core §5.1）。"
+  },
+  "oneOf": [
+    { "$ref": "#/$defs/header" },
+    { "$ref": "#/$defs/event" }
+  ],
+  "$defs": {
+    "header": {
+      "type": "object",
+      "required": [
+        "record_type",
+        "schema_version",
+        "experiment_id",
+        "episode_id",
+        "environment_id",
+        "generation",
+        "episode_seed",
+        "n_events"
+      ],
+      "properties": {
+        "record_type": { "const": "header" },
+        "schema_version": { "type": "string", "minLength": 1 },
+        "experiment_id": { "type": "string", "minLength": 1 },
+        "episode_id": { "type": "string", "minLength": 1 },
+        "environment_id": { "type": "string", "minLength": 1 },
+        "generation": { "type": "integer", "minimum": 0 },
+        "episode_seed": { "type": "integer" },
+        "n_events": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "event": {
+      "type": "object",
+      "required": ["seq", "type", "step", "payload"],
+      "properties": {
+        "seq": { "type": "integer", "minimum": 1 },
+        "type": {
+          "enum": [
+            "arena.spawn",
+            "arena.capture_attempt",
+            "arena.prey_captured",
+            "arena.collision",
+            "arena.escape",
+            "arena.energy_depleted",
+            "arena.fish_captured",
+            "arena.episode_end"
+          ]
+        },
+        "step": { "type": "integer", "minimum": 0 },
+        "payload": { "type": "object" }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "arena.spawn" } } },
+          "then": { "properties": { "payload": { "required": ["entity_id"] } } }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.capture_attempt" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": [
+                  "fish_id",
+                  "prey_id",
+                  "distance",
+                  "size_ratio",
+                  "threshold",
+                  "capture_radius",
+                  "result"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.prey_captured" } } },
+          "then": {
+            "properties": {
+              "payload": {
+                "required": ["fish_id", "prey_id", "distance", "size_ratio", "food_reward"]
+              }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.collision" } } },
+          "then": {
+            "properties": { "payload": { "required": ["fish_id", "obstacle_id"] } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.escape" } } },
+          "then": {
+            "properties": { "payload": { "required": ["fish_id", "threat_source"] } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.energy_depleted" } } },
+          "then": {
+            "properties": { "payload": { "required": ["fish_id", "survival_steps"] } }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.fish_captured" } } },
+          "then": {
+            "properties": {
+              "payload": { "required": ["fish_id", "predator_id", "survival_steps"] }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "arena.episode_end" } } },
+          "then": {
+            "properties": {
+              "payload": { "required": ["steps", "fish_alive", "prey_remaining"] }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

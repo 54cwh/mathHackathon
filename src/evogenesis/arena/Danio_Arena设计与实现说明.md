@@ -142,7 +142,7 @@ size\leftarrow\min\big(size_{max},\ sqrt{size^2+g\cdot size_{prey}^2}\big)
 d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}\quad\text{且}\quad \lvert\Delta\theta\rvert\le\frac{\theta_{cone}}{2}
 \]
 
-**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。$\kappa=1.25$ 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**该来源的登记状态【已定稿·声明】**：Mihalitsis & Bellwood 2017（DOI `10.1371/journal.pone.0184679`）目前**只出现在证据文件** `research/reference/zebrafish-escape-capture.md:71,94,101`，**尚未登记进 `research/notes/bibliography.md` 正式序列**（已挂该文件「待登记-1」，待 OpenAlex 核验）；**论文引用前必须完成登记**，且限定语（替代物种 / 猎物体高 / 不可倒数）须随引。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
+**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。$\kappa=1.25$ 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**该来源的登记状态【已定稿】**：Mihalitsis & Bellwood 2017 已登记为 **`[bib#221]`**（PLoS ONE 12(9):e0184679，2026-09-26 经 OpenAlex `W2753764258` 核验）；引用时限定语（替代物种 / **猎物体高** / **不可倒数为 κ**）须随引。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
 
 **【前向锥·已定稿（2026-09-26 实现）】** 目标要纳入捕食判定，还须位于**猎人朝向的前向锥**内：$\lvert\Delta\theta\rvert$ 为猎物相对**猎人**朝向的方位角，$\theta_{cone}$（`growth.capture_cone_degrees`）$=120\,^{\circ}$ 为**总锥角**（半锥 $60\,^{\circ}$）。锥角属**设计选择**（dossier T2 `add_directionality`；[bib#217]/[bib#218] 对照），非实测值；默认值 120° 由用户 2026-09-26 裁决。
 **双向同一**：判据对两个方向对称——predator 吃鱼与鱼吃 prey，均按**各自作为猎人**的朝向锥判定。
@@ -219,11 +219,13 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | selected neural activity snapshots | ❌ 未实现（需 DanioNet 接入） |
 
 ## 14. 历史依赖探针任务（H3）
-检验 H3（异质 \(\tau\) 的作用）需要一个体现历史依赖的探针：【草案待确认】
+**任务定义【已定稿】（2026-09-26）**：检验 H3（异质 \(\tau\) 的作用）需要一个体现历史依赖的探针：
 - Arena 维护隐藏真相 `last_seen_prey_pos=(x*,y*)` 与其时间 \(t0\)；
 - prey 被遮挡 / 离开 FOV 达 \(D\) 步后，判定鱼能否回到 \((x^*,y^*)\)（回归半径 \(r_H\)）；
 - 报告 \(P(D)\) 退化曲线；`integrator_memory` 激活可作辅助证据；
 - 阴性对照：打乱历史（shuffle `last_seen_prey_pos`）后 \(P(D)\) 应下降。
+
+**实现状态【未实现】**：`arena/` 当前无探针代码（无 `last_seen_prey_pos` 字段、无回归判定、无 shuffle 对照）；\(D\)、\(r_H\) 取值待定。**H3 的主证据不依赖本探针**——`integrator_memory` 单元激活统计可作辅助证据，探针为**可选增强**；实现须单列（新增 `Fish` 字段、可能新增事件类型，按 §18.10「事件词表」变更纪律同步 `KNOWN_EVENTS`）。列入 §19 P1。
 
 依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。\(D\)、\(r_H\) 取值待定。
 
@@ -697,8 +699,10 @@ uv run python scripts/smoke_arena.py
 6. **事件样例闭环**：`schemas/examples/event_log_example.jsonl` 仍需按本文件 §18 的 8 类事件词表重生成，或明确降级为仅示意信封形状；不能继续让样例字段与实现词表分裂。
 7. **文献登记**：采纳 Arena lane 的生物学依据时，从 `bibliography.md` 当前编号之后继续登记（不得复用 RGCD 的 #111–#130），再把引用写回合并稿和参数总表。文献只支撑合理性校验或设计依据，不自动变成 Arena 契约。
 
+8. **H3 历史依赖探针（可选增强，§14）**：任务定义已定稿、实现未做；实现前须定 \(D\)、\(r_H\) 并评估是否新增事件类型（若新增，按 §18.10 同步 `KNOWN_EVENTS` / core §5.1 / 事件样例）。
+
 ### P2：实现完善
 
-8. 接入 `selected neural activity snapshots`，或从规范 §13 删除该字段并在 DanioNet/API 文档同步降级。
-9. 删除或接线 `PreyPolicy.avoid_gain`，补 `arena.collision`、活鱼 escape、空种群终止和 `_free_spot` 回退分支的专项测试。
-10. 将合并稿中的所有旧文件名引用改为本文件；两个旧路径仅保留兼容入口，不再承载独立契约。
+9. 接入 `selected neural activity snapshots`，或从规范 §13 删除该字段并在 DanioNet/API 文档同步降级。
+10. 删除或接线 `PreyPolicy.avoid_gain`，补 `arena.collision`、活鱼 escape、空种群终止和 `_free_spot` 回退分支的专项测试。
+11. 将合并稿中的所有旧文件名引用改为本文件；两个旧路径仅保留兼容入口，不再承载独立契约。

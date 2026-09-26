@@ -48,6 +48,7 @@ from evogenesis.experiment.environments import (
     environment_env_vars,
     load_environment,
 )
+from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
     episode_metrics,
@@ -289,8 +290,20 @@ def main() -> None:
             args.emit_trajectories,
             experiment_id=args.experiment_id,
         )
+        gen = next(iter(per_fish.values()), {}).get("generation") or 0
+        write_event_log(
+            run_dir / "events.jsonl",
+            episode_event_header(
+                experiment_id=args.experiment_id,
+                episode_id="ep0001",
+                environment_id=args.environment or "default",
+                generation=int(gen),
+                episode_seed=seed,
+                n_events=len(events),
+            ),
+            events,
+        )
         if args.emit_trajectories:
-            gen = next(iter(per_fish.values()), {}).get("generation") or 0
             write_episode(
                 run_dir / "trajectories" / "episode_ep0001.jsonl",
                 episode_header(
