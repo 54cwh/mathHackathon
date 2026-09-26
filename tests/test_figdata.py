@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from evogenesis.experiment.figdata import (
+from evogenesis.viz.figdata import (
     MANIFEST_SHEET,
     data_dir,
     export_workbook,

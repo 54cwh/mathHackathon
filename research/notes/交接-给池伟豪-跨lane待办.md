@@ -56,7 +56,7 @@
 1. **`prey_capture` 口径（§4）**：`prey_capture = captures / max(encounters, 1)`，分母 = **尺寸门之前**的纯距离接触数（`arena` S6），**不是** `capture_attempts`。`capture_attempts` 降为诊断列（`capture_attempts − captures` = 「进过口但吃不下」）。实现 `experiment/metrics.py::prey_capture_rate`；每鱼记录 16 列。依据 `experiment/实验与评价体系.md` §2.1（指标契约）。
 2. **可用的驱动/评价入口**（均在 `main`，已被测试守护）：
    - `scripts/run_arena.py --experiment-id <id>`（`--emit-behavior-trace` 可落整群行为回放 `behavior_trace/`）：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`（`metrics.csv`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`）。
-   - `scripts/make_figs.py` / `scripts/make_tables.py`：只读 run 目录，出图/出表（含 `diagnostics.md` 口径诊断）。
+   - `scripts/make_figs.py`（薄壳 → `viz/figs.py`）/ `scripts/make_tables.py`：只读 run 目录，出图/出表（含 `diagnostics.md` 口径诊断）。
    - 基线（对照用，**不入库、可重生成**，`exp_arena_expert_ref_v3`，A14 后重跑）：`survival 0.9188 ± 0.1362`、`capture_rate 0.0030 ± 0.0014`、`prey_capture 0.5148 ± 0.2972`、`escape_success 0.3032 ± 0.1354`、`energy_efficiency −9.25e−4 ± 1.62e−4`、`composite_fitness 0.3828 ± 0.0725`。
 
 - `selected neural activity snapshots` 未实现（`arena §13` / `M3`）。
@@ -295,3 +295,10 @@ Topologies*, Evol. Comput. 10(2):99–127 (2002) | peer-reviewed |
 
 告诉我一声即可 —— 我接着做前端接线与 Demo 流程（选参考图 → 冻色板 → 面板填充）。
 **在你说开始之前，我不会动 `src/evogenesis/api/`**，避免与你撞 lane。
+
+## 可视化代码迁移（2026-09-26）
+
+- 出图业务逻辑自 `scripts/` 迁入 `src/evogenesis/viz/`：`make_figs`→`viz/figs.py`、`make_fig_connectome`→`viz/fig_connectome.py`、`make_fig_pipeline`→`viz/fig_pipeline.py`、`make_fig_viability`→`viz/fig_viability.py`、`make_env_compare`→`viz/env_compare.py`；`figdata.py` 由 `experiment/` 迁至 `viz/`。契约见 `viz/可视化.md`。
+- `scripts/` 保留同名**薄壳**，命令与参数不变。
+- `scripts/dump_connectome_matrix.py` / `probe_architecture.py` 为数据落盘层，**仍留 `scripts/`**（非 viz）。
+- **跨 lane 待办（paper 侧）**：`paper/图表-数据对照表.md` §1 仍写 `src/evogenesis/experiment/figdata.py`（应改 `viz/figdata.py`）；`paper/` 本轮未改（用户禁改），请 paper owner 同步。

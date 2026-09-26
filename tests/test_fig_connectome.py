@@ -25,9 +25,11 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from evogenesis.experiment.figdata import MANIFEST_SHEET, workbook_path
+from evogenesis.viz import fig_connectome
+from evogenesis.viz.figdata import MANIFEST_SHEET, workbook_path
 
 ROOT = Path(__file__).resolve().parents[1]
+#: 出图 CLI（薄壳，命令路径不变）与数据落盘脚本（数据层，仍属 `scripts/`）。
 SCRIPT = ROOT / "scripts" / "make_fig_connectome.py"
 DUMP_SCRIPT = ROOT / "scripts" / "dump_connectome_matrix.py"
 
@@ -56,7 +58,7 @@ def dump():
 
 @pytest.fixture(scope="module")
 def figmod():
-    return _load_script("make_fig_connectome", SCRIPT)
+    return fig_connectome
 
 
 @pytest.fixture(scope="module")
@@ -313,8 +315,8 @@ def test_cli_writes_figure_and_workbook(payload, tmp_path):
     assert (out_dir / "data" / "fig_connectome.xlsx").is_file()
 
 
-def test_script_entry_point_uses_utf8_guard():
-    """脚本入口必须调 `force_utf8_stdout()`（`experiment/console.py` 的约定）。"""
-    source = SCRIPT.read_text(encoding="utf-8")
+def test_module_entry_point_uses_utf8_guard():
+    """出图模块入口必须调 `force_utf8_stdout()`（`experiment/console.py` 的约定）。"""
+    source = Path(fig_connectome.__file__).read_text(encoding="utf-8")
     assert "force_utf8_stdout()" in source
     assert "force_utf8_stdout" in source.split("def main")[1]

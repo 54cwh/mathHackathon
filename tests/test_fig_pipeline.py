@@ -15,35 +15,22 @@
 
 from __future__ import annotations
 
-import importlib.util
 import re
-import sys
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-from evogenesis.experiment.figdata import MANIFEST_SHEET, workbook_path
-
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts" / "make_fig_pipeline.py"
+from evogenesis.viz import fig_pipeline
+from evogenesis.viz.figdata import MANIFEST_SHEET, workbook_path
 
 #: 图上**不得**出现的字符区间（CJK 统一表意文字 + 全角标点）。
 _CJK = re.compile(r"[　-〿㐀-䶿一-鿿＀-￯]")
 
 
-def _load_script():
-    """把脚本当模块载入（`scripts/` 不是包，故走 importlib 按路径载入）。"""
-    spec = importlib.util.spec_from_file_location("make_fig_pipeline", SCRIPT)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
-
-
 @pytest.fixture(scope="module")
 def figmod():
-    return _load_script()
+    return fig_pipeline
 
 
 # ---------------------------------------------------------------------------
@@ -252,8 +239,8 @@ def test_workbook_has_manifest_first_with_nodes_and_edges(figmod, tmp_path, monk
     assert (blocked.iloc[0]["from"], blocked.iloc[0]["to"]) == ("delta_w", "next_genome")
 
 
-def test_script_entry_point_uses_utf8_guard():
-    """脚本入口必须调 `force_utf8_stdout()`（`experiment/console.py` 的约定）。"""
-    source = SCRIPT.read_text(encoding="utf-8")
+def test_module_entry_point_uses_utf8_guard():
+    """出图模块入口必须调 `force_utf8_stdout()`（`experiment/console.py` 的约定）。"""
+    source = Path(fig_pipeline.__file__).read_text(encoding="utf-8")
     assert "force_utf8_stdout()" in source
     assert "force_utf8_stdout" in source.split("def main")[1]

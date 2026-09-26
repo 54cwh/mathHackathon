@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-import importlib.util
-import sys
 from pathlib import Path
 
 import numpy as np
@@ -23,24 +21,13 @@ import pandas as pd
 import pytest
 
 from evogenesis.development.config import DEFAULT_CONFIG
-from evogenesis.experiment.figdata import MANIFEST_SHEET, workbook_path
-
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPT = ROOT / "scripts" / "make_fig_viability.py"
-
-
-def _load_script():
-    """把脚本当模块载入（`scripts/` 不是包，故走 importlib 按路径载入）。"""
-    spec = importlib.util.spec_from_file_location("make_fig_viability", SCRIPT)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+from evogenesis.viz import fig_viability
+from evogenesis.viz.figdata import MANIFEST_SHEET, workbook_path
 
 
 @pytest.fixture(scope="module")
 def figmod():
-    return _load_script()
+    return fig_viability
 
 
 # ---------------------------------------------------------------------------
@@ -253,8 +240,8 @@ def test_workbook_has_manifest_first_and_traceable_counts(figmod, tmp_path, monk
     )
 
 
-def test_script_entry_point_uses_utf8_guard():
-    """脚本入口必须调 `force_utf8_stdout()`（`experiment/console.py` 的约定）。"""
-    source = SCRIPT.read_text(encoding="utf-8")
+def test_module_entry_point_uses_utf8_guard():
+    """出图模块入口必须调 `force_utf8_stdout()`（`experiment/console.py` 的约定）。"""
+    source = Path(fig_viability.__file__).read_text(encoding="utf-8")
     assert "force_utf8_stdout()" in source
     assert "force_utf8_stdout" in source.split("def main")[1]
