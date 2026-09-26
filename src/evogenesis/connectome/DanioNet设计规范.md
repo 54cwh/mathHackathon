@@ -1,7 +1,7 @@
 # DanioNet 设计规范
 
 > **管辖范围**：六类功能语义、12 维输入**语义**、神经动力学、连续动作、lifetime learning 与遗传边界、baselines/ablations。产出：activation / 动作 `(ω,v)` / `ΔW`。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.0 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
+> 状态：**v1.1 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
 
 ## 1. 六类神经元
 - Sensory
@@ -51,7 +51,7 @@ m_iH_t
 \right)
 \]
 
-默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6）。\(\Delta W\) 遵守 Dale sign 约束：符号由突触前类型固定，只改幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)）`[bib#29][bib#30][bib#31]`。
+默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6）。\(\Delta W\) 遵守 Dale sign 约束：符号由突触前类型固定，只改幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)）`[bib#29][bib#30][bib#31]`。\(\Delta W\) **形状与 \(W^{(0)}\) 相同**（\(N\times N\)，batch 内 padding 到 48），**仅在既有连接支撑上非零**：\(\Delta W=M\odot\Delta\theta\)，\(M=A\) 且训练期**冻结**（不新增连接），padding 行列恒 0 并从 loss / 梯度 / 更新中排除；被优化的是与 \(W^{(0)}\) 同形状、同 dtype 的 \(\theta\)（支撑外梯度屏蔽），\(sign(w^{(0)})\) 训练期不变。张量与梯度统一 `float32`（`core §7`）。
 
 依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 

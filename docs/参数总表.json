@@ -103,6 +103,32 @@
       "suggest": "标「设计选择（未验证）」"
     },
     {
+      "name": "motif_subset_K_A",
+      "value": 0,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "A 位点对应的 motif 子集（MVP 单元素）；位点标签可交换，指定索引不影响统计；E_A 只在该位点染色体对上计算（genome §3，C2）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/default_model.yaml → genome.motif_subset_A",
+      "sensitivity": null,
+      "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
+    },
+    {
+      "name": "motif_subset_K_B",
+      "value": 1,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "B 位点对应的 motif 子集（MVP 单元素）；E_B 只在该位点染色体对上计算（genome §3，C2）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/default_model.yaml → genome.motif_subset_B",
+      "sensitivity": null,
+      "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
+    },
+    {
       "name": "mutation_rate",
       "value": 0.001,
       "unit": "per_base_per_gamete",
@@ -1000,7 +1026,7 @@
       "motor 左/右归属规则（G2）",
       "BC 损失权重 λ_ω、λ_v（core §4.3）",
       "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id",
-      "二基因位点表型阈值 θ_N、θ_H（genome §6，G12；需 pilot 反解）"
+      "二基因位点表型阈值 θ_N、θ_H（genome §3/§6，G12；需 pilot 反解；约束 θ∈(0,0.5)，否则 Aa 退化为完全隐性）"
     ]
   },
   "citation_risks": [

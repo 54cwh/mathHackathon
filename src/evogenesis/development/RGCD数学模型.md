@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.0 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.1 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 RGCD 输入：
@@ -38,6 +38,8 @@ q_k(S)=TopKMean_{s\subset S}a(M_k,s)
 \]
 
 说明：\(a=1-d_H/|M_k|\) 等价于"每列 one-hot、失配等权"的退化 PWM。标准 motif 表示是 PWM/PSSM（Stormo 2000），本项目采用简化式以提高可解释性与可编辑性，须在报告中声明为简化并配 PWM 对照。出处：`research/reference/design-basis-genome.md`。
+
+> **定义 owner**：\(a(M_k,s)\)、`TopKMean`、\(q^{(h)}\)、\(q(G)\) 的定义归 `genome/生物学与进化遗传学基础.md` §3/§6；本节为**单向引用**，只保留供 RGCD 使用的参数取值。
 
 **参数（定稿）**：
 - motif 长度 \(|M_k|=6\) bp；滑窗 \(|s|=6\) bp、步长 1；`TopK` 的 \(K=3\)。
