@@ -57,6 +57,7 @@ EVENT_KEYS = (
 METRIC_COLUMNS = (
     "survival_steps",
     "captures",
+    "capture_attempts",
     "encounters",
     "predator_encounters",
     "escape_successes",
