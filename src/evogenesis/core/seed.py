@@ -23,6 +23,7 @@ NAMESPACES: dict[str, int] = {
     "development": 2,
     "arena_spawn": 3,
     "motif_catalog": 4,
+    "network_init": 5,
 }
 
 
