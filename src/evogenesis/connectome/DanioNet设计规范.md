@@ -1,7 +1,7 @@
 # DanioNet 设计规范
 
 > **管辖范围**：六类功能语义、12 维输入**语义**、神经动力学、连续动作、lifetime learning 与遗传边界、baselines/ablations。产出：activation / 动作 `(ω,v)` / `ΔW`。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.6 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
+> 状态：**v1.7 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
 
 ## 1. 六类神经元
 - Sensory
@@ -102,7 +102,7 @@ y_\omega=\overline{h}_{M_L}-\overline{h}_{M_R},\qquad y_v=\overline{h}_{M_{\math
 ## 5. 左右竞争
 Motor neurons 标记 left/right side。Inhibitory prior 提高 contralateral inhibition，允许左右 motor pools 竞争。
 
-**标记规则（定稿，G2）**：把 motor 池按发育坐标 \(x_i\) 的**中位数二分**——\(x_i\) 低于中位者标 left、其余标 right（同值按神经元索引破平）。保证两池非空（满足 `development/RGCD数学模型.md` §7 developmental viability）。说明：位置是**归一化发育方域**坐标、非世界坐标，"left/right"为此轴上的标记约定，世界手性由 §4 的 \(\omega\) 符号约定固定。属**设计选择**。实现说明：本规则的**语义 owner 是本节**；因数据流方向为 `development → connectome`，`development` 侧 viability 复核保留一份**等价**实现（`rgcd._motor_sides`）以避免反向依赖成环，两份须保持一致并由测试守护。
+**标记规则（定稿，G2）**：把 motor 池按发育坐标 \(x_i\) 的**中位数二分**——\(x_i\) 低于中位者标 left、其余标 right（同值按神经元索引破平）。保证两池非空（满足 `development/RGCD数学模型.md` §7 developmental viability）。说明：位置是**归一化发育方域**坐标、非世界坐标，"left/right"为此轴上的标记约定，世界手性由 §4 的 \(\omega\) 符号约定固定。属**设计选择**。实现说明：本规则的**语义 owner 是本节**；因数据流方向为 `development → connectome`，`development` 侧 viability 复核保留一份**等价**实现（`rgcd._motor_sides`）以避免反向依赖成环，两份须保持一致并由测试守护：**两侧均在按 \(M\) 过滤后的 motor 集上做中位二分**（非活跃 motor 不入池）。
 
 依据：左右转向竞争与 heading-direction 回路 `[bib#6]`；自发探索中的左右交替与 ARTR 群体 `[bib#7]`。
 

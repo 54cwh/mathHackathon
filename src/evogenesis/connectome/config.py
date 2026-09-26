@@ -1,6 +1,7 @@
 """DanioNet 读出配置：取值 owner 为 ``configs/default_model.yaml`` 的 ``network`` 节。
 
-``max_nodes``（padding 宽度）与 ``domains``（六类神经元顺序）取自 ``development`` 节
+``max_nodes``（padding 宽度）与 ``domains``（六类神经元顺序）取自 ``development`` 节，
+``tau_min`` 取自 ``connectome`` 节
 （前者是 RGCD ``max_neurons``，见 `DanioNet设计规范.md` §3 定稿段）。
 本模块不新造数值：``NetworkReadoutConfig`` 的默认值是冻结配置的镜像，由
 ``tests/test_network_config.py`` 的漂移守护测试断言一致。
@@ -41,6 +42,7 @@ class NetworkReadoutConfig:
     motor_pool_split: str = "median_x"
     action_pooling: str = "mean"
     input_weight_scope: str = "per_cell_type"
+    tau_min: float = 1.0
     # §7 viability 判据（与 development 同一组）
     zero_input_steps: int = 50
     saturation_ratio_max: float = 0.9
@@ -91,6 +93,7 @@ def load_network_config(
         motor_pool_split=cfg.network.motor_pool_split,
         action_pooling=cfg.network.action_pooling,
         input_weight_scope=cfg.network.input_weight_scope,
+        tau_min=cfg.connectome.tau_min,
         zero_input_steps=cfg.development.zero_input_steps,
         saturation_ratio_max=cfg.development.saturation_ratio_max,
         saturation_eps=cfg.development.saturation_eps,

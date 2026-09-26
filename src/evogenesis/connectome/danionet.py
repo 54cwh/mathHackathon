@@ -1,4 +1,4 @@
-"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.6 §1–§9）。
+"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.7 §1–§9）。
 
 产出：activation ``h`` / 连续动作 ``(ω, v)`` / 当代 ``ΔW``。消费 RGCD 的
 ``ConnectomePhenotype``（``A, Z, τ, W⁰, M``）；``ΔW`` 不遗传（§7）。
@@ -30,8 +30,6 @@ from evogenesis.development.rgcd import viability_check
 _ACTIVATIONS = {"tanh": torch.tanh}
 # 数值实现常量：softplus⁻¹ 在 y 超过该值时改用渐近式（float32 下 expm1 约在 88 溢出）
 _SOFTPLUS_INVERSE_SWITCH = 40.0
-# RGCD §11 的下界（tau_min）；tau<1 会使 1/τ>1 而放大，超出契约
-_TAU_MIN = 1.0
 
 
 def motor_sides(
@@ -162,9 +160,10 @@ class DanioNet(torch.nn.Module):
             right_mask[b, right_local] = True
             motor_mask[b, motor_local] = True
 
-        if not bool((tau >= _TAU_MIN).all() and torch.isfinite(tau).all()):
+        tau_min = self.config.tau_min
+        if not bool((tau >= tau_min).all() and torch.isfinite(tau).all()):
             raise ValueError(
-                f"tau 必须 ≥ {_TAU_MIN}（RGCD §11 tau_min）且有限；§3 动力学按 1/τ 更新"
+                f"tau 必须 ≥ {tau_min}（`connectome.tau_min`，RGCD §11）且有限；§3 按 1/τ 更新"
             )
         # §3：非活跃神经元（M=False）的行/列恒 0 —— W⁰ 亦按 M 屏蔽，
         # 使 sign(W⁰)、Θ 初值与 ΔW 在非活跃处天然为 0（初始 ΔW=0 全局成立）。
@@ -236,8 +235,8 @@ class DanioNet(torch.nn.Module):
     def step(self, observations: np.ndarray | torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """推进一步：``h^{t+1}`` 由 §3 动力学给出，返回 ``(ω, v)``。
 
-        ``observations`` 形状 ``(batch, sensory_dim)``（§2，``[0,1]`` ``float32``）；
-        ``H_t`` 取第 11 维 hunger。
+        ``observations`` 形状 ``(batch, sensory_dim)``（也接受单样本 ``(sensory_dim,)``，
+        自动升一维）；§2，``[0,1]`` ``float32``；``H_t`` 取第 11 维 hunger。
         """
         if isinstance(observations, torch.Tensor):
             x = observations.to(dtype=torch.float32, device=self.device)
@@ -245,6 +244,8 @@ class DanioNet(torch.nn.Module):
             x = to_float32_tensor(observations, device=self.device)
         if x.dim() == 1:
             x = x.unsqueeze(0)
+        if x.dim() != 2:
+            raise ValueError(f"observation 必须为 1-D 或 2-D，实际 {x.dim()}-D")
         if x.shape[0] != self.h.shape[0] or x.shape[-1] != self.config.sensory_dim:
             expected = (self.h.shape[0], self.config.sensory_dim)
             raise ValueError(f"observation 形状应为 {expected}，实际 {tuple(x.shape)}")

@@ -1,7 +1,7 @@
 """DanioNet（Stage 4）测试：结构 / 权重约束 / 动力学 / 动作 / 梯度屏蔽 / viability。
 
 夹具用 RGCD ``develop`` 在固定 q 与 master seed 下产出 viable 个体（``DanioNet设计规范.md``
-v1.6）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
+v1.7）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
 """
 
 import numpy as np
@@ -302,7 +302,9 @@ def test_hunger_term_enters_via_m(net: DanioNet):
 def test_softplus_inverse_stable_and_roundtrips():
     import torch.nn.functional as F
 
-    values = torch.tensor([0.0, 1e-8, 1.0, 10.0, 40.0, 1e2], dtype=torch.float32)
+    values = torch.tensor(
+        [0.0, 1e-45, 1e-8, 1e-3, 1.0, 10.0, 39.9, 40.0, 40.1, 1e2, 3e38], dtype=torch.float32
+    )
     theta = DanioNet._softplus_inverse(values)
     assert bool(torch.isfinite(theta).all())
     positive = values > 0
@@ -376,3 +378,38 @@ def test_motor_sides_matches_development_implementation():
             mine = motor_sides(positions, types, 5)
             theirs = development_motor_sides(positions, types, 5)
             assert [sorted(a.tolist()) for a in mine] == [sorted(b.tolist()) for b in theirs]
+
+
+def test_three_dimensional_observation_rejected(net: DanioNet):
+    with pytest.raises(ValueError):
+        net.step(np.zeros((1, 2, DEFAULT_NETWORK_CONFIG.sensory_dim), dtype=np.float32))
+
+
+def test_motor_pool_prefiltered_by_active_mask():
+    """§3/§5：非活跃 motor 不进入左右池；DanioNet 与 RGCD 活跃过滤后的划分一致。"""
+    from evogenesis.development.rgcd import _motor_sides as development_motor_sides
+
+    n = 6
+    x = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+    types = torch.tensor([0, 5, 5, 5, 5, 5], dtype=torch.long)
+    active = torch.tensor([True, True, False, True, True, True])
+    positions = torch.tensor([[v, 0.0] for v in x], dtype=torch.float32)
+    phenotype = ConnectomePhenotype(
+        adjacency=torch.zeros((n, n), dtype=torch.float32),
+        weights0=torch.zeros((n, n), dtype=torch.float32),
+        tau=torch.ones(n, dtype=torch.float32),
+        cell_type=types,
+        positions=positions,
+        active_mask=active,
+        viable=True,
+        viability_reason="ok",
+        z=torch.zeros((n, 6), dtype=torch.float32),
+    )
+    net = DanioNet([phenotype], master_seed=MASTER_SEED)
+    left = set(torch.nonzero(net.left_mask[0], as_tuple=False).squeeze(-1).tolist())
+    right = set(torch.nonzero(net.right_mask[0], as_tuple=False).squeeze(-1).tolist())
+    assert 2 not in left and 2 not in right  # 非活跃 motor 不入池
+    idx = torch.nonzero(active, as_tuple=False).squeeze(-1)
+    ref_left, ref_right = development_motor_sides(positions[idx], types[idx], 5)
+    assert left == {int(idx[i]) for i in ref_left.tolist()}
+    assert right == {int(idx[i]) for i in ref_right.tolist()}

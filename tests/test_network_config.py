@@ -28,20 +28,23 @@ NETWORK_FIELDS = (
 )
 
 DEVELOPMENT_FIELDS = ("zero_input_steps", "saturation_ratio_max", "saturation_eps")
+CONNECTOME_FIELDS = ("tau_min",)
 
 
-def _sections() -> tuple[dict, dict]:
+def _sections() -> tuple[dict, dict, dict]:
     assert DEFAULT_MODEL_CONFIG_PATH.is_file(), DEFAULT_MODEL_CONFIG_PATH
     data = yaml.safe_load(Path(DEFAULT_MODEL_CONFIG_PATH).read_text(encoding="utf-8"))
-    return data["network"], data["development"]
+    return data["network"], data["development"], data["connectome"]
 
 
 def test_default_config_mirrors_frozen_config():
-    network, development = _sections()
+    network, development, connectome = _sections()
     for name in NETWORK_FIELDS:
         assert getattr(DEFAULT_NETWORK_CONFIG, name) == network[name], name
     for name in DEVELOPMENT_FIELDS:
         assert getattr(DEFAULT_NETWORK_CONFIG, name) == development[name], name
+    for name in CONNECTOME_FIELDS:
+        assert getattr(DEFAULT_NETWORK_CONFIG, name) == connectome[name], name
     assert DEFAULT_NETWORK_CONFIG.max_nodes == development["max_neurons"]
     assert list(DEFAULT_NETWORK_CONFIG.domains) == development["domains"]
 
