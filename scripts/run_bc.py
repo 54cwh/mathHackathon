@@ -17,7 +17,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
-from evogenesis.core.config import ModelConfig, deep_update, load_config
+from evogenesis.core.config import ModelConfig, load_config
 from evogenesis.experiment import collect, learning_run, runlayout
 from evogenesis.experiment.environments import BASELINE, load_environment
 from evogenesis.experiment.metrics import aggregate_by_seed
@@ -74,10 +74,11 @@ def main(argv: list[str] | None = None) -> None:
     model_config = Path(args.model_config)
     arena_config_path = Path(args.arena_config)
     learning_cfg = load_config(model_config, model=ModelConfig).learning
+    # 两类覆盖正交：`--override` 只进 model chain，`--environment` 只进 Arena 配置。
+    cli_overrides = parse_overrides(args.override) or None
     env_overrides = None if args.environment == BASELINE else load_environment(args.environment)
-    overrides = deep_update(dict(env_overrides or {}), parse_overrides(args.override)) or None
-    arena_config = load_arena_config(arena_config_path, overrides=overrides)
-    chain = load_model_chain_config(model_config, overrides=overrides)
+    arena_config = load_arena_config(arena_config_path, overrides=env_overrides)
+    chain = load_model_chain_config(model_config, overrides=cli_overrides)
 
     run_dir = runlayout.create_run_dir(
         experiment_id=args.experiment_id,

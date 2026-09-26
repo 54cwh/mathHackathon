@@ -6,7 +6,9 @@ from pathlib import Path
 
 import pytest
 
+from evogenesis.arena.config import load_arena_config
 from evogenesis.development.config import load_development_config
+from evogenesis.experiment.environments import load_environment
 from evogenesis.experiment.overrides import parse_overrides
 from evogenesis.pipeline import (
     initial_population,
@@ -65,3 +67,10 @@ def test_no_wiring_cost_override_is_accepted():
     population = initial_population(master_seed=23, experiment_id="probe", n=6)
     phenotypes = phenotypes_of(population, motif_catalog(23), master_seed=23, config=rgcd)
     assert len(phenotypes) == 6  # 仍可发育（λ=0 不破坏管线）
+
+
+def test_environment_overrides_are_arena_scoped():
+    """`--environment` 的覆盖只作用于 Arena 配置（population/...），与 model chain 正交。"""
+    arena = load_arena_config(overrides=load_environment("food_rich"))
+    assert arena.population.n_prey == 48
+    assert arena.population.prey_regrowth_steps == 13

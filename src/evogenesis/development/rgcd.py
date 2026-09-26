@@ -477,17 +477,26 @@ def develop(
         tau_max=config.tau_max,
     )
 
-    regulatory = centered_bilinear(state.grn)
-    logits = connection_logits(
-        z,
-        state.positions,
-        params.compatibility,
-        distance_lambda=params.distance_lambda,
-        regulatory_gamma=params.regulatory_gamma,
-        regulatory_term=regulatory,
-    )
-    b_a = solve_bias_for_density(logits, config.target_density)
-    probs = torch.sigmoid(logits + b_a)
+    if config.ablation_w_grn:
+        # `connectome §9` w/o GRN：A ~ Bernoulli(p) 独立采样（禁 self-loop），与 GRN/几何无关；
+        # 其余（N / τ / W⁰ 幅度 / Dale / viability）全部保持，只隔离「GRN 布线」变量。
+        density = float(config.ablation_random_density)
+        if not 0.0 <= density <= 1.0:
+            raise ValueError(f"ablation_random_density 须在 [0,1]，得到 {density}")
+        n = int(state.grn.shape[0])
+        probs = torch.full((n, n), density, dtype=torch.float32, device=state.grn.device)
+    else:
+        regulatory = centered_bilinear(state.grn)
+        logits = connection_logits(
+            z,
+            state.positions,
+            params.compatibility,
+            distance_lambda=params.distance_lambda,
+            regulatory_gamma=params.regulatory_gamma,
+            regulatory_term=regulatory,
+        )
+        b_a = solve_bias_for_density(logits, config.target_density)
+        probs = torch.sigmoid(logits + b_a)
     if not config.allow_self_loops:
         probs.fill_diagonal_(0.0)
     adjacency = (

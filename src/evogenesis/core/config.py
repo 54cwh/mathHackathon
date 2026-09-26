@@ -81,6 +81,7 @@ class ConnectomeConfig(_Section):
     regulatory_gamma: float
     w_bar_initial: float
     ablation_random_density: float
+    ablation_w_grn: bool = False
     tau_min: float
     tau_max: float
 

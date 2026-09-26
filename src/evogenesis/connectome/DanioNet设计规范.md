@@ -163,7 +163,7 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 - **homogeneous τ**：令 `connectome.tau_min = connectome.tau_max = τ*`，`RGCD §11` 的 `τ_i = τ_min + (τ_max−τ_min)·σ(·)` 退化为常数 `τ*`；τ* 网格 `{τ_min, (τ_min+τ_max)/2, τ_max}`（由 config 派生）。**校验口径**：`DanioNet` 对 **τ 的下限只校验活跃神经元**（`M=True`）——padding 槽位 `τ` 恒为构造初值 `1.0`、与动力学无关，否则 `τ* > 1` 的臂会被 padding 误报越界（2026-09-26 修正）。
 - **w/o spatial wiring cost**：`connectome.distance_lambda = 0`（`RGCD §8` 的 `−λd_ij` 项消失）。
 - **BC 有 / 无 Dale 符号约束**：`DanioNet(sign_constrained=False)`（§3 开关；无约束路径 `W = A ⊙ Θ`），由 `scripts/run_bc.py --no-sign-constrained` 驱动 `[bib#30][bib#31]`。
-- `w/o GRN`（`connectome.ablation_random_density`）：**未接线**（`development` 声明），按声明处理。
+- `w/o GRN`：**已实现**（2026-09-26）——`connectome.ablation_w_grn = true` 时 `A ~ Bernoulli(ablation_random_density)` 独立采样（禁 self-loop），`N / τ / W⁰ 幅度 / Dale / viability` 全保留（数学口径见 `RGCD §8` 消融段）；默认 `false`。运行：`run_chain.py --override connectome.ablation_w_grn=true`。
 - allele 聚合：加性（mean）vs 完全显性（max）
 - P1：w/o epistasis（未实现）
 

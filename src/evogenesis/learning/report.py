@@ -1,9 +1,9 @@
-"""BC 训练报告（`learning/行为克隆学习.md` v1.4 §3/§4）。
+"""BC 训练报告（`learning/行为克隆学习.md` v1.5 §3/§4）。
 
 汇总训练损失曲线、episode/step 级覆盖率、符号翻转率 ``flip_rate`` 与有效权重谱半径。
 报告口径（§4 定稿）：``flip_rate`` 在**活跃支撑**（``A ∧ sign(W⁰)≠0``）上统计；谱半径
-逐个体对 ``effective_weights`` 全矩阵取 ``max|λ|``；报告产物**不落盘**（位置占位，待
-`experiment` run 布局接入）。
+逐个体对 ``effective_weights`` 全矩阵取 ``max|λ|``；报告产物由 `experiment §3.8` 落盘为
+run 目录的 ``learning.jsonl`` / ``learning_summary.json``（布局 owner：`experiment §5.1`）。
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from evogenesis.learning.train import CoverageStats, TrainResult
 
 @dataclass(frozen=True)
 class TrainingReport:
-    """一次训练的汇总报告（不落盘；`learning §4` 占位）。"""
+    """一次训练的汇总报告（落盘见 `experiment §5.1` 的 `learning.jsonl`）。"""
 
     loss_history: tuple[float, ...]
     coverage_stats: CoverageStats

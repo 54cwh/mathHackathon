@@ -125,7 +125,7 @@ P\mathbf p_i+
 
 依据与限定："谱半径 \(<1\Rightarrow\) echo-state property"是**经验条件**（Yildiz et al. 2012 `[bib#127]` 给出反例），故按稳定性启发式使用、并记录 \(\rho_{\mathrm{spec}}(W_g)\)；未找到阻尼 sigmoid GRN 的专属初始化惯例，其余尺度为**设计选择**。
 
-> **实现注记（`W_g` 存储为转置）**：上式按 \(W_g\mathbf g\)；代码 `grn.py` 以列向量右乘存储等价形式（`einsum("...nd,ed->...ne")`，即 \(W_g^{\top}\mathbf g\)）。因 \(W_g\) 随机初始化且谱半径对转置不变，两者分布等价；\(W_g\) 仅在 §4 内部使用、不出现在输出契约中。
+> **实现注记（`W_g` 存储为转置）**：上式按 \(W_g\mathbf g\)；代码 `grn.py` 以列向量右乘存储等价形式（`einsum("...nd,de->...ne")`，即 \(W_g^{\top}\mathbf g\)）。因 \(W_g\) 随机初始化且谱半径对转置不变，两者分布等价；\(W_g\) 仅在 §4 内部使用、不出现在输出契约中。
 
 ## 5. Proliferation
 \[
@@ -205,6 +205,7 @@ zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps
 
 | token | 触发判据 | 下游消费 |
 |---|---|---|
+| `no_active_neurons` | active mask \(M\) 无任何 true（\(\sum M=0\)，无神经元可评） | `evolution` 记 `failure_reason`；`make_fig_viability` |
 | `missing_fate:<六类之一>`（多类逗号分隔） | Developmental viability：某基础 fate \(N_k<1\) | `evolution` 记 `failure_reason`；`make_fig_viability` |
 | `motor_side_empty` | Developmental viability：motor 无 left/right 关联输出神经元 | 同上 |
 | `no_sensory_to_motor_path` | Functional viability：无 \(Sensory\rightsquigarrow Motor\) 有向路径 | 同上 |
@@ -274,6 +275,14 @@ b_A\approx\mathrm{logit}(p_{target})-E[z_i^\top Cz_j]+\lambda E[d]-\gamma E[R].
 \(\gamma,\lambda,b_A\) 均为项目标定/设计选择（\(\lambda\) 的量纲由单位方域归一化定义）。出处：`research/reference/rgcd-wiring-and-placement.md`。
 
 > **实现注记（`b_A` 反解收敛口径）**：§8 的 `b_A` 由 `solve_bias_for_density` 二分反解，取容差 `tol=1e-8`、最大迭代 `200`、初始界 `±60`（`rgcd.py`）；这些是数值求解细节，不改 §8 的语义（目标密度区间 [0.10,0.20]）。
+
+**消融（w/o GRN，`connectome §9`）**：当 `connectome.ablation_w_grn = true` 时，§8 的连线概率不再由 GRN/几何决定，改为**独立同分布**抽样
+
+\[
+A_{ij}\sim\mathrm{Bernoulli}(p)\ (i\neq j),\qquad A_{ii}=0\ (\text{禁 self-loop}),
+\]
+
+其中 \(p\) = `connectome.ablation_random_density`（默认 0.15）。神经元数 \(N\)、\(\tau_i\)、\(|w^{(0)}_{ij}|\) 幅度、Dale 符号与 §7 viability 判据**全部保持**，故该臂只隔离「GRN 布线」变量（同密度、同尺度）。默认 `false`，不改变既有行为。
 
 ## 9. Fixed compatibility prior
 | pre \\ post | S | P | T | M | I | O |

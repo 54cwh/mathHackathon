@@ -21,6 +21,7 @@ from evogenesis.arena.config import load_arena_config
 from evogenesis.core.config import read_yaml
 from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
+from evogenesis.experiment.environments import BASELINE, load_environment
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
 from evogenesis.experiment.overrides import parse_overrides
@@ -34,6 +35,7 @@ from evogenesis.pipeline import (
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MODEL = ROOT / "configs" / "default_model.yaml"
+DEFAULT_EVOLUTION = ROOT / "configs" / "evolution.yaml"
 DEFAULT_ARENA = ROOT / "configs" / "default_arena.yaml"
 
 
@@ -56,6 +58,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--steps", type=int, default=None, help="缺省取 world.episode_steps")
     parser.add_argument("--model-config", default=str(DEFAULT_MODEL))
     parser.add_argument("--arena-config", default=str(DEFAULT_ARENA))
+    parser.add_argument(
+        "--environment",
+        default=BASELINE,
+        help="环境对照组 ID（缺省 default；Experiment F 三组见 experiment §4）",
+    )
     parser.add_argument("--out-root", default=str(ROOT / "results" / "runs"))
     parser.add_argument(
         "--override",
@@ -68,9 +75,12 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = _parse_args()
-    overrides = parse_overrides(args.override) or None
-    chain = load_model_chain_config(args.model_config, overrides=overrides)
-    arena_config = load_arena_config(args.arena_config)
+    # 两类覆盖正交：`--override` 只进 model chain（genome/grn/development/connectome/network），
+    # `--environment` 只进 Arena 配置（population/world/...）。
+    cli_overrides = parse_overrides(args.override) or None
+    env_overrides = None if args.environment == BASELINE else load_environment(args.environment)
+    chain = load_model_chain_config(args.model_config, overrides=cli_overrides)
+    arena_config = load_arena_config(args.arena_config, overrides=env_overrides)
     steps = arena_config.world.episode_steps if args.steps is None else args.steps
     n = _default_population_size() if args.n is None else args.n
 
@@ -93,10 +103,12 @@ def main() -> None:
         experiment_id=args.experiment_id,
         seed=args.seed,
         config_path=args.arena_config,
+        overrides=env_overrides,
         out_root=args.out_root,
+        extra_configs=(args.model_config, DEFAULT_EVOLUTION),
     )
-    if overrides:
-        dump_json(run_dir / "model_overrides.json", overrides, indent=2)
+    if cli_overrides:
+        dump_json(run_dir / "model_overrides.json", cli_overrides, indent=2)
     spawn_seed, _ = arena_seeds_for(args.seed, args.generation)
     weights = load_evolution_config().fitness_weights.model_dump()
     write_event_log(
@@ -104,7 +116,7 @@ def main() -> None:
         episode_event_header(
             experiment_id=args.experiment_id,
             episode_id="ep0001",
-            environment_id="default",
+            environment_id=args.environment,
             generation=args.generation,
             episode_seed=spawn_seed,
             n_events=len(result.events),

@@ -5,7 +5,8 @@
 ``tests/test_development_config.py`` 的漂移守护测试断言与配置文件逐字段一致。
 ``load_development_config()`` 经 ``core`` 的 ``load_config`` 读取真实配置注入；生产调用方为
 ``pipeline/model_chain.py::load_model_chain_config``（入口 ``scripts/run_chain.py``）。
-``connectome.ablation_random_density`` 为未实现消融（DanioNet 随机图基线）的预留参数，待接线。
+``connectome.ablation_w_grn`` / ``ablation_random_density`` 为 w/o GRN 消融的开关与密度
+（`connectome §9`、`RGCD §8` 消融段），已在 ``develop`` 接线。
 参数依据与状态见 ``docs/参数总表.json``（``group`` ∈ {grn, development, connectome, network}）。
 
 字段 schema（`configs/default_model.yaml` 各节）归 ``core/config.py`` **唯一拥有**；
@@ -82,6 +83,9 @@ class RGCDConfig:
     w_bar_initial: float = 0.5
     tau_min: float = 1.0
     tau_max: float = 10.0
+    #: `connectome §9` 的 w/o GRN 消融开关与独立随机布线密度（默认关；见 RGCD §8 消融）
+    ablation_w_grn: bool = False
+    ablation_random_density: float = 0.15
 
     # network（RGCD §7 dynamical viability 的 φ，`configs → network`）
     network_activation: str = "tanh"
@@ -124,6 +128,8 @@ class RGCDConfig:
             distance_space=cfg.connectome.distance_space,
             regulatory_gamma=cfg.connectome.regulatory_gamma,
             w_bar_initial=cfg.connectome.w_bar_initial,
+            ablation_w_grn=cfg.connectome.ablation_w_grn,
+            ablation_random_density=cfg.connectome.ablation_random_density,
             tau_min=cfg.connectome.tau_min,
             tau_max=cfg.connectome.tau_max,
             network_activation=cfg.network.activation,

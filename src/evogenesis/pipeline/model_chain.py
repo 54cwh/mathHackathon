@@ -5,7 +5,8 @@ owner：`pipeline/模型链装配.md`。上游：`core`（seed / ids）、`genom
 
 本期范围：`configs/default_model.yaml` → DanioNet 动作 `(ω, v)`，以及**Arena 单 episode
 驱动**（`pipeline/arena_episode.py`，入口 `scripts/run_chain.py`）。**逐代演化**由
-`experiment/evolution_run.py` 消费本模块（见 `pipeline/模型链装配.md` §4）；BC 未接。
+`experiment/evolution_run.py` 与 BC 编排 `experiment/learning_run.py` 消费本模块
+（见 `pipeline/模型链装配.md` §4；BC 驱动入口 `arena_episode.py::drive_arena_with_net`）。
 """
 
 from __future__ import annotations

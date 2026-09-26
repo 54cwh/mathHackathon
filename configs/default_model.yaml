@@ -40,6 +40,7 @@ connectome:
   regulatory_gamma: 1.0
   w_bar_initial: 0.5
   ablation_random_density: 0.15
+  ablation_w_grn: false  # w/o GRN 消融开关（connectome §9；默认关）
   tau_min: 1.0
   tau_max: 10.0
 network:
