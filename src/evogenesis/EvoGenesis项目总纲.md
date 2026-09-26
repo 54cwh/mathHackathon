@@ -146,4 +146,4 @@ EvoGenesis 不是把遗传算法套在一个现成神经网络外面，而是把
 2. **“四类 neural phenotype”未定义**：§7 Mendel Mode 输出“四类 neural phenotype”，但四类指什么、如何由 genotype 判定未写（G12）。
 3. **epistasis 的实现状态需明确**：§5 将 epistasis 列为“optional”，而 connectome/DanioNet设计规范.md §9 已有 `w/o epistasis` 消融项；需确认 MVP 是否实现该机制，否则该消融无对象。
 4. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
-5. **connectivity density 目标值未定**：§6 给范围 10%–20%，docs/参数总表.md / config 为单值 0.15，`b_A` 校准对齐到哪个目标未写（关联 G1）。
+5. **connectivity density 目标值未定**：§6 给范围 10%–20%，docs/参数总表.json / config 为单值 0.15，`b_A` 校准对齐到哪个目标未写（关联 G1）。

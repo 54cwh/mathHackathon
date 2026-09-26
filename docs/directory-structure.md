@@ -73,7 +73,7 @@ api/                 # FastAPI 路由 + WebSocket
 
 ## 5. 文档与资料
 
-- `docs/`：跨模块协作文档——`ai-tone-boundaries.md`、`code-review.md`、`search-spec.md`、`ai-use-declaration.md`、`directory-structure.md`（本文）、`THIRD_PARTY.md`、`AI工作流.md`、`开发排期与人员分工.md`、`路演与答辩.md`、`相关工作与开源参考.md`、`局限与未来路线.md`、`参数总表.md`、`验收清单.md`、`项目状态.md`。**各模块的接口/目的/用法文档不在这里**，而是与代码同目录（见 §2）。
+- `docs/`：跨模块协作文档——`ai-tone-boundaries.md`、`code-review.md`、`search-spec.md`、`ai-use-declaration.md`、`directory-structure.md`（本文）、`THIRD_PARTY.md`、`AI工作流.md`、`开发排期与人员分工.md`、`路演与答辩.md`、`相关工作与开源参考.md`、`局限与未来路线.md`、`参数总表.json`、`验收清单.md`、`项目状态.md`。**各模块的接口/目的/用法文档不在这里**，而是与代码同目录（见 §2）。
 - `prompts/`：AI 角色提示词。
 - `paper/`：LaTeX 论文（本地编译链 + GitHub，不用 Overleaf）。
 - `notebooks/`：探索性分析。

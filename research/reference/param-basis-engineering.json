@@ -1,0 +1,436 @@
+{
+  "meta": {
+    "search_time": "2026-09-26",
+    "topic": "神经演化项目参数依据：基因组长度 / motif 数 / GRN 维数与更新 / 发育步数 / 仿真频率与 episode / 种群与选择",
+    "scope": "为 docs/参数总表.json 表 D 中的 12 个参数（bp_per_haplotype_chromosome, n_motifs, grn_dim, development_steps, grn_rho, initial_precursors, world_width/height, sim_hz, episode_seconds, population_size, selection_beta, crossover_probability）在进化计算 / ALife 发育编码 / 基因调控网络 / RL 与多智能体环境四类文献与开源实现中寻找典型取值与出处。",
+    "sources_summary": "OpenAlex（论文元数据、DOI、引用数）、arXiv HTML 全文下载、Tavily（论文 PDF / 官方文档 / 代码托管页）、GitHub CLI（仓库元数据与源码）。注意：本次 arXiv MCP 的 search_papers 接口持续返回 HTTP 406，改用 arxiv_download_paper 的 HTML 抓取与第三方索引；个别 GitHub raw 直链被网络拦截，改用 gh api 读取文件内容。所有数值均来自上述可核实来源，推断项在 evidence.type 与 notes 中显式标注。"
+  },
+  "items": [
+    {
+      "param": "bp_per_haplotype_chromosome",
+      "current_value": 128,
+      "effective_scale": "本项目 2 条单倍体染色体，haploid_bp=256；对照对象为「基」为单位的紧凑人工基因组",
+      "evidence": [
+        {
+          "source": "Miralavy & Banzhaf, 'An Artificial Chemistry Implementation of a Gene Regulatory Network' (arXiv:2209.04114)",
+          "value": "对照基因组长度 1000–10000 bases，对应基因数 2–19；正文实验用 3000 bases",
+          "url": "https://arxiv.org/abs/2209.04114",
+          "quote": "a genome size of 3000 bases, 25 initial TF proteins for each gene ... the experiments were run for 1000 regulatory cycles",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Rohlf & Winkler, 'Emergent network structure ... in an artificial genome model' (arXiv:0908.3610, 基于 Reil 1998)",
+          "value": "人工基因组用 4 字母表；启动子 l_p=4、基因 l_g=6；基因组长度 S 与基因数 N 满足 <N>≈S/λ^l_p",
+          "url": "https://arxiv.org/abs/0908.3610",
+          "quote": "Randomly string together S integers drawn uniformly between 0 and 3. The use of 4 digits ... does provide correspondence with the ATGC alphabet of real genomes.",
+          "type": "文献确有该机制，但未给 S=128"
+        },
+        {
+          "source": "Avida-ED Lab Book (Michigan State University) / Avida-ED Quickstart Manual",
+          "value": "数字生物 Avidian 的基因组固定为 50 条指令（单条基因组，非分染色体）",
+          "url": "https://avida-ed.msu.edu/files/curricula/LabBook/Avida-ED_LabBook.pdf",
+          "quote": "In Avida-ED, an Avidian genome is always exactly 50 instructions in length",
+          "type": "实现确有该值"
+        },
+        {
+          "source": "Shuvaev, Lachi, Koulakov & Zador, 'Encoding innate ability through a genomic bottleneck' (PNAS 2024)",
+          "value": "只给出定性约束：基因组容量比网络连接规格小若干数量级",
+          "url": "https://doi.org/10.1073/pnas.2409160121",
+          "quote": "the information capacity of the genome is orders of magnitude smaller than that needed to specify the connectivity of an arbitrary brain circuit",
+          "type": "文献确有该结论，无数值"
+        },
+        {
+          "source": "tejassudsfp/ndna（本项目参考文献中的 Neural DNA 实现）",
+          "value": "genome 是可学习参数（<400 个），不是 ACGT 碱基串，无 bp/motif 概念",
+          "url": "https://github.com/tejassudsfp/ndna",
+          "quote": "A tiny learned genome (< 400 parameters) that grows neural network topology through developmental rules.",
+          "type": "反例：该项目同一引文谱系里的实现并不使用 bp 级基因组"
+        }
+      ],
+      "common_range": "紧凑人工基因组：约 50（Avida）到 10^4 bases（Banzhaf ARN 类）；ACGT 序列模型常见 10^3 量级",
+      "verdict": "在范围内",
+      "confidence": "medium",
+      "notes": "没有任何来源恰好使用「每条染色体 128 bp」。本项目 haploid=256 bp 落在 50–10000 的紧凑基因组区间内，但显著小于 Banzhaf ARN 的 10^3 量级，因此更接近 Avida 一类极紧凑数字基因组。此为区间判断，不是「有某文直接支持 128」。"
+    },
+    {
+      "param": "n_motifs",
+      "current_value": 8,
+      "effective_scale": "motif 类型数（序列扫描用的 motif 字典大小），决定 q(G) 的维度",
+      "evidence": [
+        {
+          "source": "Rohlf & Winkler / Reil 人工基因组模型 (arXiv:0908.3610)",
+          "value": "只定义 1 个固定启动子 motif，结合位点由蛋白序列（基因序列逐位 +1）精确匹配决定，motif 类型数随基因数而非独立字典",
+          "url": "https://arxiv.org/abs/0908.3610",
+          "quote": "define a base promoter sequence of length l_p ... Wherever the promoter sequence occurs, the next l_g digits are specified as a gene ... Binding sites are determined by searching the genome for the protein sequence.",
+          "type": "文献确有该机制，但无 '8 个 motif' 之说"
+        },
+        {
+          "source": "Lambert et al., 'The Human Transcription Factors' (Cell 2018) / Factorbook (Pratt et al. 2021)",
+          "value": "人类约 1600–2000 个序列特异性 TF，其中约 1211 个已有结合 motif；实际 motif 目录为数百到上千个",
+          "url": "https://doi.org/10.1016/j.cell.2018.01.029",
+          "quote": "Roughly three-quarters (1,211) of the human TFs currently have a binding motif",
+          "type": "生物量级参考（不是合成模型取值）"
+        },
+        {
+          "source": "本项目引文谱系中的 genomic bottleneck 实现（NDNA 等）",
+          "value": "不使用序列 motif，无对应参数",
+          "url": "https://github.com/tejassudsfp/ndna",
+          "quote": "compatibility matrix ... source and target type embeddings are compared",
+          "type": "反例：该谱系不扫描 motif"
+        }
+      ],
+      "common_range": null,
+      "verdict": "无依据",
+      "confidence": "low",
+      "notes": "检索未找到任何把「序列 motif 字典大小」定为 8 的论文或实现。生物 TF 目录是数百到上千量级，Reil 类人工基因组只用一个启动子 motif、motif 类型数由基因数决定。8 属设计选择，无法用现有来源支撑或否定；若论文需要引用，只能标注为「设计选择（未验证）」。"
+    },
+    {
+      "param": "grn_dim",
+      "current_value": 8,
+      "effective_scale": "离散 GRN 每个细胞的状态维数（基因数 / 调控节点数）",
+      "evidence": [
+        {
+          "source": "Mehra & Hintze, 'Evolution of Pleiotropy and Epistasis in a Gene Regulatory Network' (ALife 2023, doi:10.1162/isal_a_00604)",
+          "value": "N = 20 个基因；G 为 N 维向量，C 为 N×N 交互矩阵",
+          "url": "https://www.diva-portal.org/smash/get/diva2:1820427/FULLTEXT01.pdf",
+          "quote": "a mapping matrix C which contains a single number ... for all N genes ... N = 20 is the genome size",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Miralavy & Banzhaf (arXiv:2209.04114)",
+          "value": "基因组长度 1000–10000 bases 对应基因数 2–19（GRN 状态维数即基因数）",
+          "url": "https://arxiv.org/abs/2209.04114",
+          "quote": "| Genome Length | 1000 | 2000 | 3000 | 4000 | 5000 | 6000 | 7000 | 8000 | 9000 | 10000 |\n| Genes | 2 | 4 | 6 | 7 | 9 | 11 | 13 | 15 | 17 | 19 |",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Banzhaf, 'Artificial Regulatory Networks and Genetic Programming' (2003, Springer, 被引 163)",
+          "value": "经典 ARN 模型，基因数即网络规模；后续实现常见个位数到数十",
+          "url": "https://link.springer.com/chapter/10.1007/978-1-4419-8983-3_4",
+          "quote": null,
+          "type": "文献确有该模型，未取到具体数值"
+        }
+      ],
+      "common_range": "约 2–20+ 个调控节点（ALife/进化 GRN 常见个位数到数十）",
+      "verdict": "在范围内",
+      "confidence": "medium-high",
+      "notes": "grn_dim=8 落在人工 GRN 常见的个位数—20 区间内，与 Banzhaf ARN 的 2–19 基因、Mehra & Hintze 的 N=20 同量级。无来源恰用 8，但区间支持充分。"
+    },
+    {
+      "param": "development_steps",
+      "current_value": 12,
+      "effective_scale": "发育解码器 / GRN 迭代更新步数",
+      "evidence": [
+        {
+          "source": "Mehra & Hintze (ALife 2023)",
+          "value": "表达水平更新 100 个离散时间步（用于接近稳态）",
+          "url": "https://www.diva-portal.org/smash/get/diva2:1820427/FULLTEXT01.pdf",
+          "quote": "Gene expression levels (Gi) start at 1/N ... and are updated for 100 discrete time steps",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Miralavy & Banzhaf (arXiv:2209.04114)",
+          "value": "1000 个 regulatory cycles",
+          "url": "https://arxiv.org/abs/2209.04114",
+          "quote": "the experiments were run for 1000 regulatory cycles",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Najarro et al., 'HyperNCA: Growing Developmental Networks with Neural Cellular Automata' (arXiv:2204.11674)",
+          "value": "从初始 seed 用 10 个发育步长出可用策略；变形再用 20 个额外发育步",
+          "url": "https://arxiv.org/abs/2204.11674",
+          "quote": "develops a functional policy out of the initial seed in 10 developmental steps ... further modify the previously grown weights for 20 additional developmental steps",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Hu et al., 'Empowered Neural Cellular Automata' (arXiv:2205.06771)",
+          "value": "评估时 NCA 运行 N=50 个时间步",
+          "url": "https://arxiv.org/abs/2205.06771",
+          "quote": "During evaluation, the NCA is run for N=50 time steps",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Mordvintsev et al., 'Growing Neural Cellular Automata' (Distill, 2020) / greydanus 博客",
+          "value": "形态发生图案常在 steps 10–20 内成形",
+          "url": "https://distill.pub/2020/growing-ca",
+          "quote": "steps 10-20",
+          "type": "文献确有该值（图案成形尺度）"
+        }
+      ],
+      "common_range": "模型相关，跨度大：形态发生/NCA 约 10–50 步；收敛型 GRN 动力学 100–1000 步",
+      "verdict": "偏小",
+      "confidence": "medium",
+      "notes": "12 步落在 NCA 形态发生（10–20 步）尺度内，但远小于 GRN 收敛研究常用的 100–1000 步。若本项目用 12 步表示「发育完成」，需要说明这是受计算预算约束的截断，而非达到稳态；建议补一次收敛性检查（如把 steps 提到 50/100 看表型是否变化）。"
+    },
+    {
+      "param": "grn_rho",
+      "current_value": 0.35,
+      "effective_scale": "GRN 更新中的平滑/记忆因子（与 (1-ρ) 组成指数滑动平均 / leaky integrator）",
+      "evidence": [
+        {
+          "source": "Mehra & Hintze (ALife 2023)",
+          "value": "阻尼因子 β = 0.2，更新式 G'_i = G_i − β(G_i − Q_i)，与本项目 (1-ρ)g+ρσ(·) 同构",
+          "url": "https://www.diva-portal.org/smash/get/diva2:1820427/FULLTEXT01.pdf",
+          "quote": "β = 0.2 is a dampening factor",
+          "type": "文献确有该值（同构更新式）"
+        },
+        {
+          "source": "Reservoir Computing for Future Communications: A Survey（leaky-integrator ESN 综述）",
+          "value": "leak rate α 典型取值 0.1–1.0",
+          "url": "https://preprints.opticaopen.org/articles/preprint/Reservoir_Computing_for_Future_Communications_A_Survey_and_Empirical_Study/33253971/1/files/67539177.pdf",
+          "quote": "Adds a leak rate α ... typical values ranging from 0.1 to 1.0",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "reservoirnet 教程 (Computo, 2025)",
+          "value": "示例 leak rate lr=0.1",
+          "url": "https://computo-journal.org/published-202505-ferte-reservoirnet",
+          "quote": "lr = 0.1: Set the leakage rate (lr) of the reservoir ... controlling how quickly the reservoir state decays",
+          "type": "实现确有该值"
+        }
+      ],
+      "common_range": "0.1–1.0（leaky integrator / EMA 平滑系数）；GRN 文献实例 0.2",
+      "verdict": "在范围内",
+      "confidence": "medium-high",
+      "notes": "ρ=0.35 在 [0.1,1.0] 内，且与 GRN 文献常用的 0.2 同量级。该参数与更新频率耦合：若改变 development_steps，需重新校准等效记忆长度 ≈ 1/ρ。"
+    },
+    {
+      "param": "initial_precursors",
+      "current_value": 24,
+      "effective_scale": "发育起始细胞/前体数（也对应最终网络节点数下界 24、上界 48）",
+      "evidence": [
+        {
+          "source": "Risi, Stanley et al., 'Enhancing ES-HyperNEAT ...' (GECCO 2011, p.1539)",
+          "value": "FS5x5 固定 substrate = 5×5 网格共 25 个隐藏节点；FS10x1 为默认的 10 节点一排",
+          "url": "https://groups.csail.mit.edu/EVO-DesignOpt/gecco2011Proceedings/proceedings/p1539.pdf",
+          "quote": "FS5x5 has a substrate containing 25 hidden nodes arranged in a 5 × 5 grid.",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Stanley, D'Ambrosio & Gauci, 'A Hypercube-Based Encoding for Evolving Large-Scale Neural Networks' (Artificial Life 2009)",
+          "value": "以 5×5 网格为例说明 substrate 几何",
+          "url": "https://doi.org/10.1162/artl.2009.15.2.15202",
+          "quote": "consider a 5 x 5 grid",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Dellaert & Beer, 'A developmental model for the evolution of complete autonomous agents' (1996)",
+          "value": "发育从单个细胞开始",
+          "url": "https://www.cs.swarthmore.edu/~meeden/DevelopmentalRobotics/dellaert96.pdf",
+          "quote": "The organism starts out as a single cell, with its genome given by the GA.",
+          "type": "文献确有该值（反衬：发育编码惯例是 1 个起始细胞）"
+        },
+        {
+          "source": "Astor & Adami, 'A Developmental Model for the Evolution of Artificial Neural Networks' (Artificial Life 2000)",
+          "value": "每个神经元是自主单元、由局部化学驱动生长；同样从少量/单细胞起步",
+          "url": "https://doi.org/10.1162/106454600568834",
+          "quote": "each individual artificial neuron is an autonomous unit whose behavior is determined only by the genetic information it harbors and local concentrations of substrates",
+          "type": "文献确有该模型"
+        }
+      ],
+      "common_range": "两种口径：(a) 进化 substrate 节点数 10–64（5×5=25 常见）；(b) 发育起始细胞数 1–数个",
+      "verdict": "在范围内",
+      "confidence": "medium",
+      "notes": "24 ≈ 标准 5×5 substrate 的 25，作为「网络起始节点/前体数」落在常见范围。但需要明确：生物形态发生类发育编码通常从 1 个细胞起步，24 个「初始前体」不是发育生物学惯例，而是神经演化 substrate 惯例；论文里应据此选择锚点表述，避免张冠李戴。"
+    },
+    {
+      "param": "world_width, world_height",
+      "current_value": "100, 60",
+      "effective_scale": "连续 2D 生态世界尺寸；长宽比 5:3≈1.67",
+      "evidence": [
+        {
+          "source": "POSGGym, PredatorPrey 环境文档",
+          "value": "并列式 2D 捕食者-猎物环境，网格为正方形：5×5、10×10、15×15、20×20",
+          "url": "https://posggym.readthedocs.io/en/latest/environments/grid_world/predator_prey.html",
+          "quote": "Grid name | Grid size ; 5x5 | 5x5 ; 10x10 | 10x10 ; 15x15 | 15x15 ; 20x20 | 20x20",
+          "type": "实现确有该值"
+        },
+        {
+          "source": "PettingZoo MPE（多智能体粒子环境）",
+          "value": "标准 MPE 竞技场为以原点为中心的正方形（[-1,1]^2），不采用 5:3 长宽比",
+          "url": "https://pettingzoo.farama.org/environments/mpe/",
+          "quote": null,
+          "type": "实现惯例（未能取到 world_size 源码字段，按 MPE 公开文档记）"
+        }
+      ],
+      "common_range": null,
+      "verdict": "无依据",
+      "confidence": "low",
+      "notes": "未找到任何以 100×60（5:3）为默认的连续多智能体或 ALife 仿真。同类环境要么是正方形网格（POSGGym 5×5–20×20），要么是归一化正方形连续域（MPE [-1,1]^2）。100:60 更像由浏览器 Canvas/显示比例决定的工程选择，建议在文档中标注为「设计选择（面向渲染），并做尺度敏感性检查」。"
+    },
+    {
+      "param": "sim_hz",
+      "current_value": 20,
+      "effective_scale": "控制/仿真步频，对应 dt=0.05 s",
+      "evidence": [
+        {
+          "source": "Gymnasium MuJoCo HalfCheetah-v5（源码 docstring）",
+          "value": "默认 dt=0.05 s，即 20 Hz 控制频率（timestep 0.01 × frame_skip 5）",
+          "url": "https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/mujoco/half_cheetah_v5.py",
+          "quote": "dt is the time between actions, which depends on the frame_skip parameter (default is 5), and frametime which is 0.01 - so the default is dt = 5 × 0.01 = 0.05",
+          "type": "实现确有该值"
+        },
+        {
+          "source": "Gymnasium MuJoCo half_cheetah.xml",
+          "value": "MuJoCo 物理 timestep=0.01",
+          "url": "https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/mujoco/assets/half_cheetah.xml",
+          "quote": "<option gravity=\"0 0 -9.81\" timestep=\"0.01\"/>",
+          "type": "实现确有该值"
+        },
+        {
+          "source": "robosuite 官方文档（Environments / Robot 模块）",
+          "value": "control_freq 默认 20 Hz，注释明写 '20 hz control'",
+          "url": "https://robosuite.ai/docs/modules/environments.html",
+          "quote": "control_freq = 20, # 20 hz control for applied actions",
+          "type": "实现确有该值"
+        }
+      ],
+      "common_range": "控制频率常见 20–100 Hz（MuJoCo 系默认 20 Hz；机器人控制常用 20 Hz）",
+      "verdict": "在范围内",
+      "confidence": "high",
+      "notes": "sim_hz=20（dt=0.05）有直接、权威的实现依据：Gymnasium MuJoCo 运动类环境与 robosuite 都取 20 Hz。这是全部 12 项里依据最硬的一项。"
+    },
+    {
+      "param": "episode_seconds",
+      "current_value": 30,
+      "effective_scale": "单 episode 物理时长；episode_steps=sim_hz×episode_seconds=600",
+      "evidence": [
+        {
+          "source": "Gymnasium HalfCheetah-v4/v5 注册配置 max_episode_steps=1000",
+          "value": "1000 步 × 0.05 s = 50 s/episode",
+          "url": "https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/__init__.py",
+          "quote": "id=\"HalfCheetah-v4\" ... max_episode_steps=1000",
+          "type": "实现确有该值（时长由 dt 折算，折算为推断）"
+        },
+        {
+          "source": "robosuite 官方文档",
+          "value": "horizon=500 步，按 control_freq=20 Hz 折合 25 s/episode；文档另述典型评估 horizon 500 steps = 25 s",
+          "url": "https://robosuite.ai/docs/modules/environments.html",
+          "quote": "horizon = 200, # each episode terminates after 200 steps",
+          "type": "实现确有步数；25 s 折算为推断"
+        },
+        {
+          "source": "Gymnasium LunarLander-v3 / CarRacing-v3 注册配置",
+          "value": "max_episode_steps=1000（LunarLander dt≈0.02 s → 约 20 s；CarRacing 50 fps → 约 20 s）",
+          "url": "https://github.com/Farama-Foundation/Gymnasium/blob/main/gymnasium/envs/__init__.py",
+          "quote": "id=\"LunarLander-v3\" ... max_episode_steps=1000",
+          "type": "实现确有该步数；时长为推断"
+        }
+      ],
+      "common_range": "常见 RL/生态 episode 约 10–50 s（折算自 200–1600 步 × 各自 dt）",
+      "verdict": "在范围内",
+      "confidence": "medium-high",
+      "notes": "30 s 落在同类环境的常见区间（20–50 s）内，介于 robosuite（25 s）与 MuJoCo locomotion（50 s）之间。注意：这些环境的步数默认值本身与 dt 绑定，将其折算成秒是我的计算，属推断，已在 evidence.type 标注。"
+    },
+    {
+      "param": "population_size",
+      "current_value": 48,
+      "effective_scale": "神经演化 / GA 每代个体数",
+      "evidence": [
+        {
+          "source": "neat-python 官方示例配置 examples/xor/config-feedforward",
+          "value": "pop_size = 150；survival_threshold=0.2；elitism=2",
+          "url": "https://github.com/CodeReclaimers/neat-python/blob/master/examples/xor/config-feedforward",
+          "quote": "pop_size = 150",
+          "type": "实现确有该值"
+        },
+        {
+          "source": "neat-python 文档 docs/config_file.rst",
+          "value": "示例同样使用 pop_size = 150",
+          "url": "https://github.com/CodeReclaimers/neat-python/blob/master/docs/config_file.rst",
+          "quote": "pop_size = 150",
+          "type": "实现确有该值"
+        },
+        {
+          "source": "Sosa & Stanley, 'Deep HyperNEAT' (GECCO 2018)",
+          "value": "全部进化运行 population size = 150",
+          "url": "https://web.mit.edu/fsosa/www/papers/dhn18.pdf",
+          "quote": "All evolutionary runs had a population size of 150 and ran 100 times.",
+          "type": "文献确有该值"
+        },
+        {
+          "source": "Stanley & Miikkulainen, NEAT (Evolutionary Computation 2002) 及 GA 参数惯例（De Jong / Grefenstette 设置）",
+          "value": "NEAT 原文基准用 150；De Jong 标准设置 population size 50；Grefenstette 设置 population size 30；GA 经验规则 50–200",
+          "url": "https://www.eislab.gatech.edu/people/scholand/gapara.htm",
+          "quote": "Dejong's settings ... Population size 50 ... Grefenstette Settings ... Population size 30",
+          "type": "文献/惯例确有该值"
+        }
+      ],
+      "common_range": "神经演化常见 150（NEAT 系）；GA 一般规则 50–200",
+      "verdict": "偏小",
+      "confidence": "medium-high",
+      "notes": "48 略低于 GA 经验下沿 50，也明显低于 NEAT 系常用的 150；接近 De Jong 的 50、高于 Grefenstette 的 30。若算力受限可接受，但应在论文中说明「受计算预算限制，少于 NEAT 惯例 150」，并报告种群规模敏感性（如 24/48/96）。"
+    },
+    {
+      "param": "selection_beta",
+      "current_value": 3.0,
+      "effective_scale": "softmax/玻尔兹曼父代选择强度 β（P(i) ∝ exp(β f_i)），与温度 T=1/β 互逆",
+      "evidence": [
+        {
+          "source": "Wikipedia, Softmax function（β 与温度的定义）",
+          "value": "β=1/(kT)，β 越大分布越尖锐；未给出「常用值」",
+          "url": "https://en.wikipedia.org/wiki/Softmax_function",
+          "quote": "A value proportional to the reciprocal of β is sometimes referred to as the temperature: β = 1/kT ... A higher temperature results in a more uniform output distribution",
+          "type": "定义性来源，无推荐值"
+        },
+        {
+          "source": "Goldberg, 'A Note on Boltzmann Tournament Selection for Genetic Algorithms'",
+          "value": "玻尔兹曼选择以温度调度 f=exp(-E/T) 实现，需随代数降温；无固定 β",
+          "url": "https://content.wolfram.com/sites/13/2018/02/04-4-5.pdf",
+          "quote": "if f = exp(-Ef/T) is used as a fitness function ... Boltzmann tournament selection was developed primarily as a means to carry over Boltzmann distributions and cooling schedules to genetic algorithms",
+          "type": "文献确有该机制，无固定 β"
+        },
+        {
+          "source": "Sutton & Barto, 'Softmax Action Selection'（RL 中的 softmax 选择）",
+          "value": "softmax/Gibbs 选择，随温度退火趋近贪心；未规定 β 数值",
+          "url": "http://incompleteideas.net/book/first/ebook/node17.html",
+          "quote": "These are called softmax action selection rules. The most common softmax method uses a Gibbs, or Boltzmann, distribution.",
+          "type": "定义性来源，无推荐值"
+        }
+      ],
+      "common_range": null,
+      "verdict": "无依据",
+      "confidence": "low",
+      "notes": "没有找到任何把 β 定为 3.0 的论文或实现默认值。关键问题是 β 的量纲取决于适应度的尺度：若适应度未归一化，同一 β 的绝对选择强度不可比。β=3.0 只有在明确定义「适应度归一化方式」后才有意义（例如 f∈[0,1] 时 β=3 对应中等偏强选择）。当前项目文档未给归一化方式，故判为无依据；需在文档中补「适应度尺度 + β 的敏感性分析」，或改用与尺度无关的选择方案（锦标赛/排名选择）。以上 β=3 的强弱解读为我的推断，非来源结论。"
+    },
+    {
+      "param": "crossover_probability",
+      "current_value": 0.5,
+      "effective_scale": "每次繁殖对每对染色体施加交叉的概率",
+      "evidence": [
+        {
+          "source": "De Jong 标准参数设置（转引自 Scholand, GA Parameters, Georgia Tech）",
+          "value": "交叉率 0.6；并建议均匀交叉时降到 0.5",
+          "url": "https://www.eislab.gatech.edu/people/scholand/gapara.htm",
+          "quote": "Crossover rate of 0.6 ... For more disruptive methods (such as uniform crossover), use a lower crossover rate (say 0.50).",
+          "type": "文献/惯例确有该值"
+        },
+        {
+          "source": "Grefenstette 参数设置（同上）",
+          "value": "交叉率 0.9，适用于较小种群",
+          "url": "https://www.eislab.gatech.edu/people/scholand/gapara.htm",
+          "quote": "Crossover rate of 0.9",
+          "type": "文献/惯例确有该值"
+        },
+        {
+          "source": "GA 参数综述（Algorithm Afternoon, Chapter 5 / Woodruff）",
+          "value": "交叉率常见范围 0.6–0.9，默认约 0.7–0.8",
+          "url": "https://algorithmafternoon.com/books/genetic_algorithm/chapter05",
+          "quote": "Common ranges for crossover rates are between 0.6 and 0.9 ... A common default value for the crossover rate is around 0.7 or 0.8",
+          "type": "惯例确有该范围"
+        }
+      ],
+      "common_range": "单点/两点交叉 0.6–0.9；均匀交叉可低至 0.5",
+      "verdict": "偏小",
+      "confidence": "medium",
+      "notes": "0.5 低于单点/两点交叉常见的 0.6–0.9，但恰好等于均匀交叉的建议值 0.5。项目文档把 0.5 标为「最大熵默认假设」，此说法未在来源中找到支撑——它是一种设计约定，不是文献惯例。建议：若采用均匀交叉，明文写出「uniform crossover, p_c=0.5」即可自洽；否则应上调到 0.6–0.9 并说明理由。"
+    }
+  ],
+  "conclusions": [
+    "依据最硬、可直接引用（推荐直接用）：sim_hz=20（Gymnasium MuJoCo dt=0.05 与 robosuite control_freq=20 双重实现依据）；grn_dim=8、grn_rho=0.35（Mehra & Hintze ALife 2023 的 N=20、β=0.2 与 leaky-integrator 综述 [0.1,1.0] 共同支持）；episode_seconds=30（MuJoCo/robosuite/LunarLander 折算 20–50 s 区间）。",
+    "有依据但需改写表述（仅作参考）：bp_per_haplotype_chromosome=128 落在紧凑人工基因组 50–10^4 区间内，但没有文献用 128，应写成「区间内设计选择」而非「惯例」；initial_precursors=24 对应标准 5×5 HyperNEAT substrate 的 25 个节点，但发育编码惯例是从 1 个细胞起步，需注明所选口径；development_steps=12 与 NCA 形态发生的 10–20 步同尺度，但远小于 GRN 收敛研究的 100–1000 步，需补收敛性检查；population_size=48 略低于 GA 惯例下沿、明显低于 NEAT 的 150，需报敏感性；crossover_probability=0.5 仅当采用均匀交叉时成立。",
+    "拿不到可靠依据（不建议在论文中宣称有出处）：n_motifs=8（无任何来源使用 8 个 motif 类型；生物 TF 目录是数百到上千）；world_width/height=100/60（同类环境均为正方形，5:3 属渲染导向的工程选择）；selection_beta=3.0（不存在通用 β，且其强度依赖未定义的适应度归一化）。这三项应明确标为「设计选择（未验证）」并列入敏感性计划，不要编造引用。",
+    "需进一步验证的风险点：(1) 同一引文谱系里的 Neural DNA（NDNA）实现并不使用 ACGT 碱基或 motif，而是 <400 个可学习参数，故「bp_per_haplotype_chromosome / n_motifs」不能引 NDNA 作为直接依据；(2) 本项目 30 s episode 与 20 Hz 的组合折算为 600 步，来源中的步数默认值（1000/500/200）与其 dt 绑定，跨环境直接换算存在口径差异；(3) 本次 arXiv MCP 检索接口不可用（HTTP 406），未做 arXiv 全库穷尽检索，结论基于 OpenAlex + arXiv 全文下载 + Tavily + GitHub 四路交叉，仍可能有遗漏。",
+    "建议的下一步：为 n_motifs、world、selection_beta 补「设计选择说明 + 敏感性实验」；为 development_steps 补 12 vs 50 vs 100 的收敛对比；为 population_size 补 24/48/96 三档；所有参数在论文中区分「有出处取值」与「设计选择」，并保留本文件的 JSON 作为可核查依据。"
+  ]
+}
