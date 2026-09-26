@@ -84,10 +84,20 @@ H2 采用 Mantel 检验，二者均不依赖 3 对 3 置换；其余结论以效
 使各机制之间互相约束；
 (iii) 显式测量\textbf{「后天权重的当代扰动不遗传」}这一边界的代价，而不只展示先天编码的能力上限。
 
-\textbf{与神经架构搜索（NAS）}：\todo{此处需要与 NAS / HyperNEAT 类方法的对比引用，
-但当前 \texttt{research/notes/bibliography.md} 中\textbf{尚未登记} NEAT/HyperNEAT/NAS 相关文献——
-按仓库硬约束「未登记即引用＝缺陷」，\textbf{不得先写引用再补}。
-需先完成文献登记（OpenAlex 核验）再补写本段。}
+\textbf{与神经架构搜索（NAS）}：NAS 的两条主流路线都在\textbf{架构本身}上搜索——
+在离散的层 / 算子 / 连接空间上直接搜索 \citep{bib224_elsken2019}，
+或把该空间\textbf{连续松弛}为混合算子权重以便梯度优化 \citep{bib225_liu2019}，
+目标都是静态基准上的验证精度。神经演化中的生成式路线则把可演化对象\textbf{上移一层}：
+NEAT 直接演化拓扑 \citep{bib222_stanley2002}，HyperNEAT 再由一个 CPPN
+按几何坐标查询生成连接权重 \citep{bib223_stanley2009}。本文与之有三处差别：
+(i) 搜索对象是\textbf{基因组}（DNA + motif）而非架构——架构只是发育算子的产物，
+「同源基因组 + 不同随机种子」与「单碱基扰动」本身即是可测量的变异来源（RQ1/RQ2）；
+(ii) 生成规则是\textbf{发育过程}（GRN $\to$ 细胞命运 $\to$ RGCD），
+而 HyperNEAT 的 substrate 布局与几何是\textbf{给定}的、CPPN 只做坐标到权重的映射
+（其增强版 ES-HyperNEAT \citep{bib124_risi2012} 让位置与密度也可演化，但仍无基因组层面的显式结构）；
+(iii) 适应度来自\textbf{闭环生态仿真}而非静态基准——近年用发育程序「长出」网络的近作
+\citep{bib226_najarro2023} 仍以静态机器学习基准评价，且其发育程序本身由梯度 / 演化训练得到，
+不测量「后天权重的当代扰动不遗传」这一边界的代价。
 
 \textbf{本文不主张}：我们不主张所提架构在任一基准上取得最优性能；
 也不主张人工基因组与真实斑马鱼基因组同构。相关建模假设的完整列表见

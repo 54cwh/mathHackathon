@@ -1023,6 +1023,42 @@
 
 ---
 
+## 相关工作基线（NAS / HyperNEAT / 发育式编码，2026-09-26）
+
+> 来源：`paper/latex/sections/01-intro.tex` §1.3「与已有工作的差异」的对比论证缺口（该处原为 `\todo{...}`）；
+> 同时闭合 `research/notes/引用登记缺口.md` §3.1 行 6 与 §3.2 行 29–30 的登记债（NEAT / HyperNEAT 曾被点名为「未登记」）。
+> 核验：`#222` / `#223` / `#226` 经 OpenAlex `get_work`（DOI 直查）确认**作者 / 年份 / 期刊 / 卷期页 / DOI** 一致；
+> `#224` 经 OpenAlex 标题检索 + JMLR 官方页双重确认（JMLR 不注册 DOI，故用官方页稳定链接）；
+> `#225` 经 OpenAlex DOI 直查 + arXiv 摘要页确认（正式版为 ICLR 2019）。
+> **用途边界**：本组全部只作**相关工作 / 对照基线**，**不构成**本项目任何参数取值的设计依据
+> （`#222` 的种群规模惯例仅与 `docs/参数总表.json` 的 basis 相关，不得据以推断本项目 `population_size`）。
+
+222. Stanley KO, Miikkulainen R. **Evolving Neural Networks through Augmenting Topologies.** *Evolutionary Computation* 10(2), 99–127 (2002). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/106365602320169811
+    用途：**相关工作**——NEAT 原始论文：以 historical marking 交叉、物种保护与增量复杂化，**同时演化网络拓扑与连接权重**，是「在结构空间上直接搜索」这条经典路线的起点。支撑 §1.3 第 1 段「神经演化的经典路线是在网络结构或权重空间上直接搜索」以及本段「把可演化对象上移一层」的对照。
+    ⚠️ 边界：NEAT 的基因型**直接编码**每个神经元与连接（非生成式编码），与本项目「基因组 $\to$ 发育 $\to$ 连接组」不同层。种群规模惯例（`neat-python` 示例 `pop_size=150`）只在 `docs/参数总表.json` 的 basis 中作为工程锚点，**不得**据此推断本项目 `population_size`。核验：OpenAlex DOI 直查（2002-06-01，MIT Press，UT Austin）。
+
+223. Stanley KO, D'Ambrosio DB, Gauci J. **A Hypercube-Based Encoding for Evolving Large-Scale Neural Networks.** *Artificial Life* 15(2), 185–212 (2009). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/artl.2009.15.2.15202
+    用途：**相关工作**——HyperNEAT：可演化的对象是一个 **CPPN**，按 (源坐标, 目标坐标) 查询把**几何坐标**映射为连接权重，是「生成式 / 间接编码」最直接的先例（其增强版 ES-HyperNEAT 已登记为 `[bib#124]`）。支撑 §1.3 第 3 段的对照：HyperNEAT 的 substrate **神经元布局与几何是固定给定**的，生成规则里**没有**细胞命运、分裂 / 迁移 / 剪枝等发育过程，基因组层面也**没有**显式 DNA / motif 结构。
+    ⚠️ 边界（参数量口径）：HyperNEAT 可演化的是 **CPPN**（参数少），而 substrate 的连接数可以很大；凡作「参数量同数量级」比较，**必须声明比的是 substrate 连接数还是 CPPN 规模**，**不得**用 CPPN 规模冒充 substrate 参数量（同 `research/reference/design-basis-connectome.json`）。核验：OpenAlex DOI 直查（2009，MIT Press）。
+
+224. Elsken T, Metzen JH, Hutter F. **Neural Architecture Search: A Survey.** *Journal of Machine Learning Research* 20(55), 1–21 (2019). `peer-reviewed`.
+    链接: https://jmlr.org/papers/v20/18-598.html
+    用途：**相关工作**——NAS 的权威综述，按 search space / search strategy / performance estimation strategy 三维组织。支撑 §1.3 第 3 段：NAS 的主流搜索空间就是**离散的架构本身**（层、算子、连接），目标函数是**静态基准上的验证精度**；与本项目「搜索生成架构的基因组 + 闭环生态适应度」在**搜索对象**与**评价口径**两处都不同。
+    ⚠️ JMLR 不注册 DOI，故用官方页稳定链接；卷期页 20(55):1–21 (2019) 经 JMLR 官方页核验。核验：JMLR 官方页 + OpenAlex 标题检索。
+
+225. Liu H, Simonyan K, Yang Y. **DARTS: Differentiable Architecture Search.** *International Conference on Learning Representations (ICLR)* (2019). `preprint`（此处登记 arXiv 版；正式版为 ICLR 2019）.
+    DOI: https://doi.org/10.48550/arxiv.1806.09055
+    用途：**相关工作**——DARTS：把离散的架构选择**连续松弛**为混合算子的权重，使搜索空间可微、可用梯度搜索；另一条 NAS 主流路线。支撑 §1.3 第 3 段「NAS 的另一条路线是把搜索空间连续化」，且其优化目标同样是静态基准精度。核验：arXiv `1806.09055` 摘要页 comment 字段自述「Published at ICLR 2019」；OpenAlex 记录作者 / 年份 / DOI 一致。
+
+226. Najarro E, Sudhakaran S, Risi S. **Towards Self-Assembling Artificial Neural Networks through Neural Developmental Programs.** *The 2023 Conference on Artificial Life (ALIFE)* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/isal_a_00697
+    用途：**相关工作（近作）**——NDP：网络结构由另一个神经网络（Neural Developmental Program）**仅靠局部通信**驱动「生长」得到，并在演化训练 / 在线 RL / 离线 RL / 监督学习下评估。支撑 §1.3 第 3 段：近年的发育 / 生成式编码已能长出网络结构，但其发育程序本身由梯度或演化训练得到、**不含**显式 DNA / motif 基因组，评价也仍是**静态机器学习基准**，不检验「后天权重的当代扰动不遗传」这一边界的代价。
+    ⚠️ 边界：该文的「发育」是**局部通信的细胞自动机式生长**，与本项目 GRN + 细胞命运 + RGCD 距离依赖连接在机制上不同族；只作相关工作对照，不作机制依据。核验：OpenAlex DOI 直查 + Crossref 查询双重确认（2023，MIT Press，ALIFE proceedings）。
+
+---
+
 ## 待登记（未核验；**P0 债**，2026-09-26 由只读审计 `research/notes/引用登记缺口.md` 提出）
 
 > 本节条目**尚未**按本文件开头第 1–3 条规则完成核验（离线环境无法做 OpenAlex 核验），因此**不占正式编号、

@@ -228,8 +228,21 @@ $\tanh(\cdot)$ 的凸组合，故由 $h^0=0$ 归纳即得，属模型的数学�
 后两条是工程判据。发育阶段默认 $b_i=0$（无偏置近似），最终判定由 DanioNet 用其
 $b_{type_i}$ 复核。
 
-\todo{本小节需要「发育 viability 通过率」图（数据已在本机 probe 中，$2/14$）。
-对应 \texttt{paper/报告-骨架.md} §6 的 F6，待画。}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.96\linewidth]{fig_viability}
+  \caption{发育 viability 通过率（F6）。四个面板：(A) 累计通过率与 Wilson 区间，
+  标出 $n=14$ 的位置；(B) 各判据的失败次数；(C) $\rho(W^0)$ 分布与阈值 $1.0$；
+  (D) 随机 $q$ 与 pipeline $q(G)$ 的口径对照。
+  \textbf{引用本图的数字必须同时给出区间}：前 $14$ 次随机 $q$ 通过 $2/14=14.3\%$，
+  但 $n=14$ 的 Wilson 区间宽达 $[4.0\%,39.9\%]$；同一随机流拉到 $1000$ 次为
+  $71/1000=7.1\%$（$[5.7\%,8.9\%]$）。故 $14\%$ 是\emph{小样本读数}、\textbf{不是}系统率 ——
+  正确的读法是「$n=14$ 自身的区间含 $7.1\%$」，而\emph{不是}「全样本区间覆盖 $14\%$」。
+  另注意判据 (iv) $\rho(W^0)<1$ 是唯一绑定约束（$1000$ 次里 $898$ 次因它失败），
+  面板 (B) 中另三条判据在本样本下一次也未触发。
+  数据与复现命令见同名 \texttt{.xlsx} 的 \texttt{\_manifest}。}
+  \label{fig:viability}
+\end{figure}
 
 \subsection{网络结构：DanioNet 与「48 节点」}\label{method:net}
 

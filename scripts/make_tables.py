@@ -44,13 +44,36 @@ def discover() -> list[str]:
     return sorted(p.name[: -len("_summary.json")] for p in TABLES.glob("*_summary.json"))
 
 
+def complete_runs(experiment_id: str) -> list[Path]:
+    """该 experiment_id 下**完整**的 run 目录（含 metrics.csv）。
+
+    为什么需要这层过滤：smoke / 半成品目录（例如早前把已带 -s<seed> 的 id 再次喂给
+    `run_experiment.py`，生成 `<id>-s<seed>-s<seed>` 这种只有布局文件的目录）会让下游
+    `pd.read_csv` 在离病根很远的地方崩掉。这里把它们排除，并在提示里点名。
+    """
+    return [d for d in sorted(RUNS.glob(f"{experiment_id}-s*")) if (d / "metrics.csv").is_file()]
+
+
+def incomplete_runs(experiment_id: str) -> list[Path]:
+    """有目录但缺 metrics.csv 的 run（仅用于提示）。"""
+    return [
+        d for d in sorted(RUNS.glob(f"{experiment_id}-s*")) if not (d / "metrics.csv").is_file()
+    ]
+
+
 def load(experiment_id: str) -> tuple[pd.DataFrame, pd.DataFrame, dict]:
-    dirs = sorted(RUNS.glob(f"{experiment_id}-s*"))
+    dirs = complete_runs(experiment_id)
     if not dirs:
-        raise SystemExit(f"找不到 run 目录：{RUNS}/{experiment_id}-s*")
+        bad = incomplete_runs(experiment_id)
+        hint = f"；不完整（缺 metrics.csv）的目录：{[d.name for d in bad]}" if bad else ""
+        raise SystemExit(
+            f"{experiment_id} 下没有完整的 run 目录（需含 metrics.csv）："
+            f"{RUNS}/{experiment_id}-s*" + hint
+        )
     metrics = pd.concat([pd.read_csv(d / "metrics.csv") for d in dirs], ignore_index=True)
-    eps_frames = [pd.read_json(d / "episodes.jsonl", lines=True) for d in dirs]
-    eps = pd.concat(eps_frames, ignore_index=True)
+    eps = pd.concat(
+        [pd.read_json(d / "episodes.jsonl", lines=True) for d in dirs], ignore_index=True
+    )
     sp = TABLES / f"{experiment_id}_summary.json"
     if not sp.is_file():
         raise SystemExit(f"缺跨 seed 汇总：{sp}")
@@ -169,8 +192,20 @@ def main() -> None:
         if not ids:
             raise SystemExit("results/tables 下没有 *_summary.json；先跑 scripts/run_arena.py")
         cands = sorted(TABLES.glob("*_summary.json"), key=lambda p: p.stat().st_mtime)
-        experiment_id = cands[-1].name[: -len("_summary.json")]
-        print(f"（未指定 --experiment-id，取最近修改的：{experiment_id}；可选 {ids}）")
+        # 从新到旧挑第一个「有完整 run」的：否则会挑到 smoke / 半成品，白白报错
+        usable = [c for c in reversed(cands) if complete_runs(c.name[: -len("_summary.json")])]
+        if not usable:
+            raise SystemExit(
+                "results/tables 下的 *_summary.json 都没有完整的 run 目录"
+                f"（缺 metrics.csv）；可选：{ids}"
+            )
+        experiment_id = usable[0].name[: -len("_summary.json")]
+        skipped = [c.name[: -len("_summary.json")] for c in cands if c not in usable]
+        extra = f"；已跳过无完整 run 的：{skipped}" if skipped else ""
+        print(
+            f"（未指定 --experiment-id，取最近修改且有完整 run 的：{experiment_id}；"
+            f"可选 {ids}{extra}）"
+        )
     else:
         experiment_id = args.experiment_id
 
