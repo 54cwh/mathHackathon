@@ -62,3 +62,17 @@ def test_persistence_across_instances(tmp_path):
     second = Registry(path)
     assert second.list_models() == ["danionet"]
     assert second.versions("danionet") == ["1"]
+
+
+def test_returned_entries_are_isolated_from_store(tmp_path):
+    registry = Registry(tmp_path / "registry.json")
+    handle = registry.register("danionet", "1", run_id="run-1")
+    handle["tags"]["mutated"] = "yes"
+    handle["source_run_id"] = "tampered"
+    assert registry.get("danionet", "1")["source_run_id"] == "run-1"
+    assert registry.get("danionet", "1")["tags"] == {}
+
+    registry.set_alias("danionet", "champion", "1")
+    resolved = registry.resolve("danionet", alias="champion")
+    resolved["path"] = "/tampered"
+    assert registry.get("danionet", "1")["path"] is None

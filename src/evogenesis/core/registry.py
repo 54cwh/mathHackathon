@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import copy
 import json
 from collections.abc import Mapping
 from pathlib import Path
@@ -60,7 +61,7 @@ class Registry:
         }
         model["versions"][version] = entry
         self._save()
-        return entry
+        return copy.deepcopy(entry)
 
     def set_alias(self, name: str, alias: str, version: str) -> None:
         model = self._model(name)
@@ -77,12 +78,12 @@ class Registry:
             version = model["aliases"][alias]
         except KeyError as exc:
             raise KeyError(f"{name} 无别名：{alias!r}") from exc
-        return model["versions"][version]
+        return copy.deepcopy(model["versions"][version])
 
     def get(self, name: str, version: str) -> dict[str, Any]:
         model = self._model(name)
         try:
-            return model["versions"][version]
+            return copy.deepcopy(model["versions"][version])
         except KeyError as exc:
             raise KeyError(f"{name}@{version} 不存在") from exc
 

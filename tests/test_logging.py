@@ -43,6 +43,10 @@ def test_severity_text_uses_otel_names(tmp_path):
     record = _read_lines(log_path)[0]
     assert record["severity_text"] == "WARN"
     assert record["severity_number"] == 13
+    get_logger("t").critical("fatal")
+    fatal = _read_lines(log_path)[1]
+    assert fatal["severity_text"] == "FATAL"
+    assert fatal["severity_number"] == 21
 
 
 def test_contextvars_reset_between_configures(tmp_path):

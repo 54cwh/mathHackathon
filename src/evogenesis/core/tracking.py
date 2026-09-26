@@ -3,7 +3,8 @@
 字段对齐 **MLflow Tracking**（``run_id / experiment_id / status / start_time / end_time``
 ``/ metrics / params / tags / artifacts``），使用本地 file store，现场离线可用。
 
-项目稳定 ``experiment_id``（AGENTS「稳定 ID」）与 MLflow 的 experiment id 不同名：
+指标名按 MLflow 约束清洗：仅保留字母/数字/``_-. /``，超出 250 字符截断；原始名请另存 params
+或 tags。项目稳定 ``experiment_id``（AGENTS「稳定 ID」）与 MLflow 的 experiment id 不同名：
 前者作为 ``experiment_name`` 传入并写入 run tag ``experiment_id``；后者由 MLflow 生成，
 经 ``mlflow_experiment_id`` 暴露。
 """
