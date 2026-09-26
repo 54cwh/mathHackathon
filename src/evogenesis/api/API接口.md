@@ -43,7 +43,7 @@
   |---|---|---|
   | `session_id` | string | 会话 ID，形如 `session_<12hex>` |
   | `generation` | int | 代次，新会话为 `0` |
-  | `environment` | string | `food_rich` / `predator_rich` / `resource_scarce` |
+  | `environment` | string | `default` / `food_rich` / `predator_rich` / `resource_scarce`（owner：`experiment §4`） |
   | `population` | int | 鱼总数 |
   | `running` | bool | 是否运行中（新会话为 `true`） |
   | `master_seed` | int | 主种子 |
@@ -214,7 +214,7 @@
 | `/v1/developments` | POST | 发育解码 | `DevelopmentRequest` | `DevelopmentResult` |
 | `/v1/breedings` | POST | 繁殖 | `BreedingRequest` | `BreedingResult` |
 | `/v1/sessions/{session_id}/evolutions` | POST | 演化 | — | `202` `JobStatus` |
-| `/v1/experiments` | POST | 启动正式实验 | `ExperimentCreate` | `202` `JobStatus` |
+| `/v1/experiments` | POST | 启动正式实验 | `ExperimentLaunch` | `202` `JobStatus` |
 | `/v1/experiments` | GET | 实验列表（分页） | — | `Page[ExperimentSummary]` |
 | `/v1/experiments/{experiment_id}` | GET | 实验元数据 + 指标 | — | `ExperimentDetail` |
 | `/v1/jobs/{job_id}` | GET | 任务状态 / 进度 | — | `JobStatus` |
@@ -226,11 +226,11 @@
 - `MutationRequest`：`position`(int ≥0)、`base`(`A|C|G|T`)；`MutationResult`：`genome_id`、`new_genome_id`、`diff`
 - `DevelopmentRequest`：`genome_id`、`seed`；`DevelopmentResult`：`genome_id`、`dev_trace`、`phenotype`
 - `BreedingRequest`：`genome_a`、`genome_b`、`n_offspring`；`BreedingResult`：`offspring`、`meiosis_trace`
-- `ExperimentCreate`：`name`、`seeds`(int[])、`environment`、`generations`；`ExperimentSummary`：`experiment_id`、`name`、`status`、`seeds`
+- `ExperimentLaunch`（**实验启动请求**：一请求展开为 N 个 `ExperimentRun`，见下）：`name`、`seeds`(int[])、`environment`、`generations`；`ExperimentSummary`：`experiment_id`、`name`、`status`、`seeds`
 - `JobStatus`：`job_id`、`status`(`queued|running|done|failed|cancelled`)、`progress`(0–1)、`detail`
 - `Page[T]`（分页泛型，R9）：`items`、`next_cursor`；`GET /v1/experiments` 为 `Page[ExperimentSummary]`
 
-> ⚠️ `ExperimentCreate.seeds` 与 `schemas/experiment.schema.json` 的 `seed`(int) + `*_config` 字段集不相交，待认领（认领表 B6）。
+> ✅ **两对象并存（B6 已闭合，2026-09-26）**：本层 `ExperimentLaunch`（多 `seeds` × `generations` → `202` job，展开为 N 个 run）与 Tier3 `schemas/experiment.schema.json` 的 **`ExperimentRun`**（单 `seed` + 三条 config 路径，**单 run 元数据**，已定稿）是**不同物**，非同一契约的两版。`environment` 枚举统一为 `default / food_rich / predator_rich / resource_scarce`（owner：`experiment §4`）。
 
 - **代码位置**：`stubs.py`（各同名函数）。
 
@@ -468,7 +468,7 @@ class SessionCreate(BaseModel):
 | **B3** | `generation` / `environment` 是"稳定 ID"还是标量：上游 §3 列为稳定 ID，代码是 `int` / 字符串枚举 | 实现为标量；改文档还是改代码待认领 |
 | **B4** | 未实现模块的统一约定：501 + "owned by 池伟豪 …" 是否正式写进上游文档 | 已实现共享 `_NOT_IMPL` 单例；响应体已是 RFC 7807 |
 | **B5** | WS 词表：`sys.hello` / `sys.echo`（后者仅为契约演示）是否正式纳入 R11 词表 | `sys.hello` / `sys.error` 已实现；`sys.echo` **未实现**，去留待认领 |
-| **B6** | experiment 契约分裂：`schemas/experiment.schema.json`（`seed:int` + `*_config` 路径）与 `api/schemas.py`（`seeds:list[int]` + `name/generations`）字段不相交 | 未变；以哪套为准待认领 |
+| **B6** | experiment 契约分裂 | ✅ **已闭合（2026-09-26，方案 C）**：承认两对象——API 侧更名为 `ExperimentLaunch`（多 seed，展开为 N 个 `ExperimentRun`），Tier3 `schemas/experiment.schema.json` 维持单 run `ExperimentRun`；`environment` 枚举统一 |
 | **B7** | config 未接线：无 loader 读 yaml；`arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors` / `biomass_to_size_gain`）与 dataclass 不匹配 | 未变；见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射 |
 
 **认领表编号之外的新增待决项**（非认领表原有编号，同样不得在未确认前用于指标）：

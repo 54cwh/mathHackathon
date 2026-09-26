@@ -23,7 +23,8 @@
       "type": "string"
     },
     "environment": {
-      "type": "string"
+      "type": "string",
+      "enum": ["default", "food_rich", "predator_rich", "resource_scarce"]
     },
     "emit_behavior_trace": {
       "type": "boolean"

@@ -30,7 +30,7 @@
         "schema_version": { "type": "string", "minLength": 1 },
         "experiment_id": { "type": "string", "minLength": 1 },
         "episode_id": { "type": "string", "minLength": 1 },
-        "environment_id": { "type": "string", "minLength": 1 },
+        "environment_id": { "type": "string", "enum": ["default", "food_rich", "predator_rich", "resource_scarce"] },
         "generation": { "type": "integer", "minimum": 0 },
         "episode_seed": { "type": "integer" },
         "n_events": { "type": "integer", "minimum": 0 }

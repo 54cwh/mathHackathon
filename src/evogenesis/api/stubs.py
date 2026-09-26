@@ -12,8 +12,8 @@ from evogenesis.api.schemas import (
     BreedingResult,
     DevelopmentRequest,
     DevelopmentResult,
-    ExperimentCreate,
     ExperimentDetail,
+    ExperimentLaunch,
     ExperimentSummary,
     JobStatus,
     MutationRequest,
@@ -66,7 +66,7 @@ def evolve(session_id: str) -> JobStatus:
 
 
 @router.post("/experiments", status_code=202, response_model=JobStatus)
-def start_experiment(req: ExperimentCreate) -> JobStatus:
+def start_experiment(req: ExperimentLaunch) -> JobStatus:
     raise _not_impl()
 
 

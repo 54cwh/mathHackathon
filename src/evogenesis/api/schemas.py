@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-Environment = Literal["food_rich", "predator_rich", "resource_scarce"]
+Environment = Literal["default", "food_rich", "predator_rich", "resource_scarce"]
 JobStatusKind = Literal["queued", "running", "done", "failed", "cancelled"]
 
 
@@ -126,7 +126,9 @@ class Leaderboard(BaseModel):
 
 
 # --- experiments -----------------------------------------------------------
-class ExperimentCreate(BaseModel):
+class ExperimentLaunch(BaseModel):
+    """实验启动请求：一请求展开为 N 个 `ExperimentRun`（`schemas/experiment.schema.json`）。"""
+
     name: str
     seeds: list[int]
     environment: Environment = "food_rich"
