@@ -100,3 +100,46 @@
 19. Randlett O, Wee CL, Naumann EA, Nnaemeka O, Schoppik D, et al. **Whole-brain activity mapping onto a zebrafish brain atlas.** *Nature Methods* 12(11), 1039–1046 (2015). `peer-reviewed`.
     DOI: https://doi.org/10.1038/nmeth.3581
     用途：Z-Brain 脑区图谱。仅用于给 6 个 developmental domains 对应真实脑区命名。
+
+---
+
+## 依据新增（假设判据 / H3 / Dale 约束，2026-09-26）
+
+20. Hartle H, Klein B, McCabe S, Daniels A, St-Onge G, Murphy C, Hébert-Dufresne L. **Network comparison and the within-ensemble graph distance.** *Proc. R. Soc. A* 476(2240), 20190744 (2020). `peer-reviewed`. DOI: https://doi.org/10.1098/rspa.2019.0744
+    用途：小样本（n=3）下 connectome 差异的统计口径（H1）。
+
+21. Smouse PE, Long JC, Sokal RR. **Multiple regression and correlation extensions of the Mantel test of matrix correspondence.** *Systematic Zoology* 35(4), 627–632 (1986). `peer-reviewed`. DOI: https://doi.org/10.2307/2413122
+    用途：connectome↔behavior 矩阵相关检验（H2）。
+
+22. Latora V, Marchiori M. **Efficient behavior of small-world networks.** *Phys. Rev. Lett.* 87(19), 198701 (2001). `peer-reviewed`. DOI: https://doi.org/10.1103/PhysRevLett.87.198701
+    用途：图论 efficiency 定义；与本项目 "active-edge efficiency" 区分命名（H4）。
+
+23. Deb K, Pratap A, Agarwal S, Meyarivan T. **A fast and elitist multiobjective genetic algorithm: NSGA-II.** *IEEE Trans. Evol. Comput.* 6(2), 182–197 (2002). `peer-reviewed`. DOI: https://doi.org/10.1109/4235.996017
+    用途：性能—效率 Pareto 前沿（H3）。
+
+24. Via S, Lande R. **Genotype–environment interaction and the evolution of phenotypic plasticity.** *Evolution* 39(3), 505–522 (1985). `peer-reviewed`. DOI: https://doi.org/10.1111/j.1558-5646.1985.tb00391.x
+    用途：reaction norm / GxE（H5）。
+
+25. Malosetti M, Ribaut JM, van Eeuwijk FA. **The statistical analysis of multi-environment data: modeling genotype-by-environment interaction.** *Front. Physiol.* 4, 44 (2013). `peer-reviewed`. DOI: https://doi.org/10.3389/fphys.2013.00044
+    用途：AMMI/GGE 识别 rank reversal（H5）。
+
+26. Yang E, Zwart MF, James B, Rubinov M, Wei Z, Narayan V, et al. **A brainstem integrator for self-location memory and positional homeostasis in zebrafish.** *Cell* 185(26), 5011–5027 (2022). `peer-reviewed`. DOI: https://doi.org/10.1016/j.cell.2022.11.022
+    用途：H3 检验任务"遮蔽后延迟重定位"的行为学原型。
+
+27. Bernacchia A, Seo H, Lee D, Wang XJ. **A reservoir of time constants for memory traces in cortical neurons.** *Nature Neuroscience* 14(3), 366–372 (2011). `peer-reviewed`. DOI: https://doi.org/10.1038/nn.2752
+    用途：异质时间常数库支撑记忆痕迹（H3）。
+
+28. Dambre J, Verstraeten D, Schrauwen B, Massar S. **Information processing capacity of dynamical systems.** *Scientific Reports* 2, 514 (2012). `peer-reviewed`. DOI: https://doi.org/10.1038/srep00514
+    用途：记忆容量上界=状态数 N 的约束 → H3 不得写"提高记忆容量"。
+
+29. Eccles JC, Fatt P, Koketsu K. **Cholinergic and inhibitory synapses in a pathway from motor-axon collaterals to motoneurones.** *J. Physiol.* 126(3), 524–562 (1954). `peer-reviewed`. DOI: https://doi.org/10.1113/jphysiol.1954.sp005226
+    用途：Dale's principle 的实验形式化；突触符号由突触前决定。
+
+30. Song HF, Yang GR, Wang XJ. **Training excitatory-inhibitory recurrent neural networks for cognitive tasks.** *PLoS Comput. Biol.* 12(2), e1004792 (2016). `peer-reviewed`. DOI: https://doi.org/10.1371/journal.pcbi.1004792
+    用途：硬符号约束下训练 E/I 网络可行（支撑 ΔW 保持符号）。
+
+31. Balwani A, et al. **Constructing biologically constrained RNNs via Dale's backpropagation.** *Science Advances* (2025). `peer-reviewed`. DOI: https://doi.org/10.1126/sciadv.adw4970
+    用途：符号约束的实现技术（Dale's backprop）。
+
+32. Parisien C, Anderson CH, Eliasmith C. **Solving the problem of negative synaptic weights in cortical models.** *Neural Computation* 20(6), 1473–1494 (2008). `peer-reviewed`. DOI: https://doi.org/10.1162/neco.2008.07-06-295
+    用途：E/I 实现负权重的建模处理。

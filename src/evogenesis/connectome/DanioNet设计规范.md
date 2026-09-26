@@ -46,7 +46,7 @@ m_iH_t
 \right)
 \]
 
-默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6；\(\Delta W\) 与 Dale sign 的关系待定）。
+默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6）。\(\Delta W\) 遵守 Dale sign 约束：符号由突触前类型固定，只改幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)）`[bib#29][bib#30][bib#31]`。
 
 依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 
@@ -116,9 +116,12 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 ## 9. Ablations
 - w/o GRN
-- homogeneous tau
+- homogeneous tau（基线取异质 τ 的均值；另做 τ 网格扫描防选值偏袒）`[bib#27][bib#28]`
 - w/o spatial wiring cost
+- BC 有 / 无 Dale 符号约束 `[bib#30][bib#31]`
 - P1：w/o epistasis
+
+> H3 的“异质 vs 同质 τ”对比以**性能—效率 Pareto 前沿**为判据 `[bib#23]`。
 
 ## 阅读问题（待确认）
 
@@ -129,6 +132,5 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 3. **动作合成未定义（G3）**：§4 的 `y_ω,y_v` 取自哪些 motor 细胞、左右 pool 如何合成 `ω,v` 未写，与 §5“左右竞争”的衔接缺失。
 4. **左右 motor 标记规则未定义（G2）**：§5 称“Motor neurons 标记 left/right side”，但标记规则未写。
 5. **BC 超参与 Stage 1 专家未定义**：§6 的 `λ_ω,λ_v` 未给；ExpertPolicy 权重 `w_p0,k_H,w_d,w_o`（G4）不在 config。
-6. **baseline 参数量“同一数量级”未量化（G9）**：§8 未给容许倍数与对齐口径。
-7. **Ablation 实现未定**：§9 的 `w/o GRN`（随机固定结构？）、`homogeneous tau`（取何值）未写；`w/o epistasis` 需先确认 epistasis 已实现。
-8. **BC 训练数据与预算未定义**：每条 viable 网络的轨迹条数、K=20 的 batch 定义、是否含 padding/mask 处理未写。
+6. **Ablation 实现未定**：§9 的 `w/o GRN`（随机固定结构？）未写；`homogeneous tau` 已定基线值（§9），`w/o epistasis` 已标 P1。
+7. **BC 训练数据与预算未定义**：每条 viable 网络的轨迹条数、K=20 的 batch 定义、是否含 padding/mask 处理未写。

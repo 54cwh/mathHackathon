@@ -168,6 +168,16 @@ Complex Scene 可设置：
 - motor commands
 - selected neural activity snapshots
 
+## 14. 历史依赖探针任务（H3，草案待确认）
+
+检验 H3（异质 \(\tau\) 的作用）需要一个体现历史依赖的探针：
+- Arena 维护隐藏真相 `last_seen_prey_pos=(x*,y*)` 与其时间 `t0`；
+- prey 被遮挡 / 离开 FOV 达 \(D\) 步后，判定鱼能否回到 \((x^*,y^*)\)（回归半径 \(r_H\)）；
+- 报告 \(P(D)\) 退化曲线；`integrator_memory` 激活可作辅助证据；
+- 阴性对照：打乱历史（shuffle `last_seen_prey_pos`）后 \(P(D)\) 应下降。
+
+依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。
+
 ## 阅读问题（待确认）
 
 > 逐份阅读本文时发现的未定义点，需与 05 / 06 / 16 及 `configs/default_arena.yaml` 对齐后确认。
