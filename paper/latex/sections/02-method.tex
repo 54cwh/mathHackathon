@@ -1,0 +1,31 @@
+\section{方法：改了什么}\label{sec:method}
+
+% 写作要求（赛题补充说明三）：每个设计选择写「选择 / 理由 / 代价」三行，不堆术语。
+
+\subsection{整体数据流}
+\begin{equation}
+\text{DNA} \to \text{GRN} \to \text{发育（RGCD）} \to W^{(0)}
+\to \text{当代学习（BC）} \to \Delta W \quad(\text{不遗传})
+\end{equation}
+\todo{把 \texttt{core/核心机制与数据流.md} §2 的管线画成一张流程图（图 F12，待画）。}
+
+\subsection{基因型与调控网络}
+\todo{DNA 512 bp + motif；GRN 形式；发育步数。引已登记文献。}
+
+\subsection{发育：从 GRN 到连接组}
+\todo{RGCD 的连接概率、Dale 符号、$\tau$、空间布线项 R 与代价项。}
+
+\subsection{网络结构 DanioNet}
+\begin{equation}
+h_i^{t+1}=\Bigl(1-\tfrac{1}{\tau_i}\Bigr)h_i^{t}
++\tfrac{1}{\tau_i}\,\phi\Bigl(\sum_j A_{ij}w_{ij}h_j^{t}+U_i x_t+m_i H_t+b_i\Bigr)
+\end{equation}
+\begin{equation}
+\omega_t=\tanh\!\left(\overline{h}_{M_L}-\overline{h}_{M_R}\right),\qquad
+v_t=\sigma\!\left(\overline{h}_{M_{\mathrm{motor}}}\right)
+\end{equation}
+\todo{6 类神经元、12 维输入、均值池化动作；每个选择配「理由 / 代价」。}
+
+\subsection{遗传边界与当代学习}
+\todo{$W=A\odot(\mathrm{sign}(W^{(0)})\odot\mathrm{softplus}(\Theta))$；训练只改 $\Theta$；}
+\todo{$\Delta W$ 不遗传（genomic bottleneck）。BC 契约指向 \texttt{learning/行为克隆学习.md} §3，不复述。}

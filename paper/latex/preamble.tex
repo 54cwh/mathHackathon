@@ -1,0 +1,24 @@
+% 导言区：中文草稿版（xelatex + ctexart）。
+% 换英文/换会议时，只需替换本文件的「字体与版式」两段为会议官方 sty，见 README。
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{url}
+
+\graphicspath{{figs/}}          % 论文用图统一放 paper/latex/figs/（自包含，不依赖 results/）
+
+% --- 版式（中文草稿）---。换会议时整段替换为官方 sty 的版式约定。
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\ctexset{
+  section/format = \Large\bfseries,
+  subsection/format = \large\bfseries,
+}
+\linespread{1.25}
+
+% 统一占位标记：未写的内容必须显式可见，禁止用编造内容填充
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}

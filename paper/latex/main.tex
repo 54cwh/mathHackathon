@@ -1,0 +1,28 @@
+% !TeX program = xelatex
+% EvoGenesis 论文（中文草稿；后续可换英文/会议官方模板，见 README.md）
+%
+% 与 paper/报告-骨架.md 章节一一对应。正文写作主轴（赛题补充说明）：
+%   为什么要改 -> 改了什么 -> 实际结果如何 -> 具有什么价值与意义
+\documentclass[11pt,a4paper]{ctexart}
+\input{preamble}
+
+\title{\bfseries 发育式编码的神经网络架构：从基因调控网络到可演化、可模仿学习的斑马鱼智能体}
+\author{李辰钊 \and 池伟豪}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\input{sections/00-abstract}
+\input{sections/01-intro}
+\input{sections/02-method}
+\input{sections/03-experiment}
+\input{sections/04-baselines}
+\input{sections/05-results}
+\input{sections/06-limitations}
+\input{sections/07-reproducibility}
+
+\bibliographystyle{plainnat}
+\bibliography{refs}
+
+\end{document}

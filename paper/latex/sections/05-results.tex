@@ -1,0 +1,38 @@
+\section{结果}\label{sec:results}
+
+% 呈现方式（赛题补充说明四）：以图为主；「改之前 vs 改之后」必须同图同轴可比。
+
+\subsection{当前可跑的基线（ExpertPolicy 驱动，非学习后）}
+\todo{填入：\texttt{exp\_arena\_expert\_ref\_v2}（3 seed $\times$ 12 鱼 $\times$ 600 步）——}
+\todo{生存 0.9472$\pm$0.0459、捕食 0.5407$\pm$0.1180、逃脱 0.2292$\pm$0.0625、}
+\todo{能量率 $-1.031\times10^{-3}$、fitness 0.5123$\pm$0.0428。}
+\todo{再次强调：以上为「个体比值均值」口径。}
+
+
+\subsection{已跑通的一组基线}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_metrics_mean_std}
+  \caption{Arena 主指标（ExpertPolicy 驱动，3 seed \ $\times$ 12 鱼 $\times$ 600 步）。
+  左：0--1 比值类；右：\texttt{energy\_efficiency} 为**每步速率**（$\sim10^{-3}$），
+  因量纲不同单列一轴。误差棒为跨 seed 的 mean $\pm$ std。}
+  \label{fig:metrics}
+\end{figure}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_env_absolute}
+  \caption{为何比值会掩盖猎物密度效应：猎物变多时\textbf{分子与分母同时上升}
+  （food\_rich 捕获 55$\to$100，遭遇 722$\to$2325），故比值反而下降。}
+  \label{fig:env-absolute}
+\end{figure}
+
+\subsection{环境对照}
+\todo{predator\_rich 的 escape 效应量 $d=+2.89$、prey\_capture $d=+1.92$；}
+\todo{food\_rich 绝对捕获 55$\to$100 但比值反降（分母 722$\to$2325）。}
+
+\subsection{学习前后对照}
+\todo{\textbf{阻塞}：BC 未实现，此节暂无内容。不得用其他数字顶替。}
+
+\subsection{典型案例}
+\todo{补充说明四要求「能直接看见」：选一条成功、一条失败的行为轨迹做可视化。}
