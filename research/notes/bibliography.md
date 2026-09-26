@@ -981,7 +981,7 @@
    用途：机制对照：`config/config.js` 分层生成权重与危险物调度（`js/Spawner.js:29-64` 按等级动态调权：同级 ×2.0、高一级 ×1.5、低一级 0.3^diff）。仅供「难度自适应」设想参考；**未采纳入本项目**。
 
 
-217. tghbrk. **fish-eat-fish.** GitHub 开源项目（未声明许可证），核验 HEAD `0b3fc6ab`｜非同行评审
+217. tghbrk. **fish-eat-fish.** GitHub 开源项目（**ISC 许可**，声明于 `package.json`/README；无 LICENSE 正文文件），核验 HEAD `0b3fc6ab`｜非同行评审
 
 
    链接: https://github.com/tghbrk/fish-eat-fish
@@ -1075,6 +1075,482 @@
     DOI: https://doi.org/10.1242/jeb.087742
     用途：Arena `reference_magnitudes.strike_distance_larval`（幼鱼捕食打击距离）。核验：OpenAlex `W2110531771`。
 
+231. Walker JA, Ghalambor CK, Griset OL, McKenney DW, Reznick DN. Do faster starts increase the probability of evading predators? *Functional Ecology* (2005). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1365-2435.2005.01033.x
+    用途：支撑 escape_success 按「威胁事件结局」计数的口径（T1）。 把一次性攻击结局记为 success/failure 二值；四因子影响逃逸结局。
+    核验：OpenAlex DOI 直查核验：题名/作者/年份/期刊一致。（来源 OpenAlex / Functional Ecology；cited_by_count=448（OpenAlex，2026-09-27）；license=hybrid OA）
+
+232. Meager JJ, Domenici P, Shingles A, Utne-Palm AC. Escape responses in juvenile Atlantic cod Gadus morhua L.: the effects of turbidity and predator speed *Journal of Experimental Biology* (2006). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.02489
+    用途：支撑「用代理量代替直接结局」的范式（T1）。 用运动学 + 捕食者模型估计 putative escape success（PES）代替直接结局。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Experimental Biology；cited_by_count=89（OpenAlex，2026-09-27）；license=bronze OA）
+
+233. Domenici P. Context-dependent variability in the components of fish escape response: integrating locomotor performance and behavior *Journal of Experimental Zoology Part A* (2010). `peer-reviewed`.
+    DOI: https://doi.org/10.1002/jez.580
+    用途：支撑 escape 判据应针对「威胁事件结局」而非换目标（T1）。 把逃逸拆成 responsiveness/reaction distance/latency/directionality/performance 五组分。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Experimental Zoology Part A；cited_by_count=195（OpenAlex，2026-09-27）；license=bronze OA）
+
+234. Domenici P, Blagburn JM, Bacon JP. Animal escapology I: theoretical issues and emerging trends in escape trajectories *Journal of Experimental Biology* (2011). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.029652
+    用途：支撑逃逸方向/轨迹与成败关系的背景（T1）。 方向性（away responses 约 50–90%）与逃逸轨迹决定成败。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Experimental Biology；cited_by_count=220（OpenAlex，2026-09-27）；license=bronze OA）
+
+235. Nair A, Nguyen CM, McHenry MJ. A faster escape does not enhance survival in zebrafish larvae *Proceedings of the Royal Society B* (2017). `peer-reviewed`.
+    DOI: https://doi.org/10.1098/rspb.2017.0359
+    用途：斑马鱼特异性存活证据，支撑存活窗口口径（T1）。 以同种成鱼捕食幼虫，3D 运动学 + agent-based 模型；存活由「从更远处反应」提升。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Proceedings of the Royal Society B；cited_by_count=38（OpenAlex，2026-09-27）；license=green OA）
+
+236. Jolles JW, Sosna MMG, Mazué GPF, Twomey CR, Bak-Coleman JB, et al. Both prey and predator features predict the individual predation risk and survival of schooling prey *eLife* (2022). `peer-reviewed`.
+    DOI: https://doi.org/10.7554/elife.76344
+    用途：单次攻击成功率的替代物种量级锚点（T1/T2）。 狗鱼捕食 golden shiners：多数攻击成功（约 70%）。
+    核验：替代物种（狗鱼/golden shiners），非斑马鱼。OpenAlex 核验。（来源 OpenAlex / eLife；cited_by_count=23（OpenAlex，2026-09-27）；license=CC-BY）
+
+237. Preuss T, Osei-Bonsu PE, Weiss SA, Wang C, Faber DS. Neural Representation of Object Approach in a Decision-Making Motor Circuit *Journal of Neuroscience* (2006). `peer-reviewed`.
+    DOI: https://doi.org/10.1523/jneurosci.5259-05.2006
+    用途：威胁评估阈值与潜伏期的替代物种锚点（T1；pbb §5；lag §1.2）。 金鱼 looming→C-start 响应概率 0.7–0.91，阈值与动态缩放视角相关。
+    核验：替代物种（金鱼）。三份调研文档均引；OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Neuroscience；cited_by_count=184（OpenAlex，2026-09-27）；license=hybrid OA）
+
+238. Stewart WJ, Nair A, Jiang H, McHenry MJ. Prey fish escape by sensing the bow wave of a predator *Journal of Experimental Biology* (2014). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.111773
+    用途：补充逃逸触发时标的量级背景（T1）。 幼虫靠侧线感知捕食者弓形波，在 <10 ms 内触发逃逸。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Experimental Biology；cited_by_count=94（OpenAlex，2026-09-27）；license=bronze OA）
+
+239. Troconis EL, Ordoobadi AJ, Sommers TF, Aziz-Bose R, Carter AR, et al. Intensity-dependent timing and precision of startle response latency in larval zebrafish *The Journal of Physiology* (2016). `peer-reviewed`.
+    DOI: https://doi.org/10.1113/jp272466
+    用途：补充 C-start 潜伏期量级（T1）。 C-start 短/长潜伏期随刺激强度变化。
+    核验：原调研标为 2017 并通�� PMC5199724 引用；OpenAlex 解析实际出版年=2016，DOI=10.1113/jp272466。已更正年份。（来源 OpenAlex / The Journal of Physiology；cited_by_count=27（OpenAlex，2026-09-27）；license=green OA）
+
+240. Marquart GD, Tabor KM, Bergeron SA, Briggman KL, Burgess HA. Prepontine non-giant neurons drive flexible escape behavior in zebrafish *PLoS Biology* (2019). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pbio.3000480
+    用途：支撑逃逸行为分级/灵活性（T1 背景）。 较缓和威胁引起延迟、轨迹灵活的逃逸，由 38 个 prepontine 神经元驱动。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / PLoS Biology；cited_by_count=51（OpenAlex，2026-09-27）；license=CC-BY）
+
+241. Scharf FS, Juanes F, Rountree RA. Predator size-prey size relationships of marine fish predators: interspecific variation and effects of ontogeny and body size on trophic-niche breadth *Marine Ecology Progress Series* (2000). `peer-reviewed`.
+    DOI: https://doi.org/10.3354/meps208229
+    用途：尺寸依赖捕获成功率的证据（T2）。 捕食者-猎物尺寸关系跨种变异。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Marine Ecology Progress Series；cited_by_count=894（OpenAlex，2026-09-27）；license=bronze OA）
+
+242. Juanes F, Conover DO. Piscivory and prey size selection in young-of-the-year bluefish: predator preference or size-dependent capture success? *Marine Ecology Progress Series* (1994). `peer-reviewed`.
+    DOI: https://doi.org/10.3354/meps114059
+    用途：尺寸选择性捕食与捕获成功率的证据（T2/T3）。 处理时间与攻击成功率强依赖双方尺寸。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Marine Ecology Progress Series；cited_by_count=135（OpenAlex，2026-09-27）；license=bronze OA）
+
+243. Kane EA, Higham TE. Modelled three-dimensional suction accuracy predicts prey capture success in three species of centrarchid fishes *Journal of The Royal Society Interface* (2014). `peer-reviewed`.
+    DOI: https://doi.org/10.1098/rsif.2014.0223
+    用途：捕获成功率非 100% 的旁证（T2）。 3D 吸食精度模型预测捕获成功。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of The Royal Society Interface；cited_by_count=37（OpenAlex，2026-09-27）；license=bronze OA）
+
+244. Shirazi & Higham 2024. How do fish miss? Attack strategies of threespine stickleback capturing non-evasive prey (2024). `other`.
+    链接: https://pmc.ncbi.nlm.nih.gov/articles/PMC11586519
+    用途：鱼类捕获成功率区间（23%–100%）的综述性证据（T2）。 攻击策略与未命中分析。
+    核验：原调研仅给 PMC 稳定标识，未给 DOI；PMC 页为权威来源，metrics/license 置 null。（来源 PubMed Central / Journal of Experimental Biology；引用数未取；license=None）
+
+245. Werner EE, Mittelbach GG. Optimal Foraging: Field Tests of Diet Choice and Habitat Switching *American Zoologist* (1981). `peer-reviewed`.
+    DOI: https://doi.org/10.1093/icb/21.4.813
+    用途：支撑 V_prey = e/(1+h) 与高价值 prey 分级（T3）。 最优觅食理论：猎物是否进入食谱取决于收益率与遇率阈值。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / American Zoologist；cited_by_count=212（OpenAlex，2026-09-27）；license=bronze OA）
+
+246. Agents.jl — Predator-prey dynamics example (—). `other`.
+    链接: https://juliadynamics.github.io/Agents.jl/v5.6/examples/predator_prey
+    用途：prey respawn 的工程惯例（T3）。 以 regrowth_time 控制草地再生。
+    核验：官方文档页；来源 URL 即权威。（来源 Agents.jl 官方文档；引用数未取；license=MIT（Agents.jl））
+
+247. SurpriseDog/Mesa-Predator-Prey-Model (Savannah) (—). `other`.
+    链接: https://github.com/SurpriseDog/Mesa-Predator-Prey-Model
+    用途：prey respawn 的工程惯例（T3）。 Mesa 的捕食者-猎物/草地再生示例。
+    核验：gh repo view 实测；无许可证，星数低，仅作惯例参考。（来源 GitHub；2★；最近更新 2021-09-17；license=未声明许可证（gh 实测 2026-09-27）；license=None）
+
+248. Önal U, Langdon CJ. Diet Size Preference of Zebrafish (Danio rerio) Larvae Fed on Cross-Linked Protein-Walled Capsules *Zebrafish* (2016). `peer-reviewed`.
+    DOI: https://doi.org/10.1089/zeb.2016.1307
+    用途：口裂 4–5% SL 换算的原始来源（T2；pbb §4）。 斑马鱼口裂/首食颗粒尺寸选择数据。
+    核验：zebrafish-escape-capture.json 曾标「题名本轮未核验」；本次 OpenAlex 解析出正式题名。（来源 OpenAlex / Zebrafish；cited_by_count=7（OpenAlex，2026-09-27）；license=closed access）
+
+249. Zhu S, Goodhill GJ. From perception to behavior: The neural circuits underlying prey hunting in larval zebrafish *Frontiers in Neural Circuits* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.3389/fncir.2023.1087993
+    用途：常见探测距离 ≈3 mm 的综述转述（T2；pbb §2）。 综述：猎物最常在约 3 mm、中线 0–60° 被探测。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Frontiers in Neural Circuits；cited_by_count=33（OpenAlex，2026-09-27）；license=CC-BY）
+
+250. Zimmermann MJY, Nevala NE, Yoshimatsu T, Osorio D, Nilsson D-E, et al. Zebrafish Differentially Process Color across Visual Space to Match Natural Scenes *Current Biology* (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cub.2018.04.075
+    用途：单眼视野与眼球前旋角的一手引用来源（§1）。 引用 Easter & Nicola 1996：单眼视野 ≈163°、眼球前旋 18.5°/35.5°。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Current Biology；cited_by_count=248（OpenAlex，2026-09-27）；license=hybrid OA）
+
+251. Easter SS, Nicola GN. The Development of Vision in the Zebrafish (Danio rerio) *Developmental Biology* (1996). `peer-reviewed`.
+    DOI: https://doi.org/10.1006/dbio.1996.0335
+    用途：单眼视野 163° 的原始来源（§1）。 3 dpf ≈139°、4 dpf ≈163° 单眼视野的原始测量。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Developmental Biology；cited_by_count=550（OpenAlex，2026-09-27）；license=bronze OA）
+
+252. Tian G, Lam TKC, Yan G, He Y, Khan B, et al. Binocular integration of prey stimuli in the zebrafish visual system *Current Biology* (2025). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cub.2025.05.063
+    用途：双眼重叠「很小」的定性证据（§1）。 斑马鱼幼虫双眼重叠在静息时很小（定性）。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Current Biology；cited_by_count=3（OpenAlex，2026-09-27）；license=hybrid OA）
+
+253. BadenLab/Zebrafish-visual-space-model (—). `other`.
+    链接: https://github.com/BadenLab/Zebrafish-visual-space-model
+    用途：眼球前旋角与双眼视觉的模型化展示（§1）。 以 OpenSCAD 建斑马鱼幼虫视野 3D 模型。
+    核验：gh repo view 实测；GPL-3.0 仅作参考，不得复制代码入本项目。（来源 GitHub；6★；最近更新 2025-08-10；license=GPL-3.0（gh 实测 2026-09-27）；license=GPL-3.0）
+
+254. Rodwell V, Patil M, Kuht HJ, Neuhauss SCF, Norton W, et al. Zebrafish Optokinetic Reflex: Minimal Reporting Guidelines and Recommendations *Biology* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.3390/biology13010004
+    用途：提示口径混用的来源，勿与 163° 混用（§1）。 笼统写「幼虫视野 180°」，未区分单/双眼口径。
+    核验：OpenAlex 标题检索核验；DOI 与原 mdpi 链接一致。（来源 OpenAlex / Biology；cited_by_count=14（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+255. Haug MF, Biehlmaier O, Mueller KP, Neuhauss SCF. Visual acuity in larval zebrafish: behavior and histology *Frontiers in Zoology* (2010). `peer-reviewed`.
+    DOI: https://doi.org/10.1186/1742-9994-7-8
+    用途：幼虫视觉锐度锚点（§2）。 5 dpf 行为锐度 0.16 cpd（≈3.1°），形态学上限 0.24 cpd（≈2.1°）。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Frontiers in Zoology；cited_by_count=97（OpenAlex，2026-09-27）；license=gold OA）
+
+256. Tappeiner C, Gerber SD, Enzmann V, Balmer J, Jaźwińska A, et al. Visual acuity and contrast sensitivity of adult zebrafish *Frontiers in Zoology* (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1186/1742-9994-9-10
+    用途：成鱼视觉锐度锚点（§2）。 成鱼行为锐度 0.56–0.58 cpd（≈0.86–0.89°）。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Frontiers in Zoology；cited_by_count=64（OpenAlex，2026-09-27）；license=gold OA）
+
+257. Cameron DJ, Rassamdana F, Tam P, Dang K, Yáñez C, et al. The Optokinetic Response as a Quantitative Measure of Visual Acuity in Zebrafish *Journal of Visualized Experiments* (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.3791/50832
+    用途：成鱼视觉锐度补充来源（§2）。 成鱼行为锐度约 0.60 cpd。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Visualized Experiments；cited_by_count=45（OpenAlex，2026-09-27）；license=bronze OA）
+
+258. ZFIN Zebrafish Developmental Staging Series (Kimmel et al.) (—). `other`.
+    链接: https://zfin.org/zf_info/zfbook/stages
+    用途：BL 换算基准（pbb §6；lag §2.2）。 斑马鱼各发育阶段体长标准：5 dpf 3.9 mm、7–13 dpf 4.5 mm、14–20 d 6.2 mm 等。
+    核验：官方数据库；本次以 URL 计为权威来源，未逐条复核数值。（来源 ZFIN 官方；引用数未取；license=None）
+
+259. Wakamatsu Y, Ogino K, Hirata H. Swimming capability of zebrafish is governed by water temperature, caudal fin length and genetic background *Scientific Reports* (2019). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41598-019-52592-w
+    用途：Ucrit 分歧的独立来源，警示不可混用（§3）。 长鳍 PET 品系 Ucrit 22.3–23.8 cm/s，提示品系/鳍型影响巨大。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Scientific Reports；cited_by_count=58（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+260. Widrick JJ, Lambert MR, Kunkel LM, Beggs AH. Optimizing assays of zebrafish larvae swimming performance for drug discovery *Expert Opinion on Drug Discovery* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.1080/17460441.2023.2211802
+    用途：幼虫游速的综述来源（§3）。 综述幼虫游泳行为：巡游约 10 mm/s（≈2 BL/s）、临界约 30 mm/s（6–8 BL/s）。
+    核验：原调研将本条误标为「Basnet et al. 2019」（PMC10485652）；OpenAlex 解析实际作者为 Widrick et al. 2023。已更正。（来源 OpenAlex / Expert Opinion on Drug Discovery；cited_by_count=21（OpenAlex，2026-09-27）；license=green OA (PMC10485652)）
+
+261. Dunn TW, Gebhardt C, Naumann EA, Riegler C, Ahrens MB, et al. Neural Circuits Underlying Visually Evoked Escapes in Larval Zebrafish *Neuron* (2016). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neuron.2015.12.021
+    用途：幼虫逃逸运动学与 looming 阈值（pbb §3/§5；lag §1.2）。 looming 触发逃避爆发 16.4 cm/s、摆动 62.7 Hz；自由游动阈值 ≈72°/81 ms。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Neuron；cited_by_count=415（OpenAlex，2026-09-27）；license=bronze OA）
+
+262. Fuiman LA. Burst-Swimming Performance of Larval Zebra Danios and the Effects of Diel Temperature Fluctuations *Transactions of the American Fisheries Society* (1986). `peer-reviewed`.
+    DOI: https://doi.org/10.1577/1548-8659(1986)115<143:BPOLZD>2.0.CO;2
+    用途：幼虫爆发/逃避速度锚点（§3）。 幼虫爆发游速可达 50–66 BL/s。
+    核验：原调研仅给 deepblue 图书馆 PDF；本次经 OpenAlex 标题检索定位到 DOI。（来源 OpenAlex / Transactions of the American Fisheries Society；cited_by_count=54（OpenAlex，2026-09-27）；license=closed access）
+
+263. Müller UK, van Leeuwen JL. Swimming of larval zebrafish: ontogeny of body waves and implications for locomotory development *Journal of Experimental Biology* (2004). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.00821
+    用途：游泳运动学补充来源（§3）。 幼虫体波发育运动学。
+    核验：原调研仅给 ResearchGate 链接；本次经 OpenAlex 标题检索定位到 DOI 10.1242/jeb.00821。（来源 OpenAlex / Journal of Experimental Biology；cited_by_count=270（OpenAlex，2026-09-27）；license=green OA）
+
+264. Danos N. Locomotor Development of Zebrafish (Danio rerio) Under Novel Hydrodynamic Conditions *Journal of Experimental Zoology Part A* (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1002/jez.1002
+    用途：原调研以「J Exp Zool, DOI 10.1002/jez.1002」引用慢转弯 3,200–8,000 deg/s（§3）。 不同流体条件下幼虫常规转弯运动学。
+    核验：原调研未给作者/题名；OpenAlex 解析 DOI 10.1002/jez.1002 = Danos 2012。作者/题名与原描述不同，引用前需回核原文数值。（来源 OpenAlex / Journal of Experimental Zoology Part A；cited_by_count=10（OpenAlex，2026-09-27）；license=closed access）
+
+265. Licitra R, Fronte B, Verri T, Marchese M, Sangiacomo C, et al. Zebrafish Feed Intake: A Systematic Review for Standardizing Feeding Management in Laboratory Conditions *Biology* (2024). `peer-reviewed`.
+    DOI: https://doi.org/10.3390/biology13040209
+    用途：口裂数据的转述来源（§4）。 系统综述摄食管理；转述 Önal & Langdon 口裂数据。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Biology；cited_by_count=34（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+266. McKee A, McHenry MJ. The Strategy of Predator Evasion in Response to a Visual Looming Stimulus in Zebrafish (Danio rerio) *Integrative Organismal Biology* (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.1093/iob/obaa023
+    用途：成鱼 looming 逃避阈值核心锚点（pbb §5；lag §1.2）。 成鱼 looming 阈值 10.3–15.8°、潜伏期 740–780 ms；活体捕食者四分位 Q1 6.3°。
+    核验：待登记-3 遗留「McKee & McHenry 2020 未登记」——本次已核验补登记。OpenAlex DOI 直查核验。（来源 OpenAlex / Integrative Organismal Biology；cited_by_count=14（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+267. Zwaka H, McGinnis OJ, Pflitsch P, Prabha S, Mansinghka VK, et al. Visual object detection biases escape trajectories following acoustic startle in larval zebrafish *Current Biology* (2022). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cub.2022.10.050
+    用途：视觉传导延迟/声逃避潜伏的补充（§5）。 视觉场景/障碍信息调制逃避轨迹；声逃避潜伏约 10 ms。
+    核验：原调研仅给 MIT CSAIL PDF 链接；本次经 OpenAlex 标题检索定位到 DOI 10.1016/j.cub.2022.10.050。（来源 OpenAlex / Current Biology；cited_by_count=16（OpenAlex，2026-09-27）；license=hybrid OA）
+
+268. Spence R, Gerlach G, Lawrence C, Smith C. The behaviour and ecology of the zebrafish, Danio rerio *Biological Reviews* (2007). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1469-185X.2007.00030.x
+    用途：成鱼体长基准（§6）。 性成熟约 23 mm SL、成鱼 25–35 mm。
+    核验：OpenAlex DOI 直查核验（注意 OpenAlex 内部小写 x）。（来源 OpenAlex / Biological Reviews；cited_by_count=1128（OpenAlex，2026-09-27）；license=bronze OA）
+
+269. Animal Diversity Web — Danio rerio (—). `other`.
+    链接: https://animaldiversity.org/accounts/Danio_rerio
+    用途：体长补充来源（§6）。 成鱼平均 25 mm、最大记录 64 mm。
+    核验：在线物种数据库；以 URL 计为来源，未逐条复核数值。（来源 Animal Diversity Web（密歇根大学）；引用数未取；license=None）
+
+270. Singleman C, Holtzman NG. Growth and Maturation in the Zebrafish, Danio rerio: A Staging Tool for Teaching and Research *Zebrafish* (2014). `peer-reviewed`.
+    DOI: https://doi.org/10.1089/zeb.2014.0976
+    用途：体长与生长速率估算（pbb §6；lag §2.2）。 分期体长/成熟工具；30 s 内质量相对变化的估算数据源之一。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Zebrafish；cited_by_count=230（OpenAlex，2026-09-27）；license=green OA (PMC4108942)）
+
+271. Lee DN. A Theory of Visual Control of Braking Based on Information about Time-to-Collision *Perception* (1976). `peer-reviewed`.
+    DOI: https://doi.org/10.1068/p050437
+    用途：相对扩张率口径 1/τ = θ̇/θ 的原始来源（§1.1）。 定义 τ=θ/θ̇ 为碰撞时间；1/τ 为相对扩张率。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Perception；cited_by_count=2110（OpenAlex，2026-09-27）；license=closed access）
+
+272. Gabbiani F, Mo C, Laurent G. Invariance of Angular Threshold Computation in a Wide-Field Looming-Sensitive Neuron *Journal of Neuroscience* (2001). `peer-reviewed`.
+    DOI: https://doi.org/10.1523/jneurosci.21-01-00314.2001
+    用途：支撑把天敌简化为圆盘（§1.1）。 角度阈值计算对形状/纹理/逼近角不变。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Neuroscience；cited_by_count=118（OpenAlex，2026-09-27）；license=hybrid OA）
+
+273. Sun H-J, Frost BJ. Computation of different optical variables of looming objects in pigeon nucleus rotundus neurons *Nature Neuroscience* (1998). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/1110
+    用途：looming 编码的跨物种旁证（§1.1 引用链）。 鸽 nBOR looming 神经元编码不同光学变量。
+    核验：OpenAlex DOI 直查核验；摘要为 null。（来源 OpenAlex / Nature Neuroscience；cited_by_count=408（OpenAlex，2026-09-27）；license=closed access）
+
+274. Otero-Coronel S, Martorell N, Berón de Astrada M, Medan V. Stimulus Contrast Information Modulates Sensorimotor Decision Making in Goldfish *Frontiers in Neural Circuits* (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.3389/fncir.2020.00023
+    用途：替代物种 looming 参考（§1.2 表）。 对比度调制金鱼防御行为选择。
+    核验：替代物种（金鱼）；OpenAlex DOI 直查核验。（来源 OpenAlex / Frontiers in Neural Circuits；cited_by_count=20（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+275. Yiru-Jiao/Two-Dimensional-Time-To-Collision (—). `other`.
+    链接: https://github.com/Yiru-Jiao/Two-Dimensional-Time-To-Collision
+    用途：TTC 工程实现参考（未找到项）。 快速计算 2D TTC/DRAC/MTTC 的工程库。
+    核验：gh repo view 实测；与生物编码无直接对应，不建议直接依赖。（来源 GitHub；64★；最近更新 2026-09-20；license=MIT（gh 实测 2026-09-27）；license=MIT）
+
+276. cschwarz68/TimeToCollision (—). `other`.
+    链接: https://github.com/cschwarz68/TimeToCollision
+    用途：TTC 工程实现参考（未找到项）。 MATLAB 计算 TTC。
+    核验：gh repo view 实测；MATLAB 实现，与项目 Python 生态不符，不建议依赖。（来源 GitHub；13★；最近更新 2026-09-16；license=BSD-3-Clause（gh 实测 2026-09-27）；license=BSD-3-Clause）
+
+277. Essington TE, Kitchell JF, Walters CJ. The von Bertalanffy growth function, bioenergetics, and the consumption rates of fish *Canadian Journal of Fisheries and Aquatic Sciences* (2001). `peer-reviewed`.
+    DOI: https://doi.org/10.1139/f01-151
+    用途：VBGF 与能量学等效性（§2.1）。 VBGF 本身即生物能量学表达。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Canadian Journal of Fisheries and Aquatic Sciences；cited_by_count=179（OpenAlex，2026-09-27）；license=closed access）
+
+278. Deslauriers D, Chipps SR, Breck JE, Rice JA, Madenjian CP. Fish Bioenergetics 4.0: An R-Based Modeling Application *Fisheries* (2017). `peer-reviewed`.
+    DOI: https://doi.org/10.1080/03632415.2017.1377558
+    用途：能量方程标准形式（§2.1）。 能量收支 C = R + P + F + U，P 为生长项。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Fisheries；cited_by_count=216（OpenAlex，2026-09-27）；license=green OA）
+
+279. Kooijman SALM. Dynamic Energy Budget Theory for Metabolic Organisation (3rd ed.) *Cambridge University Press* (2009). `other`.
+    DOI: https://doi.org/10.1017/CBO9780511805400
+    用途：DEB 理论来源（§2.1）。 DEB：能量在维持/生长/成熟间分配。
+    核验：专著（非同行评审论文）；OpenAlex DOI 直查核验。（来源 OpenAlex / Cambridge University Press；cited_by_count=1174（OpenAlex，2026-09-27）；license=closed access）
+
+280. Beaudouin R, Goussen B, Piccini B, Augustine S, Devillers J, et al. An Individual-Based Model of Zebrafish Population Dynamics Accounting for Energy Dynamics *PLoS ONE* (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pone.0125841
+    用途：斑马鱼专属生长参数化最接近的起点（§2.1）。 斑马鱼 DEB 与 IBM 耦合，拟合生长与繁殖。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / PLoS ONE；cited_by_count=59（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+281. Froese R. Cube law, condition factor and weight-length relationships: history, meta-analysis and recommendations *Journal of Applied Ichthyology* (2006). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1439-0426.2006.00805.x
+    用途：体长↔体重换算（§2.1/§2.2）。 跨 1773 种鱼 W=a·L^b，b 中位 = 3.03。
+    核验：OpenAlex DOI 直查核验；未含斑马鱼物种特异 b。（来源 OpenAlex / Journal of Applied Ichthyology；cited_by_count=4244（OpenAlex，2026-09-27）；license=closed access）
+
+282. Checkley DM. Relation of growth to ingestion for larvae of Atlantic herring Clupea harengus and other fish *Marine Ecology Progress Series* (1984). `peer-reviewed`.
+    DOI: https://doi.org/10.3354/meps018215
+    用途：生长速率与摄食关系（§2.1）。 生长与摄食线性相关；饥饿负增长 0.03/d。
+    核验：替代物种（大西洋鲱仔鱼）；OpenAlex DOI 直查核验。（来源 OpenAlex / Marine Ecology Progress Series；cited_by_count=63（OpenAlex，2026-09-27）；license=bronze OA）
+
+283. Björnsson B. Optimal temperature for growth and feed conversion of immature cod (Gadus morhua L.) *ICES Journal of Marine Science* (2001). `peer-reviewed`.
+    DOI: https://doi.org/10.1006/jmsc.2000.0986
+    用途：生长率-体重关系（§2.1）。 生长率随体重在 log-log 上下降。
+    核验：替代物种（鳕）；OpenAlex DOI 直查核验。（来源 OpenAlex / ICES Journal of Marine Science；cited_by_count=232（OpenAlex，2026-09-27）；license=bronze OA）
+
+284. Hazlerigg CRE, Lorenzen K, Thorbek P, Wheeler JR, Tyler CR. Density-Dependent Processes in the Life History of Fishes: Evidence from Laboratory Populations of Zebrafish Danio rerio *PLoS ONE* (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pone.0037550
+    用途：生长受食物限制的证据（§2.1）。 斑马鱼生长受食物限制。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / PLoS ONE；cited_by_count=69（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+285. Parichy DM, Elizondo MR, Mills MG, Gordon TN, Engeszer RE. Normal table of postembryonic zebrafish development: Staging by externally visible anatomy of the living fish *Developmental Dynamics* (2009). `peer-reviewed`.
+    DOI: https://doi.org/10.1002/dvdy.22113
+    用途：分期体长/阶段基准（§2.2）。 胚后发育分期表。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Developmental Dynamics；cited_by_count=917（OpenAlex，2026-09-27）；license=bronze OA）
+
+286. Fowler LA, Williams MB, Dennis-Cornelius LN, Farmer SC, Barry RJ, et al. Influence of Commercial and Laboratory Diets on Growth, Body Composition, and Reproduction in the Zebrafish Danio rerio *Zebrafish* (2019). `peer-reviewed`.
+    DOI: https://doi.org/10.1089/zeb.2019.1742
+    用途：生长曲线数据源（§2.2 引用链）。 16 周生长数据。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Zebrafish；cited_by_count=72（OpenAlex，2026-09-27）；license=bronze OA）
+
+287. NetLogo 7.0.4 — Programming Guide: Topology (—). `other`.
+    链接: https://docs.netlogo.org/7.0.4/programming
+    用途：边界策略工程惯例（主题 1）。 非环绕边列出反射、退出即死、隐藏三种处置。
+    核验：官方文档页；未独立重抓。（来源 NetLogo 官方文档；引用数未取；license=GPL-2.0（仓库））
+
+288. Mesa — Spaces API documentation (ContinuousSpace / SingleGrid / MultiGrid) (—). `other`.
+    链接: https://mesa.readthedocs.io/en/stable/apis/space.html
+    用途：边界为显式契约项的工程惯例（主题 1）。 边界是否环绕为显式构造参数；非环绕越界抛异常（fail-fast）。
+    核验：官方文档页；未独立重抓。（来源 Mesa 官方文档；引用数未取；license=Apache-2.0（仓库））
+
+289. Gymnasium — Handling Time Limits (terminated vs truncated) (—). `other`.
+    链接: https://gymnasium.farama.org/tutorials/gymnasium_basics/handling_time_limits
+    用途：越界属 truncation 的语义（主题 1）。 截断指外部条件终止 episode（时限等）。
+    核验：官方文档页；未独立重抓。（来源 Gymnasium 官方文档；引用数未取；license=MIT（仓库））
+
+290. Farama Foundation — Deep Dive: Gymnasium Terminated–Truncated Step API (—). `other`.
+    链接: https://farama.org/Gymnasium-Terminated-Truncated-Step-API
+    用途：越界语义的官方说明（主题 1）。 越界属物理限制导致的 truncation，不属任务终止。
+    核验：官方博客页；未独立重抓。（来源 Farama 官方博客；引用数未取；license=MIT（Gymnasium））
+
+291. Vicsek T, Czirók A, Ben-Jacob E, Cohen I, Shochet O. Novel Type of Phase Transition in a System of Self-Driven Particles *Physical Review Letters* (1995). `peer-reviewed`.
+    DOI: https://doi.org/10.1103/PhysRevLett.75.1226
+    用途：wrap 的统计物理惯例来源（主题 1）。 方盒 + 周期边界；统计物理式集体运动偏爱周期边界。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Physical Review Letters；cited_by_count=7553（OpenAlex，2026-09-27）；license=green OA (arXiv cond-mat/0611743)）
+
+292. Tunstrøm K, Katz Y, Ioannou CC, Huepe C, Lutz MJ, et al. Collective States, Multistability and Transitional Behavior in Schooling Fish *PLoS Computational Biology* (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pcbi.1002915
+    用途：「有界域更贴近真实实验」的先例（主题 1）。 有界域鱼群集体行为。
+    核验：本轮仅摘要层面，未核实其边界算子。（来源 OpenAlex / PLoS Computational Biology；cited_by_count=447（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+293. Lopez U, Gautrais J, Couzin ID, Théraulaz G. From behavioural analyses to models of collective motion in fish schools *Interface Focus* (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1098/rsfs.2012.0033
+    用途：方法学方向参考（主题 1）。 鱼群集体运动建模综述。
+    核验：综述未逐段核验；未提取具体边界算子。（来源 OpenAlex / Interface Focus；cited_by_count=298（OpenAlex，2026-09-27）；license=green OA）
+
+294. Schnörr SJ, Steenbergen PJ, Richardson MK, Champagne DL. Measuring thigmotaxis in larval zebrafish *Behavioural Brain Research* (2011). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.bbr.2011.12.016
+    用途：壁有行为意义、应保留的真实性依据（主题 1）。 量化斑马鱼幼鱼贴壁偏好。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Behavioural Brain Research；cited_by_count=490（OpenAlex，2026-09-27）；license=closed access）
+
+295. Shams S, Chatterjee D, Gerlai RT. Chronic social isolation affects thigmotaxis and whole-brain serotonin levels in adult zebrafish *Behavioural Brain Research* (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.bbr.2015.05.061
+    用途：贴壁可评价性的行为学依据（主题 1）。 社交隔离调制成鱼贴壁。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Behavioural Brain Research；cited_by_count=109（OpenAlex，2026-09-27）；license=closed access）
+
+296. Walz N, Mühlberger A, Pauli P. A Human Open Field Test Reveals Thigmotaxis Related to Agoraphobic Fear *Biological Psychiatry* (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.biopsych.2015.12.016
+    用途：术语界定（主题 1）。 thigmotaxis 术语定义：stay close to walls when exploring an open space。
+    核验：跨物种来源（人类）；OpenAlex DOI 直查核验。（来源 OpenAlex / Biological Psychiatry；cited_by_count=143（OpenAlex，2026-09-27）；license=hybrid OA）
+
+297. Harris AP, D'Eath RB, Healy SD. Environmental enrichment enhances spatial cognition in rats by reducing thigmotaxis (wall hugging) during testing *Animal Behaviour* (2009). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.anbehav.2009.02.019
+    用途：术语与行为解释（主题 1）。 环境丰富化降低贴壁。
+    核验：物种为大鼠，非鱼；仅作术语参考，不作定量依据。（来源 OpenAlex / Animal Behaviour；cited_by_count=103（OpenAlex，2026-09-27）；license=closed access）
+
+298. mesa/mesa — Python agent-based modeling library (—). `other`.
+    链接: https://github.com/mesa/mesa
+    用途：边界/空间抽象的可借鉴实现（主题 1）。 Python ABM 库。
+    核验：gh repo view 实测；Apache-2.0 允许比赛使用。（来源 GitHub；3857★；最近更新 2026-09-26；license=Apache-2.0（gh 实测 2026-09-27）；license=Apache-2.0）
+
+299. NetLogo/NetLogo — multi-agent programmable modeling environment (—). `other`.
+    链接: https://github.com/NetLogo/NetLogo
+    用途：边界选项命名与语义参照（主题 1）。 多智能体建模环境。
+    核验：gh repo view 实测；GPL-2.0 不建议复制其代码。（来源 GitHub；1186★；最近更新 2026-09-25；license=GPL-2.0（gh 实测 2026-09-27）；license=GPL-2.0）
+
+300. Farama-Foundation/Gymnasium — RL environments standard API (—). `other`.
+    链接: https://github.com/Farama-Foundation/Gymnasium
+    用途：学习侧语义契约参照（主题 1）。 RL 环境标准 API。
+    核验：gh repo view 实测；MIT。（来源 GitHub；12580★；最近更新 2026-09-26；license=MIT（gh 实测 2026-09-27）；license=MIT）
+
+301. Müller M, Heidelberger B, Hennix M, Ratcliff J. Position based dynamics *Journal of Visual Communication and Image Representation* (2007). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.jvcir.2007.01.005
+    用途：硬不穿透方案的经典来源（主题 2）。 约束可软化（k∈[0,1]），穿透可完全消解；碰撞约束在求解器循环外生成。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Journal of Visual Communication and Image Representation；cited_by_count=938（OpenAlex，2026-09-27）；license=closed access）
+
+302. van den Berg J, Guy SJ, Lin M, Manocha D. Reciprocal n-Body Collision Avoidance (ORCA) *Springer Tracts in Advanced Robotics* (2011). `peer-reviewed`.
+    DOI: https://doi.org/10.1007/978-3-642-19457-3_1
+    用途：硬约束方案不产生碰撞标量的对照（主题 2）。 ORCA 硬约束避碰，碰撞被视为不可发生。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Springer Tracts in Advanced Robotics；cited_by_count=1888（OpenAlex，2026-09-27）；license=closed access）
+
+303. Chen YF, Liu M, Everett M, How JP. Decentralized Non-communicating Multiagent Collision Avoidance with Deep Reinforcement Learning (CADRL) *IEEE ICRA 2017（arXiv 1609.07845）* (2017). `preprint`.
+    DOI: https://doi.org/10.1109/ICRA.2017.7989037
+    用途：软惩罚扣能量的范式来源（主题 2）。 可复用奖励结构：碰撞 d_min<0 罚 −0.25；近碰撞 d_min<0.2 罚 −0.1−d_min/2。
+    核验：奖励结构经 arXiv 1609.07845 全文核验；数值本身不可照搬。（来源 OpenAlex / IEEE ICRA 2017（arXiv 1609.07845）；cited_by_count=652（OpenAlex，2026-09-27）；license=green OA (arXiv)）
+
+304. Long P, Fanl T, Liao X, Liu W, Zhang H, et al. Towards Optimally Decentralized Multi-Robot Collision Avoidance via Deep Reinforcement Learning *IEEE ICRA 2018* (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1109/ICRA.2018.8461113
+    用途：碰撞率评价维度的旁证（主题 2）。 碰撞率是导航类任务标准评价维度。
+    核验：本轮仅摘要层面核验。（来源 OpenAlex / IEEE ICRA 2018；cited_by_count=552（OpenAlex，2026-09-27）；license=closed access）
+
+305. Brunke L, Greeff M, Hall AW, Yuan Z, Zhou S, et al. Safe Learning in Robotics: From Learning-Based Control to Safe Reinforcement Learning *Annual Review of Control, Robotics, and Autonomous Systems* (2022). `peer-reviewed`.
+    DOI: https://doi.org/10.1146/annurev-control-042920-020211
+    用途：「硬不穿透 + 软惩罚」取舍依据（主题 2）。 硬约束 vs 软惩罚的框架性分类。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Annual Review of Control, Robotics, and Autonomous Systems；cited_by_count=765（OpenAlex，2026-09-27）；license=bronze OA）
+
+306. Dulac-Arnold G, Levine N, Mankowitz DJ, Li J, Paduraru C, et al. Challenges of real-world reinforcement learning: definitions, benchmarks and analysis *Machine Learning* (2021). `peer-reviewed`.
+    DOI: https://doi.org/10.1007/s10994-021-05961-4
+    用途：碰撞应有显式代价的旁证（主题 2）。 真实世界 RL 挑战综述。
+    核验：本轮摘要层面核验。（来源 OpenAlex / Machine Learning；cited_by_count=641（OpenAlex，2026-09-27）；license=bronze OA）
+
+307. Norin T, Clark TD. Measurement and relevance of maximum metabolic rate in fishes *Journal of Fish Biology* (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/jfb.12796
+    用途：说明能量代价真实存在（未找到项 §2）。 鱼类最大代谢率测量；不含单次碰撞代价。
+    核验：不提供单次碰撞能量代价。（来源 OpenAlex / Journal of Fish Biology；cited_by_count=418（OpenAlex，2026-09-27）；license=bronze OA）
+
+308. Lauder GV. Fish Locomotion: Recent Advances and New Directions *Annual Review of Marine Science* (2014). `peer-reviewed`.
+    DOI: https://doi.org/10.1146/annurev-marine-010814-015614
+    用途：背景锚点（未找到项 §2）。 鱼类运动学综述。
+    核验：未提供单次碰撞能量代价。（来源 OpenAlex / Annual Review of Marine Science；cited_by_count=309（OpenAlex，2026-09-27）；license=bronze OA）
+
+309. Pardo F, Tavakoli A, Levdik V, Kormushev PS. Time Limits in Reinforcement Learning (2018). `preprint`.
+    链接: https://proceedings.mlr.press/v80/pardo18a.html
+    用途：主题 1 核心锚点：支持「固定窗口 + 删失处理」。 固定时域下时限终止属于 MDP 的一部分；剩余时间应进入状态。
+    核验：OpenAlex W2775531040 为 arXiv 预印本记录（2017）；正式版为 PMLR 80:4042–4051（ICML 2018）。原调研写 4045–4054，与 OpenAlex biblio 记录的 4042–4051 不符，以 PMLR 官方页为准。（来源 PMLR（ICML 2018）/ OpenAlex；cited_by_count=13（OpenAlex，2026-09-27；arXiv 记录）；license=None）
+
+310. Dinu CM, Dimitrov PG, Weel B, Eiben AE. Self-adapting fitness evaluation times for on-line evolution of simulated robots *GECCO 2013* (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1145/2463372.2463405
+    用途：评估时长是一等 EA 参数（主题 1）。 评估时长 τ 强烈影响 EA 性能。
+    核验：仅摘要层面核验；引用应注明「据摘要」。（来源 OpenAlex / GECCO 2013；cited_by_count=9（OpenAlex，2026-09-27）；license=closed access）
+
+311. Nelson AL, Barlow GJ, Doitsidis L. Fitness functions in evolutionary robotics: A survey and analysis *Robotics and Autonomous Systems* (2008). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.robot.2008.09.009
+    用途：评估时长与 fitness 定义须写为显式常量（主题 1/2）。 fitness/trial 设计综述。
+    核验：closed access，仅摘要与检索片段核验；需人工复核。（来源 OpenAlex / Robotics and Autonomous Systems；cited_by_count=263（OpenAlex，2026-09-27）；license=closed access）
+
+312. Kaplan EL, Meier P. Nonparametric Estimation from Incomplete Observations *Journal of the American Statistical Association* (1958). `peer-reviewed`.
+    DOI: https://doi.org/10.1080/01621459.1958.10501452
+    用途：survival_steps 在 H=600 处为右删失观测（主题 1/2）。 右删失数据的 Kaplan-Meier 估计。
+    核验：OpenAlex DOI 直查核验；另有 JSTOR 记录 10.2307/2281868。（来源 OpenAlex / Journal of the American Statistical Association；cited_by_count=39512（OpenAlex，2026-09-27）；license=closed access）
+
+313. Royston P, Parmar MKB. Restricted mean survival time: an alternative to the hazard ratio for the design and analysis of randomized trials with a time-to-event outcome *BMC Medical Research Methodology* (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1186/1471-2288-13-152
+    用途：直接支撑 S = survival_steps/固定 H（主题 2）。 RMST=到 τ 的生存曲线下面积，即统一时点下汇总生存。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / BMC Medical Research Methodology；cited_by_count=1086（OpenAlex，2026-09-27）；license=CC-BY (gold OA)）
+
+314. Brown SJ, Goetzmann WN, Ibbotson RG, Ross SA. Survivorship Bias in Performance Studies *Review of Financial Studies* (1992). `peer-reviewed`.
+    DOI: https://doi.org/10.1093/rfs/5.4.553
+    用途：提前终止导致 survivorship bias 的跨领域类比（主题 1）。 条件在存活上取样会同时扭曲绝对值与秩。
+    核验：跨领域类比，非 ALife 直接证据。（来源 OpenAlex / Review of Financial Studies；cited_by_count=1164（OpenAlex，2026-09-27）；license=closed access）
+
+315. Divband Soorati M, Hamann H. The Effect of Fitness Function Design on Performance in Evolutionary Robotics *GECCO 2015* (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1145/2739480.2754676
+    用途：支持把 S 口径与 episode 规则写死并记录版本。 fitness 设计（含权重与先验）影响可演化性与跨研究可比性。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / GECCO 2015；cited_by_count=9（OpenAlex，2026-09-27）；license=green OA）
+
+316. Engen S, Sæther B-E. r- and K-selection in fluctuating populations is determined by the evolutionary trade-off between two fitness measures: Growth rate and lifetime reproductive success *Evolution* (2016). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/evo.13104
+    用途：S 是量、Q 是率，口径不同不可混用（主题 2）。 增长率（率）与终身繁殖成功（量）是两种不可混用的 fitness 度量。
+    核验：种群遗传模型，非个体仿真；OpenAlex DOI 直查核验。（来源 OpenAlex / Evolution；cited_by_count=60（OpenAlex，2026-09-27）；license=closed access）
+
+317. Falconer DS, Mackay TFC. Introduction to Quantitative Genetics (4th ed.) *Genetics Research（书评记录）* (1996). `other`.
+    DOI: https://doi.org/10.1017/s001667230003408x
+    用途：支撑报告 S 的 repeatability/遗传力（主题 2）。 育种者方程 R = h²S；响应取决于被选分量遗传力。
+    核验：该 DOI 是 1996 年 Genetics Research 的书评（Bulmer），不是专著本身；专著书目为 Longman 1996，ISBN 0582 24302 5。须同时标注书评 DOI 与书 ISBN，不可把书评当原著。（来源 OpenAlex / Genetics Research（书评记录）；cited_by_count=2（OpenAlex，2026-09-27）；license=None）
+
+318. Lande R, Arnold SJ. The Measurement of Selection on Correlated Characters *Evolution* (1983). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1558-5646.1983.tb00236.x
+    用途：分量相关→重复计数的诊断方法（主题 2）。 相关性状需偏回归分离直接/间接选择。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Evolution；cited_by_count=5070（OpenAlex，2026-09-27）；license=closed access）
+
+319. Marler RT, Arora JS. The weighted sum method for multi-objective optimization: new insights *Structural and Multidisciplinary Optimization* (2009). `peer-reviewed`.
+    DOI: https://doi.org/10.1007/s00158-009-0460-7
+    用途：F=0.35S+0.25P+0.20E+0.20Q 的适用条件（主题 2）。 加权和权重只有在分量同尺度时才可解释；非凸权衡会被漏掉。
+    核验：OpenAlex DOI 直查核验。（来源 OpenAlex / Structural and Multidisciplinary Optimization；cited_by_count=1851（OpenAlex，2026-09-27）；license=closed access）
+
+320. He L, Nan Y, Ishibuchi H, Srinivasan D. Effects of Objective Space Normalization in Multi-Objective Evolutionary Algorithms on Real-World Problems *GECCO 2023* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.1145/3583131.3590450
+    用途：加权前必须显式尺度归一化（主题 2）。 目标空间归一化显著影响真实问题上的 MOEA 性能。
+    核验：MOEA 结论迁移到加权和属合理外推，标注为类比。（来源 OpenAlex / GECCO 2023；cited_by_count=8（OpenAlex，2026-09-27）；license=bronze OA）
+
+321. van Hasselt H, Guez A, Hessel M, Mnih V, Silver D. Learning values across many orders of magnitude (PopArt) (2016). `preprint`.
+    链接: https://arxiv.org/abs/1602.07714
+    用途：分量须先归一到可比尺度（主题 2）。 算法对尺度非不变；硬截断/二值化会扭曲目标。
+    核验：arXiv 预印本；正式版 NeurIPS 2016。（来源 arXiv / NeurIPS 2016；引用数未取；license=green OA (arXiv)）
+
+322. Ng AY, Harada D, Russell S. Policy Invariance Under Reward Transformations: Theory and Application to Reward Shaping *ICML 1999* (1999). `peer-reviewed`.
+    链接: http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.48.345
+    用途：任何权重/S 口径改动后须重新验证进化最优（主题 2）。 仅正线性变换与势函数差保持最优策略不变。
+    核验：OpenAlex 无 DOI；以 citeseerx 稳定链接为 url。（来源 OpenAlex / ICML 1999；cited_by_count=1610（OpenAlex，2026-09-27）；license=None）
+
+323. Knowles SB, Marshall SW, Guskiewicz KM. Issues in estimating risks and rates in sports injury research (2007). `other`.
+    链接: https://pubmed.ncbi.nlm.nih.gov/16791309
+    用途：P/E/Q 若定义为率须用 survival_steps 作统一 time-at-risk 分母（主题 2）。 暴露型分母不可与时间型分母混用。
+    核验：流行病学来源，迁移到仿真需标注类比。（来源 PubMed / Journal of Athletic Training；引用数未取；license=green OA (PMC)）
+
+324. Fuiman LA. **Burst-Swimming Performance of Larval Zebra Danios and the Effects of Diel Temperature Fluctuations.** *Transactions of the American Fisheries Society* 115(1), 143–148 (1986). `peer-reviewed`.
+    DOI: https://doi.org/10.1577/1548-8659(1986)115<143:bpolzd>2.0.co;2
+    用途：Arena `reference_magnitudes.larval_burst_speed`（幼虫爆发速度 50–66 BL/s 的出处）。
+    核验：OpenAlex `W2170287106` 直查（作者/年份/期刊一致）
+
+325. McKee A, McHenry MJ. **The Strategy of Predator Evasion in Response to a Visual Looming Stimulus in Zebrafish (Danio rerio).** *Integrative Organismal Biology* 2(1), obaa023 (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.1093/iob/obaa023
+    用途：Arena `reference_magnitudes`（looming 逃避反应时延/转角）；OA CC-BY。
+    核验：OpenAlex `W3048611572` 直查（DOI 唯一，无歧义）
+
+
 ---
 
 ## 待登记（未核验；**P0 债**，2026-09-26 由只读审计 `research/notes/引用登记缺口.md` 提出）
@@ -1084,13 +1560,11 @@
 
 ~~**（待登记-1）Mihalitsis & Bellwood 2017**~~ ✅ **已核验并登记为 `[bib#221]`（2026-09-26）** —— 见正式序列 221。
 
-**（待登记-2）Arena 生物学调研共 5 组** —— `research/reference/` 下 `zebrafish-escape-capture.md`、`param-basis-biology.md`、
-`looming-and-growth.md`、`arena-boundary-collision.md`、`episode-termination-fitness.md` 所引文献**一条都未登记**
-（挂账最早见 `research/notes/arena-设计意见-给李辰钊.md`）。**影响**：凡据其取值的**冻结参数**，其依据目前不可核。
+~~**（待登记-2）Arena 生物学调研共 5 组**~~ ✅ **已核验并入（2026-09-27）**：5 份调研文档引用全量核验见 `research/reference/arena-biology-registration.json`（115 条去重；93 条 new、16 条 duplicate_of 既有条目、6 条 unverifiable），new 条已并入正式序列 `[bib#231]`–`[bib#323]`；6 条 unverifiable 见该 JSON。挂账最早见 `research/notes/arena-设计意见-给李辰钊.md`。
 
-**（待登记-3）`docs/参数总表.json` 的 `reference_magnitudes`** —— ✅ **部分闭合（2026-09-26）**：Fuiman & Webb 1988 / Plaut 2000 / Budick & O'Malley 2000 / Patterson 2013 已核验并登记为 `[bib#227]`–`[bib#230]`；**Fuiman 1986 / McKee & McHenry 2020 仍未登记**（离线检索未能定位到可核实的唯一记录，按「无法核实的不引」保留待登记）。
+**（待登记-3）`docs/参数总表.json` 的 `reference_magnitudes`** —— ✅ **部分闭合（2026-09-26）**：Fuiman & Webb 1988 / Plaut 2000 / Budick & O'Malley 2000 / Patterson 2013 已核验并登记为 `[bib#227]`–`[bib#230]`；**Fuiman 1986 / McKee & McHenry 2020 已核验并入**（2026-09-27，`[bib#324]`/`[bib#325]`；见 `research/reference/registration-gaps-resolved.json`）——**待登记-3 闭合**。
 
-**（待登记-4）License 复核** —— `[bib#217]` `tghbrk/fish-eat-fish` **未声明许可证**，其机制曾在
+**（待登记-4）License 复核** —— `[bib#217]` `tghbrk/fish-eat-fish` **实为 ISC 许可**（2026-09-27 更正：声明于 `package.json`/README，无 LICENSE 正文文件；原记「未声明」不成立），其机制曾在
 `research/notes/契约决策记录.md`「开源机制对照的采纳」中被列为可借鉴项。**已核实未被实现**：
 `arena/policies.py` 无状态机（ExpertPolicy 仍是简单加权规则），故未复制代码；仍须补声明，
 见 `docs/declaration/THIRD_PARTY.md`（现为空表）。
