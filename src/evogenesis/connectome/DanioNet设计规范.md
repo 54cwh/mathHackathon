@@ -46,7 +46,7 @@ m_iH_t
 \right)
 \]
 
-默认 \(\phi=\tanh\)。
+默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6；\(\Delta W\) 与 Dale sign 的关系待定）。
 
 依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 
