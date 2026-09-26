@@ -18,6 +18,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from evogenesis.api.comparisons import router as comparisons_router
 from evogenesis.api.environmental_selections import router as selections_router
 from evogenesis.api.genomes import router as genomes_router
 from evogenesis.api.runs import router as runs_router
@@ -35,6 +36,7 @@ app.include_router(genomes_router)
 app.include_router(selections_router)
 app.include_router(stubs_router)
 app.include_router(runs_router)
+app.include_router(comparisons_router)
 app.include_router(ws_router)
 
 

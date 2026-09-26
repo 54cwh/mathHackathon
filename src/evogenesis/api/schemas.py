@@ -49,6 +49,23 @@ class SessionSummary(BaseModel):
     prey_remaining: int
 
 
+class ComparisonTableSummary(BaseModel):
+    """`results/tables/*.json` 的一张对比表（`API接口.md` §2.5）。"""
+
+    id: str
+    #: `"ablation" | "robustness" | "environment_baseline" | "other"`
+    kind: str
+    experiment_id: str
+
+
+class ComparisonTable(BaseModel):
+    """对比表全文：`payload` **原样透传**（字段随 producer 版本变化，不建强类型）。"""
+
+    id: str
+    kind: str
+    payload: dict[str, Any]
+
+
 class SessionEvolutionStep(BaseModel):
     """会话内逐代演化的一步（`API接口.md` §2.3）。
 

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { ChevronRight, Play, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -45,6 +45,7 @@ const GATE_HINT: Record<JourneyStage, string> = {
 export function JourneyBar() {
   const journey = useUiStore((s) => s.journey);
   const requestIntent = useUiStore((s) => s.requestIntent);
+  const setActiveView = useUiStore((s) => s.setActiveView);
   const autoPlay = useUiStore((s) => s.autoPlay);
   const setAutoPlay = useUiStore((s) => s.setAutoPlay);
   const activeGenomeId = useUiStore((s) => s.activeGenomeId);
@@ -55,6 +56,14 @@ export function JourneyBar() {
 
   const index = JOURNEY_STAGES.indexOf(journey);
   const next = index < STAGE_COUNT - 1 ? JOURNEY_STAGES[index + 1] : null;
+  // COMPARE 段的内容在独立视图里：推进到该段即切过去（导演线管叙事，tabs 管自由探索）。
+  const goTo = useCallback(
+    (stage: JourneyStage) => {
+      requestIntent(stage);
+      if (stage === "compare") setActiveView("compare");
+    },
+    [requestIntent, setActiveView],
+  );
   const nextReady =
     next !== null && isStageReady({ activeGenomeId, development, sessionId, individuals, generation }, next);
 
@@ -69,9 +78,9 @@ export function JourneyBar() {
       setAutoPlay(false);
       return;
     }
-    const timer = window.setTimeout(() => requestIntent(next), AUTO_DEMO_MS);
+    const timer = window.setTimeout(() => goTo(next), AUTO_DEMO_MS);
     return () => window.clearTimeout(timer);
-  }, [autoPlay, next, nextReady, requestIntent, setAutoPlay]);
+  }, [autoPlay, next, nextReady, goTo, setAutoPlay]);
 
   return (
     <div className="flex items-center gap-2">
@@ -104,7 +113,7 @@ export function JourneyBar() {
         type="button"
         disabled={!nextReady}
         title={next === null ? "已是末段" : nextReady ? `进入 ${LABELS[next]}` : GATE_HINT[next]}
-        onClick={() => next && requestIntent(next)}
+        onClick={() => next && goTo(next)}
         className={cn(
           "inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none",
           nextReady

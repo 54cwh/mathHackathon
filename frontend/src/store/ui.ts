@@ -14,7 +14,7 @@ export interface ArenaStats {
 }
 
 /** Bottom-bar view tabs (`交互与可视化.md` §1; `视觉规范审计.md` rule 8). */
-export type ViewId = "evolution" | "experiment" | "playback";
+export type ViewId = "evolution" | "experiment" | "playback" | "compare";
 
 /** 演示流程段（`交互与可视化.md` §1 导演线；`通用层接口.md` §7）。 */
 export type JourneyStage = "seed" | "genome" | "develop" | "arena" | "evolve" | "compare";

@@ -382,6 +382,27 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
   `results/runs/` 之内；只读取该目录既有产物，不写入、不递归。
 - **代码位置**：`runs.py`。消费者：`frontend` Evolution Dashboard（`交互与可视化.md` §8 九项指标）。
 
+### 2.5 对比产物（`results/tables/`，只读；2026-09-27 新增）
+
+COMPARE 段（`交互与可视化.md` §1）承载赛题「原模型 → 改后模型 → 结果对比」；产物由
+`scripts/run_baselines.py` 等离线写入 `results/tables/*.json`（格式 owner：`experiment/实验与评价体系.md`）。
+本端点只做**只读曝光**，不改表、不补值。
+
+| 端点 | 方法 | 响应 |
+|---|---|---|
+| `/v1/comparisons` | GET | `list[ComparisonTableSummary]`：`{id, kind, experiment_id}`；`id` = 文件名（去 `.json`） |
+| `/v1/comparisons/{id}` | GET | `{id, kind, payload}`；`payload` 为**原样透传**的 JSON（不建强类型，字段随 producer 版本变化） |
+
+- **`kind` 判据**（按顶层键）：有 `arms[]` ⇒ `"ablation"`（改前/改后对照臂）；有 `aggregate`+`degradation`
+  ⇒ `"robustness"`；有 `per_metric` ⇒ `"environment_baseline"`；其余 `"other"`。
+- **改前/改后对照臂**（`kind="ablation"`）：`arms[i]` = `{arm, kind, metrics, complexity, learning, note}`；
+  `metrics` 各分量 `{mean, std, n}`（**可能为 `null`** = 该臂未跑，前端显示「未记录」不补 0）；
+  `complexity` = `{parameter_count, active_edges, macs_implemented, macs_theoretical, flops_implemented,
+  flops_theoretical, latency_p50_ms, latency_p95_ms}`。
+- **路径安全**：`id` 必须是单个路径段（含 `/`、`\`、`..` 一律 `404`），解析后仍在 `results/tables/` 内；
+  只读取既有 `.json`。
+- **代码位置**：`comparisons.py`。消费者：`frontend` ComparePanel（`交互与可视化.md` COMPARE 段）。
+
 ## 3. WebSocket `/v1/ws`
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
