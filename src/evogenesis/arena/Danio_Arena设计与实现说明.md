@@ -261,7 +261,7 @@ Complex Scene 可设置：【草案待确认】
 
 **事实来源优先级：代码 > `configs/default_arena.yaml` > 本文档。** 本文档只做映射与记录，不发明规则；与代码冲突以代码为准（发现冲突请直接改本文档）。
 
-**上游参数表**：`../../../docs/参数总表.json`（当前 75 项 + `missing_required` 5 项；计数以该文件为准）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，Arena 侧收录量 **13**）。
+**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，Arena 侧收录量 **13**）。
 
 ---
 
