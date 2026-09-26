@@ -94,9 +94,10 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \emph{owner} 也已指定（语义归 \texttt{DanioNet} \S2、编码归 \texttt{arena} \S4.1；\texttt{core} \S10 已闭合该项）；
   但\textbf{编码公式}由实现先行落地、待认领（\texttt{arena} \S4.1；认领表 A1，
   \texttt{arena} \S17 该条仍开放）。其中一个具体缺口值得单独写出：
-  第 9 维 \texttt{looming\_rate} 在当前调用序下除 \texttt{reset()} 首帧外\textbf{恒为 0}
-  （\texttt{arena} \S4.1 M13；\texttt{DanioNet} \S2 的已知实现缺口行）。
-  后果具体：该维暂不携带信息，涉及「逼近检测 / 威胁响应」的解读都受此限制。
+  第 9 维 \texttt{looming\_rate} \textbf{已按 A5 落地}：\texttt{arena/env.py} 在步前按
+  角尺寸扩张率 $(\Delta\theta/\theta)/\Delta t$ 计算、经 $R_{\text{loom}}$ 归一并缓存，
+  经 \texttt{sensing.observe()} 传出，故该维\emph{已携带信息}；
+  仍开放的是其\textbf{编码公式的 owner}（\texttt{arena} \S{}4.1；认领表 A1）。
   另外编码侧还存在一处待统一项：观测量由 \texttt{sensing.observe()} 返回 \texttt{float64}，
   而契约要求 \texttt{float32}，当前靠下游转换满足契约（\texttt{arena} \S4.1 对齐缺口行）。
 
@@ -125,14 +126,21 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           这一点是实质性的而非工程性的——\texttt{learning/行为克隆学习.md} \S5 明写：
           若评估阶段仍由 \texttt{ExpertPolicy} 驱动，则「DNA 与学习都不影响行为、适应度失去意义」。
           换言之，\textbf{当前所有数值结果都不反映基因型差异}。
-    \item \textbf{代循环未闭合。} \texttt{evolution/population.py::advance\_generation}
-          已就绪但\textbf{无调用方}，缺「评估回填适应度 $\to$ 下一代」的编排
-          （\texttt{pipeline/模型链装配.md} \S4；
-          \texttt{research/notes/交接-给池伟豪-跨lane待办.md} \S{}一）。
-          因此 Experiment F 逐代记录的 allele / phenotype frequency 目前\emph{没有来源}。
+    \item \textbf{多代正式结果尚未落盘。}
+          代循环\textbf{已接线并冻结}（\texttt{experiment/evolution\_run.py}；
+          \texttt{experiment/代循环编排.md} v1.0，2026-09-26；
+          \texttt{configs/experiment.yaml} 的 \texttt{generations: 20}），
+          且 pilot 已实测（3 seed $\times$ 20 代 $=60$ 代，N$=48$，
+          实测 viability 率 $10.0\%$，瓶颈 $0/60$；\texttt{experiment} \S{}3.6）。
+          但\textbf{其产物不在本仓库}（\texttt{results/**} 按设计不入库），
+          本文因而\textbf{不引用 pilot 的具体数值}；Experiment F 逐代记录的
+          allele / phenotype frequency 已有\emph{产出机制}，
+          但\textbf{尚无本文可复核的落盘}。
   \end{enumerate}
-  \textbf{合并后果}：本文的数值结论只支持两类主张——「平台可运行」与「环境对照可区分」；
-  \textbf{不支持任何「演化有效」或「学习有效」的主张}。这一界限是有意写明的，不是可以省略的脚注。
+  \textbf{合并后果}：本文的数值结论只支持两类主张——「平台可运行」与「环境对照可区分」。
+  代循环\textbf{机制上已就绪}（见上条），学习侧未接通，
+  且本文\textbf{未取得可复核的多代正式结果}，故本文\textbf{不主张「演化有效」或「学习有效」}。
+  这是\emph{证据范围}的界限，不是机制缺失的断言；这一界限是有意写明的，不是可以省略的脚注。
 
   \item \textbf{改布局参数必须重定基线。}
   A14（Arena 自建随机源）已于 2026-09-26 \textbf{闭合}：Arena 现从
@@ -157,8 +165,6 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \texttt{pipeline/模型链装配.md} \S4 记 P0-9 已闭合；Arena 侧不传时保留旧默认（向后兼容）。
   \textbf{仍未验证的是}：补线之后没有重采轨迹、也没有跑通端到端 BC，
   故「按基因型分组可用」尚未在真实产物上被证明。
-  （另需指出一处文档自相矛盾：\texttt{交接} 文档表头记 P0-9「已在 main 上闭合」，
-  而其追加节仍记「唯一缺口 $=$ P0-9」。此处以代码与测试为准。）
 
   \item \textbf{统计能力弱，这是设计预算的结构性后果，不是本 run 的偶然。}
   正式独立随机种子只有 3 个：\texttt{configs/experiment\_seeds.yaml} 取

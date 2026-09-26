@@ -336,8 +336,9 @@ left 池主导得 $\omega>0$；「escape」不是离散标签，而是高威胁�
         \citep{bib8_trivedi2013,bib58_temizer2015,bib60_semmelhack2014}；
         饥饿 / 能量对应内部状态对决策的调制 \citep{bib9_filosa2016,bib10_zaupa2024}。
   \item[代价] 结构化编码本身是建模假设（不是从像素学出来的）；且\emph{编码规则}
-        的状态仍为「草案待确认」，其中 looming rate 在现有调用序下除首帧外\textbf{恒为 0}
-        （该维暂不携带信息，发包侧修复前有效性受限）。
+        的状态仍为「草案待确认」，其中 looming rate \textbf{已按 A5 落地}（步前按角尺寸扩张率
+        $(\Delta\theta/\theta)/\Delta t$ 归一后传入），该维\textbf{已携带信息}，
+        但其\textbf{编码公式的 owner} 仍待认领。
 \end{description}
 
 \begin{figure}[t]
@@ -458,7 +459,7 @@ $\mu=0.001$ per base per gamete（256\,bp 单倍体对应每个配子期望 0.25
 \begin{description}
   \item[选择] 亲本池\textbf{只含 viable 个体}；non-viable 排除（其 $F\equiv0$）。
   \item[理由] non-viable 是发育层面的失败，不应获得繁殖机会。
-  \item[代价] 代价是\textbf{有效种群变小}：随机 $q$ 下发育通过率约 14\%
+  \item[代价] 代价是\textbf{有效种群变小}：随机 $q$ 下发育通过率实测约 10\%
         （\S\ref{method:dev}），故出生 48 个个体中可能只有少数进入亲本池；
         当 viable 个体少于 2 个时配对不可能，本次繁殖判失败并记录运行级事件。
 \end{description}
@@ -468,7 +469,8 @@ $\mu=0.001$ per base per gamete（256\,bp 单倍体对应每个配子期望 0.25
         non-viable 新生儿仍计入下一代（$F=0$）但不进亲本池。
   \item[理由] 出生数恒定使\textbf{漂变强度跨代可比}（可变出生数会把漂变与选择混淆）；
         世代不重叠使「一代」的语义干净。
-  \item[代价] 逐代计算开销恒定，但随机 $q$ 下发育通过率仅约 14\%，多数新生儿不进 Arena
+  \item[代价] 逐代计算开销恒定，但随机 $q$ 下发育通过率实测约 10\%
+        （pilot 实测：3 seed $\times$ 20 代、N$=48$；早期按二项独立假设估的 14\% 偏保守），多数新生儿不进 Arena
         （$F=0$），\textbf{有效评估样本随代波动}；当 viable 个体少于 2 个时配对不可能，
         该代繁殖判失败并记录运行级事件。
 \end{description}

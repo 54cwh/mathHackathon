@@ -169,15 +169,18 @@ Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}
 2026-09-26 \textbf{闭合}：Arena 现从 \texttt{SeedManager} 取两条整数子种子——
 \texttt{arena\_spawn}（id 3，出生 / 再生）与 \texttt{arena\_dynamics}（id 9，逐步游走），
 两者各自独立派生，\textbf{改其一不再平移另一条流}，故\emph{出生布局}与\emph{逐步游走}
-可分别重放，不再是复现粒度的瓶颈。以下两条是仍然成立的缺口，
+可分别重放，不再是复现粒度的瓶颈。以下两条直接限制本文的复现粒度，
 
 \begin{itemize}
-  \item \textbf{P0-9——落盘轨迹尚没有真实基因型标识。}
-        \texttt{Fish.genome\_id} 的\textbf{缺省值仍是占位} \texttt{"unknown"}；
-        实验路径虽已可由构造注入 \texttt{genome\_ids}，
-        但\textbf{演化 $\to$ Arena 的接线（代循环）尚未完成}，
-        故轨迹里的 \texttt{genome\_id} 目前还\textbf{不对应真实演化出的基因型}，
-        BC 数据无法按基因型分组。
+  \item \textbf{落盘轨迹的基因型标识：代码侧已闭合，产物待重采。}
+        \texttt{Fish.genome\_id} 的\textbf{缺省值仍是占位} \texttt{"unknown"}
+        （Arena 侧向后兼容保留）；实验路径已由构造注入铸出的 \texttt{genome\_id}，
+        且\textbf{代循环已接线并冻结}（\texttt{experiment/evolution\_run.py}，
+        编排见 \texttt{experiment/代循环编排.md} v1.0），
+        故新采轨迹的 \texttt{genome\_id} 对应真实演化出的基因型。
+        \textbf{仍未验证}：补线后没有重采轨迹、也没有跑通端到端 BC，
+        故「按基因型分组可用」尚未在真实产物上被证明；
+        现存历史产物（接线前采集）仍是 \texttt{"unknown"}。
   \item \textbf{BC 侧与观测编码。} 演化与学习的\textbf{联合}效果尚未验证
         （行为克隆未实现），12 维观测的\textbf{编码规则}仍为「草案待确认」，
         故本文无法给出「学习前 / 学习后」的可复现对照——
@@ -187,6 +190,6 @@ Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}
 
 \textbf{小结}：本文的数字可以\emph{整体重跑}复现（固定 \texttt{uv.lock}、
 固定 \texttt{(config, master seed)}、逐个体原值落盘、图表可回溯到
-\texttt{experiment\_id @ git\_commit}），但在上述三条闭合之前，
+\texttt{experiment\_id @ git\_commit}），但在上述两条闭合之前，
 \textbf{不能}声称具备\emph{按模块重放}或\emph{按基因型分组重放}的能力。
-把这三条写进正文，是因为它们决定了读者复现本文时\emph{实际能做到什么}。
+把这两条写进正文，是因为它们决定了读者复现本文时\emph{实际能做到什么}。

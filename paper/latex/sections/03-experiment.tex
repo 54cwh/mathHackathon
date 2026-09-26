@@ -312,16 +312,21 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
         失败会记 \texttt{capture\_attempt(result="missed")}，公式不变，
         该指标自动成为标准成功率。
   \item \textbf{P0-9}：\texttt{Fish.genome\_id} 的\textbf{缺省值}仍是占位
-        \texttt{"unknown"}；实验路径已可由构造注入铸出的 \texttt{genome\_id}
-        （\texttt{scripts/run\_arena.py} 经 \texttt{core/ids.py::mint\_id}，纯函数、确定性）。
-        但\textbf{演化 $\to$ Arena 的代循环尚未接线}
-        （\texttt{evolution/population.py::advance\_generation} 无生产调用方），
-        故该 id 目前是\textbf{确定性标签}而非\emph{真实演化出的}基因型，
-        BC 数据仍\textbf{不能按基因型分组}；且现存历史产物（接线前采集）仍是
-        \texttt{"unknown"}，须重采才有标识。
+        \texttt{"unknown"}（Arena 侧向后兼容保留）；实验路径已由构造注入
+        经 \texttt{core/ids.py::mint\_id} 铸出的 \texttt{genome\_id}（纯函数、确定性）。
+        且\textbf{代循环已接线并冻结}（\texttt{experiment/evolution\_run.py::run\_evolution}，
+        编排「评估 $\to$ 折算 $F$ $\to$ 回填 $\to$ \texttt{advance\_generation}」；
+        \texttt{experiment/代循环编排.md} v1.0，2026-09-26；
+        \texttt{configs/experiment.yaml} 的 \texttt{generations: 20}），
+        故新采轨迹的 \texttt{genome\_id} 对应\emph{真实演化出的}基因型。
+        但\textbf{补线后未重采轨迹、也未跑通端到端 BC}，
+        故「按基因型分组可用」\textbf{尚未在真实产物上被证明}；
+        现存历史产物（接线前采集）仍是 \texttt{"unknown"}。
   \item 12 维观测的\textbf{编码规则}仍为「草案待确认」；
-        \texttt{looming\_rate} 一维在现有调用序下除首帧外\textbf{恒为 0}，
-        即该通道当前不携带信息。
+        \texttt{looming\_rate} 一维\textbf{已按 A5 落地}——\texttt{arena/env.py} 在步首按
+        角尺寸扩张率 $(\Delta\theta/\theta)/\Delta t$ 计算、经 $R_{\text{loom}}$ 归一后
+        传入 \texttt{sensing.observe()}，故该通道\textbf{已携带信息}；
+        仍开放的是其\textbf{编码公式的 owner}（\texttt{arena} \S{}4.1，认领表 A1）。
   \item 演化与学习的\textbf{联合}效果尚未验证（BC 未实现）；
         「捕获率」三口径中的去重口径（事件 vs 去重后的分母）亦尚未裁决。
 \end{itemize}
