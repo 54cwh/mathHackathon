@@ -5,6 +5,10 @@ import { StatusPlaceholder } from "@/components/StatusPlaceholder";
 import { BrainForgeVisual } from "@/visuals/BrainForgeVisual";
 import { subscribe, type BrainActivationPayload } from "@/api/ws";
 import { DevelopmentPipeline } from "@/panels/DevelopmentPipeline";
+import {
+  READOUT_DOMAINS,
+  activationReadouts,
+} from "@/visuals/activationReadouts";
 
 
 /** 轨迹播放帧率（采样点少，慢放才看得清）。 */
@@ -100,9 +104,40 @@ export function BrainForgePanel() {
   }, [sessionId]);
 
   const fishIds = activation ? Object.keys(activation.fish) : [];
-  const firstId = fishIds[0];
-  const vector = activation && firstId ? activation.fish[firstId] : null;
+  // §7：优先显示**选中的鱼**；无选中时退回该帧第一条并标注"任取一条"（不冒充选中）。
+  const selectedFishId = useUiStore((s) => s.selectedFishId);
+  const activeGenomeId = useUiStore((s) => s.activeGenomeId);
+  // 优先「当前个体」（`activeGenomeId`，DEVELOP 后自然聚焦）→ 再「选中的鱼」→ 最后任取一条。
+  const present = (id: string | null): id is string =>
+    id !== null && activation !== null && id in activation.fish;
+  const shownId = present(activeGenomeId)
+    ? activeGenomeId
+    : present(selectedFishId)
+      ? selectedFishId
+      : (fishIds[0] ?? null);
+  const isFocal = shownId !== null && shownId === activeGenomeId;
+  const vector = activation && shownId ? activation.fish[shownId] : null;
   const stats = summarize(vector);
+
+  // §7 五类语义读数：按该鱼发育产物的逐神经元 cell_type/positions 对 h 分组（`DanioNet §5`）。
+  const connSample = useMemo(() => {
+    const trace = development?.trace;
+    if (!trace) return null;
+    for (let i = trace.length - 1; i >= 0; i--) {
+      if (trace[i].stage === "connectome") return trace[i];
+    }
+    return null;
+  }, [development]);
+  // 配对前提：读数用**该鱼自己的** cell_type/positions。`connSample` 来自 Lab 的发育（= activeGenomeId），
+  // 故只有"显示的鱼 == activeGenomeId"时才成立；否则不出读数（避免拿错个体的发育产物）。
+  const readouts = useMemo(() => {
+    if (!isFocal) return null;
+    return activationReadouts(
+      vector ?? [],
+      connSample?.cell_type ?? null,
+      connSample?.positions ?? null,
+    );
+  }, [isFocal, vector, connSample]);
 
   return (
     <Panel title="Brain Forge" icon={<Brain className="size-4 text-primary" />}>
@@ -165,6 +200,7 @@ export function BrainForgePanel() {
           <DevelopmentPipeline
             trace={trace}
             genomeId={genomeId}
+            activationLive={vector !== null}
             cursor={cursor}
             playing={playing}
             onCursor={(index) => {
@@ -209,10 +245,36 @@ export function BrainForgePanel() {
                   </div>
                 ))}
               </dl>
+              {/* §7 五类语义读数（由 cell_type + positions 复算，缺失记「未定义」不补 0） */}
+              {readouts && (
+                <dl className="grid grid-cols-2 gap-x-2 font-mono text-[10px]">
+                  {READOUT_DOMAINS.map((name) => {
+                    const value = readouts.perDomain[name];
+                    return (
+                      <div key={name} className="flex justify-between gap-2">
+                        <dt className="text-muted-foreground">{name}</dt>
+                        <dd>{value === null ? "未定义" : value.toFixed(3)}</dd>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">motor L−R (ω)</dt>
+                    <dd>{readouts.omegaDriver === null ? "未定义" : readouts.omegaDriver.toFixed(3)}</dd>
+                  </div>
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-muted-foreground">motor L·R</dt>
+                    <dd>
+                      {readouts.motorLeft === null || readouts.motorRight === null
+                        ? "未定义"
+                        : `${readouts.motorLeft.toFixed(2)}·${readouts.motorRight.toFixed(2)}`}
+                    </dd>
+                  </div>
+                </dl>
+              )}
               <div
                 className="flex h-16 w-full items-end gap-px border border-border p-1"
                 role="img"
-                aria-label={`${firstId} activation`}
+                aria-label={`${shownId ?? "activation"} activation`}
               >
                 {stats.samples.map((value, i) => (
                   <span
@@ -223,7 +285,8 @@ export function BrainForgePanel() {
                 ))}
               </div>
               <div className="truncate font-mono text-[10px] text-muted-foreground">
-                {firstId} · {stats.samples.length}/{stats.n} 维
+                {shownId ?? "—"}
+                {isFocal ? "（当前个体）" : "（任取一条）"} · {stats.samples.length}/{stats.n} 维
               </div>
             </>
           ) : (
@@ -232,7 +295,7 @@ export function BrainForgePanel() {
         </div>
 
         <p className="shrink-0 text-xs text-muted-foreground">
-          模型驱动会话（DanioNet + 冻结 checkpoint）经 release 推送激活；当前会话由 Arena 驱动。
+          神经活动来自当前会话中该个体自己的 DanioNet，随 Arena 推进实时更新。
         </p>
       </div>
     </Panel>

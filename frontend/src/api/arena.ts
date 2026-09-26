@@ -30,27 +30,38 @@ export type {
 /** Frozen demo master seed -- one source of truth for the whole live demo. */
 export const MASTER_SEED = 250927;
 
-/** Demo 小种群（`交互与可视化.md` §1；2026-09-27 裁决：全基因组化 + N=16）。 */
-export const DEMO_POPULATION = 16;
+/**
+ * 演示专用 Arena 配置（`configs/demo_arena.yaml`；`交互与可视化.md` §1）。
+ * 与正式实验口径分离：4 鱼 / 30 猎物 / 1800 步（90 s）——默认 12–16 鱼 × 600 步时实测**捕食为 0**。
+ */
+export const DEMO_ARENA_CONFIG = "configs/demo_arena.yaml";
 
 /** Session options that are only meaningful for model-driven sessions. */
 export type SessionDriving =
   | { model_driven?: false; checkpoint_path?: null }
   | { model_driven: true; checkpoint_path?: string | null };
 
+export interface SessionOptions {
+  /** Arena 配置路径（缺省后端用 `configs/default_arena.yaml`）。 */
+  arenaConfigPath?: string;
+  /** 初始种群代数；缺省用 Arena 配置的 `population.n_fish`。 */
+  populationSize?: number;
+}
+
 export function createSession(
   masterSeed = MASTER_SEED,
   environment: Environment = "food_rich",
   driving: SessionDriving = {},
-  populationSize?: number,
+  options: SessionOptions = {},
 ): Promise<SessionSummary> {
   const body: Partial<SessionCreate> = {
     master_seed: masterSeed,
     environment,
     model_driven: driving.model_driven ?? false,
     checkpoint_path: driving.checkpoint_path ?? null,
-    population_size: populationSize ?? null,
+    population_size: options.populationSize ?? null,
   };
+  if (options.arenaConfigPath) body.arena_config_path = options.arenaConfigPath;
   return req<SessionSummary>("/v1/sessions", { method: "POST", body: JSON.stringify(body) });
 }
 

@@ -275,12 +275,21 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 【已定稿】**prey 重生/守恒**：走 **R2 开放可再生**（见 §12）——不再「不补充」。
 
 ## 16. 参数表（本模块取值 → owner 为 `configs/` + `docs/参数总表.json`）
+
+**演示配置（`configs/demo_arena.yaml`；2026-09-27 用户裁决）**：**只用于会话/演示**，与正式实验
+口径分离；相对 §16 标准值只改 4 个键 —— 标准 episode `30 s / 600 step` → **`90 s / 1800 step`**、
+种群 `12 / 24` → **`4 / 30`**（鱼 / 猎物）。**§8 捕获几何（`capture_radius` / `capture_cone_degrees`）、
+`prey_speed` 等一律与默认相同**。动因：默认 12–16 鱼 × 600 步实测**捕食事件为 0**（随机基因组策略
+瞄准差、鱼速≈猎物速）；改后 4 个 seed 实测捕食 5/1/1/7 次。
+
 | 参数 | 值 | 单位 | 状态 |
 |---|---|---|---|
 | 世界 W×H | 100 × 60 | world unit | 已定稿 |
 | 更新频率 / Δt | 20 / 0.05 | Hz / s | 已定稿 |
 | 标准 episode | 30 / 600 | s / step | 已定稿 |
+| 演示 episode（`demo_arena.yaml`） | 90 / 1800 | s / step | **已定稿（2026-09-27）** |
 | 种群（Live） | 12 / 24 / 3 / 6 | 个 | 已定稿 |
+| 演示种群（`demo_arena.yaml`） | 4 / 30 / 3 / 6 | 个 | **已定稿（2026-09-27）** |
 | Fast Evolution | 48 | 个 | 已定稿 |
 | `world.boundary` | reflect | — | 已定稿（2026-09-26，A6） |
 | sensing.predator_size_ref | 2.5 | — | 已定稿（设计选择；相对尺寸归一参考） |

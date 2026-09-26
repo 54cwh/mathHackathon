@@ -81,15 +81,14 @@ export function ComparePanel() {
     <Panel title="Compare" icon={<Scale className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         <p className="shrink-0 text-xs text-muted-foreground">
-          原模型 → 改后模型 → 结果对比（赛题「补充说明」二）。数据：`results/tables/`（只读，缺失即
-          「未记录」，不补 0）。
+          原模型 → 改后模型 → 结果对比。缺失项显示「未记录」，不以 0 代替。
         </p>
 
         {/* 表选择 */}
         <div className="flex shrink-0 flex-wrap gap-1">
           {tables.length === 0 && (
             <span className="font-mono text-[10px] text-muted-foreground">
-              暂无对比产物（先跑 scripts/run_baselines.py 生成 results/tables/*.json）
+              暂无对比数据。
             </span>
           )}
           {tables.map((t) => (
@@ -183,7 +182,7 @@ export function ComparePanel() {
               <div className="mb-1 font-pixel text-[10px] leading-none text-foreground">
                 {table.kind.toUpperCase()}
               </div>
-              该表类型暂未作图（kind = {table.kind}）。顶层键：
+              该表暂未作图。可用字段：
               <ul className="mt-1">
                 {Object.keys(table.payload).map((k) => (
                   <li key={k}>· {k}</li>

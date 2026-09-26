@@ -245,8 +245,8 @@ export function PlaybackPanel() {
 
           {staleBackend && (
             <p className="border border-brand-danger-red p-2 text-xs text-brand-danger-red">
-              ⚠ 后端版本落后：当前 API 进程不支持手动控制（`/v1/health` 无 `manual_control`）。
-              请重启 API（改完后端没重启时，FastAPI 会静默忽略 `fish_id/omega/speed`，按键看起来无效）。
+              ⚠ 后端版本落后：当前运行的后端不支持手动控制。请重启后端服务后重试
+              （后端已升级但未重启时，操控参数会被忽略，按键看起来无效）。
             </p>
           )}
 
@@ -255,7 +255,7 @@ export function PlaybackPanel() {
               ? `⚠ ${error}`
               : !running
                 ? "会话已暂停：底栏按 Release 恢复推进，再操控。"
-                : `Manual Control 操场（§10）：临时操控一条鱼，不进入正式实验数据。step ${
+                : `手动操控：临时操控一条鱼，不进入正式实验数据。step ${
                     stats?.step ?? scene?.step ?? "—"
                   }`}
           </p>

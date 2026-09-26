@@ -95,6 +95,8 @@ interface UiState {
   intent: { stage: JourneyStage; nonce: number } | null;
   /** AUTO DEMO 开关：定时循环「下一步」，门控未通过即停。 */
   autoPlay: boolean;
+  /** Arena 步速档（§7 slow-motion）：只改前端 `release` 调用间隔，不改模型时长。 */
+  simSpeed: number;
   // ---- 动作 ---------------------------------------------------------------
   setSelectedFish: (id: string | null) => void;
   setRunning: (v: boolean) => void;
@@ -121,6 +123,7 @@ interface UiState {
   focusGenome: (genomeId: string) => void;
   requestIntent: (stage: JourneyStage) => void;
   setAutoPlay: (v: boolean) => void;
+  setSimSpeed: (v: number) => void;
   resetJourney: () => void;
 }
 
@@ -143,6 +146,7 @@ export const useUiStore = create<UiState>((set) => ({
   focusNonce: 0,
   intent: null,
   autoPlay: false,
+  simSpeed: 1,
   setSelectedFish: (selectedFishId) => set({ selectedFishId }),
   setRunning: (running) => set({ running }),
   setSessionId: (sessionId) => set({ sessionId }),
@@ -184,6 +188,7 @@ export const useUiStore = create<UiState>((set) => ({
   requestIntent: (stage) =>
     set((state) => ({ journey: stage, intent: { stage, nonce: (state.intent?.nonce ?? 0) + 1 } })),
   setAutoPlay: (autoPlay) => set({ autoPlay }),
+  setSimSpeed: (simSpeed) => set({ simSpeed }),
   resetJourney: () =>
     set({
       journey: "seed",

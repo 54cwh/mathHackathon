@@ -303,7 +303,7 @@ export function EvolutionDashboardPanel() {
           <p className="text-xs text-muted-foreground">
             {error
               ? `⚠ ${error}`
-              : "每 seed 一个 run（results/runs/<experiment_id>-s<seed>/）；后台线程执行，进度轮询 /v1/jobs。"}
+              : "每个种子产出一个 run；后台执行，进度自动更新。"}
           </p>
         </div>
 
@@ -379,7 +379,7 @@ export function EvolutionDashboardPanel() {
               ))}
               {runs.length === 0 && (
                 <li className="font-mono text-[10px] text-muted-foreground">
-                  results/runs 下暂无 run
+                  暂无历史 run
                 </li>
               )}
             </ul>
@@ -387,7 +387,7 @@ export function EvolutionDashboardPanel() {
               <EvolutionMetrics evolution={evolution} />
             ) : (
               <div className="border border-border p-2 font-mono text-[10px] text-muted-foreground">
-                选择上方任一 run 查看 §8 九项指标。
+                选择上方任一 run 查看逐代指标。
               </div>
             )}
           </div>

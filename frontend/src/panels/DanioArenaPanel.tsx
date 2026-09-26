@@ -12,7 +12,7 @@ import {
   MASTER_SEED,
   createSession,
   deleteSession,
-  DEMO_POPULATION,
+  DEMO_ARENA_CONFIG,
   getFishCard,
   getLeaderboard,
   getSnapshot,
@@ -74,6 +74,8 @@ export function DanioArenaPanel() {
   const addIndividual = useUiStore((s) => s.addIndividual);
   const setIndividuals = useUiStore((s) => s.setIndividuals);
   const intent = useUiStore((s) => s.intent);
+  const simSpeed = useUiStore((s) => s.simSpeed);
+  const setSimSpeed = useUiStore((s) => s.setSimSpeed);
   const generation = useUiStore((s) => s.generation);
   const setGeneration = useUiStore((s) => s.setGeneration);
   const evolutionBusy = useUiStore((s) => s.evolutionBusy);
@@ -98,7 +100,8 @@ export function DanioArenaPanel() {
         MASTER_SEED,
         "food_rich",
         modelDriven ? { model_driven: true, checkpoint_path: DEMO_CHECKPOINT } : {},
-        modelDriven ? undefined : DEMO_POPULATION,
+        // 演示配置：4 鱼 / 30 猎物 / 1800 步（`configs/demo_arena.yaml`）；种群数由该配置的 n_fish 决定。
+        { arenaConfigPath: DEMO_ARENA_CONFIG },
       )
         .then((s) => {
           if (cancelled) {
@@ -200,15 +203,15 @@ export function DanioArenaPanel() {
         setRunning(false);
         return; // stop the loop; the user restarts with Release
       }
-      if (!stop) timer = window.setTimeout(tick, POLL_MS);
+      if (!stop) timer = window.setTimeout(tick, Math.round(POLL_MS / simSpeed));
     };
 
-    timer = window.setTimeout(tick, POLL_MS);
+    timer = window.setTimeout(tick, Math.round(POLL_MS / simSpeed));
     return () => {
       stop = true;
       window.clearTimeout(timer);
     };
-  }, [running, sessionId, activeView, setRunning, setStats]);
+  }, [running, sessionId, activeView, simSpeed, setRunning, setStats]);
 
   // 导演线意图（`交互与可视化.md` §1）：`ARENA` 段确保「当前个体」已在会话中。
   // Lab 在其 DEVELOP 时已补送，这里兜底（会话尚未就绪 / 个体尚未入列时）。
@@ -480,14 +483,30 @@ export function DanioArenaPanel() {
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="font-pixel text-[10px] leading-none">SPEED</span>
+            {[1, 0.5, 0.25].map((factor) => (
+              <button
+                key={factor}
+                type="button"
+                onClick={() => setSimSpeed(factor)}
+                title={`步速 ${factor}×（只改推进快慢，不改模型本身）`}
+                className={`border border-border px-2 py-0.5 font-mono text-[10px] leading-none ${
+                  simSpeed === factor ? "bg-brand-fish-navy text-brand-bone" : ""
+                }`}
+              >
+                {factor}×
+              </button>
+            ))}
+          </span>
           <span className="truncate">{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
           <button
             type="button"
             onClick={() => setModelDriven((v) => !v)}
             title={
               modelDriven
-                ? "当前：冻结 checkpoint 的全局网。点此回到逐鱼 DanioNet（默认）"
-                : "当前：逐鱼 DanioNet（基因组种群，默认）。点此切到冻结 checkpoint 的全局网 —— 会重建会话"
+                ? "当前：一条冻结的演示网络驱动全部鱼。点此回到每条鱼各用自己的网（默认）"
+                : "当前：每条鱼各用自己的网（默认）。点此切到一条冻结的演示网络 —— 会重建会话"
             }
             className={`shrink-0 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none ${
               modelDriven ? "bg-brand-fish-navy text-brand-bone" : ""

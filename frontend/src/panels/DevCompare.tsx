@@ -2,6 +2,7 @@ import { BRAND } from "@/design/palette";
 import { MetricChart } from "@/visuals/MetricChart";
 import { drawPairedBars } from "@/visuals/chartPrimitives";
 import type { DevelopmentResult, MutationDiff } from "@/api/types";
+import { DOMAIN_NAMES } from "@/visuals/activationReadouts";
 
 /**
  * Before / After 对比（`交互与可视化.md` §5、§11 的 compare 环节）。
@@ -16,8 +17,6 @@ import type { DevelopmentResult, MutationDiff } from "@/api/types";
  *   ✘ Arena behavior metrics：需把该个体送进 Arena 跑，当前无接口
  */
 
-/** 六类 fate 的序号 -> 名称（顺序 = `configs/default_model.yaml::development.domains`，已定稿）。 */
-const DOMAIN_NAMES = ["sensory", "prey", "threat", "integrator_memory", "inhibitory", "motor"];
 
 function cellCounts(result: DevelopmentResult | null): (number | null)[] {
   return DOMAIN_NAMES.map((_, index) => {
@@ -54,7 +53,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
   if (!before && !after) {
     return (
       <p className="text-xs text-muted-foreground">
-        先点 DEVELOP 取基线，再 MUTATE → DEVELOP，即可对比表型差异（§5）。
+        先点 DEVELOP 取基线，再 MUTATE 后点 DEVELOP，即可对比表型差异。
       </p>
     );
   }
@@ -176,15 +175,12 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
       </div>
 
       <p className="border border-brand-danger-red p-2 font-mono text-[10px] text-brand-danger-red">
-        ⚠ Δ 含**发育噪声**：`ε_p/ε_g` 的随机源 index = `parse_index(genome_id)`（逐个体，`development/rgcd.py` 文件头）。
-        实测：**序列完全相同、seed 相同**，仅 `genome_id` 不同就会得到不同表型（n_edges 133 vs 139）。
-        因此单碱基编辑的 Δ **不可直接读作突变效应**；要分离遗传效应需控制 index（后端补 `index` 参数）
-        或对多次噪声抽样取均值。
+        ⚠ Δ 含**发育噪声**：两次发育的差异里混有随机发育成分 —— 即使碱基序列完全相同，不同个体也会
+        得到略有差别的表型。故单碱基编辑的 Δ **不可直接读作突变效应**；要分离遗传效应，需多次抽样取均值。
       </p>
 
       <p className="font-mono text-[10px] text-muted-foreground">
-        未提供（端点无此数据）：edge 增删**差集**（`dev_trace` 无边集，仅给数量差）、GRN 逐 step 表达、
-        Arena 行为指标（需把个体送进 Arena 跑）。
+        未展示：边的增删**差集**、GRN 逐步表达、Arena 行为指标。
       </p>
     </div>
   );

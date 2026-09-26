@@ -13,10 +13,10 @@ import type { DevelopmentTraceSample } from "@/api/types";
  */
 
 const STAGE_LABEL: Record<DevelopmentTraceSample["stage"], string> = {
-  grn: "GRN 表达迭代（§4）",
-  proliferate: "precursor 增殖（§5）",
-  fate: "细胞分化落定（§6）",
-  connectome: "连接组成形（§8）",
+  grn: "GRN 表达迭代",
+  proliferate: "前体细胞增殖",
+  fate: "细胞分化落定",
+  connectome: "连接组成形",
 };
 
 export interface DevelopmentPipelineProps {
@@ -24,8 +24,64 @@ export interface DevelopmentPipelineProps {
   genomeId: string | null;
   cursor: number;
   playing: boolean;
+  /** 该个体是否正在推送实时神经活动（点亮阶段轨末端的 DANIONET）。 */
+  activationLive?: boolean;
   onCursor: (index: number) => void;
   onTogglePlay: () => void;
+}
+
+/** §4 的发育阶段序列（`交互与可视化.md` §4）：阶段轨的固定顺序。 */
+const PIPELINE_STAGES = [
+  "MOTIF",
+  "q(S)",
+  "GRN",
+  "DIVISION",
+  "DIFFERENTIATION",
+  "CONNECTIONS",
+  "DANIONET",
+] as const;
+
+/** 阶段轨（§4）：整条序列一目了然，当前项高亮；末端 DANIONET 仅在收到实时激活时点亮。 */
+function stageRail(activeIndex: number) {
+  return (
+    <div role="list" aria-label="development stages" className="flex flex-wrap items-center gap-1">
+      {PIPELINE_STAGES.map((label, index) => {
+        const active = index === activeIndex;
+        return (
+          <span
+            key={label}
+            role="listitem"
+            aria-current={active ? "step" : undefined}
+            className={`border border-border px-1.5 py-0.5 font-pixel text-[9px] leading-none ${
+              active ? "bg-brand-fish-navy text-brand-bone" : "text-muted-foreground"
+            }`}
+          >
+            {label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 由"当前轨迹阶段 + 是否走完 + 是否在推激活"决定阶段轨高亮项（不猜、不跳段）。 */
+function stageIndex(
+  current: DevelopmentTraceSample["stage"] | null,
+  complete: boolean,
+  activationLive: boolean,
+): number {
+  if (!current) return 0; // 尚未发育：停在起点 MOTIF
+  if (complete && activationLive) return 6; // 发育走完且收到激活：DANIONET
+  switch (current) {
+    case "grn":
+      return 2;
+    case "proliferate":
+      return 3;
+    case "fate":
+      return 4;
+    case "connectome":
+      return 5;
+  }
 }
 
 export function DevelopmentPipeline({
@@ -33,6 +89,7 @@ export function DevelopmentPipeline({
   genomeId,
   cursor,
   playing,
+  activationLive = false,
   onCursor,
   onTogglePlay,
 }: DevelopmentPipelineProps) {
@@ -41,10 +98,11 @@ export function DevelopmentPipeline({
 
   if (!trace || trace.length === 0) {
     return (
-      <div className="border border-border p-2">
-        <div className="mb-1 font-pixel text-[10px] leading-none">DEVELOPMENT PIPELINE</div>
+      <div className="space-y-2 border border-border p-2">
+        <div className="font-pixel text-[10px] leading-none">DEVELOPMENT PIPELINE</div>
+        {stageRail(0)}
         <p className="font-mono text-[10px] text-muted-foreground">
-          尚无发育轨迹：在左侧 DNA2Brain Lab 点 DEVELOP（会以 `with_trace=true` 拉取真实过程）。
+          尚无发育轨迹。在左侧 DNA2Brain Lab 点 DEVELOP 开始。
         </p>
       </div>
     );
@@ -58,6 +116,11 @@ export function DevelopmentPipeline({
   ];
 
   const sliderMax = Math.max(0, trace.length - 1);
+  const activeIndex = stageIndex(
+    current ? current.stage : null,
+    cursor >= sliderMax,
+    activationLive,
+  );
 
   return (
     <div className="space-y-2 border border-border p-2">
@@ -67,6 +130,8 @@ export function DevelopmentPipeline({
           {genomeId ?? "—"}
         </span>
       </div>
+
+      {stageRail(activeIndex)}
 
       <div className="flex items-center gap-2">
         <button
@@ -98,7 +163,7 @@ export function DevelopmentPipeline({
 
       <div>
         <div className="mb-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">
-          <span>n_neurons</span>
+          <span>神经元数</span>
           <span>{current?.n_neurons ?? "—"}</span>
         </div>
         <MetricChart
@@ -112,7 +177,7 @@ export function DevelopmentPipeline({
 
       <div>
         <div className="mb-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">
-          <span>mean|g|（表达量代理）</span>
+          <span>平均表达 |g|</span>
           <span>{current ? current.mean_abs.toFixed(4) : "—"}</span>
         </div>
         <MetricChart
@@ -126,14 +191,14 @@ export function DevelopmentPipeline({
 
       <div className="flex justify-between font-mono text-[10px] text-muted-foreground">
         <span>
-          n_divisions {current?.n_divisions ?? "—"} · n_edges {current?.n_edges ?? "—"}
+          分裂数 {current?.n_divisions ?? "—"} · 连接数 {current?.n_edges ?? "—"}
         </span>
         <span>{current ? `max|g| ${current.max_abs.toFixed(3)}` : ""}</span>
       </div>
 
       <p className="font-mono text-[10px] text-muted-foreground">
-        真实轨迹：GRN {trace.filter((s) => s.stage === "grn").length - 1} 步 → 增殖 → 连接组
-        （`/v1/developments?with_trace=true`）。开关该参数不改变任何数值。
+        真实发育过程：GRN 表达迭代 {trace.filter((s) => s.stage === "grn").length - 1} 步 →
+        前体细胞增殖 → 细胞分化 → 连接组成形。均为模型真实中间状态。
       </p>
     </div>
   );

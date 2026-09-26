@@ -1,0 +1,76 @@
+# 演示专用 Arena 配置（`交互与可视化.md` §1「演示入口」；2026-09-27 用户裁决）
+#
+# 与正式实验口径分离：**只用于会话/演示**，正式实验仍用 `configs/default_arena.yaml`。
+# 动因（实测）：默认 12–16 鱼 × 600 步（30 s）时**捕食事件为 0**（随机基因组策略瞄准差、
+# 且鱼速≈猎物速）；改为 4 鱼 + 30 猎物 + 1800 步（90 s）后，4 个 seed 实测捕食 5/1/1/7 次。
+# **未改动 §8 捕获几何**（`capture_radius` / `capture_cone_degrees` 等与默认一致）。
+#
+# 相对 `default_arena.yaml` 只差 4 个键：world.episode_steps/seconds、population.n_fish/n_prey。
+
+world:
+  width: 100.0
+  height: 60.0
+  hz: 20
+  episode_seconds: 90  # 派生只读键：须 = episode_steps / hz（§18.2.1）
+  episode_steps: 1800
+  boundary: reflect
+population:
+  n_fish: 4
+  n_prey: 30
+  n_predators: 3
+  n_obstacles: 6
+  prey_regrowth_steps: 25
+sensing:
+  radius: 18.0
+  fov_degrees: 220.0
+  predator_size_ref: 2.5
+  looming_norm: 3.5  # R_loom，标定占位 [2,5]
+energy:
+  e_max: 1.0
+  base_cost_per_step: 0.0008
+  movement_cost_scale: 0.0015
+  food_reward: 0.12
+  collision_penalty: 0.001
+growth:
+  initial_size: 1.0
+  max_size: 2.5
+  capture_size_ratio: 1.25
+  capture_radius: 4.61
+  capture_cone_degrees: 120.0
+  turn_inertia_scale: 0.35
+  prey_area_gain: 0.2
+  capture_success_prob: 1.0  # 鱼的捕食成功率（§8）；1.0=确定性
+actors:
+  prey_speed: 0.35
+  prey_size_min: 0.30
+  prey_size_max: 0.60
+  predator_size: 3.125
+  predator_cruise_speed: 0.40
+  predator_chase_speed: 0.65
+  predator_detection_radius: 15.0
+  predator_release_radius: 22.0
+  predator_turn_rate: 5.0
+  obstacle_radius_min: 1.5
+  obstacle_radius_max: 3.5
+  wander_turn_std: 0.8
+  prey_turn_clip: 3.0
+  prey_obstacle_avoid_gain: 2.0
+  predator_obstacle_avoid_gain: 0.5
+  escape_hold_steps: 20
+  predator_max_chase_steps: 80
+expert:
+  prey_weight: 1.0
+  threat_weight: 1.8
+  obstacle_weight: 1.2
+  hunger_gain: 0.8
+  speed_base: 0.45
+  speed_hunger_gain: 0.35
+  speed_threat_gain: 0.30
+
+# H3 历史依赖探针（arena §14；默认关闭、测量层、不新增事件；数值为草案待确认 D）
+probe:
+  enabled: false
+  delay_steps: 40
+  return_radius: 3.0
+  window_steps: 60
+  shuffle_history: false

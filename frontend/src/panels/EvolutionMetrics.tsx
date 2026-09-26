@@ -220,7 +220,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
         />
         {typeof last.mean_neuron !== "number" && (
           <p className="font-mono text-[10px] text-muted-foreground">
-            该 run 未记录 mean_neuron / mean_edge / mean_tau（旧 producer），形态与 tau 曲线为空。
+            该 run 未记录神经元数 / 连接数 / τ 均值（早期版本），形态与 τ 曲线为空。
           </p>
         )}
       </section>
