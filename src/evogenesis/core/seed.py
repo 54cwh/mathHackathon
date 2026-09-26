@@ -3,9 +3,10 @@
 master seed → 命名空间子种子，四路随机源统一派生：
 Python ``random`` / NumPy / PyTorch CPU / PyTorch CUDA。
 
-派生式（core §3 定稿）：``numpy.random.SeedSequence([master_seed, namespace_id])``；
-实体级子种子用命名空间序列的 ``spawn`` 树（``spawn`` 结果按命名空间缓存；
-取更高索引时按更大的 ``k`` 重新 ``spawn``——其前缀与更小 ``k`` 一致，故与调用顺序无关）。
+派生式（core §3 定稿）：命名空间序列 ``SeedSequence([namespace_id, master_seed])``
+（**变化 ID 前置**）；实体级子种子取该序列的 ``spawn`` 树第 ``index`` 项——
+``spawn`` 结果按命名空间缓存，取更高索引时按更大的 ``k`` 重新 ``spawn``
+（前缀与更小 ``k`` 一致，故与调用顺序无关）。四路随机源由同一子序列派生。
 """
 
 from __future__ import annotations
@@ -45,6 +46,8 @@ class SeedManager:
     """由 master seed 派生各随机过程的子种子。"""
 
     def __init__(self, master_seed: int) -> None:
+        if not 0 <= int(master_seed) < 2**32:
+            raise ValueError("master_seed 必须落在 [0, 2**32)")
         self._master_seed = int(master_seed)
         self._spawn_cache: dict[str, list[np.random.SeedSequence]] = {}
 
@@ -53,7 +56,9 @@ class SeedManager:
         return self._master_seed
 
     def _namespace_sequence(self, name: str) -> np.random.SeedSequence:
-        return np.random.SeedSequence([self._master_seed, _namespace_id(name)])
+        # 变化 ID 前置（core §3 定稿）：官方并行 RNG 建议，且实体子序列由此序列 spawn，
+        # 前置可避免列表熵与 spawn 路径碰撞。
+        return np.random.SeedSequence([_namespace_id(name), self._master_seed])
 
     def _spawn(self, name: str, count: int) -> list[np.random.SeedSequence]:
         cached = self._spawn_cache.get(name)

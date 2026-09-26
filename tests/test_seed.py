@@ -76,3 +76,31 @@ def test_set_global_seed_reproducible():
     first = np.random.random(3).tolist()
     set_global_seed(42)
     assert np.random.random(3).tolist() == first
+
+
+def test_master_seed_range_enforced():
+    with pytest.raises(ValueError):
+        SeedManager(-1)
+    with pytest.raises(ValueError):
+        SeedManager(2**32)
+    assert SeedManager(0).master_seed == 0
+
+
+def test_torch_generator_cross_process_deterministic():
+    """core §3：NumPy 子种子 → torch 种子属项目选定，须跨进程最小复现验证。"""
+    import subprocess
+    import sys
+
+    snippet = (
+        "import torch; from evogenesis.core.seed import SeedManager; "
+        "g = SeedManager(5).torch_generator('development'); "
+        "print(torch.rand(4, generator=g).tolist())"
+    )
+
+    def run():
+        out = subprocess.run(
+            [sys.executable, "-c", snippet], capture_output=True, text=True, check=True
+        )
+        return out.stdout.strip()
+
+    assert run() == run()
