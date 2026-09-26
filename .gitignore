@@ -92,3 +92,6 @@ Thumbs.db
 .opencode/node_modules/
 .opencode/package.json
 .opencode/package-lock.json
+
+# --- 交接包（临时工作产物，消费完可整目录删除）---
+handoff/
