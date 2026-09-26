@@ -157,8 +157,8 @@ class JobStatus(BaseModel):
 
 
 # --- pagination (R9) -------------------------------------------------------
-class Page(BaseModel):
-    items: list[Any]
+class Page[T](BaseModel):
+    items: list[T]
     next_cursor: str | None = None
 
 

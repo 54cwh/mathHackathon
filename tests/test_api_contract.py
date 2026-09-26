@@ -183,6 +183,16 @@ def test_model_stubs_return_501() -> None:
     assert client.post("/v1/breedings", json={"genome_a": "a", "genome_b": "b"}).status_code == 501
 
 
+def test_experiments_list_stub_501() -> None:
+    assert client.get("/v1/experiments").status_code == 501
+
+
+def test_openapi_exposes_problem_and_experiment_summary() -> None:
+    schemas = client.get("/openapi.json").json()["components"]["schemas"]
+    assert "Problem" in schemas  # S-5：错误体进 OpenAPI
+    assert any("ExperimentSummary" in key for key in schemas)  # S-3：模型已接线
+
+
 def test_ws_hello_and_error_envelope() -> None:
     with client.websocket_connect("/v1/ws") as ws:
         hello = ws.receive_json()

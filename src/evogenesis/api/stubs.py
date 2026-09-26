@@ -14,14 +14,19 @@ from evogenesis.api.schemas import (
     DevelopmentResult,
     ExperimentCreate,
     ExperimentDetail,
+    ExperimentSummary,
     JobStatus,
     MutationRequest,
     MutationResult,
     Page,
+    Problem,
     StoryMutation,
 )
 
-router = APIRouter(prefix="/v1")
+router = APIRouter(
+    prefix="/v1",
+    responses={501: {"model": Problem, "description": "端点所属模块尚未实现"}},
+)
 
 
 def _not_impl() -> HTTPException:
@@ -65,8 +70,8 @@ def start_experiment(req: ExperimentCreate) -> JobStatus:
     raise _not_impl()
 
 
-@router.get("/experiments", response_model=Page)
-def list_experiments(limit: int = 20, cursor: str | None = None) -> Page:
+@router.get("/experiments", response_model=Page[ExperimentSummary])
+def list_experiments(limit: int = 20, cursor: str | None = None) -> Page[ExperimentSummary]:
     raise _not_impl()
 
 

@@ -20,6 +20,7 @@ from evogenesis.api.schemas import (
     FishCard,
     Leaderboard,
     LeaderboardEntry,
+    Problem,
     SessionCreate,
     SessionSummary,
     Snapshot,
@@ -213,7 +214,10 @@ class SessionManager:
             )
 
 
-router = APIRouter(prefix="/v1")
+router = APIRouter(
+    prefix="/v1",
+    responses={404: {"model": Problem, "description": "会话 / 鱼不存在"}},
+)
 _manager = SessionManager()
 
 

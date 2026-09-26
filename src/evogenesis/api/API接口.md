@@ -215,7 +215,7 @@
 | `/v1/breedings` | POST | 繁殖 | `BreedingRequest` | `BreedingResult` |
 | `/v1/sessions/{session_id}/evolutions` | POST | 演化 | — | `202` `JobStatus` |
 | `/v1/experiments` | POST | 启动正式实验 | `ExperimentCreate` | `202` `JobStatus` |
-| `/v1/experiments` | GET | 实验列表（分页） | — | `Page` |
+| `/v1/experiments` | GET | 实验列表（分页） | — | `Page[ExperimentSummary]` |
 | `/v1/experiments/{experiment_id}` | GET | 实验元数据 + 指标 | — | `ExperimentDetail` |
 | `/v1/jobs/{job_id}` | GET | 任务状态 / 进度 | — | `JobStatus` |
 | `/v1/jobs/{job_id}/cancel` | POST | 取消任务 | — | `JobStatus` |
@@ -228,7 +228,7 @@
 - `BreedingRequest`：`genome_a`、`genome_b`、`n_offspring`；`BreedingResult`：`offspring`、`meiosis_trace`
 - `ExperimentCreate`：`name`、`seeds`(int[])、`environment`、`generations`；`ExperimentSummary`：`experiment_id`、`name`、`status`、`seeds`
 - `JobStatus`：`job_id`、`status`(`queued|running|done|failed|cancelled`)、`progress`(0–1)、`detail`
-- `Page`：`items`、`next_cursor`
+- `Page[T]`（分页泛型，R9）：`items`、`next_cursor`；`GET /v1/experiments` 为 `Page[ExperimentSummary]`
 
 > ⚠️ `ExperimentCreate.seeds` 与 `schemas/experiment.schema.json` 的 `seed`(int) + `*_config` 字段集不相交，待认领（认领表 B6）。
 
