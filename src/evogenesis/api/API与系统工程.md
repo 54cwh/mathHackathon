@@ -91,9 +91,7 @@
 | GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
 | POST | `/v1/sessions/{session_id}/evolutions` | **会话内演化（过渡：复用环境选择 job，已实现）**，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
-| POST | `/v1/experiments` | 启动正式实验（**多协议，未实现**），`202` + `job_id` |
-| GET | `/v1/experiments` | 实验列表（分页，未实现） |
-| GET | `/v1/experiments/{experiment_id}` | 实验元数据 + 指标（未实现） |
+> **通用多协议实验资源 `/v1/experiments` 不在端点草案**（已由 `/v1/environmental-selections` 取代；无消费者、`protocol` 契约未定）。如需通用启动器，须先定义 `protocol` 参数与各协议参数契约再引入。
 | POST | `/v1/environmental-selections` | **启动环境选择实验（Experiment F，已实现）**，`202` + `job_id` |
 | GET | `/v1/environmental-selections` | 环境选择实验列表（分页，已实现） |
 | GET | `/v1/environmental-selections/{experiment_id}` | 环境选择实验详情（已实现） |

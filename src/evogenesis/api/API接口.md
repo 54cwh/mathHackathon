@@ -219,7 +219,7 @@
 
 ### 2.2 环境选择实验（Experiment F，已实现）
 
-`POST /v1/environmental-selections` 启动一次**环境选择实验**（**Experiment F**，`experiment §3.6`：`seeds` × `generations` 代 × `environment`，48 个体；复用 `experiment/evolution_run.py::run_evolution`）。通用实验资源 `/v1/experiments`（多协议）**未实现**（无消费者、协议未定），本资源是其唯一已落地的协议实例。每 seed 产出一个 **`ExperimentRun`**（`results/runs/<experiment_id>-s<seed>/`，含 `generations/` 与 `evolution.jsonl`）。请求**即时返回 `202` + `job_id`**，随后在后台线程执行；`seeds` 展开为 N 个 run（B6）。
+`POST /v1/environmental-selections` 启动一次**环境选择实验**（**Experiment F**，`experiment §3.6`：`seeds` × `generations` 代 × `environment`，48 个体；复用 `experiment/evolution_run.py::run_evolution`）。通用多协议 `/v1/experiments` **不在端点草案**（已由本资源取代；`protocol` 契约未定，如需通用启动器须先定义）。每 seed 产出一个 **`ExperimentRun`**（`results/runs/<experiment_id>-s<seed>/`，含 `generations/` 与 `evolution.jsonl`）。请求**即时返回 `202` + `job_id`**，随后在后台线程执行；`seeds` 展开为 N 个 run（B6）。
 
 | 端点 | 方法 | 请求 / 响应 |
 |---|---|---|
