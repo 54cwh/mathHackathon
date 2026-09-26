@@ -107,12 +107,18 @@ def assemble_individuals(
     *,
     arena_config: ArenaConfig,
     weights: dict[str, float],
+    fitness_mode: str = "minmax",
+    fitness_floor: float = 1e-3,
+    drift_seed: int | None = None,
 ) -> tuple[Individual, ...]:
     """按 `代循环编排.md` §3 把评估结果折算为选择用 `F` 并回填 `Individual`。
 
     分量取**原始量**（`survival_steps` / `captures` / `escape_successes` / `energy_efficiency`），
     对齐全长；non-viable 置 0（由 `composite_fitness` 的掩码处理）。存活步数为 0 的个体
     `energy_efficiency` 记 0（函数定义域要求 `T_i>0`）。
+
+    `fitness_mode` 决定喂给选择机制的分数（见 `_selection_score`）：``minmax`` 为
+    `evolution §6` 现状；``drop_degenerate`` / ``drift`` 为 2026-09-26 引入的实验臂。
     """
     n = len(individuals)
     mask = np.zeros(n, dtype=bool)
@@ -138,7 +144,14 @@ def assemble_individuals(
         components["energy_efficiency"][index] = np.float32(
             energy_efficiency(energy_final, e_max, steps)
         )
-    fitness = composite_fitness(components, viable=mask, weights=weights)
+    fitness = _selection_score(
+        components,
+        viable=mask,
+        weights=weights,
+        mode=fitness_mode,
+        floor=fitness_floor,
+        drift_seed=drift_seed,
+    )
     out: list[Individual] = []
     for index, chain_individual in enumerate(individuals):
         viable = bool(mask[index])
@@ -154,6 +167,56 @@ def assemble_individuals(
             )
         )
     return tuple(out)
+
+
+def _selection_score(
+    components: Mapping[str, np.ndarray],
+    *,
+    viable: np.ndarray,
+    weights: Mapping[str, float],
+    mode: str,
+    floor: float,
+    drift_seed: int | None,
+) -> np.ndarray:
+    """选择用 `F` 的三种口径（仅实验用；默认 `minmax` 即 `evolution §6` 现状）。
+
+    - ``minmax``：逐分量代内 min-max 后加权（`evolution/fitness.py::composite_fitness`，现状）。
+    - ``drop_degenerate``：同上，但**剔除代内跨度 < ``floor`` 的退化分量**，权重按剩余分量重分。
+      动机（2026-09-26 seed 1103 实测）：分量是原始量、量纲差极大（存活步数 0--600 / 捕获计数 /
+      逃逸计数 / ``energy_efficiency`` 约 1e-3），min-max 的**意图**是拉齐量纲，但它无法区分
+      「有意义的变异」与「噪声级变异」——两者都映射到满 ``[0,1]``。实测 ``energy_efficiency``
+      代内跨度仅 7.1e-04（噪声级）却被放大并保留 0.20 权重，即约 1/5 选择压力是噪声；
+      默认口径下 20 代无适应度上升、``prey_capture`` 反降 48%。
+    - ``drift``：**漂变对照**——用与适应度无关的确定性伪随机分数（本臂专用的本地 rng，
+      不占用 `core §3` 的命名空间），使同一套选择机制退化为随机抽样；用于排除
+      「上升来自环境漂移」这一竞争解释。
+    """
+    if mode == "minmax":
+        return composite_fitness(components, viable=viable, weights=weights)
+    if mode == "drift":
+        rng = np.random.default_rng(0 if drift_seed is None else drift_seed)
+        score = rng.random(len(viable)).astype(np.float32)
+        score[~viable] = np.float32(0.0)
+        return score
+    if mode == "drop_degenerate":
+        spans = {
+            name: (
+                float(np.max(np.asarray(components[name], dtype=np.float32)[viable])
+                      - np.min(np.asarray(components[name], dtype=np.float32)[viable]))
+                if bool(viable.any())
+                else 0.0
+            )
+            for name in weights
+        }
+        kept = {name: weight for name, weight in weights.items() if spans[name] >= floor}
+        if not kept:
+            raise ValueError(f"全部分量跨度都 < floor={floor}；spans={spans}")
+        total = sum(kept.values())
+        renorm = {name: weight / total for name, weight in kept.items()}
+        return composite_fitness(
+            {name: components[name] for name in kept}, viable=viable, weights=renorm
+        )
+    raise ValueError(f"未知 fitness_mode: {mode!r}")
 
 
 def _mean(values: list[float]) -> float:
@@ -276,6 +339,8 @@ def run_evolution(
     steps: int | None = None,
     device: str = "cpu",
     forced_by_generation: Mapping[int, tuple[str, str]] | None = None,
+    fitness_mode: str = "minmax",
+    fitness_floor: float = 1e-3,
 ) -> EvolutionRunResult:
     """跑 `generations` 代；`run_dir` 须已由 `runlayout.create_run_dir` 建好。
 
@@ -315,7 +380,13 @@ def run_evolution(
         )
         elapsed = time.perf_counter() - t0
         individuals = assemble_individuals(
-            chain_individuals, evaluation, arena_config=arena_config, weights=weights
+            chain_individuals,
+            evaluation,
+            arena_config=arena_config,
+            weights=weights,
+            fitness_mode=fitness_mode,
+            fitness_floor=fitness_floor,
+            drift_seed=master_seed * 1_000_003 + generation,
         )
         _write_generation_artifacts(
             run_dir,

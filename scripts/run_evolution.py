@@ -43,6 +43,19 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--arena-config", default=str(DEFAULT_ARENA))
     parser.add_argument("--evolution-config", default=str(DEFAULT_EVOLUTION))
     parser.add_argument("--steps", type=int, default=None, help="缺省取 world.episode_steps")
+    parser.add_argument(
+        "--fitness-mode",
+        default="minmax",
+        choices=("minmax", "drop_degenerate", "drift"),
+        help="选择用 F 的口径（实验臂）：minmax=evolution §6 现状；"
+        "drop_degenerate=剔除代内退化分量并重分权重；drift=漂变对照",
+    )
+    parser.add_argument(
+        "--fitness-floor",
+        type=float,
+        default=1e-3,
+        help="drop_degenerate 的分量跨度下限（代内 min-max 之前）",
+    )
     parser.add_argument("--out-root", default=str(ROOT / "results" / "runs"))
     return parser.parse_args()
 
@@ -82,6 +95,8 @@ def main() -> None:
         run_dir=run_dir,
         environment_id=args.environment or "default",
         steps=args.steps,
+        fitness_mode=args.fitness_mode,
+        fitness_floor=args.fitness_floor,
     )
     status = "bottleneck" if result.bottleneck else "completed"
     last = result.summaries[-1] if result.summaries else None
