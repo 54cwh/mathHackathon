@@ -57,6 +57,15 @@ function* walk(dir) {
   }
 }
 
+/**
+ * 已知假阳性上下文（**只掩这些位置，规则不放宽**）：
+ * DOM 事件名 `"blur"` 与 Tailwind 的 `blur` 工具类形状相同，但事件注册处不可能是 class。
+ * 与上一条 `shadow` 假阳性同类（那次是品牌色名 `stone-shadow`）；根因仍是「扫描器只认裸词」。
+ * 注意：只掩 add/removeEventListener 引号内的 `blur`；裸标识符请另起名（如 `clearKeys`），
+ * 因为没有任何语法手段能把「名叫 blur 的变量」与「blur 工具类」区分开。
+ */
+const FP_MASKS = [/(?:add|remove)EventListener\(\s*(["'])blur\1/g];
+
 const findings = [];
 for (const file of walk(SRC)) {
   const rel = relative(SRC, file).split(sep).join("/");
@@ -65,7 +74,8 @@ for (const file of walk(SRC)) {
   const stripped = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
   const rules = rel.endsWith(".css") ? RULES.concat(CSS_RULES) : RULES;
   stripped.split("\n").forEach((line, index) => {
-    const code = line.replace(/(^|\s)\/\/.*$/, "$1");
+    let code = line.replace(/(^|\s)\/\/.*$/, "$1");
+    for (const mask of FP_MASKS) code = code.replace(mask, (hit) => hit.replace("blur", "____"));
     for (const rule of rules) {
       rule.re.lastIndex = 0;
       if (rule.re.test(code)) {

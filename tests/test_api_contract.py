@@ -136,6 +136,55 @@ def test_release_use_expert_false_advances() -> None:
     assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 5
 
 
+def test_release_manual_control_moves_only_that_fish() -> None:
+    """Manual Control（`交互与可视化.md` §10）：手动动作只作用于被控鱼。
+
+    `use_expert=false` 且不给动作时全鱼停在原地；给 `fish_id=fish_00&speed=1` 后
+    只有 fish_00 的位移非零（`v=1` × `dt=0.05` = 0.05 世界单位/步，arena §461 S1）。
+    """
+    sid = _create()["session_id"]
+    before = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+    client.post(f"/v1/sessions/{sid}/release?steps=1&use_expert=false")
+    still = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+    for fid, f in still.items():
+        assert f["x"] == pytest.approx(before[fid]["x"])
+        assert f["y"] == pytest.approx(before[fid]["y"])
+
+    resp = client.post(
+        f"/v1/sessions/{sid}/release?steps=1&use_expert=false"
+        "&fish_id=fish_00&omega=1.0&speed=1.0"
+    )
+    assert resp.status_code == 200
+    after = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+    moved = (after["fish_00"]["x"] - still["fish_00"]["x"]) ** 2 + (
+        after["fish_00"]["y"] - still["fish_00"]["y"]
+    ) ** 2
+    assert moved > 0, "被控鱼必须动起来"
+    assert after["fish_00"]["heading"] != still["fish_00"]["heading"], "omega 必须改变航向"
+    for fid, f in after.items():
+        if fid == "fish_00":
+            continue
+        assert f["x"] == pytest.approx(still[fid]["x"]), f"{fid} 不应被手动动作影响"
+        assert f["y"] == pytest.approx(still[fid]["y"]), f"{fid} 不应被手动动作影响"
+
+
+def test_release_manual_control_clamps_and_ignores_unknown_fish() -> None:
+    """越界动作被裁剪；未知 / 已死 fish_id 静默忽略（前端 10Hz 连发不报错）。"""
+    sid = _create()["session_id"]
+    resp = client.post(
+        f"/v1/sessions/{sid}/release?steps=1&use_expert=false"
+        "&fish_id=fish_99&omega=9.0&speed=9.0"
+    )
+    assert resp.status_code == 200
+    after_clamped = client.post(
+        f"/v1/sessions/{sid}/release?steps=1&use_expert=false"
+        "&fish_id=fish_00&omega=9.0&speed=9.0"
+    )
+    assert after_clamped.status_code == 200
+    snap = client.get(f"/v1/sessions/{sid}/snapshot").json()
+    assert snap["step"] == 2
+
+
 def test_reset_returns_to_step_zero() -> None:
     sid = _create()["session_id"]
     client.post(f"/v1/sessions/{sid}/release?steps=50")

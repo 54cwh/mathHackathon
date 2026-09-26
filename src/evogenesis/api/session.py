@@ -126,8 +126,20 @@ class Session:
             self.generation = 0
             self.running = True
 
-    def advance(self, steps: int = 1, use_expert: bool = True) -> list:
-        """推进仿真 `steps` 步（`B1` 定稿）；`running=False` 时整段短路。返回本次新增事件。"""
+    def advance(
+        self,
+        steps: int = 1,
+        use_expert: bool = True,
+        control: tuple[str, float, float] | None = None,
+    ) -> list:
+        """推进仿真 `steps` 步（`B1` 定稿）；`running=False` 时整段短路。返回本次新增事件。
+
+        ``control``：Manual Control（`交互与可视化.md` §10）的**单鱼**动作覆盖
+        ``(fish_id, omega, speed)``，每步都施加。动作语义与裁剪见 `arena §461 S1`：
+        ``omega ∈ [-1, 1]``（rad/s）、``speed ∈ [0, 1]``（世界单位/秒）；越界在此裁剪，
+        与 `DanioArena.step` 的裁剪同口径。被操控鱼优先于 ExpertPolicy / 网络输出，
+        其余鱼照旧（`use_expert` 或全零）。
+        """
         new_events: list = []
         with self._lock:
             if not self.running:
@@ -151,6 +163,17 @@ class Session:
                     for fid, fish in self.arena.fish.items():
                         if fish.alive:
                             actions[fid] = self.expert(self.arena.observe(fid))
+
+                # Manual Control：单鱼动作覆盖（`交互与可视化.md` §10）
+                if control is not None:
+                    cid, omega, speed = control
+                    fish = self.arena.fish.get(cid)
+                    if fish is not None and fish.alive:
+                        actions[cid] = (
+                            max(-1.0, min(1.0, float(omega))),
+                            max(0.0, min(1.0, float(speed))),
+                        )
+
                 result = self.arena.step(actions)
                 new_events.extend(result.events)
                 if result.done:
@@ -335,9 +358,22 @@ def delete_session(session_id: str) -> None:
 
 
 @router.post("/sessions/{session_id}/release", response_model=SessionSummary)
-def release(session_id: str, steps: int = 1, use_expert: bool = True) -> SessionSummary:
+def release(
+    session_id: str,
+    steps: int = 1,
+    use_expert: bool = True,
+    fish_id: str | None = None,
+    omega: float = 0.0,
+    speed: float = 0.0,
+) -> SessionSummary:
+    """推进 `steps` 步；给 `fish_id` 时该鱼改用 (omega, speed) 手动动作（`API接口.md` §1.6）。
+
+    手动动作只对**这一条**鱼生效，其余鱼仍按 `use_expert` 驱动；`fish_id` 不存在或已死时
+    该参数被忽略（不报错 —— 前端 10Hz 连发，报错会刷屏）。
+    """
     s = _get_session(session_id)
-    events = s.advance(steps=steps, use_expert=use_expert)
+    control = (fish_id, omega, speed) if fish_id else None
+    events = s.advance(steps=steps, use_expert=use_expert, control=control)
     if s.net is not None:
         ws_hub.publish_brain_activation(s.session_id, s.arena.step_idx, s.activation())
     if events:
