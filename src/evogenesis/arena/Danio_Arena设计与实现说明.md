@@ -455,7 +455,7 @@ Complex Scene 可设置：【草案待确认】
 **动作（二选一，尚未执行；责任人李辰钊）**：
 
 - **首选**：依 v1 词表**重生成** `schemas/examples/event_log_example.jsonl`，覆盖 8 类事件并与 `tests/test_arena.py::KNOWN_EVENTS` 同源；同步更新 `schemas/examples/README.md` 的 provenance 段。**现状：未重生成**（仍 4 行，第 2 行判据矛盾未除）。
-- **备选**：**降级**为"字段形状示意"，在文件头（或 README）显式标注"该实例仅示意信封形状，**字段名与取值不以本文为准**，以 `src/evogenesis/arena/Danio_Arena设计与实现说明.md` §4.2 为准"，并保留"待重生成"标记。**现状：未降级。**
+- **备选**：**降级**为"字段形状示意"，在文件头（或 README）显式标注"该实例仅示意信封形状，**字段名与取值不以本文为准**，以 `src/evogenesis/arena/Danio_Arena设计与实现说明.md` §18.4.2 为准"，并保留"待重生成"标记。**现状：未降级。**
 
 在该实例闭环（重生成或降级）前，**不得被代码依赖**（`schemas/examples/README.md` 已声明"冻结前不可被代码依赖"）。
 
