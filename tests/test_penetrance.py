@@ -106,15 +106,48 @@ def test_median_midpoint_threshold():
 
 
 def test_axis_separation_detects_signal_and_noise():
-    separable = P.axis_separation([1.0, 2.0, 9.0, 10.0], [False, False, True, True])
+    # 有信号：8+8 完全分离 ⇒ AUC=1，p 远低于门禁水平（n=4 时 Mann–Whitney 最小 p=1/3，
+    # 达不到任何常规显著水平，故正例用 8+8）
+    separable = P.axis_separation([float(v) for v in range(1, 17)], [False] * 8 + [True] * 8)
     assert separable["separable"] is True
     assert separable["auc"] == pytest.approx(1.0)
-    assert separable["mannwhitney_p"] is not None and separable["mannwhitney_p"] < 0.5
+    assert separable["mannwhitney_p"] is not None
+    assert separable["mannwhitney_p"] < P.SEPARATION_ALPHA
 
     # 两组完全重叠 ⇒ 不可分离：错分 = 多数类基线
     noise = P.axis_separation([1.0, 2.0, 1.0, 2.0], [False, False, True, True])
     assert noise["separable"] is False
     assert noise["min_misclassification_error"] == pytest.approx(noise["majority_baseline_error"])
+
+
+def test_axis_separation_gate_rejects_chance_level_axis():
+    """回归：值-标签**秩完全交错**的零信号轴，旧判据「错分 < 多数类基线」会误判为可分离。
+
+    ``values=1..8`` 配 ``F,T,T,F,F,T,T,F`` ⇒ ``AUC=0.5``、``p=1.0``；但 min-错分率（0.375）
+    确实**低于**多数类基线（0.5）—— 因为候选阈值含约 n 个秩切分，其最优者**以极高概率**
+    略优于多数类分类器，与是否有信号无关。故门禁必须取 AUC + p（抽样不变），min-错分只作上报诊断。
+    """
+    axis = P.axis_separation(
+        [float(v) for v in range(1, 9)], [False, True, True, False, False, True, True, False]
+    )
+    assert axis["auc"] == pytest.approx(0.5)
+    assert axis["mannwhitney_p"] is not None and axis["mannwhitney_p"] > P.SEPARATION_ALPHA
+    # 下行即旧判据的判决：它会翻成 True —— 该断言把回归钉死
+    assert axis["min_misclassification_error"] < axis["majority_baseline_error"]
+    assert axis["separable"] is False
+
+
+def test_axis_separation_gate_rejects_inverted_axis():
+    """反序轴（high 档取值反而更低）无法用 ``1[v > θ]`` 口径恢复 ⇒ 判不可分离。
+
+    ``p`` 本身显著（0.029 < 0.05），拦住它的是方向条件 ``AUC > 0.5``。
+    """
+    axis = P.axis_separation(
+        [float(v) for v in range(1, 9)], [True, True, True, True, False, False, False, False]
+    )
+    assert axis["auc"] == pytest.approx(0.0)
+    assert axis["mannwhitney_p"] is not None and axis["mannwhitney_p"] < P.SEPARATION_ALPHA
+    assert axis["separable"] is False
 
 
 # ---------------------------------------------------------------------------

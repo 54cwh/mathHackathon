@@ -69,6 +69,9 @@ EXPECTED_9331: dict[str, float] = {"A_B_": 9 / 16, "A_bb": 3 / 16, "aaB_": 3 / 1
 WILSON_Z: float = 1.959963985
 #: τ 异质性统计量（genome §3 定稿：CV）。
 TAU_STATISTIC = "cv_tau"
+#: 分离度门禁（``axis_separation``）的显著水平；须与 ``AUC>0.5`` 同时成立。
+#: 两条件叠加使该门禁偏保守——它锁的是 ``threshold_status=confirmed``，宜保守。
+SEPARATION_ALPHA: float = 0.05
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PENETRANCE_CONFIG = _REPO_ROOT / "configs" / "penetrance.yaml"
@@ -208,9 +211,20 @@ def _axis_arrays(
 def axis_separation(values: Sequence[float], expected_high: Sequence[bool]) -> dict[str, Any]:
     """观测轴对期望档的**区分力诊断**（无信号时 ``θ^obs`` 不可辨识，不得冻结）。
 
-    返回主口径阈值与错分率、多数类基线错分率、``separable``（错分 < 基线）、AUC 与
-    Mann–Whitney 双侧 p。``separable=false`` 表示该轴对基因型期望档无区分力，此时
-    ``θ^obs`` 无意义，报告须显式标注而非冻结成 ``confirmed``。
+    判据为 ``separable = (AUC > 0.5) ∧ (Mann–Whitney 双侧 p < SEPARATION_ALPHA)``：
+    AUC 的零假设中心 **0.5 与抽样比例无关**，故判据抽样不变；``AUC > 0.5`` 同时钉住
+    方向——反序轴（high 档取值反而更低）无法用 ``1[v > θ]`` 口径恢复，须判不可分离。
+    两条件叠加使实际水平偏保守（约 α/2），对「解锁 ``confirmed``」的门禁是良性的。
+
+    **不再**用「错分 < 多数类基线」作判据：``majority_baseline_error =
+    min(n_high, n_low)/n`` **随抽样比例变化**（分层平衡下恒为 0.5），而候选阈值集含约
+    ``n`` 个秩切分，其最优者**以极高概率**略低于多数类基线——与有无信号无关 ⇒ 该判据在
+    平衡抽样下会把**零信号判成可分离**（实测 AUC=0.495、p=0.72 仍报 ``separable=true``）。
+    ``theta_min_misclass`` / ``min_misclassification_error`` /
+    ``majority_baseline_error`` 仍照常**上报**，但降级为诊断量，不参与门禁。
+
+    ``separable=false`` 表示该轴对基因型期望档无区分力，此时 ``θ^obs`` 无意义，报告须
+    显式标注而非冻结成 ``confirmed``。
     """
     if len(values) != len(expected_high) or not values:
         raise ValueError("分离度诊断需要等长且非空的样本")
@@ -233,8 +247,8 @@ def axis_separation(values: Sequence[float], expected_high: Sequence[bool]) -> d
         "theta_min_misclass": theta,
         "min_misclassification_error": error,
         "majority_baseline_error": baseline,
-        # 1e-12 容差：错分恰好等于基线视为不可分离（naive 分类器同效）
-        "separable": bool(error < baseline - 1e-12),
+        # 抽样不变判据（见 docstring）；min-错分率仅上报，不参与门禁。
+        "separable": bool(auc > 0.5 and float(test.pvalue) < SEPARATION_ALPHA),
         "auc": auc,
         "mannwhitney_p": float(test.pvalue),
     }
