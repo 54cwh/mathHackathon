@@ -96,11 +96,11 @@ def test_env_case_insensitive_camel_fields(tmp_path):
     cfg = load_config(
         path,
         environ={
-            "EVOGENESIS_PHENOTYPE__THETA_N": "0.5",
+            "EVOGENESIS_PHENOTYPE__THETA_N": "0.4",
             "EVOGENESIS_GENOME__MOTIF_SUBSET_A": "3",
         },
     )
-    assert cfg.phenotype.theta_N == 0.5
+    assert cfg.phenotype.theta_N == 0.4
     assert cfg.genome.motif_subset_A == 3
 
 

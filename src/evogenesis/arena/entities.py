@@ -68,6 +68,13 @@ class Fish(Entity):
     predator_encounters: int = 0
     escape_successes: int = 0
     collisions: int = 0
+    # H3 历史依赖探针（`arena §14`；probe.enabled 时才更新）
+    probe_trials: int = 0
+    probe_successes: int = 0
+    _last_seen_prey_pos: np.ndarray | None = None
+    _steps_since_prey_seen: int = 0
+    _probe_expectation: np.ndarray | None = None
+    _probe_remaining: int = 0
     _looming_rate: float = 0.0  # 上一步结算的 looming（[0,1]），observe 读取
     # A8 threat-outcome escape window: set when a predator gives this fish up
     _threat_step: int | None = None

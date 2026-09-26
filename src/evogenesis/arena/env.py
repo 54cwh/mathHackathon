@@ -13,7 +13,11 @@ import numpy as np
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.entities import Entity, Fish, Obstacle, Predator, Prey
 from evogenesis.arena.policies import PredatorPolicy, PreyPolicy
-from evogenesis.arena.sensing import max_predator_angular_size, observe
+from evogenesis.arena.sensing import (
+    max_predator_angular_size,
+    nearest_visible_prey,
+    observe,
+)
 
 # Collision margin already used by the pre-existing obstacle test
 # (o.contains(fish.pos, 0.1)); reused as the fish effective radius in the
@@ -522,6 +526,9 @@ class DanioArena:
             else:
                 fish._looming_rate = 0.0
 
+        if self.cfg.probe.enabled:
+            self._update_probe()
+
         self.step_idx += 1
         # A9: always run the full episode; individual death only freezes that fish
         done = self.step_idx >= self.cfg.world.episode_steps
@@ -540,6 +547,59 @@ class DanioArena:
 
         new_events.sort(key=lambda e: e.seq)
         return StepResult(self.step_idx, done, new_events)
+
+    def h3_probe_report(self) -> dict:
+        """H3 历史依赖探针汇总（`arena §14`；`probe.enabled=false` 时 `trials=0`）。"""
+        trials = sum(f.probe_trials for f in self.fish.values())
+        successes = sum(f.probe_successes for f in self.fish.values())
+        return {
+            "delay_steps": self.cfg.probe.delay_steps,
+            "return_radius": self.cfg.probe.return_radius,
+            "window_steps": self.cfg.probe.window_steps,
+            "shuffle_history": self.cfg.probe.shuffle_history,
+            "trials": trials,
+            "successes": successes,
+            "P": (successes / trials) if trials else None,
+        }
+
+    def _update_probe(self) -> None:
+        """H3 探针状态机（`arena §14`）：最近可见猎物 → last_seen → 延迟 D → 回归判定 r_H。"""
+        width, height = self.cfg.world.width, self.cfg.world.height
+        prey_list = list(self.prey.values())
+        for fish in self.fish.values():
+            if not fish.alive:
+                continue
+            hit = nearest_visible_prey(
+                fish, prey_list, self.cfg.sensing.radius, self.cfg.sensing.fov_degrees
+            )
+            if hit is not None:
+                fish._last_seen_prey_pos = hit[1]
+                fish._steps_since_prey_seen = 0
+                fish._probe_remaining = 0  # 猎物重新可见 → 本次 trial 失败
+                continue
+            fish._steps_since_prey_seen += 1
+            if fish._probe_remaining > 0:
+                expectation = fish._probe_expectation
+                if (
+                    expectation is not None
+                    and float(np.linalg.norm(fish.pos - expectation))
+                    <= self.cfg.probe.return_radius
+                ):
+                    fish.probe_successes += 1
+                    fish._probe_remaining = 0
+                else:
+                    fish._probe_remaining -= 1
+            elif (
+                fish._steps_since_prey_seen >= self.cfg.probe.delay_steps
+                and fish._last_seen_prey_pos is not None
+            ):
+                base = fish._last_seen_prey_pos
+                if self.cfg.probe.shuffle_history:
+                    fish._probe_expectation = np.array([width - base[0], height - base[1]])
+                else:
+                    fish._probe_expectation = np.array(base, dtype=float)
+                fish._probe_remaining = self.cfg.probe.window_steps
+                fish.probe_trials += 1
 
     def per_fish_log(self) -> dict[str, dict]:
         """Danio_Arena设计与实现说明.md section 13 per-fish record."""

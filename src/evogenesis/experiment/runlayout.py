@@ -1,10 +1,11 @@
 """run 目录布局（owner：`experiment/实验与评价体系.md` §5.1）。
 
 ``create_run_dir`` 是 ``results/runs/<experiment_id>-s<seed>/`` 的**唯一生产者**：创建目录并
-写入 ``metadata.json`` / ``config_snapshot/`` / ``seed.txt`` / ``git_commit.txt``（Arena 型
-配置另写 ``arena_config_resolved.json``）。``scripts/`` 下四个入口脚本
+写入 ``metadata.json`` / ``config_snapshot/`` / ``seed.txt`` / ``git_commit.txt`` / ``logs.jsonl``
+（Arena 型配置另写 ``arena_config_resolved.json``）。``metadata.json`` 含 ``mlflow_run_id``
+（初始 ``null``，run 终态由 ``tracking_run.track_run`` 回写）。``scripts/`` 下四个入口脚本
 （``run_experiment.py`` / ``run_arena.py`` / ``run_chain.py`` / ``run_evolution.py``）
-一律经此建目录，故布局与唯一性语义只有一份实现。
+一律经此建目录，故布局与唯一性语义只有一份实现。运行日志经 ``core.logging`` 落 ``logs.jsonl``。
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from evogenesis.arena.config import (
 )
 from evogenesis.core.config import read_yaml
 from evogenesis.core.io import now_iso
+from evogenesis.core.logging import configure_logging, get_logger
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_OUT_ROOT = _REPO_ROOT / "results" / "runs"
@@ -37,13 +39,22 @@ def git_commit(repo_root: Path = _REPO_ROOT) -> str:
 
 
 def update_run_status(run_dir: str | Path, status: str) -> None:
-    """改写 run 的 ``metadata.json.status``（入口脚本/代循环在结束时置终态）。"""
-    metadata_path = Path(run_dir) / "metadata.json"
+    """改写 run 的 ``metadata.json.status``（入口脚本/代循环在结束时置终态），并记一条运行日志。"""
+    run_dir = Path(run_dir)
+    metadata_path = run_dir / "metadata.json"
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
     metadata["status"] = status
     metadata_path.write_text(
         json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
     )
+    configure_logging(
+        run_dir / "logs.jsonl",
+        resource={
+            "experiment_id": metadata.get("experiment_id", ""),
+            "seed": metadata.get("seed", ""),
+        },
+    )
+    get_logger(__name__).info("run_status", status=status)
 
 
 def create_run_dir(
@@ -118,8 +129,17 @@ def create_run_dir(
         "arena_config_resolved": arena_resolved is not None,
         "extras": extras,
         "created_at": now_iso(),
+        "mlflow_run_id": None,
     }
     (run_dir / "metadata.json").write_text(
         json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    configure_logging(
+        run_dir / "logs.jsonl", resource={"experiment_id": experiment_id, "seed": seed}
+    )
+    get_logger(__name__).info(
+        "run_created",
+        config=metadata["config"],
+        arena_config_resolved=metadata["arena_config_resolved"],
     )
     return run_dir

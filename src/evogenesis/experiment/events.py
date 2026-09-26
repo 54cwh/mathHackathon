@@ -12,7 +12,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 from evogenesis.arena.env import Event
@@ -55,4 +55,26 @@ def write_event_log(path: Path, header: dict, events: Iterable[Event]) -> Path:
     return path
 
 
-__all__ = ["episode_event_header", "event_record", "write_event_log"]
+def write_episode_log(
+    path: Path,
+    *,
+    experiment_id: str,
+    environment_id: str,
+    generation: int,
+    episode_seed: int,
+    events: Sequence[Event],
+    episode_id: str = "ep0001",
+) -> Path:
+    """组 header 并写事件日志（一次调用，避免各入口重复拼 header）。"""
+    header = episode_event_header(
+        experiment_id=experiment_id,
+        episode_id=episode_id,
+        environment_id=environment_id,
+        generation=generation,
+        episode_seed=episode_seed,
+        n_events=len(events),
+    )
+    return write_event_log(path, header, events)
+
+
+__all__ = ["episode_event_header", "event_record", "write_episode_log", "write_event_log"]

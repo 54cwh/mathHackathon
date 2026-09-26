@@ -24,14 +24,19 @@ from evogenesis.core.config import read_yaml
 from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.environments import BASELINE, load_environment
-from evogenesis.experiment.events import episode_event_header, write_event_log
+from evogenesis.experiment.events import write_episode_log
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
-    episode_metrics,
     summarise_over_seeds,
 )
 from evogenesis.experiment.overrides import parse_overrides
-from evogenesis.experiment.run_artifacts import dump_json, write_metrics_csv
+from evogenesis.experiment.run_artifacts import (
+    dump_json,
+    individual_metric_rows,
+    run_summary_payload,
+    write_metrics_csv,
+)
+from evogenesis.experiment.tracking_run import scalar_metrics, track_run
 from evogenesis.pipeline import (
     arena_seeds_for,
     initial_population,
@@ -117,35 +122,27 @@ def _run_seed(
         dump_json(run_dir / "model_overrides.json", cli_overrides, indent=2)
     spawn_seed, _ = arena_seeds_for(seed, args.generation)
     weights = load_evolution_config().fitness_weights.model_dump()
-    write_event_log(
+    write_episode_log(
         run_dir / "events.jsonl",
-        episode_event_header(
-            experiment_id=args.experiment_id,
-            episode_id="ep0001",
-            environment_id=args.environment,
-            generation=args.generation,
-            episode_seed=spawn_seed,
-            n_events=len(result.events),
-        ),
-        result.events,
+        experiment_id=args.experiment_id,
+        environment_id=args.environment,
+        generation=args.generation,
+        episode_seed=spawn_seed,
+        events=result.events,
     )
-    rows = [
-        {
-            "seed": seed,
-            "fish_id": fish_id,
-            **episode_metrics(
-                rec,
-                episode_steps=steps,
-                e_max=arena_config.energy.e_max,
-                capture_success_prob=arena_config.growth.capture_success_prob,
-                weights=weights,
-            ),
-        }
-        for fish_id, rec in sorted(result.per_fish.items())
-    ]
+    rows = individual_metric_rows(
+        result.per_fish,
+        seed=seed,
+        episode_steps=steps,
+        e_max=arena_config.energy.e_max,
+        capture_success_prob=arena_config.growth.capture_success_prob,
+        weights=weights,
+    )
     write_metrics_csv(run_dir, rows)
-    dump_json(run_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
+    by_seed = aggregate_by_seed(rows)
+    dump_json(run_dir / "seed_summary.json", by_seed, indent=2)
     runlayout.update_run_status(run_dir, "completed")
+    track_run(run_dir, status="completed", metrics=scalar_metrics(by_seed[0]))
     print(
         f"chain run: {run_dir}｜viable {result.evaluated_individuals}/{n}"
         f"｜steps {result.steps}｜events {len(result.events)}"
@@ -192,15 +189,15 @@ def main() -> None:
         out = tables / f"{args.experiment_id}_summary.json"
         dump_json(
             out,
-            {
-                "experiment_id": args.experiment_id,
-                "environment": args.environment,
-                "emit_behavior_trace": False,
-                "seeds": seeds,
-                "steps": steps,
-                "n_individuals": len(all_rows),
-                "per_metric": summary,
-            },
+            run_summary_payload(
+                experiment_id=args.experiment_id,
+                environment=args.environment,
+                emit_behavior_trace=False,
+                seeds=seeds,
+                steps=steps,
+                n_individuals=len(all_rows),
+                per_metric=summary,
+            ),
             indent=2,
         )
         print(f"跨 seed 汇总（n={len(seeds)}）→ {out.relative_to(ROOT)}")

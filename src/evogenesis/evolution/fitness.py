@@ -37,6 +37,8 @@ def minmax_normalize(
     cohort = arr[mask]
     if cohort.size == 0:
         return out
+    if not bool(np.isfinite(cohort).all()):
+        raise ValueError("fitness 分量含非有限值（NaN/Inf），无法做代内归一化")
     lo = np.float32(cohort.min())
     hi = np.float32(cohort.max())
     if hi == lo:
@@ -58,6 +60,10 @@ def composite_fitness(
     ``components`` 必须提供 ``weights`` 的全部键（``survival`` / ``prey_capture`` /
     ``escape_success`` / ``energy_efficiency``），且各分量等长；``viable`` 标记进入代内
     min-max 的个体。返回值在 ``viable=False`` 处置 0。
+
+    **勿与 `experiment/metrics.py::composite_fitness` 混用**：本函数是**选择用 `F`**（代内
+    viable min-max 后加权，`evolution §6`）；后者是**显示分**（四项 rate 直接加权，
+    `experiment §2.3`）。
     """
     if set(components) != set(weights):
         raise ValueError(

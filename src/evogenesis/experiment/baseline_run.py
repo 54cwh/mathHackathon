@@ -10,9 +10,8 @@
 个体**（在 `n_danio` 个候选内按稳定 index 扫描），BC 训练后评估；基线 `bc` 采样序号固定取
 模型槽位（`baseline_init` 命名空间已按 `index` 分离）。
 
-**公平性声明**：基线 `step()` 的 `v` 由 `tanh` 给出（∈[-1,1]），DanioNet 的 `v` 由 σ 给出
-（∈[0,1]，`connectome §4`）；该差异已登记 `connectome §8`「待核」，本模块照实记录、不修改
-基线读出。
+**动作口径一致**：基线与 DanioNet 的 `(ω, v)` 同映射（`ω = tanh`、`v = σ`，`connectome §4/§8`），
+`v ∈ [0,1]`，与 `Arena` 把 `v` 截到 `[0,1]` 的读出口径一致；本模块不加任何按模型的读出修正。
 """
 
 from __future__ import annotations
@@ -254,12 +253,7 @@ def _summarise_models(results: list[ModelResult], *, seeds: tuple[int, ...]) -> 
                 "model": name,
                 "metrics": summarise_over_seeds(seed_rows, metrics=SCALAR_METRICS),
                 "complexity": rows[0].complexity,
-                "note": (
-                    "复杂度取首 seed；基线 v 由 tanh 给出 (∈[-1,1])，与 DanioNet v(σ,∈[0,1]) "
-                    "不同（connectome §8 待核）"
-                    if name != DANIONET_MODEL
-                    else None
-                ),
+                "note": "复杂度取首 seed" if name != DANIONET_MODEL else None,
             }
         )
     return tuple(out)

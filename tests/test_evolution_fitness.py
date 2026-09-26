@@ -90,3 +90,10 @@ def test_mismatched_viable_length_rejected():
     components = _components([0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0])
     with pytest.raises(ValueError):
         composite_fitness(components, viable=[True], weights=WEIGHTS)
+
+
+def test_nonfinite_component_rejected():
+    """代内 min-max 遇 NaN/Inf 无定义，须显式报错而非静默给出不定 F。"""
+    components = _components([0.0, 1.0], [0.0, float("nan")], [0.0, 1.0], [0.0, 1.0])
+    with pytest.raises(ValueError, match="非有限"):
+        composite_fitness(components, viable=[True, True], weights=WEIGHTS)

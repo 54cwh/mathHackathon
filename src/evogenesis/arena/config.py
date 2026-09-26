@@ -130,6 +130,21 @@ class ExpertConfig:
 
 
 @dataclass(frozen=True)
+class ProbeConfig:
+    """H3 历史依赖探针（`arena §14`；**默认关闭**、测量层、不新增事件）。
+
+    数值为 `草案待确认`（设计选择 D）：`delay_steps D=40`、`return_radius r_H=3.0`、
+    `window_steps W=60`。owner=本 dataclass；取值 `configs/default_arena.yaml::probe`。
+    """
+
+    enabled: bool = False
+    delay_steps: int = 40
+    return_radius: float = 3.0
+    window_steps: int = 60
+    shuffle_history: bool = False
+
+
+@dataclass(frozen=True)
 class ArenaConfig:
     world: WorldConfig = field(default_factory=WorldConfig)
     population: PopulationConfig = field(default_factory=PopulationConfig)
@@ -138,11 +153,10 @@ class ArenaConfig:
     growth: GrowthConfig = field(default_factory=GrowthConfig)
     actors: ActorDefaults = field(default_factory=ActorDefaults)
     expert: ExpertConfig = field(default_factory=ExpertConfig)
+    probe: ProbeConfig = field(default_factory=ProbeConfig)
 
 
 # --- 装配与分层加载 ---------------------------------------------------------
-
-ARENA_DEFAULT_CONFIG = Path("configs/default_arena.yaml")
 
 # section 名 → dataclass（同 ``core/config.py`` 的「section 名 = dataclass 名」约定）
 ARENA_SECTIONS: dict[str, type] = {
@@ -153,6 +167,7 @@ ARENA_SECTIONS: dict[str, type] = {
     "growth": GrowthConfig,
     "actors": ActorDefaults,
     "expert": ExpertConfig,
+    "probe": ProbeConfig,
 }
 
 # 允许出现在 YAML、但不参与构造的**派生只读键**（§18.2.1：episode_seconds = episode_steps / hz）

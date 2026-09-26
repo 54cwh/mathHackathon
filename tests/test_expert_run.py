@@ -24,3 +24,15 @@ def test_run_episode_behavior_trace_only_when_enabled():
     on = run_episode(CFG, seed=1103, steps=4, experiment_id="exp-x", emit_behavior_trace=True)
     assert off.trace == []
     assert on.trace and {r["fish_id"] for r in on.trace} <= set(on.fish_ids)
+
+
+def test_run_episode_arena_seeds_follow_generation():
+    """arena 子种子实体序号取 `generation`，跨代不复用同一随机流（`代循环编排 §4`）。"""
+    from evogenesis.core.seed import SeedManager
+
+    gen0 = run_episode(CFG, seed=1103, steps=2, experiment_id="exp-x", generation=0)
+    gen3 = run_episode(CFG, seed=1103, steps=2, experiment_id="exp-x", generation=3)
+    manager = SeedManager(1103)
+    assert gen3.spawn_seed == manager.seed("arena_spawn", 3)
+    assert gen3.dynamics_seed == manager.seed("arena_dynamics", 3)
+    assert gen3.spawn_seed != gen0.spawn_seed

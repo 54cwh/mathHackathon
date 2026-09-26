@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import time
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -25,24 +25,29 @@ from evogenesis.evolution.population import (
     advance_generation,
 )
 from evogenesis.experiment import runlayout
-from evogenesis.experiment.events import episode_event_header, write_event_log
+from evogenesis.experiment.events import write_episode_log
 from evogenesis.experiment.metrics import (
-    aggregate_by_seed,
     energy_efficiency,
-    episode_metrics,
 )
 from evogenesis.experiment.run_artifacts import (
-    dump_json,
-    episode_row,
-    write_metrics_csv,
-    write_population,
+    individual_metric_rows,
+    write_seed_artifacts,
 )
+from evogenesis.genome.genome import architecture, expression_A, expression_B
 from evogenesis.pipeline.arena_episode import (
     PopulationEvaluation,
     arena_seeds_for,
     evaluate_population,
 )
-from evogenesis.pipeline.model_chain import ChainIndividual, ModelChainConfig, initial_population
+from evogenesis.pipeline.model_chain import (
+    ChainIndividual,
+    ModelChainConfig,
+    initial_population,
+    motif_catalog,
+)
+
+#: 四类架构档（`genome §3`）。
+_PHENOTYPE_CLASSES = ("A_B_", "A_bb", "aaB_", "aabb")
 
 
 @dataclass(frozen=True)
@@ -56,6 +61,12 @@ class GenerationSummary:
     fitness_std: float | None
     bottleneck: bool
     event: str | None = None
+    p_A: float = 0.0
+    p_B: float = 0.0
+    phenotype_freq: dict = field(default_factory=dict)
+    mean_neuron: float = 0.0
+    mean_edge: float = 0.0
+    mean_tau: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -144,6 +155,52 @@ def assemble_individuals(
     return tuple(out)
 
 
+def _mean(values: list[float]) -> float:
+    return float(np.mean(values)) if values else 0.0
+
+
+def dashboard_aggregates(
+    chain_individuals: tuple[ChainIndividual, ...],
+    evaluation: PopulationEvaluation,
+    *,
+    theta_N: float,
+    theta_H: float,
+    motifs: tuple[str, ...],
+) -> dict:
+    """Evolution Dashboard 聚合（`交互与可视化.md` §8；`代循环编排.md` §5）。
+
+    `p_A` = `P(high_N)`、`p_B` = `P(high_H)`（`genome §3` 阈值表型）；`phenotype_freq` 为四类
+    架构档频率；连接组均值为 `evaluation.phenotypes` 上的活跃神经元 / 非零边 / `tau` 均值。
+    """
+    classes = [
+        architecture(
+            expression_A(ci.genome, motifs),
+            expression_B(ci.genome, motifs),
+            theta_N,
+            theta_H,
+        ).class_label
+        for ci in chain_individuals
+    ]
+    n = len(classes) or 1
+    freq = {label: classes.count(label) / n for label in _PHENOTYPE_CLASSES}
+    phenotypes = evaluation.phenotypes
+    neurons = [int(p.active_mask.sum()) for p in phenotypes]
+    edges = [int((p.adjacency != 0).sum()) for p in phenotypes]
+    taus = [
+        float(p.tau.float()[p.active_mask.bool()].mean())
+        for p in phenotypes
+        if bool(p.active_mask.any())
+    ]
+    return {
+        "p_A": freq["A_B_"] + freq["A_bb"],
+        "p_B": freq["A_B_"] + freq["aaB_"],
+        "phenotype_freq": freq,
+        "mean_neuron": _mean([float(v) for v in neurons]),
+        "mean_edge": _mean([float(v) for v in edges]),
+        "mean_tau": _mean(taus),
+    }
+
+
 def _write_generation_artifacts(
     run_dir: Path,
     *,
@@ -162,40 +219,32 @@ def _write_generation_artifacts(
     gen_dir = run_dir / "generations" / f"g{generation:04d}"
     gen_dir.mkdir(parents=True, exist_ok=True)
     episode = evaluation.episode
-    rows: list[dict] = []
     if episode is not None:
-        rows = [
-            {
-                "seed": seed,
-                "fish_id": fish_id,
-                **episode_metrics(
-                    rec,
-                    episode_steps=steps,
-                    e_max=arena_config.energy.e_max,
-                    capture_success_prob=arena_config.growth.capture_success_prob,
-                    weights=weights,
-                ),
-            }
-            for fish_id, rec in sorted(episode.per_fish.items())
-        ]
         spawn_seed, _ = arena_seeds_for(seed, generation)
-        write_event_log(
+        write_episode_log(
             gen_dir / "events.jsonl",
-            episode_event_header(
-                experiment_id=experiment_id,
-                episode_id="ep0001",
-                environment_id=environment_id,
-                generation=generation,
-                episode_seed=spawn_seed,
-                n_events=len(episode.events),
-            ),
-            episode.events,
+            experiment_id=experiment_id,
+            environment_id=environment_id,
+            generation=generation,
+            episode_seed=spawn_seed,
+            events=episode.events,
         )
-        write_metrics_csv(gen_dir, rows)
-        write_population(gen_dir, seed, episode.per_fish)
-        write_jsonl(
-            gen_dir / "episodes.jsonl",
-            [episode_row(seed, list(episode.events), episode.per_fish, steps, elapsed)],
+        rows = individual_metric_rows(
+            episode.per_fish,
+            seed=seed,
+            episode_steps=steps,
+            e_max=arena_config.energy.e_max,
+            capture_success_prob=arena_config.growth.capture_success_prob,
+            weights=weights,
+        )
+        write_seed_artifacts(
+            gen_dir,
+            rows=rows,
+            seed=seed,
+            per_fish=episode.per_fish,
+            events=episode.events,
+            steps=steps,
+            elapsed=elapsed,
         )
     write_jsonl(
         gen_dir / "fitness.jsonl",
@@ -211,8 +260,6 @@ def _write_generation_artifacts(
             for individual in individuals
         ),
     )
-    if episode is not None:
-        dump_json(gen_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
 
 
 def run_evolution(
@@ -250,6 +297,7 @@ def run_evolution(
     summaries: list[GenerationSummary] = []
     bottleneck = False
     generations_run = 0
+    motifs = motif_catalog(master_seed, chain.layout)
     runlayout.update_run_status(run_dir, "running")
     for generation in range(generations):
         chain_individuals = to_chain_individuals(individuals, experiment_id=experiment_id)
@@ -281,6 +329,13 @@ def run_evolution(
             elapsed=elapsed,
         )
         viable_fitness = [i.fitness for i in individuals if i.viable]
+        aggregates = dashboard_aggregates(
+            chain_individuals,
+            evaluation,
+            theta_N=chain.phenotype.theta_N,
+            theta_H=chain.phenotype.theta_H,
+            motifs=motifs,
+        )
         summary = GenerationSummary(
             generation=generation,
             n_individuals=len(individuals),
@@ -291,6 +346,7 @@ def run_evolution(
             ),
             bottleneck=False,
             event=None,
+            **aggregates,
         )
         generations_run += 1
 

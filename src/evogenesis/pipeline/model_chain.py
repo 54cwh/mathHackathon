@@ -22,6 +22,7 @@ from evogenesis.connectome.config import (
     load_network_config,
 )
 from evogenesis.connectome.danionet import DanioNet
+from evogenesis.core.config import PhenotypeConfig, load_config
 from evogenesis.core.ids import mint_id, parse_index
 from evogenesis.core.seed import SeedManager
 from evogenesis.development.config import DEFAULT_CONFIG as DEFAULT_RGCD_CONFIG
@@ -39,6 +40,7 @@ class ModelChainConfig:
     layout: GenomeLayout
     rgcd: RGCDConfig
     network: NetworkReadoutConfig
+    phenotype: PhenotypeConfig
 
 
 def load_model_chain_config(
@@ -57,6 +59,7 @@ def load_model_chain_config(
         layout=load_genome_config(path, overrides=overrides, environ=environ),
         rgcd=load_development_config(path, overrides=overrides, environ=environ),
         network=load_network_config(path, overrides=overrides, environ=environ),
+        phenotype=(PhenotypeConfig() if path is None else load_config(path).phenotype),
     )
     # 跨配置不变式（`genome §6` 冻结 motif_count == grn.dim == 8）：偏离须同步 B 形状并重标定。
     if chain.layout.motif_count != chain.rgcd.grn_dim:

@@ -126,3 +126,15 @@ def test_tournament_rejects_empty_pool():
         binary_tournament(
             [0.0], [], tournament_size=2, rng=np.random.default_rng(0), n_selections=1
         )
+
+
+def test_tournament_rejects_nonfinite_fitness():
+    """候选 fitness 含 NaN/Inf 时 argmax 行为不定，须显式报错。"""
+    with pytest.raises(ValueError, match="非有限"):
+        binary_tournament(
+            [1.0, float("nan")],
+            [0, 1],
+            tournament_size=2,
+            rng=np.random.default_rng(0),
+            n_selections=1,
+        )

@@ -80,6 +80,12 @@ def test_namespaces_frozen():
         "bc": 8,
         "arena_dynamics": 9,
         "baseline_init": 10,
+        "penetrance_calibration": 11,
+        "penetrance_report": 12,
+        "baseline_support": 13,
+        "robustness": 14,
+        "arena_eval_spawn": 15,
+        "arena_eval_dynamics": 16,
     }
 
 

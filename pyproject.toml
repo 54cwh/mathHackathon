@@ -4,6 +4,7 @@ version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
     "biopython>=1.88",
+    "fastapi>=0.115",
     "ipykernel>=7.3.0",
     "jupyterlab>=4.6.4",
     "matplotlib>=3.11.2",
@@ -21,10 +22,13 @@ dependencies = [
     "structlog>=26.1.0",
     "torch>=2.14.0",
     "tqdm>=4.70.1",
+    "uvicorn>=0.30",
+    "websockets>=13",
 ]
 
 [dependency-groups]
 dev = [
+    "httpx>=0.27",
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
     "ruff>=0.16.9",

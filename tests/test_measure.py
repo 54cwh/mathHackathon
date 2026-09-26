@@ -85,6 +85,20 @@ def test_measure_latency_rejects_bad_budget(warmup, iters):
         measure_latency(_CountingNet(), _obs(), warmup=warmup, iters=iters)
 
 
+def test_measure_latency_runs_without_grad():
+    """§2.4 推理口径：warmup 与计时都在 `torch.no_grad()` 下（不含 autograd 开销）。"""
+    torch = pytest.importorskip("torch")
+    seen: list[bool] = []
+
+    class _GradProbe:
+        def step(self, observations):  # noqa: ARG002
+            seen.append(bool(torch.is_grad_enabled()))
+            return 0.0, 0.0
+
+    measure_latency(_GradProbe(), _obs(), warmup=2, iters=3)
+    assert seen == [False] * 5
+
+
 def test_peak_memory_tracks_python_allocations():
     def run() -> None:
         _ = [bytearray(4096) for _ in range(256)]

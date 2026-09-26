@@ -46,7 +46,10 @@ def write_csv(
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
     if fieldnames is None:
-        fieldnames = list(materialized[0].keys()) if materialized else []
+        if not materialized:
+            target.write_text("", encoding="utf-8")
+            return
+        fieldnames = list(materialized[0].keys())
     with target.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()

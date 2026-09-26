@@ -49,6 +49,8 @@ def binary_tournament(
         raise ValueError(f"binary tournament 的 k 必须 ≥ 2，实际 {tournament_size}")
     if cand.size < tournament_size:
         raise ValueError(f"候选池（{cand.size}）小于锦标赛规模 {tournament_size}")
+    if not bool(np.isfinite(fit[cand]).all()):
+        raise ValueError("候选个体的 fitness 含非有限值（NaN/Inf），锦标赛无法判定")
     if n_selections < 0:
         raise ValueError("n_selections 必须非负")
     if n_selections == 0:

@@ -112,6 +112,12 @@ def test_fitness_and_evolution_line_pass_schema():
             "fitness_std": None,
             "bottleneck": True,
             "event": "evolution.population_bottleneck",
+            "p_A": 0.5,
+            "p_B": 0.25,
+            "phenotype_freq": {"A_B_": 0.25, "A_bb": 0.25, "aaB_": 0.0, "aabb": 0.5},
+            "mean_neuron": 12.0,
+            "mean_edge": 40.0,
+            "mean_tau": 5.5,
         },
         _schema("evolution.schema.json"),
     )

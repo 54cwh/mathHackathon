@@ -1,8 +1,8 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.14",
-    "date": "2026-09-26",
+    "version": "v0.18",
+    "date": "2026-09-27",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
     "research": [
@@ -23,7 +23,7 @@
       "no_basis": "找不到依据，标设计选择",
       "missing": "参数总表原缺、实现必须补"
     },
-    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。",
+    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。 2026-09-27：登记 baseline 结构常量（H 14/4/12、ρ=0.15，group=baseline）与 reference n_ours=190；并更正其 provenance 为 index 12（原记 index 6 实测为 162）。 2026-09-27：登记 H3 探针参数（probe.*，arena §14，设计选择 D、默认关闭、草案待确认）。 2026-09-27：登记 Experiment E（robustness_fractions / robustness_n_danio）。",
     "workflow": [
       "表 A/B/C 锁定不动",
       "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
@@ -182,9 +182,9 @@
       "status": "missing",
       "basis": "penetrance 观测档阈值，作用于发育产物 N=|M|（genome §3）；须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调",
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": null,
+      "config": "configs/penetrance.yaml → theta_N_obs",
       "sensitivity": null,
-      "suggest": "待 Phase-1 RGCD 产出 N 分布后标定；属报告量，不阻断代码"
+      "suggest": "校准器已实现（`experiment/penetrance.py` + `scripts/run_penetrance.py --mode calibrate`；实验登记 `experiment §3.9`）；跑校准后由人签署写入；**须先看 separation_N.separable=true 才可置 threshold_status=confirmed**；否则只能 threshold_status=placeholder 出演示表"
     },
     {
       "name": "theta_H_obs",
@@ -195,9 +195,48 @@
       "status": "missing",
       "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs",
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": null,
+      "config": "configs/penetrance.yaml → theta_H_obs",
       "sensitivity": null,
-      "suggest": "待 Phase-1 产出 CV_τ 分布后标定；属报告量，不阻断代码"
+      "suggest": "校准器已实现（同 theta_N_obs；`scripts/run_penetrance.py --mode calibrate`）；同 theta_N_obs：须 separation_H.separable=true 才可置 confirmed"
+    },
+    {
+      "name": "penetrance_calibration_per_class",
+      "value": 400,
+      "unit": "per_class",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 独立校准集**分层平衡**抽样规模（每类；实验设计选择，无文献取值）",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → calibration.per_class",
+      "sensitivity": null,
+      "suggest": "草案待确认：分层平衡使每轴 high/low 均衡；规模决定 θ 估计稳定性"
+    },
+    {
+      "name": "penetrance_report_per_class",
+      "value": 400,
+      "unit": "per_class",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 报告集**分层平衡**抽样规模（每类；保证最小类 aabb 的 Wilson CI 可控）",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → report.per_class",
+      "sensitivity": null,
+      "suggest": "草案待确认：pen 以基因为条件，分层平衡对 pen(g) 无偏且 CI 更窄"
+    },
+    {
+      "name": "penetrance_demo_offspring",
+      "value": 160,
+      "unit": "offspring",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "9:3:3:1 计数演示的**未分层**样本规模（genome §3 的 160 例口径）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → report.demo_offspring",
+      "sensitivity": null,
+      "suggest": "160 例为演示、非统计验证（genome §3）"
     },
     {
       "name": "mutation_rate",
@@ -1849,7 +1888,7 @@
       "group": "experiment",
       "grade": "D",
       "status": "confirmed",
-      "basis": "Experiment C 每 seed 的评估 episode 数。评估子种子走独立命名空间 arena_eval_spawn=11 / arena_eval_dynamics=12（t = 评估 episode 序号，全模型共享），与采集侧 arena_spawn/arena_dynamics 解耦 —— 后者与 collect.episode_seed 逐字等价，复用会使评估局落在训练数据的环境实例上。2026-09-26 用户签署。",
+      "basis": "Experiment C 每 seed 的评估 episode 数。评估子种子走独立命名空间 arena_eval_spawn=15 / arena_eval_dynamics=16（t = 评估 episode 序号，全模型共享），与采集侧 arena_spawn/arena_dynamics 解耦 —— 后者与 collect.episode_seed 逐字等价，复用会使评估局落在训练数据的环境实例上。2026-09-26 用户签署。",
       "source": "research/notes/契约决策记录.md",
       "config": "configs/experiment.yaml → n_episodes",
       "sensitivity": null,
@@ -1867,12 +1906,160 @@
       "config": "configs/experiment.yaml → n_danio",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "baseline_mlp_hidden",
+      "value": 14,
+      "unit": "neurons",
+      "group": "baseline",
+      "grade": "C",
+      "status": "derived",
+      "basis": "MLP 单隐层宽度；由 §8 尺寸反解（连接数 14H 最接近 N_ours=190）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量：保留在 connectome/baselines.py（不 config 化，避免公平性基线被无意改动）"
+    },
+    {
+      "name": "baseline_gru_hidden",
+      "value": 4,
+      "unit": "neurons",
+      "group": "baseline",
+      "grade": "C",
+      "status": "derived",
+      "basis": "GRU 隐层宽度；由 §8 尺寸反解（3H²+38H 最接近 190）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量（connectome/baselines.py）"
+    },
+    {
+      "name": "baseline_fixed_sparse_rnn_hidden",
+      "value": 12,
+      "unit": "neurons",
+      "group": "baseline",
+      "grade": "C",
+      "status": "derived",
+      "basis": "Fixed Sparse RNN 隐层宽度；由 §8 尺寸反解（|mask|+14H ≈190）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量（connectome/baselines.py）"
+    },
+    {
+      "name": "baseline_sparse_density",
+      "value": 0.15,
+      "unit": null,
+      "group": "baseline",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "Fixed Sparse RNN 递归支撑的 Bernoulli 密度（§8）；与 RGCD §8 消融 w/o GRN 同密度；无外部依据，属设计选择(D)",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量（connectome/baselines.py::SPARSE_DENSITY）；支撑 mask 由 baseline_support 命名空间冻结"
+    },
+    {
+      "name": "probe_enabled",
+      "value": false,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），标 `草案待确认`；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.enabled",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）为草案待确认；认可后升已定稿"
+    },
+    {
+      "name": "probe_delay_steps",
+      "value": 40,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），标 `草案待确认`；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.delay_steps",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）为草案待确认；认可后升已定稿"
+    },
+    {
+      "name": "probe_return_radius",
+      "value": 3.0,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），标 `草案待确认`；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.return_radius",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）为草案待确认；认可后升已定稿"
+    },
+    {
+      "name": "probe_window_steps",
+      "value": 60,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），标 `草案待确认`；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.window_steps",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）为草案待确认；认可后升已定稿"
+    },
+    {
+      "name": "probe_shuffle_history",
+      "value": false,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），标 `草案待确认`；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.shuffle_history",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）为草案待确认；认可后升已定稿"
+    },
+    {
+      "name": "robustness_fractions",
+      "value": [
+        0.0,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "Experiment E 删边比例（`experiment §3.5`）；0.05/0.10/0.20 为定稿取值，0.0 为对照基线（用于算退化 Δ）",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.5",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "草案待确认：删边口径（清零支撑 vs 仅清零有效权重）与底物规则待用户签署"
+    },
+    {
+      "name": "robustness_n_danio",
+      "value": 12,
+      "unit": "individuals",
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "Experiment E 每 seed 候选个体数（取**首个 viable** 作底物；与 §3.3 的 `n_danio` 一致）",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.5",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "草案待确认：底物计数待签署"
     }
   ],
   "missing_required": {
     "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。 2026-09-26：`body_length_mm` 按方案 B（wu 不与 BL 固定换算）退役，不再作为世界换算基准。",
     "items": [
-      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 与 τ 异质性统计量（CV；genome §3；须在独立校准集上定，属报告量）"
+      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 数值（genome §3；须在独立校准集上定，属报告量）：τ 异质性统计量已冻结为 CV、校准器已实现（`experiment §3.9`），仅剩数值待校准后由人签署"
     ]
   },
   "citation_risks": [
@@ -1936,6 +2123,12 @@
       "value": "21.7°/35 ms 或 ≈72°/81 ms",
       "source": "Temizer 2015 / Dunn 2016",
       "use": "looming 阈值（生物学参考；本仓库 looming 通道为角扩张率，阈值不直接映射）"
+    },
+    {
+      "name": "n_ours_support_edges",
+      "value": 190,
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8；实测 seed 250927 / initial_population index 12",
+      "use": "Experiment C 参数量公平性基准（|log10 N_base − log10 N_ours| ≤ 1，按连接数比较）"
     }
   ],
   "changes_pending": [],

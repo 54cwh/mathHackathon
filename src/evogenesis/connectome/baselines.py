@@ -21,7 +21,9 @@ from torch import nn
 from evogenesis.core.seed import SeedManager
 from evogenesis.core.tensors import to_float32_tensor
 
-N_OURS = 190
+# N_ours（§8 的公平性基准）不在此：它是 DanioNet 的**实测参考值**（seed 250927 / index 12，
+# 支撑边数 190），登记于 docs/参数总表.json 的 reference_magnitudes，并由
+# tests/test_baselines.py 实测守护（避免支撑口径变动后静默过期）。
 SPARSE_DENSITY = 0.15
 DEFAULT_SENSORY_DIM = 12
 ACTION_DIM = 2
@@ -179,8 +181,8 @@ class MLPPolicy(BaselinePolicy):
         w2 = self._take((ACTION_DIM, self.hidden), o[2])
         b2 = self._take((ACTION_DIM,), o[3])
         self.h = torch.tanh(x @ w1.t() + b1)
-        y = torch.tanh(self.h @ w2.t() + b2)
-        return y[:, 0], y[:, 1]
+        y = self.h @ w2.t() + b2
+        return torch.tanh(y[:, 0]), torch.sigmoid(y[:, 1])
 
     def complexity(self) -> dict[str, int]:
         weights = self.sensory_dim * self.hidden + self.hidden * ACTION_DIM
@@ -214,7 +216,7 @@ class FixedSparseRNNPolicy(BaselinePolicy):
             sensory_dim=sensory_dim,
             device=device,
         )
-        generator = SeedManager(master_seed).spawn_rng("baseline_init", index)
+        generator = SeedManager(master_seed).spawn_rng("baseline_support", index)
         mask = generator.random((self.hidden, self.hidden)) < SPARSE_DENSITY
         self.register_buffer("support", torch.as_tensor(mask, dtype=torch.bool, device=device))
 
@@ -249,8 +251,8 @@ class FixedSparseRNNPolicy(BaselinePolicy):
         b_out = self._take((ACTION_DIM,), o[4])
         pre = self.h @ w_rec.t() + x @ w_in.t() + b
         self.h = torch.tanh(pre)
-        y = torch.tanh(self.h @ w_out.t() + b_out)
-        return y[:, 0], y[:, 1]
+        y = self.h @ w_out.t() + b_out
+        return torch.tanh(y[:, 0]), torch.sigmoid(y[:, 1])
 
     def complexity(self) -> dict[str, int]:
         dense = (
@@ -343,8 +345,8 @@ class GRUPolicy(BaselinePolicy):
         r = torch.sigmoid(x @ wx_r.t() + self.h @ wh_r.t() + b_r)
         n = torch.tanh(x @ wx_n.t() + (r * self.h) @ wh_n.t() + b_n)
         self.h = (1.0 - z) * n + z * self.h
-        y = torch.tanh(self.h @ w_out.t() + b_out)
-        return y[:, 0], y[:, 1]
+        y = self.h @ w_out.t() + b_out
+        return torch.tanh(y[:, 0]), torch.sigmoid(y[:, 1])
 
     def complexity(self) -> dict[str, int]:
         h, d = self.hidden, self.sensory_dim
@@ -386,7 +388,6 @@ __all__ = [
     "FixedSparseRNNPolicy",
     "GRUPolicy",
     "MLPPolicy",
-    "N_OURS",
     "SPARSE_DENSITY",
     "build_baselines",
 ]

@@ -238,9 +238,22 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 - 报告 \(P(D)\) 退化曲线；`integrator_memory` 激活可作辅助证据；
 - 阴性对照：打乱历史（shuffle `last_seen_prey_pos`）后 \(P(D)\) 应下降。
 
-**实现状态【未实现】**：`arena/` 当前无探针代码（无 `last_seen_prey_pos` 字段、无回归判定、无 shuffle 对照）；\(D\)、\(r_H\) 取值待定。**H3 的主证据不依赖本探针**——`integrator_memory` 单元激活统计可作辅助证据，探针为**可选增强**；实现须单列（新增 `Fish` 字段、可能新增事件类型，按 §18.10「事件词表」变更纪律同步 `KNOWN_EVENTS`）。列入 §19 P1。
+**实现契约【草案待确认】（2026-09-26 实现已先行、待确认）**：默认**关闭**（`probe.enabled=false`），
+开关打开后为**测量层**——不新增事件类型、不改冻结的 §18.4.2 词表：
 
-依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。\(D\)、\(r_H\) 取值待定。
+- 每步（实体移动后）对每条存活鱼取「**最近可见猎物**」（`sensing.radius` + `sensing.fov_degrees`，同 `observe` 口径）。
+  可见 → 记 `last_seen_prey_pos`、`steps_since=0`；不可见 → `steps_since += 1`。
+- 某鱼连续不可见达 `probe.delay_steps`（`D`）且已有 `last_seen` → 开始一次 **trial**：期望位置 = `last_seen`
+  （`probe.shuffle_history=true` 时取**点反射** `(W−x, H−y)` 作阴性对照），窗口 `probe.window_steps`（`W`）。
+- trial 内：鱼落到期望位置 `probe.return_radius`（`r_H`）内 → 记 success 并结束；窗口耗尽 → 结束（失败）；
+  猎物重新可见 → 结束（失败）。
+- 结果：`DanioArena.h3_probe_report()` → `{delay_steps, return_radius, window_steps, shuffle_history, trials,
+  successes, P}`（`P=successes/trials`，无 trial 为 `null`）；逐鱼计数在 `Fish.probe_trials / probe_successes`。
+  `P(D)` 曲线由多次 `probe.delay_steps` override 取得。
+- **数值（`草案待确认`；设计选择 **D**，无文献实测锚点）**：`D=40`（2 s @20Hz）、`r_H=3.0`（世界单位）、`W=60`（3 s）；
+  落 `configs/default_arena.yaml::probe.*` 与 `docs/参数总表.json`。开关默认关闭，故**不影响冻结基线**。
+- **实现状态**：**已实现**（`arena/env.py::_update_probe`、`ProbeConfig`、`sensing.nearest_visible_prey`）；守护 `tests/test_h3_probe.py`。
+- 依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。
 
 ## 15. 繁殖/终止相关判定
 【已定稿】episode 结束：`done = step_idx ≥ 600`（**一律跑满 600 步**）。个体死亡只**冻结该个体**，不提前结束。结束后 `step()` 幂等空转，`arena.episode_end` 每局**恰好一次**。空种群（`fish={}`）不判团灭。
@@ -508,7 +521,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 - `distance` / `size_ratio` 在发射前 `round(..., 3)`；`threshold` 与 `capture_radius` 直接取 config 原值（1.25 / 4.61），便于离线核对判据。
 - `arena.capture_attempt.result` 取值为 `"too_small_to_eat"`（尺寸门没过）或 `"missed"`（尺寸门过了但扑击失败，仅 `growth.capture_success_prob < 1` 时可能出现）；距离不足的猎物在判据前即被 `continue` 跳过、不产生事件。**草案里的 `"too_far"` 是永远不会出现的值**（见 §4.4）。
 - `arena.escape.threat_source` 是**捕食者实体 id**（`predator_NN`），不是类型名。
-- `arena.fish_captured.survival_steps` 与 `arena.energy_depleted.survival_steps` 同口径：发射时的 `Fish.survival_steps`（未自增）。
+- `arena.fish_captured.survival_steps` / `arena.energy_depleted.survival_steps` 均取**发射时**的 `Fish.survival_steps`。其中 `energy_depleted` 因当步跳过自增，取的是**死前已存活步数**；`fish_captured` 的鱼在本步鱼循环已自增，故该值**含本步**（口径见 §13「步末对存活鱼自增」）。
 - **障碍不发射 spawn**：只有 fish / prey / predator 三类活动实体入事件。障碍的位置与半径、以及所有实体的实时位置/尺寸，走 snapshot（`GET /v1/sessions/{session_id}/snapshot`）而非事件流。
 - `arena.episode_end` 的 `steps` 取 `step_idx`（此时已自增）：一律跑满，恒为 600。
 - **`escape_successes` 与 `predator_encounters` 都是"计数而非事件"**：它们只出现在 `per_fish_log()` / `FishCard.metrics` / leaderboard 侧，事件流里没有对应条目。
@@ -539,7 +552,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | D1 | **两条随机源（已拆，A14 闭合）** | `spawn_seed` → `np.random.default_rng(spawn_seed)`（**出生/再生**：`reset()` 布局、`_free_spot`、regrowth）；`dynamics_seed` → `np.random.default_rng(dynamics_seed)`（**逐步动力学**：猎物游走）。两者均为 `core §3` 整数子种子，由调用方经 `SeedManager.seed("arena_spawn"/"arena_dynamics", index)` 派生后传入（`core §3` 整数种子例外；实验路径 `experiment/collect.py`、`pipeline`）。`arena/` 内**不出现** `import random`、全局 `np.random.*` 调用、或任何时间/OS 熵来源 |
 | ⚠️ D2 | **`reset()` 幂等** | `reset()` **重建两条 RNG**（`default_rng(spawn_seed)` / `default_rng(dynamics_seed)`），并**先清空 `self.obstacles`** 再就地逐个生成障碍（S9）。因此同一 arena 反复 `reset()` 得到**逐字段一致**的初始局面（障碍位置与半径、每条鱼的位置/航向、每个猎物的位置/尺寸）。由 `test_reset_idempotent_on_same_instance` 守护（同时断言障碍的 `pos` 与 `radius`） |
 | D3 | **reset 内消费顺序** | 障碍 → 鱼 → 猎物 → 捕食者。每障碍：1 次半径 uniform + `_free_spot`（≥1 次）；每鱼：`_free_spot(2.0)` + 1 次航向 uniform；每猎物：`_free_spot(1.0)` + 1 次航向 uniform + 1 次尺寸 uniform；每捕食者：`_free_spot(3.0)` + 1 次航向 uniform |
-| D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `dynamics_rng.normal(0.0, 0.8)`（`PreyPolicy.act`）；再生（每 `prey_regrowth_steps` 步）消费 `spawn_rng`。鱼、捕食者、障碍、looming 记账**均不消费 RNG** |
+| D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `dynamics_rng.normal(0.0, 0.8)`（`PreyPolicy.act`）；再生（每 `prey_regrowth_steps` 步）消费 `spawn_rng`。鱼、捕食者、障碍、looming 记账**均不消费 RNG**（**例外**：`growth.capture_success_prob < 1` 时，鱼的捕食失败判定每次扑击消费 `dynamics_rng` 1 次；默认 `1.0` 不消费） |
 | D5 | **拒绝采样进入消费路径** | `_free_spot` 的采样**次数**取决于当前（本局）障碍布局，消费 `spawn_rng`，因此它是 spawn 流消费路径的一部分 —— 一旦改动障碍数量/半径范围/clearance，后续所有实体的随机流都会平移。**这是复现性最脆弱的一环**：改动障碍数量/半径范围/clearance 会使后续所有实体的随机流整体平移，同一 seed 下的初始世界随之改变，历史基线不可直接对比 |
 | D6 | **推进粒度的无关性** | 「推进 k 步」（原 `api/session.py::Session.advance(steps=k)`，该服务层已按用户决定移除）就是 `k` 次 `step()`；每一步内的 RNG 消费只由**该步的状态**决定（D4：存活猎物数 × 1 次 normal）。因此「同一 seed 下推进到第 $k$ 步的状态」与「分几次调用推进到第 $k$ 步」无关（在 600 步上限内）。**注意**：这条只说粒度无关，不代表 `step()` 不消费 RNG |
 | D7 | **测试守护** | `test_reset_deterministic_same_seed`（同 seed 实体一致）、`test_reset_different_seed_differs`（异 seed 不同）、`test_reset_idempotent_on_same_instance`（**同一实例二次 reset 一致**） |
@@ -735,7 +748,7 @@ uv run python scripts/smoke_arena.py
 6. **事件样例闭环**：`schemas/examples/event_log_example.jsonl` 仍需按本文件 §18 的 8 类事件词表重生成，或明确降级为仅示意信封形状；不能继续让样例字段与实现词表分裂。
 7. **文献登记**：采纳 Arena lane 的生物学依据时，从 `bibliography.md` 当前编号之后继续登记（不得复用 RGCD 的 #111–#130），再把引用写回合并稿和参数总表。文献只支撑合理性校验或设计依据，不自动变成 Arena 契约。
 
-8. **H3 历史依赖探针（可选增强，§14）**：任务定义已定稿、实现未做；实现前须定 \(D\)、\(r_H\) 并评估是否新增事件类型（若新增，按 §18.10 同步 `KNOWN_EVENTS` / core §5.1 / 事件样例）。
+8. **H3 历史依赖探针（§14）**：**已实现**（默认关闭、测量层、不新增事件）；`D=40`/`r_H=3.0`/`W=60` 为 `草案待确认`（设计选择 D），认可后升已定稿。
 8b. **sensing 的 left/right 语义与 action 侧对齐（待用户裁决）**：`sensing._split_channels` 现约定 `sin(rel) < 0 → left`（§4.1）；`connectome/DanioNet设计规范.md` §4 又定 left motor 池 → \(+ω\)（\(+θ\)，逆时针）。二者是否同侧需做一次方向性核对：标准数学坐标下 \(+rel\) 才是物理左，故当前映射可能与 action 侧反相。若确认反相，须在 `sensing` 与 `ExpertPolicy` **同步翻转**（两者一起翻可保持 Expert 行为逐位不变，进而保住 §18.11 基线），并重跑 DanioNet 驱动基线；**裁决前不改行为**，本约定按 §4.1 文档化，供方向性测试与用户决定。
 
 ### P2：实现完善

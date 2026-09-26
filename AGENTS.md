@@ -11,16 +11,16 @@
 
 # 项目目录结构
 
-代码按任务分层：`core/` 是方向无关的机制底座，其余模块（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ pipeline/ api/`）各对应一项研发任务，彼此独立、可单独替换。（`pipeline/` 为编排层，消费 `genome/development/connectome` 等；`api/` 实现层已移除、待重写，仅存契约草案文档。）
+代码按任务分层：`core/` 是方向无关的机制底座，其余模块（`genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ pipeline/ api/`）各对应一项研发任务，彼此独立、可单独替换。（`pipeline/` 为编排层，消费 `genome/development/connectome` 等；`api/` 为对外服务层，FastAPI 实现已落地。）
 
 **文档随代码**：每个代码集群的文档就放在该模块目录内（如 `arena/Danio_Arena设计与实现说明.md`、`api/API与系统工程.md`），内容为**接口 / 目的 / 用法 + 与代码的映射**，是该模块的审计基准；代码一旦偏离同目录文档即视为缺陷。`docs/` 只放跨模块文档。任何代码改动都应在同一提交里同步对应模块文档。
 
 ```text
 mathHackathon/
 ├── src/evogenesis/             # 唯一可导入包（hatchling editable）
-│   ├── EvoGenesis项目总纲.md      # 项目总交接 + 模块索引
+│   ├── EvoGenesis项目总纲.md      # 项目总交接稿（目标 / 研究问题 / 系统层级 / 规模 / 叙事）
 │   ├── 问题定义与研究假设.md      # 建模总纲
-│   ├── core/                   # 机制底座：config / seed / logging / tracking / registry / io
+│   ├── core/                   # 机制底座：config / seed / ids / tensors / logging / tracking / registry / io
 │   │   └── 核心机制与数据流.md
 │   ├── genome/                 # 二倍体基因组、motif
 │   │   └── 生物学与进化遗传学基础.md
@@ -34,12 +34,14 @@ mathHackathon/
 │   │   └── 遗传繁殖与演化模型.md
 │   ├── learning/               # Behavior Cloning 生命周期学习
 │   │   └── 行为克隆学习.md
-│   ├── experiment/             # 实验协议、指标、run
-│   │   └── 实验与评价体系.md
+│   ├── experiment/             # 实验协议、指标、run、代循环编排
+│   │   ├── 实验与评价体系.md
+│   │   └── 代循环编排.md
 │   ├── pipeline/               # 模型链装配（编排：config→种群→发育→DanioNet）
 │   │   └── 模型链装配.md
 │   ├── viz/                    # 可视化（论文图、网络图）
-│   └── api/                    # 对外服务层（实现层已移除、待重写，仅存契约草案 .md）
+│   │   └── 可视化.md
+│   └── api/                    # 对外服务层（FastAPI：路由 / WebSocket / Pydantic 契约）
 │       ├── API与系统工程.md       # 命名/系统/部署约定
 │       └── API接口.md            # 逐端点接口参考
 ├── frontend/                   # 演示 UI（Vite + React）
@@ -50,8 +52,8 @@ mathHackathon/
 ├── notebooks/                  # 探索性分析
 ├── tests/                      # 冒烟 + 单测
 ├── paper/                      # LaTeX 论文
-├── schemas/                    # JSON Schema（genome / fish / experiment）
-├── docs/                       # 跨模块协作文档（AI工作流 / 参数总表 / declaration / 赛题补充说明 / 验收清单 等）
+├── schemas/                    # JSON Schema：跨语言契约（genome / fish / experiment / population / trajectory / event_log / penetrance / baseline_comparison 等，共 18 份）
+├── docs/                       # 跨模块协作文档（AI工作流 / ai-tone-boundaries / 后端模块清单 / 参数总表 / 验收清单 / 赛题补充说明 / search-spec / declaration 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── prompts/                    # AI 角色提示词
 ├── artifacts/                  # 冻结演示资产（入库）
@@ -70,12 +72,12 @@ mathHackathon/
 
 根文件：`AGENTS.md`（本文件）、`opencode.json`、`README.md`、`LICENSE`、`pyproject.toml`/`uv.lock`/`.python-version`、`Makefile`、`.gitignore`。
 
-`src/evogenesis/` 采用 src-layout：必须 `uv sync`（editable）后才能 `import evogenesis`，导入前缀固定为 `evogenesis.`。依赖方向：`core/` 被所有任务包依赖，任务包彼此尽量不互相依赖（**唯一例外**：`pipeline/` 为编排层，可依赖 `genome/ development/ connectome` 等，但不被它们反向依赖），`api/` 为对外服务层（实现层已移除、待重写）。
+`src/evogenesis/` 采用 src-layout：必须 `uv sync`（editable）后才能 `import evogenesis`，导入前缀固定为 `evogenesis.`。依赖方向：`core/` 被所有任务包依赖，任务包彼此尽量不互相依赖（**唯一例外**：`pipeline/` 为编排层，可依赖 `genome/ development/ connectome` 等，但不被它们反向依赖），`api/` 为对外服务层（FastAPI，端点见 `api/API接口.md`）。
 
 ## 分层与归属
 
 - `core/` 是唯一长期稳定的机制层，任何任务都复用。
-- `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ pipeline/ api/` 按任务划分，各模块彼此独立、可单独替换（`pipeline/` 为编排层；`api/` 实现层已移除、待重写）；`viz/` 负责出图。
+- `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ pipeline/ api/` 按任务划分，各模块彼此独立、可单独替换（`pipeline/` 为编排层；`api/` 为对外服务层）；`viz/` 负责出图。
 - 任务与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`frontend/` 归展示，`results/` 归实验。
 - 文档与代码同目录（见上方树）：每个模块文档是该模块的接口/目的/用法与审计基准，代码偏离即缺陷。`docs/` 只放跨模块文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
 
@@ -92,7 +94,7 @@ mathHackathon/
 | 指标、run、统计 | `src/evogenesis/experiment/` |
 | 模型链装配（编排） | `src/evogenesis/pipeline/` |
 | 出图 | `src/evogenesis/viz/` |
-| API 路由 / WebSocket | `src/evogenesis/api/`（实现层已移除、待重写） |
+| API 路由 / WebSocket | `src/evogenesis/api/` |
 | CLI / 一键脚本 | `scripts/` |
 | 实验参数 | `configs/` |
 | 数据契约 | `schemas/` |
@@ -102,13 +104,14 @@ mathHackathon/
 | 调研 JSON | `research/reference/` |
 | 模块接口/规格文档 | 对应模块目录（如 `arena/Danio_Arena设计与实现说明.md`） |
 | 跨模块文档（工作流 / 排期 / 参数索引 / 验收） | `docs/` |
+| 后端模块文件级清单（文件 → 职责 → owner 文档） | `docs/后端模块清单.md` |
 | 论文 | `paper/` |
 
 ## 契约与配置 / 工具
 
 - `configs/`：实验参数（yaml）。所有数值以 config 为准，报告记录实际版本；`demo_seed.yaml` 与 `experiment_seeds.yaml` 分离 demo 与正式种子。
-- `schemas/`：跨语言 JSON Schema（`genome` / `fish` / `experiment`），Python 后端与 TS 前端共用；改契约必须双方同步。
-- `scripts/`：薄 CLI 入口，只做参数解析与调用包逻辑（`run_experiment.py`），**不放业务逻辑**。
+- `schemas/`：跨语言 JSON Schema（`genome` / `fish` / `experiment` / `population` / `trajectory` / `event_log` / `penetrance` / `baseline_comparison` 等），Python 后端与 TS 前端共用；改契约必须双方同步。
+- `scripts/`：薄 CLI 入口，只做参数解析与调用包逻辑（`run_experiment.py` / `run_arena.py` / `run_baselines.py` / `serve_api.py` 等），**不放业务逻辑**。
 - `tests/`：冒烟 + 单测；`TEST_PLAN.md` 是测试计划，`test_*.py` 是现状。
 - `data/`：`raw/`（忽略）、`processed/`、`external/`；`notebooks/` 放探索性分析。
 
@@ -143,13 +146,14 @@ mathHackathon/
 | `genome/生物学与进化遗传学基础.md` | 产出表达后的基因组 / gene products |
 | `development/RGCD数学模型.md` | 产出发育结果 `(A, Z, τ, W⁰, M)`（§1 已声明） |
 | `connectome/DanioNet设计规范.md` | 产出每步 activation、动作 `(ω, v)`、当代 `ΔW` |
-| `arena/Danio_Arena设计与实现说明.md`（兼容入口：`Danio_Arena设计规范.md`、`Danio_Arena实现说明.md`） | 产出 observation（12 维）、事件日志、每鱼记录；定义动作 `(ω,v)` 如何作用于世界，并映射到当前实现 |
+| `arena/Danio_Arena设计与实现说明.md` | 产出 observation（12 维）、事件日志、每鱼记录；定义动作 `(ω,v)` 如何作用于世界，并映射到当前实现 |
 | `evolution/遗传繁殖与演化模型.md` | 产出 fitness、下一代 genome |
 | `learning/行为克隆学习.md` | 产出 `ΔW`（横向，接 connectome） |
 | `experiment/实验与评价体系.md` | 拥有指标与 run 目录布局（横向） |
+| `experiment/代循环编排.md` | 把「评估一代 → 折算 `F` → `advance_generation` → 下一代」串成循环的编排契约（横向） |
 | `pipeline/模型链装配.md` | 编排：把已冻结模块串成链路（消费 `genome/development/connectome`，不定义算法） |
-| `api/API与系统工程.md`、`api/API接口.md` | 对外：稳定 ID、端点、系统约定（实现层已移除、待重写） |
-| `viz/` | 出图（消费 `results/`，不做源定义） |
+| `api/API与系统工程.md`、`api/API接口.md` | 对外：稳定 ID、端点、系统约定（FastAPI 实现） |
+| `viz/可视化.md` | 出图（消费 `results/`，不做源定义） |
 
 每个箭头的边界对象由**产出方**文档定义，消费方只引用（见上「producer owns」）。
 
@@ -161,7 +165,7 @@ genome ──→ development ──→ connectome ──→ arena ──→ evol
 DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
   └──────────────────────── 下一代 ───────────────────────────────┘
                     ▲                    ▲
-                 learning(BC)        experiment 编排；viz 出图；api 对外（实现层待重写）
+                 learning(BC)        experiment 编排；viz 出图；api 对外（FastAPI）
 ```
 
 ### 动手前必读（写任一模块代码的固定动作）
@@ -195,6 +199,7 @@ make fmt    # ruff 格式化
 make tree   # 查看目录结构
 make frontend  # 构建前端产物到 frontend/dist
 make experiment ARGS='--config configs/default_arena.yaml --seed 1 --experiment-id exp-0001'  # 创建实验 run
+make demo       # 一键起服（构建前端 + 启动 API），浏览器开 http://127.0.0.1:8000
 ```
 
 ## Git 分支策略

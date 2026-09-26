@@ -54,8 +54,8 @@ def run_episode(
         mint_id(experiment_id, "genome", generation, i) for i in range(cfg.population.n_fish)
     ]
     manager = SeedManager(seed)
-    spawn_seed = manager.seed("arena_spawn", 0)
-    dynamics_seed = manager.seed("arena_dynamics", 0)
+    spawn_seed = manager.seed("arena_spawn", generation)
+    dynamics_seed = manager.seed("arena_dynamics", generation)
     arena = DanioArena(
         cfg,
         spawn_seed=spawn_seed,

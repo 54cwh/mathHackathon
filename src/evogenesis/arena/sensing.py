@@ -38,9 +38,12 @@ DIM_NAMES = (
 )
 
 
-def _bearing(pos: np.ndarray, fish: Fish) -> tuple[float, float] | None:
-    """Return (distance, relative bearing angle) of ``pos`` in fish frame,
-    or None if outside radius or outside the FOV cone."""
+def _bearing(pos: np.ndarray, fish: Fish) -> tuple[float, float]:
+    """Return (distance, relative bearing angle) of ``pos`` in the fish frame.
+
+    Always returns a pair; radius / FOV filtering is the caller's job (see
+    ``_split_channels`` / ``_nearest_visible`` / ``max_predator_angular_size``).
+    """
     delta = np.asarray(pos, dtype=float) - fish.pos
     dist = float(np.linalg.norm(delta))
     if dist == 0.0:
@@ -59,10 +62,7 @@ def _split_channels(
     """Sum linear-falloff intensities into (left, right) channels in [0, 1]."""
     left = right = 0.0
     for pos, _size in candidates:
-        res = _bearing(pos, fish)
-        if res is None:
-            continue
-        dist, rel = res
+        dist, rel = _bearing(pos, fish)
         if dist > radius or abs(rel) > half_fov:
             continue
         intensity = 1.0 - dist / radius
@@ -82,15 +82,32 @@ def _nearest_visible(
     """(distance, size) of the nearest visible candidate, or None."""
     best: tuple[float, float] | None = None
     for pos, size in candidates:
-        res = _bearing(pos, fish)
-        if res is None:
-            continue
-        dist, rel = res
+        dist, rel = _bearing(pos, fish)
         if dist > radius or abs(rel) > half_fov:
             continue
         if best is None or dist < best[0]:
             best = (dist, size)
     return best
+
+
+def nearest_visible_prey(
+    fish: Fish,
+    prey: list[Prey],
+    radius: float,
+    fov_degrees: float,
+) -> tuple[str, np.ndarray] | None:
+    """最近可见猎物的 `(prey_id, pos)`，无则 `None`（H3 探针用，`arena §14`）。"""
+    half_fov = np.deg2rad(fov_degrees) / 2.0
+    best: tuple[float, str, np.ndarray] | None = None
+    for candidate in prey:
+        if not candidate.alive:
+            continue
+        dist, rel = _bearing(candidate.pos, fish)
+        if dist > radius or abs(rel) > half_fov:
+            continue
+        if best is None or dist < best[0]:
+            best = (dist, candidate.entity_id, np.array(candidate.pos, dtype=float))
+    return None if best is None else (best[1], best[2])
 
 
 def nearest_predator_relative_size(
@@ -127,10 +144,7 @@ def max_predator_angular_size(
     half_fov = np.deg2rad(fov_degrees) / 2.0
     best = 0.0
     for predator in predators:
-        res = _bearing(predator.pos, fish)
-        if res is None:
-            continue
-        dist, rel = res
+        dist, rel = _bearing(predator.pos, fish)
         if dist > radius or abs(rel) > half_fov or dist <= 0.0:
             continue
         theta = float(2.0 * np.arctan((predator.size / 2.0) / dist))

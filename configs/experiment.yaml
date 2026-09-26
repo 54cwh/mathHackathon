@@ -21,5 +21,5 @@ generations: 20
 #   （与调用顺序无关，合规 core §3 的稳定 ID 要求；加大 n_danio 只买保险、不改实验内容）。
 # 降级语义：viable < n_agents 时**抛错**；`--allow-partial` 显式开关改按 available 评估。
 n_agents: 12          # 每 seed 每模型评估的个体数（旧实现为 1，已被对照证否：与随机网络不可区分）
-n_episodes: 3         # 每 seed 的评估 episode 数；子种子 = arena_eval_spawn=11 / arena_eval_dynamics=12
+n_episodes: 3         # 每 seed 的评估 episode 数；子种子 = arena_eval_spawn=15 / arena_eval_dynamics=16
 n_danio: 400          # 凑 n_agents 个 viable 的候选池；按最保守 p=0.083 估计 P(viable>=n_agents) ≈ 1

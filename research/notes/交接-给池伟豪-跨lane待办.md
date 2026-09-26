@@ -183,6 +183,26 @@ viability 判据 **(iv) `ρ(W⁰) < 1` 是唯一绑定约束**：1000 次随机 
   契约已就绪，但**未接入流水线**，评估仍由 `ExpertPolicy` 驱动 ⇒ 「学习前/学习后」对照无数据）。
   这两章我不会用编造数字填。
 
+### 9. penetrance 观测轴对 `q(G)` 不敏感（实测；非 bug 主张，待 model lane 裁决）
+
+- **事实**：`AaBb × AaBb` 装置正确（`E_A/E_B` 精确 ∈ `{0,0.5,1}`，四类判定无误），但用默认
+  `configs/default_model.yaml` 发育后，`N=|M|` 逐类均值 35.2–36.8（SD 3.5–4.1）、`CV_τ`
+  0.023–0.025（SD ~0.01）——两轴对基因型**无区分力**：min-错分 ≈ 多数类基线
+  （`N`：0.260 vs 0.258；`H`：0.233 vs 0.235），`corr(N,E_A)≈−0.05`、`corr(CV_τ,E_B)≈−0.02`。
+- **更强对照**：把全部 8 条 motif 一起从 lost→functional（`q(G)` 均值 0.29→0.71）再发育，
+  `N` 仍 36.5（36.5 vs 36.5）、`CV_τ` 0.0246→0.0247 —— **`q(G)` 对两轴几乎无影响**。
+- **机理线索**：`§5` 冻结 `max_divisions_per_precursor=1`，`N=24+k` 由分裂
+  `Bernoulli(sigmoid(w_div·g+b_div))` 决定，而 `w_div·g` 的随机展宽远大于 q 引起的 g 偏移；
+  `CV_τ` 来自同一饱和 GRN，同理。（另见本节 §5 关于 viability 判据 (iv) ρ 绑定的观察。）
+- **影响**：`experiment §3.9` 的 penetrance 观测阈值 `θ_N^obs/θ_H^obs` **不可辨识**
+  （校准 `separable=false`）。现以 `configs/penetrance.yaml::threshold_status`
+  （`unset`/`placeholder`/`confirmed`）三态登记；**未冻结**为 `confirmed`。`docs/参数总表.json`
+  对应项仍 `missing`。
+- **复现**：`uv run python scripts/run_penetrance.py --experiment-id pen-probe --mode calibrate --per-class 200`
+  （看打印的「可分离」）；极端对照见本条目描述（`genome.functional_chromosome/loss_chromosome`）。
+- **归属**：model lane（`development` 的分裂/GRN 结构或参数），**非 bug 主张**；本条只记录实测，
+  是否调参（使 `N`/`CV_τ` 对 q 有响应）由 model lane 裁决。
+
 ---
 
 ## 追加（2026-09-26 夜）：文献登记（为 §1.3 取证）

@@ -76,7 +76,13 @@ class LifetimeLearningResult:
 
 
 def load_learning_config(path: str | Path | None = None) -> LearningConfig:
-    """读 `configs/default_model.yaml::learning`（`core §config`）。"""
+    """读 `configs/default_model.yaml::learning`（`core §config`）。
+
+    `learning` 参数无冻结镜像（`LearningConfig` 字段均必填），故 `path=None` 显式报错——
+    与 `core §0` 一致（`path=None` 不套用 env/overrides，且此处无默认值可返回）。
+    """
+    if path is None:
+        raise ValueError("learning 无内置默认值，必须提供 config 文件（core §7）")
     return load_config(path, model=ModelConfig).learning
 
 
@@ -239,9 +245,18 @@ def run_lifetime_learning(
             for slot in range(len(viable_individuals))
         )
 
-    # 非遗传证据：重新发育同一 genome 的网络 ΔW 必须为 0、W⁰ 必须与训练网络相同
+    # 非遗传取证（`learning §4`）：**重新发育同一 genome** → 新 `W⁰` 必须与训练用网络逐元素相同，
+    # 且新网络 `ΔW = 0`（Θ 初值 = softplus⁻¹|W⁰|，由构造保证）。判别力在 `W⁰` 复现——它检验
+    # `genome → q(G) → 发育 → DanioNet` 全链确定性；`ΔW` 只存在于运行时 `Θ`，不写入 genome。
+    fresh_phenotypes = phenotypes_of(
+        viable_individuals,
+        motifs,
+        master_seed=master_seed,
+        config=chain.rgcd,
+        device=device,
+    )
     fresh = danionet_of(
-        viable_phenotypes,
+        fresh_phenotypes,
         master_seed=master_seed,
         config=chain.network,
         device=device,

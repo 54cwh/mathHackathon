@@ -3,7 +3,7 @@
   "$id": "https://evogenesis.local/schemas/evolution.schema.json",
   "title": "EvoGenesis evolution.jsonl record",
   "meta": {
-    "owns": "代循环 evolution.jsonl 单行（producer=experiment/evolution_run.py）",
+    "owns": "代循环 evolution.jsonl 单行（producer=experiment/evolution_run.py）：含逐代 F、p_A/p_B、四类表型频率、连接组均值（Evolution Dashboard，交互与可视化 §8）",
     "status": "已定稿"
   },
   "description": "代循环单行。",
@@ -16,7 +16,13 @@
     "fitness_mean",
     "fitness_std",
     "bottleneck",
-    "event"
+    "event",
+    "p_A",
+    "p_B",
+    "phenotype_freq",
+    "mean_neuron",
+    "mean_edge",
+    "mean_tau"
   ],
   "properties": {
     "generation": {
@@ -60,6 +66,51 @@
           "type": "null"
         }
       ]
+    },
+    "p_A": {
+      "type": "number",
+      "description": "P(high_N)（genome §3 阈值判定；A 表型频率）"
+    },
+    "p_B": {
+      "type": "number",
+      "description": "P(high_H)（genome §3）"
+    },
+    "phenotype_freq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "A_B_",
+        "A_bb",
+        "aaB_",
+        "aabb"
+      ],
+      "properties": {
+        "A_B_": {
+          "type": "number"
+        },
+        "A_bb": {
+          "type": "number"
+        },
+        "aaB_": {
+          "type": "number"
+        },
+        "aabb": {
+          "type": "number"
+        }
+      },
+      "description": "四类架构档频率（genome §3）"
+    },
+    "mean_neuron": {
+      "type": "number",
+      "description": "平均活跃神经元数（viable 度量，来自 evaluation.phenotypes）"
+    },
+    "mean_edge": {
+      "type": "number",
+      "description": "平均非零连接数"
+    },
+    "mean_tau": {
+      "type": "number",
+      "description": "平均 tau（活跃单元）"
     }
   }
 }

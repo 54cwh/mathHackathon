@@ -35,7 +35,7 @@
         },
         "experiment_id": { "type": "string", "description": "稳定 ID（AGENTS「约定」）。" },
         "episode_id": { "type": "string", "description": "稳定 ID，形如 ep0001。" },
-        "environment_id": { "type": "string", "description": "环境对照组（core §6）。" },
+        "environment_id": { "type": "string", "enum": ["default", "food_rich", "predator_rich", "resource_scarce"], "description": "环境对照组（core §6）。" },
         "generation": { "type": "integer", "description": "演化代数。" },
         "episode_seed": { "type": "integer", "description": "arena_spawn 整数子种子（core §3）。" },
         "dynamics_seed": { "type": "integer", "description": "arena_dynamics 整数子种子（core §3），与 episode_seed 一起构成 episode 的自包含重放信息。" },

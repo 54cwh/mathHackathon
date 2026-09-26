@@ -1,6 +1,6 @@
 # 系统工程与接口规范
 
-> **实现状态（2026-09-26）**：`api/` 下的 Python 实现（`app.py` / `schemas.py` / `session.py` / `stubs.py` / `ws.py`）已移除，待重写；本文档保留为契约草案，其中引用的模块路径在重写前不成立。
+> **实现状态（2026-09-26）**：`api/` 已按契约重写并接线（`src/evogenesis/api/`）；`make demo` 与 `scripts/start_demo.sh` / `scripts/serve_api.py` 已恢复。
 
 > **管辖范围**：技术栈、稳定 ID、命名规范、WS/系统约定、Seed Manager、Offline 红线。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
 
@@ -70,7 +70,7 @@
 | R11 | WS 消息 | 信封 `{v,type,seq,ts,payload}`；`type` 用点分层（`arena.fish_state`、`brain.activation`、`job.progress`、`sys.error`） |
 
 ### 4.2 资源词表
-`sessions`、`genomes`、`mutations`、`developments`、`phenotypes`、`connectomes`、`breedings`、`fish`、`evolutions`、`generations`、`experiments`、`jobs`、`events`、`metrics`、`leaderboard`、`story-mutations`。
+`sessions`、`genomes`、`mutations`、`developments`、`phenotypes`、`connectomes`、`breedings`、`fish`、`evolutions`、`generations`、`experiments`、`environmental-selections`、`jobs`、`events`、`metrics`、`leaderboard`、`story-mutations`。
 
 ### 4.3 端点（草案）
 | 方法 | 路径 | 说明 |
@@ -80,34 +80,46 @@
 | POST | `/v1/sessions/{session_id}/reset` | 重置会话 |
 | DELETE | `/v1/sessions/{session_id}` | 结束会话 |
 | GET | `/v1/story-mutations` | 预验证 SNP 列表 |
-| POST | `/v1/genomes/{genome_id}/mutations` | base 编辑，返回新 `genome_id` + diff |
-| POST | `/v1/developments` | 发育，返回 `dev_trace` + phenotype |
-| POST | `/v1/breedings` | 繁殖，返回 offspring + meiosis trace |
+| POST | `/v1/genomes` | **创建随机基因组（已实现）**，返回 `genome_id` |
+| GET | `/v1/genomes/{genome_id}` | **取回基因组（已实现）** |
+| POST | `/v1/genomes/{genome_id}/mutations` | **base 编辑（已实现）**，返回新 `genome_id` + diff |
+| POST | `/v1/developments` | **发育（已实现）**，返回 `dev_trace` + phenotype |
+| POST | `/v1/breedings` | **繁殖（已实现）**，返回 offspring + meiosis trace |
 | GET | `/v1/sessions/{session_id}/fish/{fish_id}` | Fish Card |
-| POST | `/v1/sessions/{session_id}/release` | 释放鱼进入 Arena |
-| POST | `/v1/sessions/{session_id}/pause` | 暂停仿真 |
+| POST | `/v1/sessions/{session_id}/release` | **推进仿真 `steps` 步**（query `steps`/`use_expert`，默认 `ExpertPolicy` 驾驶），返回 `SessionSummary`（B1 定稿） |
+| POST | `/v1/sessions/{session_id}/pause` | **暂停 / 恢复开关**（toggle `running`，暂停后 `release` 不推进；无独立 `resume` 端点）（B2 定稿） |
 | GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
-| POST | `/v1/sessions/{session_id}/evolutions` | 演化，`202` + `job_id` |
+| POST | `/v1/sessions/{session_id}/evolutions` | **会话内演化（过渡：复用环境选择 job，已实现）**，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
-| POST | `/v1/experiments` | 启动正式实验，`202` + `job_id` |
-| GET | `/v1/experiments` | 实验列表（分页） |
-| GET | `/v1/experiments/{experiment_id}` | 实验元数据 + 指标 |
+| POST | `/v1/experiments` | 启动正式实验（**多协议，未实现**），`202` + `job_id` |
+| GET | `/v1/experiments` | 实验列表（分页，未实现） |
+| GET | `/v1/experiments/{experiment_id}` | 实验元数据 + 指标（未实现） |
+| POST | `/v1/environmental-selections` | **启动环境选择实验（Experiment F，已实现）**，`202` + `job_id` |
+| GET | `/v1/environmental-selections` | 环境选择实验列表（分页，已实现） |
+| GET | `/v1/environmental-selections/{experiment_id}` | 环境选择实验详情（已实现） |
 | GET | `/v1/jobs/{job_id}` | 任务状态 / 进度 |
 | POST | `/v1/jobs/{job_id}/cancel` | 取消任务 |
 
 编辑 / 发育 / 繁殖为同步；演化与正式实验为异步 job，进度经 WS `job.progress` 推送。
 
 ## 5. WebSocket
-端点 `/v1/ws`；消息信封与命名见 §4.1 R11。
+端点 `/v1/ws`；消息信封与命名见 §4.1 R11。可选订阅：`/v1/ws?session_id=<session_id>`。
 
-实时传：
-- fish transforms
-- selected-fish neural activation
-- energy
-- events
-- generation progress
+**推送清单（已定稿，2026-09-26 用户确认）**：
 
-不每帧发送全部 48×48 matrix。
+| `type` | payload | 触发 | 状态 |
+|---|---|---|---|
+| `sys.hello` | `{note, session_id}` | 连接建立一次 | 已实现 |
+| `sys.error` | `{echo}` | 收到非法信封 | 已实现 |
+| `arena.fish_state` | `{session_id, step, fish:{fish_id:{x,y,heading,speed,energy,size,alive}}}` | 订阅会话每次 `release` 推进后 | 已实现 |
+| `arena.events` | `{session_id, events:[{seq,type,step,payload}]}` | 同上（本次新增事件） | 已实现 |
+| `job.progress` | `{job_id, status, progress}` | 实验/任务进度或状态变化 | 已实现 |
+| `brain.activation` | `{session_id, fish_id, activation:[...]}` | 选中鱼的神经激活 | **未接**（需模型驱动会话/DanioNet；当前会话由 `ExpertPolicy` 驱动，无 activation 生产者） |
+
+- **采样率**：**事件驱动**，不做定时采样 —— `arena.*` 由订阅会话的 `release` 触发；不每帧发送全部 48×48 matrix（保持）。
+- **`seq`**：**每连接**单调递增（原进程级全局已废弃）。
+- **订阅**：`?session_id=` 只收该会话的 `arena.*` + 全局 `job.progress`；未提供者只收 `job.progress` / `sys.*`。
+- **心跳/重连**：服务端不发心跳；客户端负责断线重连并重新订阅（服务端不保存订阅）。
 
 ## 6. Seed Manager
 统一设置：
@@ -135,6 +147,12 @@ make demo          # 等价于 ./scripts/start_demo.sh
 
 构建前端（若 `frontend/dist` 缺失）并启动服务，浏览器打开 `http://127.0.0.1:8000`。
 
+**端口 / CORS / 托管约定（对齐已交付前端）**：
+- **生产（`make demo`）**：由 FastAPI **单 worker** 托管 `frontend/dist`（同源，免 CORS）；固定端口 `8000`。
+- **开发**：`npm run dev` 起 vite `5173`，经 `vite.config.ts` 的 proxy 把 `/v1 → http://127.0.0.1:8000`（dev 期同源 `/v1`）。
+- **单 worker 为硬约束**：会话为纯内存（`API接口.md §7.1`），多 worker 会使同一 `session_id` 落到不同进程而随机 `404`（单 worker ≠ 单线程，会话内已加锁）。
+- **可覆盖参数**：`scripts/serve_api.py` 支持 `--host`（默认 `127.0.0.1`）/ `--port`（默认 `8000`）/ `--reload`；`scripts/start_demo.sh` 尊重环境变量 `EVOGENESIS_PORT`。
+
 ## 10. Git
 开发期 private；提交时按比赛要求 public。schema/config 变更必须双方同步。
 
@@ -145,7 +163,7 @@ make demo          # 等价于 ./scripts/start_demo.sh
 1. **稳定 ID 的生成规则与唯一性范围未定义（§3）**：`fish_id / genome_id / generation / experiment_id / environment_id` 的格式、派生方式（哈希 / 单调计数）、唯一性范围（会话内 / 全局）均未写。前端“不得用数组下标”已有约束，但后端如何保证稳定未定。
 2. **资源词表与端点不闭合（§4.2 / §4.3）**：词表列 16 个资源，端点仅覆盖约一半；`phenotypes / connectomes / generations / events / metrics` 无任何端点或获取途径。
 3. **同步 / 异步边界与超时未定义（§4.3）**：仅声明“编辑/发育/繁殖同步、演化/实验异步”；未给同步操作的最长时限、超时行为，以及 48 个体演化是否必然异步。
-4. **暂停缺恢复端点（§4.3）**：`POST /v1/sessions/{session_id}/pause` 没有对应的 `resume / play` 端点。
+4. **暂停缺恢复端点（§4.3）**：`POST /v1/sessions/{session_id}/pause` 没有对应的 `resume / play` 端点。—— **已闭合（2026-09-26）**：`pause` 定为 **toggle**（兼作恢复），不另开 `resume`（§4.3）。
 5. **WS 消息类型词表不完整 + 语义缺失（§4.1 R11 / §5）**：R11 只举例四类，§5 还要传 energy / events / generation progress，但未给完整 `type` 词表；`seq` 的作用（排序 / 去重 / 断线补偿）、多客户端订阅、心跳与重连策略均未写。
 6. **Seed 派生方法未定义（§6）**：master seed 如何派生成各子 seed（`SeedSequence.spawn` / hash）未写；mutation / crossover / development / Arena spawn 的派生树未给。
 7. **CUDA 确定性未定义（§6）**：设置 `torch.cuda` seed 之后是否强制 `cudnn.deterministic`、是否接受非确定性算子未写。

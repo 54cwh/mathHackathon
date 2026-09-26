@@ -97,7 +97,7 @@
 
 ### B6 experiment 契约分裂 `schemas/experiment.schema.json` vs `api/schemas.py`
 - 现状：JSON Schema 要求 `seed:int` + `*_config` 路径；api 模型是 `seeds:list[int]` + `name/generations`，两套字段不相交。
-- 以哪个为准？[ ] 以 API（`seeds`）为准、改 schema  [ ] 以 schema（`seed`）为准、改 api  [ ] 其他：____
+- **已裁定（2026-09-26）：方案 C** —— 承认两对象：API 侧 `ExperimentCreate` 更名 `ExperimentLaunch`（多 seed → 展开为 N 个 run）；`schemas/experiment.schema.json` 维持单 run `ExperimentRun`（已定稿）。`environment` 枚举统一为 `default / food_rich / predator_rich / resource_scarce`。
 
 ### B7 config 未接线 `arena/config.py`、`api/session.py`、`configs/default_arena.yaml`
 - 现状：没有任何 loader 读 yaml；`SessionCreate.arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors`/`biomass_to_size_gain`）与 dataclass 也不匹配。等于"改 config 不影响实验"。
