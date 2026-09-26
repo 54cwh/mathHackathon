@@ -11,7 +11,7 @@ EvoGenesis 有两份契约未定稿：
 | # | 契约 | 现状 | 权威冲突 |
 |---|---|---|---|
 | 1 | `schemas/trajectory.schema.json` | 未冻结；草案字段见 `core/核心机制与数据流.md` §4.2 | 无外部参照，草案缺 episode 级元数据 |
-| 2 | Arena 事件词表 | `core` §5.1 是设计侧 6 类草案；`arena/Danio_Arena实现说明.md` §4.2 是实现侧 v1（8 类点分层 `arena.*`）；机器可读权威是 `tests/test_arena.py::KNOWN_EVENTS` | 两边事件名与类别数不一致，未裁决 |
+| 2 | Arena 事件词表 | `core` §5.1 是设计侧 6 类草案；`arena/Danio_Arena设计与实现说明.md` §18.4.2 是实现侧 v1（8 类点分层 `arena.*`）；机器可读权威是 `tests/test_arena.py::KNOWN_EVENTS` | 两边事件名与类别数不一致，未裁决 |
 
 调研方法：GitHub 找实现（RLDS / Minari / D4RL / robomimic / HF datasets），OpenAlex+官方规范找理论锚点（JSON Schema / Confluent / SemVer / OpenTelemetry / 事件溯源实证论文）。共 20 条证据，全部附来源 URL。
 
@@ -91,7 +91,7 @@ EvoGenesis 有两份契约未定稿：
 
 ### 4.2 事件词表权威与冻结元信息
 
-**权威归属**：以 `arena/Danio_Arena实现说明.md` §4.2（8 类 `arena.*`）+ `tests/test_arena.py::KNOWN_EVENTS`（机器可读，测试守护）为 v1 唯一权威；`core/核心机制与数据流.md` §5.1 降为设计参考。核心 §10 #2 需按此裁定并回写。
+**权威归属**：以 `arena/Danio_Arena设计与实现说明.md` §18.4.2（8 类 `arena.*`）+ `tests/test_arena.py::KNOWN_EVENTS`（机器可读，测试守护）为 v1 唯一权威；`core/核心机制与数据流.md` §5.1 降为设计参考。核心 §10 #2 需按此裁定并回写。
 
 | 冻结所需项 | 内容 |
 |---|---|

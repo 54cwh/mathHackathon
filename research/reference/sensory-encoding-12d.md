@@ -79,7 +79,7 @@
 | 归谁 | 拥有什么 |
 |---|---|
 | `connectome/DanioNet设计规范.md §2` | 12 维的**名字、冻结顺序、物理含义、值域/归一化区间**（网络输入接口契约） |
-| `arena/Danio_Arena设计规范.md §4`（新增 §4.1） | **由世界几何算出这 12 个分量**的规则：方位角划分、距离核、对象分类、looming 微分、归一化常数 |
+| `arena/Danio_Arena设计与实现说明.md §4.1` | **由世界几何算出这 12 个分量**的规则：方位角划分、距离核、对象分类、looming 微分、归一化常数 |
 | `core/核心机制与数据流.md §10` | 登记边界对象 `observation_12d`：producer=arena，consumer=DanioNet，并记录上述分属 |
 
 **为什么**：`AGENTS.md` 规定「producer owns 边界对象」——Arena 产出 observation。但 12 维的语义/值域是 DanioNet 的输入契约（`U_i x_t` 直接消费），若全归 Arena，DanioNet 无法独立编译校验。分属后方向单向：**Arena 产出满足 DanioNet §2 契约的向量**；两份文档都删除「待闭合/见对方」的互指句。

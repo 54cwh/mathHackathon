@@ -16,7 +16,7 @@
     {
       "id": "T1_escape_operationalization",
       "question": "斑马鱼/鱼类‘escape success / predator evasion’在实验里的操作定义是什么？对‘生态仿真产生可遗传 fitness’应如何落地？换成目标即算 / 逃出 release_radius / 保持 N 步，哪种偏置最小？",
-      "current_impl": "env.py 中：当 `plan()` 返回目标 != `pred.target_fish_id` 且旧目标仍存活 → 发 `arena.escape` 并对旧目标 `escape_successes += 1`。无威胁状态、无距离门槛、无存活窗口。查看 Danio_Arena实现说明.md 的 S17，与代码一致。",
+      "current_impl": "env.py 中：当 `plan()` 返回目标 != `pred.target_fish_id` 且旧目标仍存活 → 发 `arena.escape` 并对旧目标 `escape_successes += 1`。无威胁状态、无距离门槛、无存活窗口。查看 Danio_Arena设计与实现说明.md 的 S17，与代码一致。",
       "operational_definitions_found": [
         {
           "name": "二值结局定义（survived the strike: success / failure）",
@@ -70,7 +70,7 @@
       "risks": [
         "T_hold 与 k 无直接斑马鱼实测锚点，需在 configs 中标 `草案待确认` 并做敏感性分析。",
         "Jolles 2022 与 Walker 2005 为替代物种（北方狗鱼/golden shiners；孔雀鱼/狗鱼丽鱼）；Nair 2017 是斑马鱼但为‘同种成鱼捕食幼虫’的实验室体系，量级与本项目抽象世界不可直接比。",
-        "若采用存活窗口，需明确‘旧目标已死亡不计’仍成立（死鱼不产生 escape 事件），与实现说明 S17 的负例守护一致。"
+        "若采用存活窗口，需明确‘旧目标已死亡不计’仍成立（死鱼不产生 escape 事件），与 Danio_Arena设计与实现说明.md S17 的负例守护一致。"
       ]
     },
     {
@@ -215,7 +215,7 @@
         "respawn": "二选一并显式写入规范：(R1) 封闭守恒——保留不重生，但必须使 prey 供给不成为首要死亡因子（增大初始 prey / 降低代谢成本 / 缩短 episode），并承认 ‘prey_capture’ 分量后段饱和；(R2) 开放可再生（推荐用于觅食+逃逸 fitness）——按再生率 r 补充至承载 K=live_prey，例如每步以概率 p_spawn 补 1 只直到 K，或按固定 `regrowth_time`（Agents.jl 惯例）。r/p_spawn 为设计选择，无斑马鱼直接实测锚点。",
         "respawn_choice_rationale": "R2 的理由有两层：理论上避免封闭系统资源崩溃造成的‘拼抢固定蛋糕’选择压力；工程上使 600 步 episode 内觅食压力近似稳态，fitness 不随时间漂移。",
         "high_value_prey": "按‘收益率’操作化：`V_prey = e_prey / (1 + h_prey)`，其中 `e_prey ∝ size_prey^α`（质量/能量随体长超线性，α 取 1–3 之间并标注口径），`h_prey ∝ size_prey`（处理时间随体型上升）。‘高价值 prey’= V 的 top 分位（如 ≥75th 百分位）。这与最优食谱理论一致，且可用现有 `prey.size` 直接计算。",
-        "wire_energy_to_size": "现状 `food_reward` 是常数 0.12，等于宣称所有 prey 价值相同，与‘高价值 prey’分级自相矛盾。建议将能量回报改为 `R_food · f(size_prey)`（f 单调增）；否则分级只影响 growth 不影响即时能量，机制不成立。此项属行为语义变更，须回写 `Danio_Arena设计规范.md` 后再改代码。",
+        "wire_energy_to_size": "现状 `food_reward` 是常数 0.12，等于宣称所有 prey 价值相同，与‘高价值 prey’分级自相矛盾。建议将能量回报改为 `R_food · f(size_prey)`（f 单调增）；否则分级只影响 growth 不影响即时能量，机制不成立。此项属行为语义变更，须回写 `Danio_Arena设计与实现说明.md` 后再改代码。",
         "rarity": "不建议把稀有度当作价值维度；若确实要，明标‘游戏设计选择’。"
       },
       "evidence_grade": "respawn=工程惯例（D，无同行评审锚点）+ 理论支撑（A/B）；高价值 prey 的‘收益率’口径=理论（A/B）；尺寸作为经验代理=B（替代物种）；稀有度=not found。",
@@ -577,7 +577,7 @@
     "主题1 推荐（B级，斑马鱼+多物种实验支撑）：escape_success 改为‘威胁事件结局’——曾锁定 + 锁定时在 detect 半径内 + 捕食者放弃后继续存活 ≥ T_hold 步才计数；T_hold=20 步为草案。现状‘换成目标即算’向上偏置最大，会与真实存活脱钩；固定 release_radius 对半径过敏且与‘放弃是经济判断’（Charnov 1976）冲突。",
     "主题2 推荐：先补‘world unit ↔ body length’换算（根因），再按比率标定。有证据的量级是探测 0.34–0.77 BL、打击 0.12–0.14 BL、口裂≈4–5% SL、鱼类捕获成功率 23–100%（pike 70%）。若保留 sensing.radius=18，则 capture_radius 应取 ≈0.16–0.41×sensing.radius（约 3–7 wu，中值 4.5），而非 1.2；κ=1.25 方向与 gape-limited 相反，建议按设计取 2.0–2.5 并注释为设计选择；同时补朝向门与随机捕获失败率（0.5–0.7）。不要把这些写成实测值。",
     "主题3 推荐：respawn 必须二选一并写死——封闭守恒（须调高 prey 或降代谢，并承认 prey_capture 后段饱和）或开放可再生（推荐，按再生率补至 K=live_prey，ABM 惯例，无斑马鱼实测锚点）。‘高价值 prey’按收益率 V=e_prey/(1+h_prey) 分级（top 分位为高价值，Charnov 1976 / Werner & Mittelbach 1981），并把 `food_reward` 从常数 0.12 改为随 prey.size 单调增，否则分级无机制作用；稀有度不作价值维度。",
-    "风险与验证点：(1) 所有以 BL 表达的数值与口裂 4–5% SL 均为换算推断；(2) T_hold、capture_radius 具体值、κ、朝向锥角、P_capture_success、respawn 率均属设计选择，须回写 Danio_Arena设计规范.md 并标 `草案待确认`，不得作为契约；(3) κ 与 predator size / size 上限 2.5 必须联调，单独改 κ 会禁掉捕食；(4) 所有改动会改变事件流与指标基线，需重跑并同步 schemas/测试。",
+    "风险与验证点：(1) 所有以 BL 表达的数值与口裂 4–5% SL 均为换算推断；(2) T_hold、capture_radius 具体值、κ、朝向锥角、P_capture_success、respawn 率均属设计选择，须回写 Danio_Arena设计与实现说明.md 并标 `草案待确认`，不得作为契约；(3) κ 与 predator size / size 上限 2.5 必须联调，单独改 κ 会禁掉捕食；(4) 所有改动会改变事件流与指标基线，需重跑并同步 schemas/测试。",
     "依据条目数：共 24 条来源（T1 11 条、T2 9 条、T3 4 条，含 2 条工程惯例；其中同行评审 22 条）。未找到项 7 条，已列 gaps。"
   ]
 }

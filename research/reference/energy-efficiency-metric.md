@@ -11,7 +11,7 @@
 
 | 量 | 值/来源 |
 |---|---|
-| 能量递推 | `E' = clip(E − C_base − C_move·v² + R_food·1[本步捕获], 0, E_max)`（`arena/Danio_Arena设计规范.md` §6；`env.py::step`） |
+| 能量递推 | `E' = clip(E − C_base − C_move·v² + R_food·1[本步捕获], 0, E_max)`（`arena/Danio_Arena设计与实现说明.md` §6；`env.py::step`） |
 | `e_max` / 出生能量 | 1.0 / 1.0（`entities.py` 出生置 `e_max`） |
 | `base_cost_per_step` | 0.0008 |
 | `movement_cost_scale` | 0.0015 |

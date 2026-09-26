@@ -36,7 +36,7 @@
 
 - `T_hold = 20` 步（20 Hz 下 1 s），状态标 `草案待确认`。
 - 可选增强：若记录得到威胁期间的最近距离，再门控 `min d ≤ k × capture_radius`（建议 k=3），确保「逃脱」确实贴近过风险。k 为设计选择。
-- 保留现有负例语义：旧目标已死亡不计 escape（与实现说明 S17 的 `test_dead_fish_not_credited_escape` 一致）。
+- 保留现有负例语义：旧目标已死亡不计 escape（与 Danio_Arena设计与实现说明.md S17 的 `test_dead_fish_not_credited_escape` 一致）。
 
 **为什么不选另外两种**：
 
@@ -111,7 +111,7 @@
 
 **推荐操作化**：`V_prey = e_prey / (1 + h_prey)`，其中 `e_prey ∝ size_prey^α`（α 取 1–3 并标注口径），`h_prey ∝ size_prey`；「高价值 prey」取 V 的 top 分位（如 ≥75th）。这与最优食谱理论一致，且可直接用现有 `prey.size` 计算。
 
-**必须联动的机制改动**：现状 `food_reward` 是常数 0.12，等于宣称所有 prey 价值相同，与「高价值 prey」自相矛盾。应改为 `R_food · f(size_prey)`（f 单调增），否则分级只影响 growth、不影响即时能量，机制不成立。此项属行为语义变更，须先回写 `Danio_Arena设计规范.md` 再改代码。
+**必须联动的机制改动**：现状 `food_reward` 是常数 0.12，等于宣称所有 prey 价值相同，与「高价值 prey」自相矛盾。应改为 `R_food · f(size_prey)`（f 单调增），否则分级只影响 growth、不影响即时能量，机制不成立。此项属行为语义变更，须先回写 `Danio_Arena设计与实现说明.md` 再改代码。
 
 **稀有度**：不建议作为价值维度。最优食谱理论把遇率与收益率分开，稀有意味着遇率低，反而更可能被排除在食谱之外；未检索到「稀有本身提高单次捕获价值」的生态学证据。若确要实现，只能标注为游戏设计选择。
 
@@ -143,7 +143,7 @@
 
 ## 5. 与现有文档/代码的冲突点（仅指出，未修改）
 
-- `src/evogenesis/arena/Danio_Arena设计规范.md` §8 自述「与生物量级冲突」；本调研确认冲突的根因是**单位约定缺失**，建议优先补这一条，再谈 κ/radius 数值。
+- `src/evogenesis/arena/Danio_Arena设计与实现说明.md` §8 自述「与生物量级冲突」；本调研确认冲突的根因是**单位约定缺失**，建议优先补这一条，再谈 κ/radius 数值。
 - `danio_arena` config 与 `docs/参数总表.json` 中 `capture_size_ratio`、`sensing_radius` 均为 `proposed_change`；本调研为它们提供了比率锚点（capture/sensing ≈0.16–0.41）与 κ 设计区间（2.0–2.5），但不构成定稿依据。
 - `env.py` 的 `food_reward` 为常数、prey 无主动逃跑（`PreyPolicy.avoid_gain` 为死参数）：若采用「prey 逃避降低捕获成功率」或「高价值 prey」，两处都需先改文档再改代码。
 - 所有建议涉及具体数值者均应在 `configs/` 与设计规范中标注 `草案待确认`，不得作为 `已定稿` 契约被依赖。
