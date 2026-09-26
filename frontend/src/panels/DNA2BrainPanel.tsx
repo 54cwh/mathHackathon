@@ -6,6 +6,7 @@ import { NucleotideStrip } from "@/visuals/NucleotideStrip";
 import { createGenome, develop, getGenome, mutateGenome } from "@/api/lab";
 import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResult } from "@/api/types";
 import { DevCompare } from "@/panels/DevCompare";
+import { BreedingLab } from "@/panels/BreedingLab";
 
 /**
  * DNA2Brain Lab —— 真编辑器（原模型 → 突变 → 发育 的界面证据链）。
@@ -99,6 +100,29 @@ export function DNA2BrainPanel() {
       setBusy(false);
     }
   }
+
+  /** 把某个 genome 载入编辑器并**立即发育**（育种产出的子代走这条路）。 */
+  const adoptGenome = useCallback(
+    async (genomeId: string) => {
+      setBusy(true);
+      setError(null);
+      try {
+        const record = await getGenome(genomeId);
+        setGenome(record);
+        setMutation(null);
+        setMutations([]);
+        setPosition(0);
+        const result = await develop({ genome_id: genomeId, seed: DEV_SEED });
+        setBaseline(result);
+        setDevelopment(result);
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        setBusy(false);
+      }
+    },
+    [],
+  );
 
   async function handleDevelop() {
     if (!genome) return;
@@ -270,6 +294,8 @@ export function DNA2BrainPanel() {
             </div>
             <DevCompare before={baseline} after={development} mutations={mutations} />
           </section>
+
+          <BreedingLab current={genome} onAdopt={(id) => void adoptGenome(id)} />
 
           <p className="shrink-0 text-xs text-muted-foreground">
             {error ? `⚠ ${error}` : "点选碱基或用 POS 定位，MUTATE 单点突变后 DEVELOP 重算表型。"}

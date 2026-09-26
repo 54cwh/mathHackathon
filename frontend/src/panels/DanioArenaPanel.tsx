@@ -36,6 +36,8 @@ const LEADERBOARD_EVERY = 20;
 const SCENE_EVERY = 5;
 /** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
 const SESSION_RETRY_MS = 3000;
+/** 冻结 demo checkpoint（`artifacts/demo/`；`pipeline §6` 契约）。 */
+const DEMO_CHECKPOINT = "artifacts/demo/checkpoint_v1.pt";
 
 /** 稳定 ID 可能很长；截断只影响显示，不影响 identity。 */
 function shortId(id: string): string {
@@ -50,6 +52,8 @@ export function DanioArenaPanel() {
   const setSessionId = useUiStore((s) => s.setSessionId);
   const resetNonce = useUiStore((s) => s.resetNonce);
   const activeView = useUiStore((s) => s.activeView);
+  /** DanioNet 驱动开关（`API接口.md` §7.2）：开启后本会话推 `brain.activation`，Brain Forge 才有真数据。 */
+  const [modelDriven, setModelDriven] = useState(false);
   const selectedFishId = useUiStore((s) => s.selectedFishId);
   const setSelectedFish = useUiStore((s) => s.setSelectedFish);
   const setStats = useUiStore((s) => s.setStats);
@@ -73,7 +77,11 @@ export function DanioArenaPanel() {
     let timer = 0;
 
     const attempt = () => {
-      createSession(MASTER_SEED)
+      createSession(
+        MASTER_SEED,
+        "food_rich",
+        modelDriven ? { model_driven: true, checkpoint_path: DEMO_CHECKPOINT } : {},
+      )
         .then((s) => {
           if (cancelled) {
             void deleteSession(s.session_id).catch(() => undefined);
@@ -103,7 +111,7 @@ export function DanioArenaPanel() {
       setSessionId(null);
       if (created) void deleteSession(created).catch(() => undefined);
     };
-  }, [resetNonce, setSessionId, setRunning]);
+  }, [resetNonce, modelDriven, setSessionId, setRunning]);
 
   // ---- WS: 鱼层 + 事件 ----------------------------------------------------
   useEffect(() => {
@@ -309,9 +317,23 @@ export function DanioArenaPanel() {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center justify-between text-xs text-muted-foreground">
-          <span>{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
-          <span>{error ? `⚠ ${error}` : "click a fish to inspect"}</span>
+        <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span className="truncate">{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
+          <button
+            type="button"
+            onClick={() => setModelDriven((v) => !v)}
+            title={
+              modelDriven
+                ? "当前：DanioNet 驱动（冻结 checkpoint）。点此回到 ExpertPolicy（12 个体）"
+                : "当前：ExpertPolicy（12 个体）。点此切换 DanioNet 驱动 —— 会重建会话，Brain Forge 才收得到真实激活"
+            }
+            className={`shrink-0 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none ${
+              modelDriven ? "bg-brand-fish-navy text-brand-bone" : ""
+            }`}
+          >
+            {modelDriven ? "MODEL DRIVEN" : "EXPERT"}
+          </button>
+          <span className="truncate">{error ? `⚠ ${error}` : "click a fish to inspect"}</span>
         </div>
       </div>
     </Panel>
