@@ -20,7 +20,7 @@
 用法：
 
     .venv/Scripts/python.exe scripts/make_figs.py
-    .venv/Scripts/python.exe scripts/make_figs.py --experiment-id exp_arena_expert_ref_v2
+    .venv/Scripts/python.exe scripts/make_figs.py --experiment-id exp_arena_expert_ref_v3
 """
 
 from __future__ import annotations
