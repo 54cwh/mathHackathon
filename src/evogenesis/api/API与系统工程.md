@@ -84,8 +84,8 @@
 | POST | `/v1/developments` | 发育，返回 `dev_trace` + phenotype |
 | POST | `/v1/breedings` | 繁殖，返回 offspring + meiosis trace |
 | GET | `/v1/sessions/{session_id}/fish/{fish_id}` | Fish Card |
-| POST | `/v1/sessions/{session_id}/release` | 释放鱼进入 Arena |
-| POST | `/v1/sessions/{session_id}/pause` | 暂停仿真 |
+| POST | `/v1/sessions/{session_id}/release` | **推进仿真 `steps` 步**（query `steps`/`use_expert`，默认 `ExpertPolicy` 驾驶），返回 `SessionSummary`（B1 定稿） |
+| POST | `/v1/sessions/{session_id}/pause` | **暂停 / 恢复开关**（toggle `running`，暂停后 `release` 不推进；无独立 `resume` 端点）（B2 定稿） |
 | GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
 | POST | `/v1/sessions/{session_id}/evolutions` | 演化，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
@@ -150,7 +150,7 @@ make demo          # 等价于 ./scripts/start_demo.sh
 1. **稳定 ID 的生成规则与唯一性范围未定义（§3）**：`fish_id / genome_id / generation / experiment_id / environment_id` 的格式、派生方式（哈希 / 单调计数）、唯一性范围（会话内 / 全局）均未写。前端“不得用数组下标”已有约束，但后端如何保证稳定未定。
 2. **资源词表与端点不闭合（§4.2 / §4.3）**：词表列 16 个资源，端点仅覆盖约一半；`phenotypes / connectomes / generations / events / metrics` 无任何端点或获取途径。
 3. **同步 / 异步边界与超时未定义（§4.3）**：仅声明“编辑/发育/繁殖同步、演化/实验异步”；未给同步操作的最长时限、超时行为，以及 48 个体演化是否必然异步。
-4. **暂停缺恢复端点（§4.3）**：`POST /v1/sessions/{session_id}/pause` 没有对应的 `resume / play` 端点。
+4. **暂停缺恢复端点（§4.3）**：`POST /v1/sessions/{session_id}/pause` 没有对应的 `resume / play` 端点。—— **已闭合（2026-09-26）**：`pause` 定为 **toggle**（兼作恢复），不另开 `resume`（§4.3）。
 5. **WS 消息类型词表不完整 + 语义缺失（§4.1 R11 / §5）**：R11 只举例四类，§5 还要传 energy / events / generation progress，但未给完整 `type` 词表；`seq` 的作用（排序 / 去重 / 断线补偿）、多客户端订阅、心跳与重连策略均未写。
 6. **Seed 派生方法未定义（§6）**：master seed 如何派生成各子 seed（`SeedSequence.spawn` / hash）未写；mutation / crossover / development / Arena spawn 的派生树未给。
 7. **CUDA 确定性未定义（§6）**：设置 `torch.cuda` seed 之后是否强制 `cudnn.deterministic`、是否接受非确定性算子未写。
