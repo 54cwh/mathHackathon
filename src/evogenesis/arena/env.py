@@ -62,6 +62,8 @@ class DanioArena:
             chase_speed=self.cfg.actors.predator_chase_speed,
             detection_radius=self.cfg.actors.predator_detection_radius,
             release_radius=self.cfg.actors.predator_release_radius,
+            # 必须注入：否则 config 里改这个值不影响行为（P1 审计 A7）
+            max_chase_steps=self.cfg.actors.predator_max_chase_steps,
         )
 
     def reset(self) -> None:
