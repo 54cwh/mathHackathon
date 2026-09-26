@@ -3,9 +3,9 @@
 owner：`pipeline/模型链装配.md` §4。上游：`development`（发育/viability）、`connectome`
 （DanioNet）、`arena`（世界与 `step`）。本模块只编排。
 
-**范围与约定（草案待确认：Arena 个体集）**：只把通过 `RGCD §7` viability 的个体放进 Arena
-（其保证 motor 左右池非空 ⇒ DanioNet 可构造），`population.n_fish` 按实际数覆盖。
-`fish_id ↔ 稳定 ID` 的映射**未定**（用户暂缓），故本模块只用 Arena 内部 id（`fish_XX`）。
+**范围与约定**：只把通过 `RGCD §7` viability 的个体放进 Arena（其保证 motor 左右池非空
+⇒ DanioNet 可构造），`population.n_fish` 按实际数覆盖。Arena 实体 id 直接用 `core §3.1`
+的稳定 `fish_id`（`Individual.fish_id`，本模块传入 `DanioArena(fish_ids=...)`）。
 """
 
 from __future__ import annotations
@@ -76,15 +76,15 @@ def run_arena_episode(
     if not pairs:
         raise ValueError("没有 viable 个体可进 Arena（RGCD §7）")
     phenotypes = [phenotype for _, phenotype in pairs]
+    fish_ids = [individual.fish_id for individual, _ in pairs]
     n_eval = len(phenotypes)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
-    arena = DanioArena(config, master_seed=master_seed)
+    arena = DanioArena(config, master_seed=master_seed, fish_ids=fish_ids)
     arena.reset()
     net = danionet_of(phenotypes, master_seed=master_seed, config=chain.network, device=device)
 
     total = config.world.episode_steps if steps is None else steps
-    fish_ids = sorted(arena.fish)
     for _ in range(total):
         observation = np.zeros((n_eval, chain.network.sensory_dim), dtype=np.float32)
         alive: list[tuple[int, str]] = []

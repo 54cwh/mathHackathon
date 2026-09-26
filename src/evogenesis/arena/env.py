@@ -6,6 +6,7 @@ arena.fish_captured / arena.collision (vocabulary still DRAFT pending
 joint freeze).
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -42,9 +43,26 @@ class StepResult:
 class DanioArena:
     """Minimal runnable Arena: physics + sensing + energy + predation + events."""
 
-    def __init__(self, config: ArenaConfig | None = None, master_seed: int = 0):
+    def __init__(
+        self,
+        config: ArenaConfig | None = None,
+        master_seed: int = 0,
+        fish_ids: Sequence[str] | None = None,
+    ):
         self.cfg = config or ArenaConfig()
         self.master_seed = master_seed
+        if fish_ids is None:
+            self._fish_ids: tuple[str, ...] | None = None
+        else:
+            ids = tuple(fish_ids)
+            if len(ids) != self.cfg.population.n_fish:
+                raise ValueError(
+                    f"fish_ids 数量 {len(ids)} 与 population.n_fish "
+                    f"{self.cfg.population.n_fish} 不一致"
+                )
+            if len(set(ids)) != len(ids):
+                raise ValueError("fish_ids 必须互异（core §3.1 稳定 ID）")
+            self._fish_ids = ids
         self.events: list[Event] = []
         self.fish: dict[str, Fish] = {}
         self.prey: dict[str, Prey] = {}
@@ -75,16 +93,20 @@ class DanioArena:
         self.obstacles = []
         self._next_prey_id = self.cfg.population.n_prey
         self._spawn_obstacles()
-        self.fish = {
-            f"fish_{i:02d}": Fish(
-                f"fish_{i:02d}",
+        ids = (
+            self._fish_ids
+            if self._fish_ids is not None
+            else tuple(f"fish_{i:02d}" for i in range(self.cfg.population.n_fish))
+        )
+        self.fish = {}
+        for fid in ids:
+            self.fish[fid] = Fish(
+                fid,
                 self._free_spot(2.0),
                 float(self._rng.uniform(0, 2 * np.pi)),
                 size=self.cfg.growth.initial_size,
                 energy=self.cfg.energy.e_max,
             )
-            for i in range(self.cfg.population.n_fish)
-        }
         self.prey = {
             f"prey_{i:02d}": Prey(
                 f"prey_{i:02d}",

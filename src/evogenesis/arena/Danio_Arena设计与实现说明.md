@@ -306,11 +306,13 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
 | `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
 | `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 109 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
-| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 475 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events` |
+| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 475 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造可注入 `fish_ids` |
 | `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方已接线**（`scripts/run_experiment.py`，见 §18.2.3） | 45 | — |
 | `tests/test_arena.py` | 28 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 436 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
+
+**实体 id（定稿）**：`DanioArena(config, master_seed, fish_ids=None)` 可注入 `fish_ids`——传 `core §3.1` 的稳定 `fish_id`（`Individual.fish_id`，`pipeline/` 负责铸造）时，`self.fish` 与 `per_fish_log()` 即以该稳定 id 为键；不传时保留旧默认 `fish_XX`（向后兼容，`tests/test_arena.py` 沿用）。`fish_ids` 长度须等于 `population.n_fish` 且互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。
 
 ### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 

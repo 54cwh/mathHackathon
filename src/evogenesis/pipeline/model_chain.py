@@ -51,9 +51,14 @@ def load_model_chain_config(
 
 @dataclass(frozen=True)
 class Individual:
-    """generation 0 个体：稳定 `genome_id`（`core §3.1`）+ 二倍体 genome。"""
+    """generation 0 个体：稳定 `genome_id` / `fish_id`（`core §3.1`）+ 二倍体 genome。
+
+    `fish_id` 为个体在本代 Arena 的稳定身份（`mint_id(..., "fish", 0, index)`），
+    Arena 直接以它作为实体 id，不再用 `fish_XX` 位置名。
+    """
 
     genome_id: str
+    fish_id: str
     genome: DiploidGenome
 
 
@@ -71,10 +76,11 @@ def initial_population(
     individuals: list[Individual] = []
     for index in range(n):
         genome_id = mint_id(experiment_id, "genome", 0, index)
+        fish_id = mint_id(experiment_id, "fish", 0, index)
         genome = random_genome(
             layout, rng=manager.spawn_rng("initial_population", index), genome_id=genome_id
         )
-        individuals.append(Individual(genome_id=genome_id, genome=genome))
+        individuals.append(Individual(genome_id=genome_id, fish_id=fish_id, genome=genome))
     return tuple(individuals)
 
 

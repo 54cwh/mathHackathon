@@ -31,6 +31,9 @@ def test_initial_population_is_deterministic_and_minted():
         mint_id(EXPERIMENT_ID, "genome", 0, index) for index in range(3)
     ]
     assert population[0].genome.haploid_bp == 256
+    assert [ind.fish_id for ind in population] == [
+        mint_id(EXPERIMENT_ID, "fish", 0, index) for index in range(3)
+    ]
     again = initial_population(master_seed=MASTER_SEED, experiment_id=EXPERIMENT_ID, n=3)
     assert [ind.genome.maternal_haplotype for ind in population] == [
         ind.genome.maternal_haplotype for ind in again
@@ -72,4 +75,6 @@ def test_run_arena_episode_is_deterministic():
     )
     assert first.steps == 40
     assert first.evaluated_individuals == len(first.per_fish)
+    stable_fish_ids = {ind.fish_id for ind in population}
+    assert set(first.per_fish) <= stable_fish_ids
     assert first.per_fish == second.per_fish
