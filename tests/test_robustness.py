@@ -71,7 +71,7 @@ def test_run_robustness_payload_matches_schema_and_conditions():
     )
     jsonschema.validate(payload, SCHEMA)
 
-    assert payload["status"] == "草案待确认"
+    assert payload["status"] == "confirmed"
     assert payload["fractions"] == list(FRACTIONS)
     assert payload["steps"] == 120
     entry = payload["per_seed"][str(SEED_WITH_VIABLE)]

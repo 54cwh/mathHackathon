@@ -1,6 +1,6 @@
 """Experiment E — Robustness：删边退化（owner：`experiment/实验与评价体系.md` §3.5）。
 
-口径（§3.5，**草案待确认**）：不重发育/不重训练，只在**活跃支撑边** `support=A∧M` 上随机
+口径（§3.5，**已定稿** 2026-09-27）：不重发育/不重训练，只在**活跃支撑边** `support=A∧M` 上随机
 清零 \(f\in\{0,5,10,20\}\%\) 的边；对照（\(f=0\)）与各删除组共用同一底物 \(W^{(0)}\) 与同一
 arena 子种子。删边随机源 = `core §3` 的 `robustness` 命名空间（id=14），实体
 \(t=\text{seed\_slot}\cdot|\text{fractions}|+\text{fraction\_index}\)。
@@ -300,7 +300,7 @@ def run_robustness(
         "kind": "robustness",
         "experiment_id": experiment_id,
         "generated_by": "experiment/robustness_run.py::run_robustness",
-        "status": "草案待确认",
+        "status": "confirmed",
         "seeds": list(seeds),
         "fractions": list(fractions),
         "n_danio": n_danio,
