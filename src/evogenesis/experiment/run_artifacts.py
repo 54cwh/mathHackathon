@@ -6,10 +6,11 @@ run（`run_arena.py`）与代循环（`evolution_run.py`）共用同一套产物
 
 from __future__ import annotations
 
-import csv
 import json
 from collections.abc import Sequence
 from pathlib import Path
+
+from evogenesis.core.io import write_csv, write_jsonl
 
 #: Arena 事件词表（权威 = `arena §18.4.2` + `tests::KNOWN_EVENTS`）；用于 episodes.jsonl 计数列。
 EVENT_KEYS: tuple[str, ...] = (
@@ -61,11 +62,11 @@ def write_metrics_csv(run_dir: Path, rows: list[dict]) -> None:
             if key not in ("seed", "fish_id", *METRIC_COLUMNS) and key not in extras:
                 extras.append(key)
     fields = ["seed", "fish_id", *METRIC_COLUMNS, *extras]
-    with (run_dir / "metrics.csv").open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=fields)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({key: row.get(key) for key in fields})
+    write_csv(
+        run_dir / "metrics.csv",
+        ({key: row.get(key) for key in fields} for row in rows),
+        fieldnames=fields,
+    )
 
 
 def population_record(seed: int, fish_id: str, rec: dict) -> dict:
@@ -92,11 +93,11 @@ def population_record(seed: int, fish_id: str, rec: dict) -> dict:
 
 
 def write_population(run_dir: Path, seed: int, per_fish: dict[str, dict]) -> None:
-    """写 `population.jsonl`（逐个体一行，按 `fish_id` 排序）。"""
-    with (run_dir / "population.jsonl").open("w", encoding="utf-8", newline="") as fh:
-        for fish_id, rec in sorted(per_fish.items()):
-            row = population_record(seed, fish_id, rec)
-            fh.write(json.dumps(row, ensure_ascii=False) + chr(10))
+    """写 `population.jsonl`（逐个体一行，按 `fish_id` 排序；经 `core.io.write_jsonl`）。"""
+    write_jsonl(
+        run_dir / "population.jsonl",
+        (population_record(seed, fish_id, rec) for fish_id, rec in sorted(per_fish.items())),
+    )
 
 
 def episode_row(

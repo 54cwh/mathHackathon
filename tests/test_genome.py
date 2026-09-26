@@ -363,7 +363,7 @@ def test_mendel_9331_fixed_seed():
 def test_crossover_breaks_9331_as_documented():
     """genome §3：pc>0 时四类比例向 A_B_ 偏斜，属演示装置的预期行为。
 
-    文档口径 n=4000，本测试 n=2000 仅验定性方向（χ² 远大于临界值）。
+    本测试 n=2000 仅验定性方向（χ² 远大于临界值）；genome §3 不给出未落盘的具体比例。
     """
     seed_manager = SeedManager(MASTER_SEED)
     crossover_rng = seed_manager.rng("crossover")
