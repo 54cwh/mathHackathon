@@ -1,5 +1,7 @@
 # RGCD 数学模型规范
 
+> **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+
 ## 1. 输入输出
 RGCD 输入：
 
@@ -124,6 +126,8 @@ type_i=\arg\max_k z_{ik}
 \]
 
 domain bias 保证六个基础谱系有 developmental competence，DNA/GRN 决定各谱系扩张和属性。
+
+**owner**：`type_i` 如何由 GRN **产出**（本式）归本文件；六类**功能语义**与 left/right motor 标记归 `connectome/DanioNet设计规范.md` §1/§5。`argmax` 为离散化理想化（真实 fate 为连续谱 `[bib#75]`），建议同时记录 `z_i` 分布/熵。
 
 ## 7. Viability
 ### Developmental viability
