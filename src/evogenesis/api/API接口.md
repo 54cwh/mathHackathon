@@ -4,7 +4,7 @@
 
 > 状态：v1.2 接口参考 + 实现现状（对应 `main` 提交 `d414e05`）
 > 归属：李辰钊（Arena / 系统）
-> 上游契约：同目录 `API与系统工程.md`（命名规范 R1–R11、系统与部署约定）、`../arena/Danio_Arena设计规范.md`、`../core/核心机制与数据流.md`、`../../../docs/参数总表.json`
+> 上游契约：同目录 `API与系统工程.md`（命名规范 R1–R11、系统与部署约定）、`../arena/Danio_Arena设计与实现说明.md`、`../core/核心机制与数据流.md`、`../../../docs/参数总表.json`
 > ⚠️ 本文件 **§0–§5 讲"接口是什么"（契约参考）**，**§6–§11 讲"实现现在是什么样"（现状与契约边界）**。
 > 凡上游文档未定义的数值与语义，状态一律为 `草案待确认`，逐条列在 `research/notes/arena-api-决策认领表.md`，须经双方认领后写进上游文档才能升为契约。
 > **未认领的数值不得进论文与正式实验。**
@@ -263,7 +263,7 @@
 | 日期 | 改动 |
 |---|---|
 | 2026-09-25 | 建立逐端点接口文档，覆盖全部 21 个端点与 WS 消息 |
-| 2026-09-26 | 追加 §6–§11「实现现状与契约边界」：端点 functional / 501 × 归属一览、纯内存会话、未生效字段、`release` / `snapshot.events` 口径、WS 现状 vs §5 目标、RFC 7807 覆盖边界、测试覆盖、未认领的实现决定。与 `../arena/Danio_Arena实现说明.md` 同源 |
+| 2026-09-26 | 追加 §6–§11「实现现状与契约边界」：端点 functional / 501 × 归属一览、纯内存会话、未生效字段、`release` / `snapshot.events` 口径、WS 现状 vs §5 目标、RFC 7807 覆盖边界、测试覆盖、未认领的实现决定。与 `../arena/Danio_Arena设计与实现说明.md` §18 同源 |
 
 ---
 
@@ -449,7 +449,7 @@ class SessionCreate(BaseModel):
 | **B4** | 未实现模块的统一约定：501 + "owned by 池伟豪 …" 是否正式写进上游文档 | 已实现共享 `_NOT_IMPL` 单例；响应体已是 RFC 7807 |
 | **B5** | WS 词表：`sys.hello` / `sys.echo`（后者仅为契约演示）是否正式纳入 R11 词表 | 已实现；`sys.echo` 的去留待认领 |
 | **B6** | experiment 契约分裂：`schemas/experiment.schema.json`（`seed:int` + `*_config` 路径）与 `api/schemas.py`（`seeds:list[int]` + `name/generations`）字段不相交 | 未变；以哪套为准待认领 |
-| **B7** | config 未接线：无 loader 读 yaml；`arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors` / `biomass_to_size_gain`）与 dataclass 不匹配 | 未变；见 `../arena/Danio_Arena实现说明.md` §2.3 |
+| **B7** | config 未接线：无 loader 读 yaml；`arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors` / `biomass_to_size_gain`）与 dataclass 不匹配 | 未变；见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射 |
 
 **认领表编号之外的新增待决项**（非认领表原有编号，同样不得在未确认前用于指标）：
 
