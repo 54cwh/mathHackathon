@@ -238,7 +238,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 - 报告 \(P(D)\) 退化曲线；`integrator_memory` 激活可作辅助证据；
 - 阴性对照：打乱历史（shuffle `last_seen_prey_pos`）后 \(P(D)\) 应下降。
 
-**实现契约【草案待确认】（2026-09-26 实现已先行、待确认）**：默认**关闭**（`probe.enabled=false`），
+**实现契约【已定稿】（2026-09-27 用户认可）**：默认**关闭**（`probe.enabled=false`），
 开关打开后为**测量层**——不新增事件类型、不改冻结的 §18.4.2 词表：
 
 - 每步（实体移动后）对每条存活鱼取「**最近可见猎物**」（`sensing.radius` + `sensing.fov_degrees`，同 `observe` 口径）。
@@ -250,7 +250,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 - 结果：`DanioArena.h3_probe_report()` → `{delay_steps, return_radius, window_steps, shuffle_history, trials,
   successes, P}`（`P=successes/trials`，无 trial 为 `null`）；逐鱼计数在 `Fish.probe_trials / probe_successes`。
   `P(D)` 曲线由多次 `probe.delay_steps` override 取得。
-- **数值（`草案待确认`；设计选择 **D**，无文献实测锚点）**：`D=40`（2 s @20Hz）、`r_H=3.0`（世界单位）、`W=60`（3 s）；
+- **数值（已定稿 2026-09-27；设计选择 **D**，无文献实测锚点）**：`D=40`（2 s @20Hz）、`r_H=3.0`（世界单位）、`W=60`（3 s）；
   落 `configs/default_arena.yaml::probe.*` 与 `docs/参数总表.json`。开关默认关闭，故**不影响冻结基线**。
 - **实现状态**：**已实现**（`arena/env.py::_update_probe`、`ProbeConfig`、`sensing.nearest_visible_prey`）；守护 `tests/test_h3_probe.py`。
 - 依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。
@@ -748,7 +748,7 @@ uv run python scripts/smoke_arena.py
 6. **事件样例闭环**：`schemas/examples/event_log_example.jsonl` 仍需按本文件 §18 的 8 类事件词表重生成，或明确降级为仅示意信封形状；不能继续让样例字段与实现词表分裂。
 7. **文献登记**：采纳 Arena lane 的生物学依据时，从 `bibliography.md` 当前编号之后继续登记（不得复用 RGCD 的 #111–#130），再把引用写回合并稿和参数总表。文献只支撑合理性校验或设计依据，不自动变成 Arena 契约。
 
-8. **H3 历史依赖探针（§14）**：**已实现**（默认关闭、测量层、不新增事件）；`D=40`/`r_H=3.0`/`W=60` 为 `草案待确认`（设计选择 D），认可后升已定稿。
+8. **H3 历史依赖探针（§14）**：**已实现**（默认关闭、测量层、不新增事件）；`D=40`/`r_H=3.0`/`W=60` **已定稿**（设计选择 D，2026-09-27 用户认可）。
 8b. **sensing 的 left/right 语义与 action 侧对齐（待用户裁决）**：`sensing._split_channels` 现约定 `sin(rel) < 0 → left`（§4.1）；`connectome/DanioNet设计规范.md` §4 又定 left motor 池 → \(+ω\)（\(+θ\)，逆时针）。二者是否同侧需做一次方向性核对：标准数学坐标下 \(+rel\) 才是物理左，故当前映射可能与 action 侧反相。若确认反相，须在 `sensing` 与 `ExpertPolicy` **同步翻转**（两者一起翻可保持 Expert 行为逐位不变，进而保住 §18.11 基线），并重跑 DanioNet 驱动基线；**裁决前不改行为**，本约定按 §4.1 文档化，供方向性测试与用户决定。
 
 ### P2：实现完善
