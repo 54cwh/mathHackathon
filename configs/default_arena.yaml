@@ -14,6 +14,8 @@ population:
 sensing:
   radius: 18.0
   fov_degrees: 220.0
+  predator_size_ref: 2.5
+  looming_norm: 3.5  # R_loom，标定占位 [2,5]
 energy:
   e_max: 1.0
   base_cost_per_step: 0.0008

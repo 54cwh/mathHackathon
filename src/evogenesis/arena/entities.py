@@ -68,7 +68,8 @@ class Fish(Entity):
     predator_encounters: int = 0
     escape_successes: int = 0
     collisions: int = 0
-    _prev_predator_rel: float = 0.0  # for looming rate
+    _prev_predator_theta: float | None = None  # 上一步的最近可见天敌角尺寸（rad），looming 差分用
+    _looming_rate: float = 0.0  # 本步算出的 looming（[0,1]），observe 读取
     # A8 threat-outcome escape window: set when a predator gives this fish up
     _threat_step: int | None = None
     _threat_source: str | None = None

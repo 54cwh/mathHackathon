@@ -4,7 +4,7 @@
   "title": "EvoGenesis evolution.jsonl record",
   "meta": {
     "owns": "代循环 evolution.jsonl 单行（producer=experiment/evolution_run.py）",
-    "status": "草案待确认"
+    "status": "已定稿"
   },
   "description": "代循环单行。",
   "type": "object",

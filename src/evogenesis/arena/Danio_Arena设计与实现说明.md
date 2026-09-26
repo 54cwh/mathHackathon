@@ -73,16 +73,16 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 
 现状（代码）：
 - `prey` / `threat` / `obstacle` 的 `_{left,right}_signal`：对 FOV 内该类目标按方位角以朝向为界分左右 —— **左右按 \(\mathrm{sign}(\sin(\text{rel\_bearing}))\) 划分**；强度取距离核 \((1-d/r)_{+}\)，**每通道求和后截断到 1.0**。
-- `prey_relative_size`：\(\min(size_{prey}/size_{fish},1)\)；`predator_relative_size`：\(\min(size_{pred}/size_{fish}/2.5,1)\)。
-- `looming_rate`：\(\mathrm{clip}(10\cdot\Delta\,\text{predator\_relative\_size},0,1)\)，其中相对尺寸取"视野半径内**最近**可见天敌"（与 env 共用同一函数），差分取最近一步。
+- `prey_relative_size`：\(\min(size_{prey}/size_{fish},1)\)；`predator_relative_size`：\(\min(size_{pred}/size_{fish}/\texttt{predator\_size\_ref},1)\)（`sensing.predator_size_ref`，现 2.5）。
+- `looming_rate`：**角尺寸扩张率**。取"视野半径 + FOV 内**最近**可见天敌"的角尺寸 \(\theta=2\arctan((size/2)/r)\)；相对扩张率 \(1/\tau=(\Delta\theta/\theta)/\Delta t\)；编码 \(\mathrm{clip}((1/\tau)/R_{loom},0,1)\)，\(R_{loom}=\texttt{sensing.looming\_norm}\)（现 3.5，**标定占位** \([2,5]\,\mathrm{s^{-1}}\)）。**相位（修复 M13/F1）**：\(\theta\) 在 `step()` 内、**实体移动前**按同一相位计算并缓存到 `Fish._looming_rate`，`observe()` 只读缓存；天敌不可见（\(\theta=0\)）时置 0 并清空 `_prev_predator_theta`。故该通道不再退化为常数。
 - `current_speed`：取自身上一步推进 \(v_{t-1}\)（决策见 `research/notes/契约决策记录.md`）。
 - `energy` / `hunger`：直接取 Arena 生理状态（口径见 §6）。
 
-备选（待裁决 ④⑤）：
-- `looming_rate` 亦可按 Gabbiani 1999 视觉角定义 \(\theta(t)=2\tan^{-1}(l/(vt))\)（标定取 \(l/\lVert v\rVert\)）——**与现状公式不同**，须二者取一。
-- 每通道"求和后截断"与"先截断再求和"须与实现统一。
+已裁决：
+- `looming_rate` 采用**角尺寸扩张率**（Gabbiani 1999 视觉角的离散形式），取代旧的 \(10\cdot\Delta rel\) 口径（后者在现调用序下退化为常数）。
+- 每通道"求和后截断"口径已与实现统一（`_split_channels` 每通道 `min(...,1.0)`）。
 
-> ⚠️ 已知缺口：在现有调用序下 `looming_rate` 除 `reset()` 首帧外**恒为 0**（12 维第 9 维当前不携带信息）。修法（在 `step()` 内移动前后各取一次，或 prev 改在步首读取）会改变观测分布，须与 A1 一并认领。
+> ✅ **已修（2026-09-26，M13/F1）**：`looming_rate` 改为步前同相位差分并缓存，不再恒 0；`R_loom` 为标定占位，待 play-test 在 \([2,5]\) 内标定后转 `confirmed`（`docs/参数总表.json` `looming_norm`）。
 
 依据：prey/threat 通道分离 `[bib#58][bib#60]`；详见 `research/reference/sensory-encoding-12d.md`。
 
@@ -172,7 +172,9 @@ predator 不用神经网络：【已定稿】
 - 避障
 - 丢失目标后恢复巡游
 
-【已定稿】滞回与参数：旧目标仍存活且 \(d\le release=22\) → 保持锁定并全速追击；否则在 \(detect=15\) 内取**最近**存活鱼；无候选则返回"维持当前航向、巡游速度 \(0.40\)"。巡游速度 \(0.40\)、追击速度 \(0.65\)（`【草案待确认】`，待认领表 A5）。转向速率在 env 侧限制：\(\mathrm{clip}(\Delta\theta,\pm \text{turn\_rate}\cdot\Delta t)\)，`turn_rate` \(=5.0\) **rad/s**（\(\equiv 0.25\) rad/step，待认领表 A10）。
+【已定稿】滞回与参数：旧目标仍存活且 \(d\le release=22\) → 保持锁定并全速追击；否则在 \(detect=15\) 内取**最近**存活鱼；无候选则返回"维持当前航向、巡游速度 \(0.40\)"。
+
+【已定稿·D8 裁决（2026-09-26）】`detect=15`（获取新锁定）< `sensing.radius=18`（鱼视野）< `release=22`（放弃锁定）的**不对称是有意设计**（依据 D，设计选择）：三者是**不同量**——`detect` 是捕食者**获取**新目标的阈值、`release` 是**已锁定追击**的滞回上界、`sensing.radius` 是鱼的**瞬时视野**。故存在 `18<d≤22` 的「已锁定但鱼看不见」窗口，模拟**追击惯性**（捕食者可持续追击暂时游出鱼视野的目标）；鱼在 `d≤18` 内仍能感知并逃离（`threat_*_signal`、ExpertPolicy）。该不对称**不视为缺陷**；若未来要求二者一致，须显式改参数并重跑基线。巡游速度 \(0.40\)、追击速度 \(0.65\)（`【草案待确认】`，待认领表 A5）。转向速率在 env 侧限制：\(\mathrm{clip}(\Delta\theta,\pm \text{turn\_rate}\cdot\Delta t)\)，`turn_rate` \(=5.0\) **rad/s**（\(\equiv 0.25\) rad/step，待认领表 A10）。
 
 ## 10. PreyPolicy
 透明简单规则：【已定稿】结构
@@ -311,18 +313,18 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 **事实来源优先级：代码 > `configs/default_arena.yaml` > 本文档。** 本文档只做映射与记录，不发明规则；与代码冲突以代码为准（发现冲突请直接改本文档）。
 
-**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，参数总表 v0.11 中 `group="arena"` 共 **41** 项，其中 `sim_hz` 为 `confirmed`、`predator_size`/`episode_steps`/`capture_radius`/`episode_seconds` 为 `derived`，余为 `no_basis`，`body_length_mm` 为 `missing`）。
+**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，参数总表 v0.12 中 `group="arena"` 共 **43** 项，其中 `sim_hz` 为 `confirmed`、`predator_size`/`episode_steps`/`capture_radius`/`episode_seconds` 为 `derived`，余为 `no_basis`，`body_length_mm` 为 `missing`）。
 
 ---
 
 ### 18.1 模块清单
 | 文件 | 职责 | 行数 | 对外接口 |
 |---|---|---|---|
-| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 189 | `ArenaConfig()`、`load_arena_config()` |
-| `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
-| `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
+| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 197 | `ArenaConfig()`、`load_arena_config()` |
+| `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 98 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
+| `src/evogenesis/arena/sensing.py` | 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`、`nearest_predator_angular_size()`（looming 角尺寸，env 消费） | 189 | `observe(...)`、`nearest_predator_relative_size(...)`、`nearest_predator_angular_size(...)` |
 | `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 105 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
-| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 544 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造 **必传** `spawn_seed` / `dynamics_seed`，可注入 `fish_ids` / `genome_ids` / `generation` |
+| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 558 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造 **必传** `spawn_seed` / `dynamics_seed`，可注入 `fish_ids` / `genome_ids` / `generation` |
 | `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，run 目录由 `experiment/runlayout.py` 建（`scripts/run_arena.py` / `run_chain.py` 调用） | 46 | — |
 | `tests/test_arena.py` | 29 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 503 | — |
 
@@ -355,6 +357,8 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `population.n_obstacles` | 6 | `population.n_obstacles` | 6 | ✅ | ✅ `live_obstacles` |
 | `population.prey_regrowth_steps` | 25 | `population.prey_regrowth_steps` | 25 | ✅ | ✅ `prey_regrowth_steps` |
 | `sensing.radius` | 18.0 | `sensing.radius` | 18.0 | ✅ | ✅ `sensing_radius` |
+| `sensing.predator_size_ref` | 2.5 | `sensing.predator_size_ref` | 2.5 | ✅ | ✅ `predator_size_ref` |
+| `sensing.looming_norm` | 3.5 | `sensing.looming_norm` | 3.5 | ✅ | ✅ `looming_norm`（标定占位） |
 | `sensing.fov_degrees` | 220.0 | `sensing.fov_degrees` | 220.0 | ✅ | ✅ `sensing_fov_degrees` |
 | `energy.e_max` | 1.0 | `energy.e_max` | 1.0 | ✅ | ✅ `e_max` |
 | `energy.base_cost_per_step` | 0.0008 | `energy.base_cost_per_step` | 0.0008 | ✅ | ✅ `base_cost_per_step` |
@@ -394,7 +398,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 #### 18.2.3 三条必须写明的结论
 
 1. **`ActorDefaults` 整块（**14 项**）已全部进 `configs/default_arena.yaml` 的 `actors:` 段**（2026-09-26 补入；此前这 14 项在 YAML 中无归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`。**更正（2026-09-26，审计 A13）**：本节原写「12 项 + `growth.biomass_to_size_gain`」，但该字段已随 A4 面积式**删除**（现为 `growth.prey_area_gain`），且 `ActorDefaults` 实为 **14** 个字段、YAML `actors:` 段亦为 **14** 个键 —— 三种说法（12 项 / 14 项 / 含 biomass）已统一为本句。
-2. **`../../../docs/参数总表.json`（v0.11）已收录 `group="arena"` 共 41 项**，覆盖 `world` / `population` / `sensing` / `energy`（含 `collision_penalty`）/ `growth`（含 `prey_area_gain`）/ `actors` 全部字段。其中 `sim_hz` 为 `confirmed`，`predator_size` / `episode_steps` / `capture_radius` / `episode_seconds` 为 `derived`，其余为 `no_basis`（依据 D＝设计选择，**非「未登记」**）；`status` 描述**依据强度**、不表示冻结与否（冻结与否见本文件条款状态）。`body_length_mm` 记为 `missing`（属 DanioNet 侧长度契约，不是 Arena 世界参数）；`world.boundary` 已进表（`world_boundary`，§2.1 表 ✅）。
+2. **`../../../docs/参数总表.json`（v0.12）已收录 `group="arena"` 共 43 项**，覆盖 `world` / `population` / `sensing` / `energy`（含 `collision_penalty`）/ `growth`（含 `prey_area_gain`）/ `actors` 全部字段。其中 `sim_hz` 为 `confirmed`，`predator_size` / `episode_steps` / `capture_radius` / `episode_seconds` 为 `derived`，其余为 `no_basis`（依据 D＝设计选择，**非「未登记」**）；`status` 描述**依据强度**、不表示冻结与否（冻结与否见本文件条款状态）。`body_length_mm` 记为 `missing`（属 DanioNet 侧长度契约，不是 Arena 世界参数）；`world.boundary` 已进表（`world_boundary`，§2.1 表 ✅）。
 3. **`configs/default_arena.yaml` 已有调用方读取它 —— 该实现债 2026-09-26 闭合。** **Arena 侧加载已落地**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**调用方接线已完成**：`scripts/run_experiment.py` 对 Arena 型配置（顶层键 ⊆ `ARENA_SECTIONS`）调用 loader，并落盘 **`arena_config_resolved.json`（已解析值快照）** —— 因为「原始 YAML 副本」与实际生效值可能漂移（默认值 / env / overrides）。**原对外服务层 `api/session.py` 已按用户决定移除**；arena 配置现行调用方为 `scripts/run_experiment.py`（落盘 `arena_config_resolved.json`）、`scripts/run_arena.py`、`scripts/collect_trajectories.py`、`src/evogenesis/experiment/environments.py` 与 `src/evogenesis/pipeline/arena_episode.py`。与「所有数值必须由 config 读取」（`../../../docs/参数总表.json` 末行）的要求**已闭环**（见 §8 M8、认领表 B7）。
 
 ---
@@ -444,7 +448,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | ⚠️ S17 | **`arena.escape` 的真实触发条件** | `plan()` 返回的目标与 `pred.target_fish_id` 不同**且旧目标仍存活**时，才发射事件并对该鱼 `escape_successes += 1`。**旧目标已死亡（饿死，或被另一只捕食者吃掉）时既不发事件也不计数**，由 `test_dead_fish_not_credited_escape` 守护。指标口径须按此理解 |
 | S18 | **`Predator.alive` 恒为真** | 全仓库没有任何 `pred.alive = False`（`.alive = False` 只出现在 prey 与 fish 上）。~~捕食者段 `if not pred.alive` 死分支与 `sensing` 的 `if d.alive` 过滤~~ 已于 2026-09-26 清理。见 §8 M7 |
 | S19 | **`arena.energy_depleted` 的步数语义** | payload 的 `survival_steps` 取**自增之前**的值，即"死前已存活步数"；`Fish.survival_steps` 每步末对存活鱼自增 |
-| ⚠️ S20 | **looming 记账口径** | `_prev_predator_rel` 在所有实体移动**之后**统一刷新，取值调用**编码器同一个函数** `sensing.nearest_predator_relative_size(fish, predators, radius, fov_degrees)`（＝"视野与半径内**最近**可见天敌"的 $rel$ 尺寸 $\min(pred.size / fish.size / 2.5, 1.0)$）；env 与编码器共用这一口径，`looming = clamp(10 \cdot \Delta rel, 0, 1)` 的差分才是真正的变化率。**实测（重要）**：在现有调用序下（`observe()` 总在步界被调用，而 `_prev_predator_rel` 在**上一步末尾**用同一函数刷新），$pred\_rel$ 与 $prev$ 由构造必然相等 ⇒ **`looming_rate` 通道除 `reset()` 后的第一次观测外恒为 0**（`reset()` 把 `Fish._prev_predator_rel` 重建为 0.0，故首帧可能出现 1 个饱和值 1.0）。实测 seed 250927：首帧 12 条鱼中 2 条为 1.0，其后 40 步全 0。⇒ 该通道目前**不携带信息**，属待认领（§7 A1）与待修的实现缺口（§8 M13） |
+| ✅ S20 | **looming 口径（已修）** | 角尺寸 \(\theta=2\arctan((size/2)/r)\) 取"视野与半径内**最近**可见天敌"，在 `step()` 内**实体移动前**同相位计算，差分得 \(1/\tau=(\Delta\theta/\theta)/\Delta t\)、按 `sensing.looming_norm` 归一缓存于 `Fish._looming_rate`，`observe()` 只读；不可见置 0。回归：`tests/test_sensing_looming.py`（携带信息 / 无天敌恒 0） |
 | ⚠️ S21 | **`step()` 的 done 守卫** | `__init__` / `reset()` 置 `self._episode_ended = False`；episode 结束后 `step()` **立即返回** `StepResult(self.step_idx, True, [])`（不再推进、不再发事件）。因此 ① `step_idx` 不会越过 600；② `arena.episode_end` 每次 episode **只发一次**；③ 结束后重复 `step()` 是幂等空转。由 `test_step_after_episode_end_is_inert` 守护 |
 | ⚠️ S22 | **终止只由步数决定** | `done = self.step_idx >= self.cfg.world.episode_steps`（`env.py:483`）；个体全灭**不**提前结束（§15 A9 已废弃团灭提前结束）。由 `test_extinction_does_not_end_episode_early` 守护 |
 | S23 | **死鱼不再感知** | `step()` 鱼循环、looming 段均 `if not fish.alive: continue`；`DanioArena.observe(fish_id)` 本身**不校验存活**，对死鱼仍会返回向量（其能量为 0） |
@@ -559,7 +563,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | 认领编号 | 未认领的内容 | 本文档对应节 | 实现现状 |
 |---|---|---|---|
-| **A1** | 12 维感官编码的归一化公式（线性衰减、$rel$ 尺寸、looming 系数 10、左右分侧规则） | §4、S20 | 已实现、已固化；**looming 通道在现状调用序下恒 0**（S20 实测），须一并认领 |
+| **A1** | 12 维感官编码的归一化公式（线性衰减、$rel$ 尺寸、looming 角扩张率、左右分侧规则） | §4、S20 | **大部分已定稿、已固化**；looming 已改角尺寸扩张率并修复恒 0（2026-09-26）；**仅余 `looming_norm`（R_loom）为标定占位**，play-test 标定后本项转已定稿 |
 | **A2** ✅ | 捕食几何：`capture_radius = 4.61`、$\kappa = 1.25$（判据含边界）、**前向锥 120°（总锥角）** | §2.1、§2.2、§3.1 §8 | **2026-09-26 已裁决并全部落地**：半径与 κ 已进参数总表；**前向锥已实现**（`growth.capture_cone_degrees`）。未采纳「半径和」口径（§8 已知局限） |
 | **A3** ✅ | 能量四系数 + 新增 $C_{pen}$（`collision_penalty`）与回报函数 $f$ | §2.1、§6 | 已实现；**四系数与 `collision_penalty` 均已进参数总表**（2026-09-26；表内 `status=no_basis`，依据 D＝设计选择）。`food_reward` 现为**均值**（按 `prey.size` 缩放、中点归一），A3 预算不变 |
 | **A4** ✅ | 生长：改为**面积守恒式** `size ← min(size_max, sqrt(size^2 + g*prey_size^2))`，$g$ = `prey_area_gain` | §2.2、§3.1 §7 | **2026-09-26 已改**（用户裁决「面积式」）：局内生长可见、边际递减内生；`Fish.biomass` **字段删除**（消除「只写不读」）；`prey_area_gain` 已进参数总表（**标定占位** 0.2） |
@@ -576,7 +580,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | # | 发现 | 证据 |
 |---|---|---|
-| F1 | **`looming_rate` 通道在现状下恒 0**（除 `reset()` 后首帧） | §3.2 S20 的实测；根因是"prev 在上一步末尾刷新"与"observe 在步界调用"使两者同源同值 |
+| ✅ F1 | ~~`looming_rate` 通道恒 0~~ | 已修（2026-09-26）：步前同相位角尺寸差分 + 缓存（§4.1、S20、M13） |
 | F2 | ~~`PreyPolicy.avoid_gain` 是死参数~~ ✅ **已删除（2026-09-26）** | S12 |
 
 ---
@@ -597,7 +601,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M10 | 流体动力学 | 规范 §1 已明确排除，非遗漏 |
 | M11 | ~~episode 内重生成猎物~~ | ✅ **已实现**（2026-09-26，§12 R2）：每 `prey_regrowth_steps`（占位 25）补 1 只至 `n_prey`；新个体以 `arena.spawn` 事件落盘 |
 | M12 | 手动控制通路 | 原 `api/session.py` 的 `advance(use_expert=False)` 未暴露手动 action 端点；**该服务层已按用户决定移除**，手动 action 通路待随 `api/` 重写落地 |
-| M13 | looming 通道无信息 | 见 S20 / F1：口径已统一，但整条通道在现状调用序下恒 0，等于 12 维里的第 9 维目前是常数 0；修法（在 `step()` 内、实体移动前后各取一次，或把 prev 改在步首读取）会改变 RNG 无关但会改变观测分布，需与 A1 一并认领 |
+| ✅ M13 | ~~looming 通道无信息~~ | 已修（2026-09-26）：`nearest_predator_angular_size` + 步前缓存；回归 `tests/test_sensing_looming.py`。剩余：`looming_norm` 标定占位（A1） |
 | M14 | `world.episode_seconds` 未进代码 | YAML 有 `world.episode_seconds: 30`，`WorldConfig` 无对应字段（§2.1 的 ⚠️ 行），故 `dt`/步数与它无关 |
 
 ---
@@ -651,7 +655,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 |---|---|
 | **事件词表**（增删 `type`、改 payload 字段名/含义） | ① `src/evogenesis/arena/env.py` 的发射点；② `tests/test_arena.py::KNOWN_EVENTS`；③ 本文档 §4.2；④ `../core/核心机制与数据流.md` §5.1 摘要表；⑤ `schemas/examples/event_log_example.jsonl`（重生成，见 §4.4）；⑥ 若涉及前端消费：`frontend/src/api/arena.ts` 的 `ArenaEvent`；⑦ 若涉及 WS 推送：`../api/API与系统工程.md` §4.1 R11 |
 | **冻结参数值**（`capture_size_ratio` / 世界尺寸 / Hz / 步数 / 种群数） | ① `configs/default_arena.yaml`（**唯一事实来源**）；② `src/evogenesis/arena/config.py` 默认值；③ `../../../docs/参数总表.json`；④ `tests/test_arena.py::test_population_counts_match_frozen_defaults`（种群数）；⑤ 本文档 §2；⑥ 报告中的参数表快照 |
-| **标定占位 / play-test 旋钮**（`prey_area_gain`、`collision_penalty`、`prey_regrowth_steps`、`escape_hold_steps`、`predator_max_chase_steps`、`capture_cone_degrees`、`world.boundary`、`energy.*` 4 项、`growth` 余项、`actors` 余项） | ① `configs/default_arena.yaml`（**唯一事实来源**；`actors:` 段与全部新键已就位）；② `config.py` 默认值；③ 本文档 §2/§16；④ `../../../docs/参数总表.json`（**2026-09-26 已全部登记**）；⑤ `tests/test_arena_config.py` 的 YAML↔dataclass 漂移守护 |
+| **标定占位 / play-test 旋钮**（`prey_area_gain`、`collision_penalty`、`prey_regrowth_steps`、`escape_hold_steps`、`predator_max_chase_steps`、`capture_cone_degrees`、`world.boundary`、`sensing.looming_norm`、`energy.*` 4 项、`growth` 余项、`actors` 余项） | ① `configs/default_arena.yaml`（**唯一事实来源**；`actors:` 段与全部新键已就位）；② `config.py` 默认值；③ 本文档 §2/§16；④ `../../../docs/参数总表.json`（**2026-09-26 已全部登记**）；⑤ `tests/test_arena_config.py` 的 YAML↔dataclass 漂移守护 |
 | ⚠️ **障碍生成方式 / `n_obstacles` / 半径范围 / clearance** | ① `env.py::_spawn_obstacles()` 与 `reset()`（必须保持"先清空、再就地逐个生成"）；② 本文档 §3.2 S9、§5 D2/D5；③ `test_reset_idempotent_on_same_instance`；④ **一切历史冒烟基线作废**（RNG 流全局平移） |
 | **12 维感知顺序**（`sensing.DIM_NAMES` / `observe()` 返回顺序） | ① `src/evogenesis/arena/sensing.py`（docstring 与 `DIM_NAMES`）；② `schemas/examples/README.md` 的 12 维语义表；③ `schemas/examples/trajectory_example.jsonl`（观测向量列序）；④ `../core/核心机制与数据流.md` §4.2 的 `observation` 行；⑤ `../connectome/DanioNet设计规范.md` §2；⑥ `../../../docs/参数总表.json` `sensory_dim`；⑦ **顺序冻结是验收清单硬性要求，改动需双方同步** |
 | ⚠️ **looming 口径**（`nearest_predator_relative_size` / `_prev_predator_rel` 刷新位置） | ① `sensing.py` 与 `env.py`（**两者必须继续共用同一函数**，否则差分重新变成聚合口径差）；② 本文档 S20 / §7 F1 / §8 M13；③ 认领表 A1 |

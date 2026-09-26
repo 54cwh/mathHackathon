@@ -14,7 +14,7 @@ import numpy as np
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.entities import Entity, Fish, Obstacle, Predator, Prey
 from evogenesis.arena.policies import PredatorPolicy, PreyPolicy
-from evogenesis.arena.sensing import nearest_predator_relative_size, observe
+from evogenesis.arena.sensing import nearest_predator_angular_size, observe
 
 # Collision margin already used by the pre-existing obstacle test
 # (o.contains(fish.pos, 0.1)); reused as the fish effective radius in the
@@ -234,7 +234,8 @@ class DanioArena:
             fov_degrees=self.cfg.sensing.fov_degrees,
             current_speed=fish.speed,
             e_max=self.cfg.energy.e_max,
-            prev_predator_rel=fish._prev_predator_rel,
+            looming_rate=fish._looming_rate,
+            predator_size_ref=self.cfg.sensing.predator_size_ref,
         )
 
     def step(self, actions: dict[str, tuple[float, float]] | None = None) -> StepResult:
@@ -243,6 +244,28 @@ class DanioArena:
             return StepResult(self.step_idx, True, [])
         dt = self.cfg.world.dt
         new_events: list[Event] = []
+
+        # --- looming bookkeeping (arena §4.1 / A1)：在**实体移动前**用同一相位计算最近可见
+        #     天敌的角尺寸 θ=2·arctan((size/2)/r)，与上一步的 θ 差分得相对扩张率
+        #     `(Δθ/θ)/Δt`，再按 R_loom=sensing.looming_norm 归一到 [0,1] 缓存给 `observe()`。
+        #     不可见（θ=0）时置 0 并把 prev 清空，避免"看不见却仍在 loom"。
+        predator_list = list(self.predators.values())
+        for fish in self.fish.values():
+            if not fish.alive:
+                continue
+            theta = nearest_predator_angular_size(
+                fish,
+                predator_list,
+                self.cfg.sensing.radius,
+                self.cfg.sensing.fov_degrees,
+            )
+            prev = fish._prev_predator_theta
+            if theta > 0.0 and prev is not None and prev > 0.0:
+                rate = ((theta - prev) / dt) / prev
+                fish._looming_rate = min(max(rate / self.cfg.sensing.looming_norm, 0.0), 1.0)
+            else:
+                fish._looming_rate = 0.0
+            fish._prev_predator_theta = theta if theta > 0.0 else None
 
         # --- fish: turn, move, eat, pay energy (Danio_Arena设计与实现说明.md sections 5-8)
         for fid, fish in self.fish.items():
@@ -472,17 +495,6 @@ class DanioArena:
                     ),
                 )
                 new_events.append(self._emit("arena.spawn", {"entity_id": pid}))
-
-        # --- looming bookkeeping: reuse the encoder's own definition (nearest
-        #     visible predator), so the differential is a genuine rate of change
-        #     rather than a nearest-vs-largest aggregation artifact.
-        predators = list(self.predators.values())
-        for fish in self.fish.values():
-            if not fish.alive:
-                continue
-            fish._prev_predator_rel = nearest_predator_relative_size(
-                fish, predators, self.cfg.sensing.radius, self.cfg.sensing.fov_degrees
-            )
 
         # --- A8 resolution: a released lock counts as an escape only once the fish
         #     has survived escape_hold_steps beyond the release (section 15).

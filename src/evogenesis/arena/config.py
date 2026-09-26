@@ -49,6 +49,14 @@ class PopulationConfig:
 class SensingConfig:
     radius: float = 18.0
     fov_degrees: float = 220.0
+    predator_size_ref: float = 2.5  # 相对尺寸归一参考（§4.1）
+    looming_norm: float = 3.5  # R_loom（s^-1），标定占位 [2,5]（§4.1/A1）
+
+    def __post_init__(self) -> None:
+        if self.predator_size_ref <= 0.0:
+            raise ValueError("predator_size_ref 必须 > 0")
+        if self.looming_norm <= 0.0:
+            raise ValueError("looming_norm 必须 > 0")
 
 
 @dataclass(frozen=True)

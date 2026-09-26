@@ -98,16 +98,38 @@ def nearest_predator_relative_size(
     predators: list[Predator],
     radius: float,
     fov_degrees: float,
+    *,
+    size_ref: float = 2.5,
 ) -> float:
     """Relative size of the nearest visible predator, in [0, 1].
 
-    Single source of truth shared by the encoder's ``predator_relative_size``
-    and the env's looming bookkeeping, so the two can never drift apart.
+    Single source of truth for the encoder's ``predator_relative_size``.
+    ``size_ref`` 为归一参考（`arena §4.1`，config `sensing.predator_size_ref`）。
     """
     half_fov = np.deg2rad(fov_degrees) / 2.0
     cand = [(d.pos, d.size) for d in predators]
     nearest = _nearest_visible(fish, cand, radius, half_fov)
-    return min(nearest[1] / fish.size / 2.5, 1.0) if nearest else 0.0
+    return min(nearest[1] / fish.size / size_ref, 1.0) if nearest else 0.0
+
+
+def nearest_predator_angular_size(
+    fish: Fish,
+    predators: list[Predator],
+    radius: float,
+    fov_degrees: float,
+) -> float:
+    """Angular size θ (rad) of the nearest visible predator, or 0.0 if none.
+
+    编码口径（`arena §4.1` / `A1`）：\(\theta = 2\arctan(l/r)\)，其中 \(l\) 为该天敌
+    半线性尺寸（`size/2`）、\(r\) 为距离；只取「视野半径 + FOV 内最近」的天敌。
+    """
+    half_fov = np.deg2rad(fov_degrees) / 2.0
+    cand = [(d.pos, d.size) for d in predators]
+    nearest = _nearest_visible(fish, cand, radius, half_fov)
+    if nearest is None or nearest[0] <= 0.0:
+        return 0.0
+    dist, size = nearest
+    return float(2.0 * np.arctan((size / 2.0) / dist))
 
 
 def observe(
@@ -119,7 +141,8 @@ def observe(
     fov_degrees: float,
     current_speed: float,
     e_max: float,
-    prev_predator_rel: float,
+    looming_rate: float,
+    predator_size_ref: float = 2.5,
 ) -> np.ndarray:
     """Encode the frozen 12-dim observation for one fish."""
     half_fov = np.deg2rad(fov_degrees) / 2.0
@@ -135,12 +158,13 @@ def observe(
     nearest_prey = _nearest_visible(fish, prey_c, radius, half_fov)
     prey_rel = min(nearest_prey[1] / fish.size, 1.0) if nearest_prey else 0.0
 
-    pred_rel = nearest_predator_relative_size(fish, predators, radius, fov_degrees)
+    pred_rel = nearest_predator_relative_size(
+        fish, predators, radius, fov_degrees, size_ref=predator_size_ref
+    )
 
-    # looming: positive rate of change of nearest predator relative size,
-    # scaled so that closing-in within ~1 s saturates the channel (MVP approx).
-    looming = max(0.0, pred_rel - prev_predator_rel) * 10.0
-    looming = min(looming, 1.0)
+    # looming：由 env 在步首按角尺寸扩张率 `(Δθ/θ)/Δt / R_loom` 算好并缓存（`arena §4.1`），
+    # 编码器只做截断（不在此差分，避免"prev 刷新时序"再次退化为常数）。
+    looming = min(max(looming_rate, 0.0), 1.0)
 
     energy_norm = min(max(fish.energy / e_max, 0.0), 1.0)
 

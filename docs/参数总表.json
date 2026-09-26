@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.11",
+    "version": "v0.12",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -1620,6 +1620,32 @@
         24
       ],
       "suggest": "同 food_rich：比值指标区分力弱，须看绝对量"
+    },
+    {
+      "name": "predator_size_ref",
+      "value": 2.5,
+      "unit": "—",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "12 维第 7 维 predator_relative_size 的归一参考：min(size_pred/size_fish/size_ref,1)。属设计选择（arena §4.1），无生物学锚点。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §4.1",
+      "config": "configs/default_arena.yaml → sensing.predator_size_ref",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "looming_norm",
+      "value": 3.5,
+      "unit": "s^-1",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "looming_rate 归一尺度 R_loom：clip((Δθ/θ/Δt)/R_loom,0,1)，θ=2·arctan((size/2)/r)。报告区间 R_loom∈[2,5] s^-1（research/reference/looming-and-growth.md；arena 设计意见 §2），本仓库取中位 3.5 为**标定占位**，play-test 标定前不得冻结。",
+      "source": "research/reference/looming-and-growth.md; research/notes/arena-设计意见-给李辰钊.md §2 A1",
+      "config": "configs/default_arena.yaml → sensing.looming_norm",
+      "sensitivity": null,
+      "suggest": "按 play-test 在 [2,5] 内标定后转 confirmed"
     }
   ],
   "missing_required": {

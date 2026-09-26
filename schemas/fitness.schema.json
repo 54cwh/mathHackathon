@@ -4,7 +4,7 @@
   "title": "EvoGenesis fitness.jsonl record",
   "meta": {
     "owns": "代循环逐个体 fitness.jsonl 单行（producer=experiment/evolution_run.py）",
-    "status": "草案待确认"
+    "status": "已定稿"
   },
   "description": "fitness 单行。",
   "type": "object",
