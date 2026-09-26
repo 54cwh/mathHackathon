@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.4 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.5 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 
@@ -10,7 +10,7 @@
 | 记号 | 类型 / 形状 | 定义 | 来源 |
 |---|---|---|---|
 | \(G\) | 二倍体 genome：2×`ChromosomePair`，每链 128 bp ∈{A,C,G,T} | 个体基因组；RGCD 只消费其派生量 \(\mathbf q(G)\in[0,1]^8\)（genome §6）与位点表达 \(E_A,E_B\in\{0,0.5,1\}\)（genome §3），不直接读碱基 | `genome` |
-| \(\Theta_D\) | §13 参数集合（各张量形状见表） | 发育参数（\(W_g,B,P,\mathbf b,U,\mathbf c_{domain},\mathbf w_d,b_d,C,\lambda,\gamma,b_A,\mathbf u,b_w,\mathbf a,b_\tau,\epsilon_p,\epsilon_g\) 与 motif 目录 8×6 bp），由 seed 确定性初始化 | §13 / §2 |
+| \(\Theta_D\) | §13 参数集合（各张量形状见表） | 发育参数（\(W_g,B,P,\mathbf b,U,\mathbf c_{domain},\mathbf w_d,b_d,C,\lambda,\gamma,b_A,\mathbf u,b_w,\mathbf a,b_\tau,\epsilon_p,\epsilon_g\)），由 seed 确定性初始化 | §13 / §2 |
 | \(\xi\) | RNG 流（命名空间 `development`） | 发育随机源（分裂 Bernoulli、\(\epsilon_p,\epsilon_g\)）；由 `core` seed manager 派生，**不另立随机源** | `core §3` |
 
 **输出**（active \(N\in[24,48]\)；dtype 统一 `float32`，`core §7`；batch 内 padding 到 48 的约定见 `DanioNet §3`）
@@ -48,7 +48,7 @@ q_k(S)=TopKMean_{s\subset S}a(M_k,s)
 
 **参数（定稿）**：
 - motif 长度 \(|M_k|=6\) bp；滑窗 \(|s|=6\) bp、步长 1；`TopK` 的 \(K=3\)。
-- 8 条 motif 目录由 \(\Theta_D\) 的 seed 从 \(\{A,C,G,T\}^6\) 一次抽样后固定（不随个体或代变化）。
+- 8 条 motif 目录由 **`motif_catalog` 命名空间**（`core §3`）在实验 master seed 下一次性抽样固定（各位置在 `alphabet` 上均匀 i.i.d.，不随个体或代变化）；owner 为 genome 侧（`genome/motifs.py`），RGCD 只消费 \(\mathbf q(G)\)、不直接读目录。
 - 扫描范围：每个 haplotype 有 **2 条染色体**（各 `bp_per_haplotype_chromosome`=128 bp，合计 haploid 256 bp）；窗口在**各染色体内**滑动、**不跨染色体边界**，`TopKMean` 在两条染色体的**窗口并集**上取 top-\(K\)。实现侧须按 2 条染色体存储（不塌成单串）。
 - 依据与定位：长度 6 bp 落在真实 TF motif 6–12 bp 区间下沿，属 A-life 尺度（`docs/设计依据审计.md` R5：Stormo 2000；Lambert et al. 2018）；\(K=3\) 与 motif 条数为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
 

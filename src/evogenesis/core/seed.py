@@ -22,6 +22,7 @@ NAMESPACES: dict[str, int] = {
     "crossover": 1,
     "development": 2,
     "arena_spawn": 3,
+    "motif_catalog": 4,
 }
 
 

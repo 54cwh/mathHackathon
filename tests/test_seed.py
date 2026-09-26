@@ -68,7 +68,13 @@ def test_negative_index_raises():
 
 
 def test_namespaces_frozen():
-    assert NAMESPACES == {"mutation": 0, "crossover": 1, "development": 2, "arena_spawn": 3}
+    assert NAMESPACES == {
+        "mutation": 0,
+        "crossover": 1,
+        "development": 2,
+        "arena_spawn": 3,
+        "motif_catalog": 4,
+    }
 
 
 def test_set_global_seed_reproducible():
