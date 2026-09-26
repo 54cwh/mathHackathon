@@ -30,6 +30,11 @@
 | `/frontend` | `frontend/` |
 | `/backend` | `src/evogenesis/api/` + `scripts/` |
 | `/model` | `src/evogenesis/genome/`、`development/`、`connectome/` |
+| `/core` | `src/evogenesis/core/`（机制底座：config / seed / ids / tensors / logging / tracking / registry / io） |
+| `/evolution` | `src/evogenesis/evolution/`（繁殖 / 选择 / drift） |
+| `/learning` | `src/evogenesis/learning/`（Behavior Cloning） |
+| `/experiment` | `src/evogenesis/experiment/`（指标 / run / 代循环编排） |
+| `/viz` | `src/evogenesis/viz/`（出图） |
 | `/simulation` | `src/evogenesis/arena/` |
 | `/experiments` | `configs/` + `scripts/` + `results/runs/` |
 | `/assets` | `artifacts/`（+ `data/`） |
@@ -154,17 +159,19 @@ make demo          # 等价于 ./scripts/start_demo.sh
 ## 10. Git
 开发期 private；提交时按比赛要求 public。schema/config 变更必须双方同步。
 
-## 阅读问题（待确认）
+## 阅读问题（2026-09-27 核对）
 
-> 逐份阅读本文时发现的未定义点，需与 `AGENTS.md` / `frontend/README.md` / `schemas/` 及既有实现对齐后确认。
+> 首版列 10 条未定义点；本轮逐条对照实现与上游文档核对，**9 条已闭合**，1 条为已知限制。
 
-1. **稳定 ID 的生成规则与唯一性范围未定义（§3）**：`fish_id / genome_id / generation / experiment_id / environment_id` 的格式、派生方式（哈希 / 单调计数）、唯一性范围（会话内 / 全局）均未写。前端“不得用数组下标”已有约束，但后端如何保证稳定未定。
-2. **资源词表与端点不闭合（§4.2 / §4.3）**：词表列 16 个资源，端点仅覆盖约一半；`phenotypes / connectomes / generations / events / metrics` 无任何端点或获取途径。
-3. **同步 / 异步边界与超时未定义（§4.3）**：仅声明“编辑/发育/繁殖同步、演化/实验异步”；未给同步操作的最长时限、超时行为，以及 48 个体演化是否必然异步。
-4. **暂停缺恢复端点（§4.3）**：`POST /v1/sessions/{session_id}/pause` 没有对应的 `resume / play` 端点。—— **已闭合（2026-09-26）**：`pause` 定为 **toggle**（兼作恢复），不另开 `resume`（§4.3）。
-5. **WS 消息类型词表不完整 + 语义缺失（§4.1 R11 / §5）**：R11 只举例四类，§5 还要传 energy / events / generation progress，但未给完整 `type` 词表；`seq` 的作用（排序 / 去重 / 断线补偿）、多客户端订阅、心跳与重连策略均未写。
-6. **Seed 派生方法未定义（§6）**：master seed 如何派生成各子 seed（`SeedSequence.spawn` / hash）未写；mutation / crossover / development / Arena spawn 的派生树未给。
-7. **CUDA 确定性未定义（§6）**：设置 `torch.cuda` seed 之后是否强制 `cudnn.deterministic`、是否接受非确定性算子未写。
-8. **结构映射表不完整（§2）**：任务层中的 `core / evolution / learning / experiment / viz` 未出现在映射表里。
-9. **Offline 缺前端侧检查项（§7）**：禁止远程 CDN，但未写前端字体 / 图标 / 资产必须本地打包的检查项（对应 `frontend/README.md` 的离线要求）。
-10. **CI 与 Demo 端口/CORS 未写（§9 / §10）**：未提 CI 门禁（`make lint && make test`）；`make demo` 的固定端口、dev 5173 代理、生产由 FastAPI 托管 `frontend/dist` 免 CORS 等约定未写。
+| # | 问题 | 现状 |
+|---|---|---|
+| 1 | 稳定 ID 规则 / 唯一性域 | **已闭合**：格式、派生与唯一性域 owner 移至 `core/核心机制与数据流.md §3.1`（实现 `core/ids.py::mint_id`，`<exp>:g<gen>:<role><index>`，确定性纯函数，实验内唯一）；本文件 §3 仅列名。 |
+| 2 | 资源词表与端点不闭合 | **已澄清**：`§4.2` 词表为规划用语、非端点承诺；已有端点者见 `§4.3`，无消费者的资源（`phenotypes` / `connectomes` / `generations` / `events` / `metrics`）按需再引入、不预建。 |
+| 3 | 同步 / 异步边界与超时 | **已闭合**：编辑 / 发育 / 繁殖为**同步**（进程内 CPU、即时返回，无超时逻辑）；演化 / 环境选择为**异步**（`202` + `job_id`，后台线程 + `job.progress`），`evolutions` 复用该异步路径。 |
+| 4 | 暂停缺恢复端点 | **已闭合**：`pause` 定为 toggle（§4.3）。 |
+| 5 | WS 词表 / `seq` / 多订阅 / 重连 | **已闭合**：完整 `type` 词表与语义见 §5 与 `API接口.md §3`（`sys.hello` / `sys.error` + `arena.*` + `job.progress` + `brain.activation`）；`seq` 为**每连接**单调；多订阅按 `?session_id=`；心跳 / 重连属客户端（前端）。 |
+| 6 | Seed 派生树 | **已闭合**：由 `core §3` 的 `SeedManager` 命名空间统一派生（Python / NumPy / Torch CPU / CUDA）；Arena 例外经 `pipeline::arena_seeds_for` 传整数子种子（`core §3` 例外条款）。 |
+| 7 | CUDA 逐位确定性 | **未闭合（已知限制）**：`core/seed.py` 已设 `torch.cuda.manual_seed_all`，但**未**强制 `cudnn.deterministic` / 确定性算子 ⇒ GPU 结果不保证逐位可复现；复现以固定 device 为准（`core §3`）。 |
+| 8 | 结构映射表不完整 | **已闭合**：§2 已补 `core` / `evolution` / `learning` / `experiment` / `viz` 行。 |
+| 9 | Offline 前端检查项 | **已闭合**：检查项归 `frontend/README.md`（字体 / 图标 / 资产本地打包），本文件 §7 只定红线。 |
+| 10 | CI 与 Demo 端口 / CORS | **已闭合**：CI 门禁 `make lint && make test`（`AGENTS.md`）；`make demo` = 8000、dev vite 5173 代理 `/v1`、生产 FastAPI 托管 `frontend/dist` 免 CORS（§9 / §10）。 |
