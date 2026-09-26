@@ -408,11 +408,17 @@ function drawDevelopmentGeometry(
   }
 
   const fallback = STAGE_COLORS[geometry.stage] ?? BRAIN.particleA;
+  // 节点：11×11 实心方块（用户两轮要求加粗：3×3 → 5×5 → 11×11，约 2× 当前）。
+  // 外圈先铺 1px 暗底再压亮色，让节点在边交叉处也读得出来。
+  const NODE_HALF = 5; // 边长 = 2*half + 1 = 11
   geometry.positions.forEach((_position, index) => {
     const [nx, ny] = px(index);
     const fate = geometry.cellType?.[index];
-    ctx.fillStyle = typeof fate === "number" ? FATE_COLORS[fate % FATE_COLORS.length] : fallback;
-    ctx.fillRect(nx - 1, ny - 1, 3, 3);
+    const color = typeof fate === "number" ? FATE_COLORS[fate % FATE_COLORS.length] : fallback;
+    ctx.fillStyle = BRAIN.clusterBase;
+    ctx.fillRect(nx - NODE_HALF - 1, ny - NODE_HALF - 1, NODE_HALF * 2 + 3, NODE_HALF * 2 + 3);
+    ctx.fillStyle = color;
+    ctx.fillRect(nx - NODE_HALF, ny - NODE_HALF, NODE_HALF * 2 + 1, NODE_HALF * 2 + 1);
   });
 }
 
