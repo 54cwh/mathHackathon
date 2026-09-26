@@ -191,23 +191,40 @@ router = APIRouter(
 )
 
 
-@router.post("/environmental-selections", status_code=202, response_model=JobStatus)
-def start_environmental_selection(launch: EnvironmentalSelectionLaunch) -> JobStatus:
+def launch(
+    *, name: str, seeds: list[int], environment: str, generations: int
+) -> tuple[str, JobStatus]:
+    """登记一次环境选择实验并起后台线程，返回 `(experiment_id, JobStatus)`。
+
+    供本模块 `POST /v1/environmental-selections` 与会话内演化
+    `POST /v1/sessions/{id}/evolutions`（`API接口.md` §2.3）共用。
+    """
     experiment_id = f"exp_{uuid.uuid4().hex[:12]}"
     job_id = f"job_{uuid.uuid4().hex[:12]}"
     selection = _Selection(
         experiment_id=experiment_id,
-        name=launch.name,
-        seeds=list(launch.seeds),
-        environment=launch.environment,
-        generations=launch.generations,
+        name=name,
+        seeds=list(seeds),
+        environment=environment,
+        generations=generations,
         job_id=job_id,
     )
     job = _Job(job_id=job_id)
     _selections[experiment_id] = selection
     _jobs[job_id] = job
     threading.Thread(target=_worker, args=(selection, job), daemon=True).start()
-    return _job_status(job)
+    return experiment_id, _job_status(job)
+
+
+@router.post("/environmental-selections", status_code=202, response_model=JobStatus)
+def start_environmental_selection(launch_request: EnvironmentalSelectionLaunch) -> JobStatus:
+    _, status = launch(
+        name=launch_request.name,
+        seeds=launch_request.seeds,
+        environment=launch_request.environment,
+        generations=launch_request.generations,
+    )
+    return status
 
 
 @router.get("/environmental-selections", response_model=Page[EnvironmentalSelectionSummary])

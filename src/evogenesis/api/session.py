@@ -16,9 +16,11 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from evogenesis.api import environmental_selections as selections
 from evogenesis.api import ws as ws_hub
 from evogenesis.api.schemas import (
     FishCard,
+    JobStatus,
     Leaderboard,
     LeaderboardEntry,
     Problem,
@@ -29,6 +31,7 @@ from evogenesis.api.schemas import (
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import expert_policy_from_config
+from evogenesis.experiment.config import load_experiment_config
 from evogenesis.pipeline import arena_seeds_for
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -299,3 +302,22 @@ def fish_card(session_id: str, fish_id: str) -> FishCard:
 @router.get("/sessions/{session_id}/leaderboard", response_model=Leaderboard)
 def leaderboard(session_id: str) -> Leaderboard:
     return _get_session(session_id).leaderboard()
+
+
+@router.post("/sessions/{session_id}/evolutions", status_code=202, response_model=JobStatus)
+def evolve(session_id: str, generations: int | None = None) -> JobStatus:
+    """会话内演化（**过渡实现**：复用环境选择 job，`API接口.md` §2.3）。
+
+    以会话的 `master_seed` + `environment` 启动一个环境选择实验（`generations` 缺省取
+    `configs/experiment.yaml::generations`）；`generation` 由该 job 逐代推进。会话本身仍只持
+    Arena，不直接持有种群——"真正的会话内演化"待 Evolution 面板定契约。
+    """
+    session = _get_session(session_id)
+    gens = load_experiment_config().generations if generations is None else generations
+    _, status = selections.launch(
+        name=f"session-evolution:{session_id}",
+        seeds=[session.master_seed],
+        environment=session.environment,
+        generations=gens,
+    )
+    return status

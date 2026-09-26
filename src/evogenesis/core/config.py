@@ -43,8 +43,8 @@ class GenomeConfig(_Section):
 
 
 class PhenotypeConfig(_Section):
-    theta_N: float
-    theta_H: float
+    theta_N: float = 0.25
+    theta_H: float = 0.25
 
     @model_validator(mode="after")
     def _check_theta_range(self) -> PhenotypeConfig:

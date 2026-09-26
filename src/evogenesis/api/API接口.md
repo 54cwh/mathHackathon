@@ -201,12 +201,11 @@
 
 ### 2.1 模型侧（未实现，当前返回 501）
 
-仍 501 的两条（上游未定义，见 §2.3 说明）：
+仍 501 的**一条**（判据依赖 H3 探针，`arena §14`，未落地）：
 
 | 端点 | 方法 | 用途 | 未实现原因 |
 |---|---|---|---|
-| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 「清晰变化」判据未定义（`交互与可视化.md` 阅读问题 6） |
-| `/v1/sessions/{session_id}/evolutions` | POST | 会话内演化 | 会话不持有模型链种群，语义未定义 |
+| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 「清晰变化」三类判据未定义；Integrator 类依赖 H3 探针（`交互与可视化.md` 阅读问题 6、`arena §14`） |
 
 ```json
 {"type":"about:blank","title":"Not Implemented","status":501,
@@ -260,6 +259,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `/v1/genomes/{genome_id}/mutations` | POST | 请求 `MutationRequest` → `201` `MutationResult`（单点 Free Edit） |
 | `/v1/developments` | POST | 请求 `DevelopmentRequest` → `DevelopmentResult` |
 | `/v1/breedings` | POST | 请求 `BreedingRequest` → `201` `BreedingResult` |
+| `/v1/sessions/{session_id}/evolutions` | POST | 会话内演化（**过渡**：复用环境选择 job）→ `202` `JobStatus`；`?generations=` 缺省取 `configs/experiment.yaml` |
 
 **本实现自行选定的语义（`草案待确认`，须确认后方可作契约）**：
 - **参考种子** = `configs/demo_seed.yaml::master_seed`（`250927`）；参考 motif 目录由它派生（`genome §6`）。
@@ -344,7 +344,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | GET | `/v1/health` | **functional** | 李辰钊 | `app.py::health` |
 | WS | `/v1/ws` | **functional**（仅信封契约） | 李辰钊 | `ws.py::ws_endpoint`（见 §8） |
 | GET | `/v1/story-mutations` | **501 stub** | 池伟豪 | `stubs.py::list_story_mutations` |
-| POST | `/v1/sessions/{session_id}/evolutions` | **501 stub** | 池伟豪 | `stubs.py::evolve` |
+| POST | `/v1/sessions/{session_id}/evolutions` | **functional**（`202`，过渡复用环境选择） | 池伟豪 | `session.py::evolve` |
 | POST | `/v1/genomes` | **functional**（`201`） | 池伟豪 | `genomes.py::create_genome` |
 | GET | `/v1/genomes/{genome_id}` | **functional** | 池伟豪 | `genomes.py::get_genome` |
 | POST | `/v1/genomes/{genome_id}/mutations` | **functional**（`201`） | 池伟豪 | `genomes.py::mutate_genome` |
@@ -356,9 +356,9 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | GET | `/v1/jobs/{job_id}` | **functional** | 池伟豪 | `environmental_selections.py::get_job` |
 | POST | `/v1/jobs/{job_id}/cancel` | **functional** | 池伟豪 | `environmental_selections.py::cancel_job` |
 
-**计数**：functional **21**（9 会话 + `/v1/health` + WS + 3 环境选择 + 2 任务 + 5 基因组/发育/繁殖），501 stub **2**，合计 **23**。
+**计数**：functional **22**（9 会话 + `/v1/health` + WS + 3 环境选择 + 2 任务 + 5 基因组/发育/繁殖 + 1 会话演化），501 stub **1**（story-mutations），合计 **23**。
 
-**§2.1 的 2 条 stub** 经 `stubs.py::_not_impl()`（每次新实例）返回 501；`evolutions` 的装饰器带 `status_code=202`，但一开始就 `raise`，**实际永远 501**，`202` 只进 OpenAPI（§11 L7）。
+**§2.1 的 1 条 stub**（`story-mutations`）经 `stubs.py::_not_impl()` 返回 501。
 
 ---
 
@@ -471,7 +471,7 @@ class SessionCreate(BaseModel):
 
 ## 10. 测试覆盖（`tests/test_api_contract.py`）
 
-> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（**31 项**，含会话/实验/任务/基因组/WS；`pytest tests/test_api_contract.py` → 31 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
+> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（**32 项**，含会话/实验/任务/基因组/会话演化/WS；`pytest tests/test_api_contract.py` → 32 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
 
 **旧实现 9 项**（`d894cbb` 移除前；`pytest tests/test_api_contract.py` → 9 passed）。
 

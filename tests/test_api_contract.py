@@ -211,7 +211,6 @@ def test_model_stubs_return_501() -> None:
     body = resp.json()
     assert {"type", "title", "status", "detail", "instance"} <= set(body)
     assert body["instance"] == "/v1/story-mutations"
-    assert client.post("/v1/sessions/session_x/evolutions").status_code == 501
 
 
 def test_openapi_exposes_problem_and_experiment_summary() -> None:
@@ -400,3 +399,15 @@ def test_breeding_creates_offspring() -> None:
 def test_genome_endpoints_404() -> None:
     assert client.get("/v1/genomes/lab:g0:genome9999").status_code == 404
     assert client.post("/v1/developments", json={"genome_id": "nope", "seed": 0}).status_code == 404
+
+
+def test_session_evolution_launches_job(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(selections_mod, "_OUT_ROOT", tmp_path / "runs")
+    monkeypatch.setattr(selections_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
+    monkeypatch.setattr(
+        selections_mod, "_run_one", lambda sel, seed: {"seed": seed, "run_dir": "x"}
+    )
+    sid = _create()["session_id"]
+    resp = client.post(f"/v1/sessions/{sid}/evolutions?generations=0")
+    assert resp.status_code == 202
+    assert _wait_job(resp.json()["job_id"])["status"] == "done"

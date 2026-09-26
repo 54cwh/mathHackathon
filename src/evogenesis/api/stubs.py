@@ -1,17 +1,13 @@
-"""模型侧端点中尚未实现的两条（`API接口.md` §2.1）。
+"""模型侧端点中唯一未实现的一条（`API接口.md` §2.1）。
 
-`story-mutations` 的「预验证位点」判据（`交互与可视化.md` 阅读问题 6）与
-`sessions/{id}/evolutions` 的语义（会话不持有模型链种群）**上游未定义**，故仍返回 `501`。
-genome / development / breeding 已实现，见 `genomes.py`（§2.3）。
+`story-mutations` 的「预验证位点」判据（`交互与可视化.md` 阅读问题 6）依赖 **H3 探针**
+（`arena §14`，未落地），故仍返回 `501`。genome / development / breeding / 会话内演化
+已实现（见 `genomes.py` / `session.py`）。
 """
 
 from fastapi import APIRouter, HTTPException
 
-from evogenesis.api.schemas import (
-    JobStatus,
-    Problem,
-    StoryMutation,
-)
+from evogenesis.api.schemas import Problem, StoryMutation
 
 router = APIRouter(
     prefix="/v1",
@@ -32,9 +28,4 @@ def _not_impl() -> HTTPException:
 
 @router.get("/story-mutations", response_model=list[StoryMutation])
 def list_story_mutations() -> list[StoryMutation]:
-    raise _not_impl()
-
-
-@router.post("/sessions/{session_id}/evolutions", status_code=202, response_model=JobStatus)
-def evolve(session_id: str) -> JobStatus:
     raise _not_impl()

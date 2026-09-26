@@ -89,7 +89,7 @@
 | POST | `/v1/sessions/{session_id}/release` | **推进仿真 `steps` 步**（query `steps`/`use_expert`，默认 `ExpertPolicy` 驾驶），返回 `SessionSummary`（B1 定稿） |
 | POST | `/v1/sessions/{session_id}/pause` | **暂停 / 恢复开关**（toggle `running`，暂停后 `release` 不推进；无独立 `resume` 端点）（B2 定稿） |
 | GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
-| POST | `/v1/sessions/{session_id}/evolutions` | 演化，`202` + `job_id` |
+| POST | `/v1/sessions/{session_id}/evolutions` | **会话内演化（过渡：复用环境选择 job，已实现）**，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
 | POST | `/v1/experiments` | 启动正式实验（**多协议，未实现**），`202` + `job_id` |
 | GET | `/v1/experiments` | 实验列表（分页，未实现） |
