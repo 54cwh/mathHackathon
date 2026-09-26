@@ -178,6 +178,82 @@ Complex Scene 可设置：
 
 依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。
 
+## 15. 12 维 observation 的语义归属
+
+> 本节闭合 `../core/核心机制与数据流.md` §10 开放项 **#13**（原文：「12 维 observation 语义 owner（DanioNet §2 ↔ Arena §4 互指「待闭合」）」）与本文件「阅读问题」A 节 #1。
+> 裁决依据为 `AGENTS.md` 既有条款；本节只做归属声明与索引，不新立规则、不发明数值。
+
+### 15.1 归属声明：语义 owner 是 Arena
+
+12 维 observation 是 **Arena 的产出物**，其语义 owner 是 `arena/` 文档（本文件与 `Danio_Arena实现说明.md`）。依据 `AGENTS.md`：
+
+- `AGENTS.md:142`：`arena/Danio_Arena设计规范.md`（+ `Danio_Arena实现说明.md`）——「**产出** observation（12 维）、事件日志、每鱼记录」；
+- `AGENTS.md:149`：「每个箭头的边界对象由**产出方**文档定义，消费方只引用（见上 producer owns）」；
+- `AGENTS.md:126`：「模块内算法与常量语义 → 该模块文档」。
+
+⇒ `../connectome/DanioNet设计规范.md` §2 是**消费方**的引用点：只引用本文件定义的语义，不改名、不另立定义。
+
+`AGENTS.md:128` 的「禁止循环引用」条款要求边界对象指定唯一 owner、不得在两处各写一版 —— 本节的归属声明即该条款在 12 维 observation 上的落点，开放项 `#13` 由此闭合。
+
+### 15.2 顺序权威：顺序冻结，机器可读权威是 `sensing.py::DIM_NAMES`
+
+顺序冻结是硬性验收项：`../../../docs/验收清单.md:15`「12 维输入顺序固定」。
+
+**机器可读的权威是 `arena/sensing.py` 的 `DIM_NAMES`（`sensing.py:25-38`），与 `observe()` 的返回顺序（`sensing.py:147-163`）逐项对齐**；`sensing.py:4-11` 的 docstring 以同一顺序声明该顺序为 `FROZEN`。12 维名字与索引如下（逐项抄自 `sensing.py`）：
+
+| idx | 名称 | `sensing.py` 行 |
+|---|---|---|
+| 0 | `prey_left_signal` | 26 |
+| 1 | `prey_right_signal` | 27 |
+| 2 | `threat_left_signal` | 28 |
+| 3 | `threat_right_signal` | 29 |
+| 4 | `obstacle_left_signal` | 30 |
+| 5 | `obstacle_right_signal` | 31 |
+| 6 | `prey_relative_size` | 32 |
+| 7 | `predator_relative_size` | 33 |
+| 8 | `looming_rate` | 34 |
+| 9 | `current_speed` | 35 |
+| 10 | `energy` | 36 |
+| 11 | `hunger` | 37 |
+
+（按 1-based 计数时，**第 9 维即 idx 8 = `looming_rate`**。）
+
+已逐项核对下列四处与本表一致：`../connectome/DanioNet设计规范.md:16-27`、`schemas/examples/README.md` 的 12 维语义表、`schemas/trajectory.schema.json:61`（`observation` 的 `description`）、`sensing.py:4-11`（docstring）。
+
+### 15.3 归一化公式：实现既定，认领状态未冻结（不在此重写）
+
+各分量如何由视野算出（强度线性衰减、`rel` 尺寸、looming 系数、左右分侧规则）**已实现并固化，但状态为「未认领」**：
+
+- 认领表 `../../../research/notes/arena-api-决策认领表.md:15-19`（**A1**）：「12 维感官编码的归一化公式」；其「文档」栏记 `connectome/DanioNet设计规范.md §2` 只给 12 个维度名、公式全部未定义，待认领；
+- `Danio_Arena实现说明.md:266`（§7 **A1** 行）：状态「已实现、已固化；**looming 通道在现状调用序下恒 0**（S20 实测），须一并认领」。
+
+**公式本体见 `Danio_Arena实现说明.md` §3.1「规范 §4 视野」行（`:107`）、§3.2 **S20**（`:143`）与认领表 A1 的现状描述（`arena-api-决策认领表.md:16`）。本节不复制公式 —— 按 `AGENTS.md:128`「不得在两处各写一版」，公式保持单一出处。**
+
+### 15.4 两项内容缺口
+
+| # | 缺口 | 依据 | owner |
+|---|---|---|---|
+| N1 | **idx 8 `looming_rate` 在现状调用序下恒为 0**（除 `reset()` 后首帧）：`observe()` 总在步界调用，而 `_prev_predator_rel` 在上一步末尾用**同一函数**刷新，故 `pred_rel` 与 `prev` 由构造必然相等 ⇒ 该维**目前不携带信息** | `Danio_Arena实现说明.md:143`（**S20** 实测：seed 250927 首帧 12 条鱼中 2 条为 1.0，其后 40 步全 0）、`:281`（**F1**）、`:302`（**M13**） | Arena；修法与 A1 一并认领 |
+| N2 | **同一顺序在七处并列陈述**（清单见 `Danio_Arena实现说明.md:343` ①–⑦）。按 `AGENTS.md:128` 应收敛为「**1 个 owner + 6 处引用**」 | `Danio_Arena实现说明.md:343`；`AGENTS.md:128` | 见下表 |
+
+**N2 的收敛落点**（owner = 本节与 `sensing.py`，其余降为引用）：
+
+| 序号 | 位置（`Danio_Arena实现说明.md:343` 的编号） | 目标角色 |
+|---|---|---|
+| ① | `src/evogenesis/arena/sensing.py`（docstring 与 `DIM_NAMES`） | **owner**（顺序与索引的机器可读权威） |
+| ② | `schemas/examples/README.md` 的 12 维语义表 | 降为引用 |
+| ③ | `schemas/examples/trajectory_example.jsonl`（观测向量列序） | 降为引用（数据列序须与 owner 一致） |
+| ④ | `../core/核心机制与数据流.md` §4.2 的 `observation` 行 | 降为引用（现指向 `DanioNet §2`，改指本节） |
+| ⑤ | `../connectome/DanioNet设计规范.md` §2 | 降为引用（消费方） |
+| ⑥ | `../../../docs/参数总表.json` `sensory_dim` | 保留（Tier 3 拥有基数 `12` 与依据状态）；其 `source` 的指向待确认 |
+| ⑦ | `../../../docs/验收清单.md:15`「12 维输入顺序固定」 | 保留（验收判据属地，不陈述具体顺序） |
+
+②–⑤ 的具体替换句见 `../../../research/notes/12维observation语义归属-闭合提案.md`（②–⑤ 分属其他 owner 的 lane，本节只作归属声明，不代改）。
+
+### 15.5 与「阅读问题」A 节 #1 的关系
+
+A 节 #1 的两件事在本节分开记录：**归属已由 15.1 确立**（owner 为 Arena 自身，编码实现在 `sensing.py`，取值域为 `[0, 1]` —— `sensing.py:13` 声明，由 `Danio_Arena实现说明.md:313` 的 `test_obs_shape_and_ranges` 守护）；**公式的认领状态仍为 `草案待确认`**（认领表 A1）。归属闭合与数值冻结是两件事。
+
 ## 阅读问题（待确认）
 
 > 逐份阅读本文时发现的未定义点，需与 05 / 06 / 16 及 `configs/default_arena.yaml` 对齐后确认。
@@ -186,6 +262,7 @@ Complex Scene 可设置：
 1. **12 维 sensory 如何由视野算出未定义**
    - config 已给 `sensing.radius=18`、`fov_degrees=220`，但 left/right channel 如何编码（距离、方位、对象类型、相对朝向）以及如何拼成 12 维向量未写（对应 connectome/DanioNet设计规范.md `sensory_dim=12`）。
    - 影响：DanioNet 输入语义无法确定，感官回路与可视化无从实现。
+   - **归属已确认**：本条的语义 owner 为 Arena 自身，顺序与索引的权威见本文件 §15「12 维 observation 的语义归属」；公式的认领状态仍为 `草案待确认`（认领表 A1）。
 
 ### B. 规则未闭合
 2. **边界行为未定义**：100×60 空间内个体到边界如何处理（wrap / reflect / clamp / 惩罚）未写，config 无 boundary 项。
