@@ -7,9 +7,23 @@
 >
 > 基准：以 `arena/Danio_Arena设计与实现说明.md`、`api/API与系统工程.md`、`docs/参数总表.json` 对照代码。凡"文档没写、代码自定"的，一律不默认正确。
 
+## 闭合状态（2026-09-27 回填）
+
+> 本表为过程快照；截至 2026-09-27，**17 条全部闭合**。A 节以 `arena/Danio_Arena设计与实现说明.md §17` 为准。
+
+| 条 | 状态 | 落点 |
+|---|---|---|
+| A1–A10 | ✅ 已定稿/已裁决 | `arena §17`（A1 12维公式、A2 捕食几何+前向锥、A3 能量系数、A4 面积式生长、A5 actors 17项、A6 边界 reflect、A7 碰撞、A8 逃脱结局制、A9 跑满600、A10 转向量纲）；数值均进 `configs/default_arena.yaml` + `docs/参数总表.json` |
+| B1 release | ✅ 定稿 | 推进/播放 N 步（`7bce073`） |
+| B2 pause | ✅ 定稿 | toggle 兼恢复（`7bce073`） |
+| B3 generation/environment | ✅ 定稿 | 承认为标量（`generation:int`、`environment` 枚举；`environment_id:str`），见 `api/API与系统工程.md §3` |
+| B4 未实现约定 | ✅ 定稿 | `501 + RFC7807 Problem + detail 注明 owner`，见 `api/API与系统工程.md §4.3` |
+| B5 WS 词表 | ✅ 定稿 | `sys.echo` 废弃；词表见 `api/API接口.md §3` |
+| B6 契约分裂 | ✅ 定稿 | 方案 C（`14703d6`） |
+| B7 config 接线 | ✅ 已闭合 | loader + Arena 映射 + 调用方接线（`arena §17`） |
+
 ## 怎么填
 每条在 `[ ] 接受` / `[ ] 改：____` / `[ ] 说明：____` 上打勾或直接写；不确定写"待定"。
-
 ---
 
 ## A. 必须认领的"AI 填空"（arena，文档没写、代码自定）

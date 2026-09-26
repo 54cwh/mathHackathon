@@ -45,15 +45,23 @@
 
 目录职责与 `AGENTS.md` 的「项目目录结构」一致。
 
-## 3. 稳定 ID
+## 3. 稳定 ID 与标量
 
-> **owner 已移出本文件**：`fish_id` / `genome_id` / `generation` / `experiment_id` / `environment_id` 的格式、派生与唯一性域归 `core/核心机制与数据流.md` §3.1（实现 `core/ids.py`）。本表仅列名。
+> **owner 已移出本文件**：稳定 ID 的格式、派生与唯一性域归 `core/核心机制与数据流.md §3.1`（实现 `core/ids.py`）；本表仅列名。
 
-- fish_id
-- genome_id
-- generation
-- experiment_id
-- environment_id
+**稳定 ID**（前端不得用数组下标当 identity）：
+
+- `fish_id` — `str`，`<experiment_id>:g<generation>:fish<index:04d>`
+- `genome_id` — `str`，`<experiment_id>:g<generation>:genome<index:04d>`
+- `experiment_id` — `str`（run 目录名）
+- `environment_id` — `str`（由实验对照配置给定，本模块不铸造）
+
+**标量（非 ID）**（B3 定稿，2026-09-27）：
+
+- `generation` — `int`（≥ 0），演化代数；**不**铸造为 ID（`core §3.1`）。
+- `environment` — 枚举标量 `default` / `food_rich` / `predator_rich` / `resource_scarce`（owner：`experiment §4`）。
+
+> `environment`（枚举标量，会话/请求用）与 `environment_id`（`str`，事件 header 用）是两个不同的量，不可互相替代。
 
 前端不得使用数组下标当 identity。
 
@@ -84,7 +92,7 @@
 | GET | `/v1/sessions/{session_id}` | 会话摘要：代 / 环境 / 种群 / 运行态 |
 | POST | `/v1/sessions/{session_id}/reset` | 重置会话 |
 | DELETE | `/v1/sessions/{session_id}` | 结束会话 |
-| GET | `/v1/story-mutations` | 预验证 SNP 列表 |
+| GET | `/v1/story-mutations` | 预验证 SNP 列表（**未实现：`501`**，见 §4.3 约定） |
 | POST | `/v1/genomes` | **创建随机基因组（已实现）**，返回 `genome_id` |
 | GET | `/v1/genomes/{genome_id}` | **取回基因组（已实现）** |
 | POST | `/v1/genomes/{genome_id}/mutations` | **base 编辑（已实现）**，返回新 `genome_id` + diff |
@@ -104,6 +112,8 @@
 | POST | `/v1/jobs/{job_id}/cancel` | 取消任务 |
 
 编辑 / 发育 / 繁殖为同步；演化与正式实验为异步 job，进度经 WS `job.progress` 推送。
+
+**未实现端点的统一约定（B4 定稿，2026-09-27）**：对尚未实现的端点统一返回 **`501` + RFC 7807 `Problem`**，`detail` 注明 owner（如 `stubs.py`）；不返回 `404`、不用空 200 占位。当前唯一此类端点 = `GET /v1/story-mutations`。
 
 ## 5. WebSocket
 端点 `/v1/ws`；消息信封与命名见 §4.1 R11。可选订阅：`/v1/ws?session_id=<session_id>`。
