@@ -70,6 +70,7 @@ class RGCDConfig:
     split_noise: float = 0.05
     gene_noise: float = 0.1
     c_domain_bonus: float = 1.5
+    domain_identity_spread_scale: float = 1.0
     zero_input_steps: int = 50
     saturation_ratio_max: float = 0.9
     saturation_eps: float = 0.001
@@ -121,6 +122,7 @@ class RGCDConfig:
             split_noise=cfg.development.split_noise,
             gene_noise=cfg.development.gene_noise,
             c_domain_bonus=cfg.development.c_domain_bonus,
+            domain_identity_spread_scale=cfg.development.domain_identity_spread_scale,
             zero_input_steps=cfg.development.zero_input_steps,
             saturation_ratio_max=cfg.development.saturation_ratio_max,
             saturation_eps=cfg.development.saturation_eps,

@@ -5,12 +5,14 @@
 master seed** 重算同一件事，并把「seed / 尝试次数 / 通过数 / 每次的判因 / 每次的 ρ(W⁰)」
 全部写进配套 `.xlsx` 的 `_manifest` 与各 sheet，使该数字**可复现、可追溯、可反驳**。
 
-关键诚实点（**脚本不迁就结论**）：实算结果显示 2/14 是**小样本读法**——同一 seed、同一
-随机流的前 14 次恰好通过 2 次（14.3%），而把同一流拉到 1000 次后系统率 ≈ 7.1%。
-两者的调和方式**不是**「全样本 CI 覆盖 14%」（实测不覆盖：[5.7%, 8.9%]），而是
-**n=14 自己的 Wilson 区间宽到 [4.0%, 39.9%]**，宽到足以容纳 7.1% —— 也就是
-2/14 这个点估计偏高约 2×，但它携带的信息量本来就只能定到「个位数百分比」。
-本脚本照实输出两者，不为了对上 14% 而挑 seed 或挑次数。
+**2026-09-26 结论更新（脚本不迁就结论）**：正式配置下通过率是 **100%**
+（1000/1000，Wilson [99.6%, 100.0%]；pipeline `q(G)` 口径 200/200），八项判据
+**零次触发**。成因：判据 (ii) `|h|<1`（解析保证）、判据 (iv) `ρ(W⁰)<1`（初始化重定保证）
+与 `missing_fate`（`c_domain` 谱系先验保证）三者均为**设计约定**，恒真而不贡献区分力。
+故本图现在的结论是「**无判据在筛人**」，**不是**「14% 强约束筛选」；筛选压力归代际适应度 `F`。
+旧读数（2/14、7.1%、「ρ 占 89.8% 拒绝」）由失配阈值主导，其可绑定区是致死的逐 seed 彩券 ——
+配对反事实与 κ 标定扫描见 `research/notes/契约决策记录.md`「§7 发育良构门禁的区分力裁决」
+与 `development/rgcd.py::_clamp_domain_identity_spread` 的 docstring。
 
 数据从哪来（**未落盘 -> 固定 seed 现算**）：
 
@@ -74,7 +76,7 @@ HEADLINE_N = 14
 DEFAULT_MASTER_SEED = 1103
 #: 三个正式 seed（`configs/experiment_seeds.yaml:1` `seeds: [1103, 2207, 3301]`；
 #: 文档里以概念名 `formal_seeds` 引用，见 `core §` 「正式实验固定 3 个随机种子」）。
-#: 用于展示 2/14 的 seed 依赖。
+#: 用于展示冒烟读数的 seed 依赖。
 FORMAL_SEEDS = (1103, 2207, 3301)
 DEFAULT_N_ATTEMPTS = 1000
 DEFAULT_N_GENOME_ATTEMPTS = 200
@@ -106,13 +108,13 @@ SOURCES: dict[str, str] = {
         "development.rgcd.develop，逐次记录 viable/reason/rho(W0)/fate 计数"
     ),
     "attempts_genome_q": "同脚本；q = q(G)（random_genome -> genome_affinity，真实 pipeline 口径）",
-    "headline_14": "主 seed 随机流的前 14 次（对齐 paper/报告-骨架.md §2.1 的 2/14 口径）",
+    "headline_14": "主 seed 随机流的前 14 次（冒烟口径；旧版对齐 §2.1 的 2/14，现为 14/14）",
     "running_rate": "attempts_uniform_q 的累计通过率 + Wilson 95% 区间",
     "criteria_failure": "按 reason 字符串拆解；一次尝试可同时命中多个判据，故计数和 > 失败次数",
     "rho_w0": "活跃子矩阵 W^(0) 的谱半径（development.grn.spectral_radius，§7 判据 iv，阈值 1.0）",
     "q_source_compare": "两种 q 口径的通过率与 q 取值范围对照 —— 不可互相换算",
     "formal_seeds_n14": (
-        "configs/experiment_seeds.yaml 的三个 formal seed 各跑 n=14（展示 2/14 的 seed 依赖）"
+        "configs/experiment_seeds.yaml 的三个 formal seed 各跑 n=14（展示冒烟读数的 seed 依赖）"
     ),
 }
 
@@ -210,14 +212,22 @@ def run_variant(master_seed: int, q_matrix: np.ndarray, variant: str) -> pd.Data
 
 
 def wilson(passed: int, total: int, z: float = 1.959963985) -> tuple[float, float]:
-    """Wilson score 区间（小 n 下比 Wald 稳；n=14 时 Wald 会给出上下界越界的假区间）。"""
+    """Wilson score 区间（小 n 下比 Wald 稳；n=14 时 Wald 会给出上下界越界的假区间）。
+
+    区间**恒含点估计 p̂**：`center ± half` 在 p̂→0/1 的边界会因浮点误差落到 p̂ 的
+    另一侧（实测 p̂=1 时上界算得 0.9999999999999999 < 1），而面板 (A) 的
+    `ax.bar(..., yerr=...)` 只要看到负值就抛 ValueError —— 于是**100% 通过率下
+    F6 整张图都画不出来**。故在 [0,1] 裁剪之外，再夹一次 p̂ 保证包含关系。
+    """
     if total <= 0:
         return (0.0, 1.0)
     phat = passed / total
     denom = 1.0 + z * z / total
     center = (phat + z * z / (2 * total)) / denom
     half = z * math.sqrt(phat * (1.0 - phat) / total + z * z / (4.0 * total * total)) / denom
-    return (max(0.0, center - half), min(1.0, center + half))
+    lo = min(max(0.0, center - half), phat)
+    hi = max(min(1.0, center + half), phat)
+    return (lo, hi)
 
 
 def running_rate(df: pd.DataFrame) -> pd.DataFrame:
@@ -307,7 +317,7 @@ def build_figure(
 
     fig, axes = plt.subplots(2, 2, figsize=(13.0, 9.4))
 
-    # (A) 累计通过率：为什么 2/14 与 ~7% 不矛盾 —— n=14 的区间宽到 ±10pp。
+    # (A) 累计通过率：正式配置下饱和在 ~1.0（旧版此处解释 2/14 与 ~7% 的调和）。
     ax = axes[0][0]
     ax.plot(
         run["n_attempts"], run["pass_rate"], color="tab:blue", lw=1.6, label="running pass rate"
@@ -342,34 +352,47 @@ def build_figure(
     ax.set_xscale("log")
     ax.set_xlabel(f"random-q development attempts (log scale, master seed {primary_seed})")
     ax.set_ylabel("cumulative viability pass rate")
-    ax.set_title("(A) The n=14 probe reads high; the running rate settles near 7%", fontsize=10)
-    ax.set_ylim(0.0, 0.55)
+    ax.set_title(
+        "(A) Running rate saturates near 100%; the n=14 probe is small-sample noise", fontsize=10
+    )
+    ax.set_ylim(0.0, 1.05)  # 正式配置下通过率饱和在 ~1.0（旧版写 0.55 会截断）
     ax.grid(alpha=0.3)
     ax.legend(fontsize=7.5, loc="upper right")
 
     # (B) 哪个 §7 判据在筛人：ρ(W⁰)<1 是唯一的绑定约束。
     ax = axes[0][1]
     plot = criteria[criteria["n_failed"] > 0].sort_values("n_failed")
-    # 判因 token 直接取代码字符串（可能很长）——只折行不改字，避免与 `viability_check`
-    # 的词表脱钩；精确字符串见 xlsx 的 `criteria_failure`。
-    ax.barh([_wrap(label) for label in plot["criterion"]], plot["n_failed"], color="tab:orange")
-    for y, (count, frac) in enumerate(zip(plot["n_failed"], plot["frac_of_attempts"], strict=True)):
-        ax.text(count * 1.15, y, f"{count} ({frac:.1%})", va="center", fontsize=7)
-    ax.set_xscale("log")
-    ax.set_xlim(0.7, max(1.0, float(plot["n_failed"].max())) * 6.0)
+    if plot.empty:
+        # 正式配置下八项判据 0 次触发（见 契约决策记录：判据 (ii)(iv) 与 missing_fate 均为设计约定）
+        ax.text(
+            0.5, 0.5,
+            "no §7 criterion fires\n(all attempts viable):\n(ii) |h|<1 and (iv) ρ<1 are init\nconventions; missing_fate is lineage-guaranteed",
+            transform=ax.transAxes, ha="center", va="center", fontsize=8.5, color="0.35",
+        )
+        ax.set_xlim(0.0, 1.0); ax.set_ylim(0.0, 1.0)
+    else:
+        # 判因 token 直接取代码字符串（可能很长）——只折行不改字，避免与 `viability_check`
+        # 的词表脱钩；精确字符串见 xlsx 的 `criteria_failure`。
+        ax.barh([_wrap(label) for label in plot["criterion"]], plot["n_failed"], color="tab:orange")
+        for y, (count, frac) in enumerate(zip(plot["n_failed"], plot["frac_of_attempts"], strict=True)):
+            ax.text(count * 1.15, y, f"{count} ({frac:.1%})", va="center", fontsize=7)
+        ax.set_xscale("log")
+        ax.set_xlim(0.7, max(1.0, float(plot["n_failed"].max())) * 6.0)
+        ax.tick_params(axis="y", labelsize=7.5)
+        ax.grid(axis="x", alpha=0.3)
     ax.set_xlabel("attempts failing this §7 criterion (log; one attempt may fail several)")
-    ax.set_title("(B) Failure criteria: weight spectral radius dominates", fontsize=10)
-    ax.tick_params(axis="y", labelsize=7.5)
-    ax.grid(axis="x", alpha=0.3)
+    ax.set_title("(B) §7 criteria that fire under the formal config: none", fontsize=10)
 
     # (C) 绑定约束的分布：ρ(W⁰) 的典型值就在阈值 1.0 之上。
     ax = axes[1][0]
     rho = uniform["rho_w0"].to_numpy()
-    hi = float(np.percentile(rho, 99.5))
-    ax.hist(rho, bins=40, range=(float(rho.min()), hi), color="tab:purple", alpha=0.75)
+    lo_r, hi_r = float(rho.min()), float(np.percentile(rho, 99.5))
+    if hi_r <= lo_r:  # ρ 被确定性重定到常量（rho_w0_target）时区间退化
+        hi_r = lo_r + 1e-3
+    ax.hist(rho, bins=40, range=(lo_r, hi_r), color="tab:purple", alpha=0.75)
     ax.axvline(1.0, color="tab:red", lw=1.6, ls="--", label=r"§7 threshold $\rho(W^{(0)})<1$")
     ax.axvspan(float(rho.min()), 1.0, color="tab:green", alpha=0.18)
-    ax.set_xlim(float(rho.min()) - 0.1, hi + 0.35)
+    ax.set_xlim(lo_r - 0.1, hi_r + 0.35)
     ax.set_ylim(0.0, ax.get_ylim()[1] * 1.28)
     ax.text(
         0.97,
@@ -385,7 +408,9 @@ def build_figure(
     )
     ax.set_xlabel(r"$\rho_{\mathrm{spec}}(W^{(0)})$ on the active submatrix")
     ax.set_ylabel("attempts")
-    ax.set_title("(C) Why: the contractivity criterion binds by construction", fontsize=10)
+    ax.set_title(
+        "(C) Why: ρ(W⁰) is rescaled to the init target, so criterion (iv) cannot fail", fontsize=10
+    )
     ax.legend(fontsize=8)
     ax.grid(alpha=0.3)
 
@@ -420,7 +445,7 @@ def build_figure(
     ax.grid(axis="y", alpha=0.3)
 
     fig.suptitle(
-        "F6  Developmental viability (RGCD §7): reproducible pass rate under random q",
+        "F6  Developmental viability (RGCD §7): no criterion discriminates at the formal config",
         fontsize=12,
     )
     _stamp(fig, note)

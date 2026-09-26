@@ -92,7 +92,7 @@ def softplus_inverse(value: float) -> float:
 
 
 def _clamp_domain_identity_spread(
-    U: torch.Tensor, bonus: float, dim: int
+    U: torch.Tensor, bonus: float, dim: int, scale: float = 1.0
 ) -> torch.Tensor:
     r"""把 §6 的 ``U`` 跨域散布**确定性收紧**到解析最坏情形 = ``c_domain_bonus``。
 
@@ -118,11 +118,30 @@ def _clamp_domain_identity_spread(
     口径说明：该上界是**解析**的（同 §7 判据 (ii)），代价是默认配置下 §6 的 ``argmax z``
     恒等于谱系域，``missing_fate`` 在默认配置下不再触发；判因词表仍保留该 token（非默认
     配置或更大的 ``U`` 仍需它上报）。
+
+    ``scale``（κ）来自 ``configs/default_model.yaml`` → ``development.domain_identity_spread_scale``，
+    把重定目标从「解析安全界」放大为 ``κ · c_domain_bonus / √dim``。**默认 1.0 与原行为逐位一致**。
+
+    实测（2026-09-26，seed 1103 / 2207 / 3301 各 400 个体，以 κ 标定替代恒真钳制）——
+    **本判据不存在可用的工作点**：
+
+    - κ=0.5 / 0.8：三 seed 均 100%；六域恒 16%、``argmax z ≡ 谱系域`` ⇒ 判据空转（与默认等价）。
+    - κ=1.2：1103 87.8% / 2207 59.8% / 3301 100%。
+    - κ=1.8：1103 2.8% / 2207 0.0% / 3301 5.8% —— **断崖**。
+    - κ=2.5：三 seed 均 0%。
+
+    一过阈值即「每 seed 赢者通吃」（域占比 1103→域 1 占 58%、2207→域 1 占 82%、3301→域 5
+    占 71%），失因级联为 ``sensory`` 缺失 + ``no_sensory_to_motor_path`` + ``motor_side_empty``。
+
+    裁决：**``missing_fate`` 属「设计约定」而非「筛选判据」** —— 其稳定工作区只有「恒真」
+    （fate 配额由 ``c_domain`` 谱系先验保证），可绑定区是致死的 seed 级彩券。与判据 (ii)
+    ``|h|<1``、判据 (iv) ``ρ<1`` 同类：**恒真、不贡献区分力、不得计入「八项判据」**。
+    ``scale`` 保留为将来重新设计该判据时的标定入口；当前 1.0 不改变任何行为。
     """
     mean_row = U.mean(dim=0, keepdim=True)
     centred = U - mean_row
     spread = float((centred.unsqueeze(0) - centred.unsqueeze(1)).norm(dim=-1).max().item())
-    target = bonus / math.sqrt(dim)
+    target = scale * bonus / math.sqrt(dim)
     if not spread > target > 0.0:
         return U
     return mean_row + centred * (target / spread)
@@ -165,7 +184,9 @@ def initialize_parameters(
     # 实测 20 个 seed 中 5 个（25%）使某个域被系统性改判，该 seed 下 33%–67% 个体
     # 因 ``missing_fate:prey|threat`` 不可育（同 ρ(W^0) 一路的「每-seed 抽签型门禁」）。
     # 按解析上界确定性收紧（见 helper docstring）；不吃随机数。
-    U = _clamp_domain_identity_spread(U, config.c_domain_bonus, dim)
+    U = _clamp_domain_identity_spread(
+        U, config.c_domain_bonus, dim, config.domain_identity_spread_scale
+    )
     c_domain = config.c_domain_bonus * torch.eye(n_types, dtype=dtype, device=device)
 
     # §5: w_d ~ N(0,(1/sqrt(dim))^2)、b_d=0。

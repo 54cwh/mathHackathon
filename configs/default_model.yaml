@@ -29,6 +29,9 @@ development:
   split_noise: 0.05
   gene_noise: 0.1
   c_domain_bonus: 1.5
+  # §7 missing_fate 的 U 跨域散布重定尺度 κ（RGCD §10 实测：κ≤0.8 判据空转、
+  # κ≥1.2 断崖成每-seed 赢者通吃；无可用工作点 ⇒ 该判据属设计约定，不贡献区分力）。
+  domain_identity_spread_scale: 1.0
   zero_input_steps: 50
   saturation_ratio_max: 0.9
   saturation_eps: 0.001

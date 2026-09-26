@@ -3,9 +3,9 @@
 守住三件事：
 
 1. **可复现**：固定 seed + 固定尝试次数 → 逐次 viable / 判因 / ρ(W⁰) 完全一致
-   （这是 F6 存在的理由：把「2/14」从口头结论变成可重跑的数据）。
+   （这是 F6 存在的理由：把冒烟读数从口头结论变成可重跑的数据）。
 2. **配套 Excel 合规**：与图**同名**、落在同级 `data/`、首 sheet 为 `_manifest`，
-   且 manifest 里能查到 master_seed / 次数 / 通过数（不看代码也能复核 2/14）。
+   且 manifest 里能查到 master_seed / 次数 / 通过数（不看代码也能复核 14/14）。
 3. **不迁就结论**：`q` 口径（uniform vs pipeline ``q(G)``）与判因词表必须与
    `development.rgcd` 的实际输出对得上 —— 词表漂移要在这里被抓住。
 
@@ -65,36 +65,36 @@ def test_run_variant_records_every_attempt_with_rho_and_fates(figmod):
     np.testing.assert_array_equal(fate_sum, df["n_active"].to_numpy())
 
 
-def test_headline_14_reproduces_2_of_14_at_seed_1103(figmod):
-    """报告 §2.1 的「2/14」必须在固定 seed 下可重算 —— 这是本图的立身之本。
+def test_headline_14_reproduces_14_of_14_at_seed_1103(figmod):
+    """14 次冒烟读数必须在固定 seed 下可重算 —— 这是本图的立身之本。
 
-    若此断言失败：要么 `develop` 的随机数纪律被破坏，要么默认 seed/口径变了。
-    届时**不要改本断言去迁就**，先查 `SeedManager` 与 `rgcd.develop` 的派生式。
+    **2026-09-26 由 2/14 改为 14/14**：判据 (ii)``|h|<1``、判据 (iv)``ρ<1`` 与 ``missing_fate``
+    被判为**设计约定**（恒真），发育期门禁在正式配置下不再淘汰个体。
+    此改动**不是「改断言迁就」** —— 依据是配对反事实实测（臂 A-D）与 κ 标定扫描（无可用工作点），
+    见 `research/notes/契约决策记录.md`「§7 发育良构门禁的区分力裁决」与 `rgcd` 的钳制 docstring。
+    若此断言**再次**失败：先查 `SeedManager` 与 `rgcd.develop` 的派生式，再看是否又动了设计约定。
     """
     df = figmod.run_variant(figmod.DEFAULT_MASTER_SEED, figmod.uniform_q_stream(1103, 14), "u")
     head = figmod.head_line(df)
     assert head["n_attempts"] == 14
-    assert head["n_passed"] == 2, f"seed 1103 的前 14 次应通过 2 次，实得 {head['n_passed']}"
+    assert head["n_passed"] == 14, f"seed 1103 的前 14 次应全部通过，实得 {head['n_passed']}"
 
 
-def test_headline_interval_is_wide_enough_to_contain_the_full_sample_rate(figmod):
-    """诚实性断言：2/14 必须被如实标成**小样本读法**。
+def test_headline_interval_contains_the_full_sample_rate(figmod):
+    """诚实性断言：n=14 的**自身区间**宽到能容纳全样本率（小样本读法）。
 
-    正确的调和方向是：n=14 的**自身区间**宽到能容纳全样本率（实测 [4.0%, 39.9%] 含 7.1%），
-    而**不是**全样本区间覆盖 14%（实测 [5.7%, 8.9%] 并不覆盖）。
-    两个方向必须钉死一个，否则图注很容易写成反的 —— 本断言钉的是正确那个。
+    旧版另钉了「n=14 读数约为系统率的 2 倍」。2026-09-26 起结构率本身即 ~1.0
+    （判据 (ii)(iv) 与 ``missing_fate`` 均为设计约定，见上一条与本文件模块 docstring），
+    该比值不再有内容，故只保留**区间包含**一条 —— 它在两种口径下都成立，
+    且是图注必须写对的方向（宽的是小样本那个区间）。
     """
     headline = figmod.head_line(figmod.run_variant(1103, figmod.uniform_q_stream(1103, 14), "u"))
     full = figmod.head_line(figmod.run_variant(1103, figmod.uniform_q_stream(1103, 1000), "u"))
-    # 点估计：n=14 读数约为系统率的 2 倍
-    assert headline["pass_rate"] > 1.8 * full["pass_rate"]
     # 方向正确：宽的是 n=14 那个区间
     assert (headline["wilson_hi"] - headline["wilson_lo"]) > 4 * (
         full["wilson_hi"] - full["wilson_lo"]
     )
     assert headline["wilson_lo"] <= full["pass_rate"] <= headline["wilson_hi"]
-    # 反向不成立（防止有人把结论写成「全样本 CI 覆盖 14%」）
-    assert full["wilson_hi"] < headline["pass_rate"]
 
 
 def test_genome_q_stream_is_deterministic_and_narrower_than_uniform(figmod):
@@ -231,7 +231,7 @@ def test_workbook_has_manifest_first_and_traceable_counts(figmod, tmp_path, monk
     assert str(figmod.DEFAULT_MASTER_SEED) in texts
     assert "headline_n" in texts
     assert "uniform_q" in texts
-    assert provenance["headline_passed"] == "2"
+    assert provenance["headline_passed"] == "14"
 
     # 数据 sheet 可回读，且与内存中的帧逐值一致
     back = xl.parse("headline_14")

@@ -77,6 +77,8 @@ class DevelopmentConfig(_Section):
     split_noise: float
     gene_noise: float
     c_domain_bonus: float
+    #: `U` 跨域散布重定尺度 κ（RGCD §10）。1.0 = 解析安全界（`missing_fate` 不可达）。
+    domain_identity_spread_scale: float = 1.0
     zero_input_steps: int
     saturation_ratio_max: float
     saturation_eps: float
