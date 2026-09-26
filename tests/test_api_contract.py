@@ -192,6 +192,23 @@ def test_release_manual_control_clamps_and_ignores_unknown_fish() -> None:
     assert snap["step"] == 2
 
 
+def test_develop_cell_type_counts_are_real_counts() -> None:
+    """`dev_trace.cell_type_counts` 必须是**真实计数**（键=fate 序号，值=个体数）。
+
+    旧实现写成 `{str(i): int(c) for i, c in enumerate(counter)}`：`Counter` 迭代产出的是
+    key，于是恒得 `{"0":0,"1":1,...}`（与命运分布无关）。此处用守恒量钉住：
+    各 fate 计数之和 == 表型 `n_neurons`。
+    """
+    genome = client.post("/v1/genomes", json={}).json()
+    result = client.post(
+        "/v1/developments", json={"genome_id": genome["genome_id"], "seed": 0}
+    ).json()
+    counts = result["dev_trace"]["cell_type_counts"]
+    assert set(counts) == {"0", "1", "2", "3", "4", "5"}, counts
+    assert sum(counts.values()) == result["phenotype"]["n_neurons"], (counts, result["phenotype"])
+    assert counts != {str(i): i for i in range(6)}, "计数退化为 enumerate(Counter) 的旧错误"
+
+
 def test_reset_returns_to_step_zero() -> None:
     sid = _create()["session_id"]
     client.post(f"/v1/sessions/{sid}/release?steps=50")

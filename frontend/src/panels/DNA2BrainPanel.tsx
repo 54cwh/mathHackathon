@@ -4,7 +4,8 @@ import { Panel } from "@/components/Panel";
 import { DnaHelixVisual } from "@/visuals/DnaHelixVisual";
 import { NucleotideStrip } from "@/visuals/NucleotideStrip";
 import { createGenome, develop, getGenome, mutateGenome } from "@/api/lab";
-import type { Base, DevelopmentResult, GenomeRecord, MutationResult } from "@/api/types";
+import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResult } from "@/api/types";
+import { DevCompare } from "@/panels/DevCompare";
 
 /**
  * DNA2Brain Lab —— 真编辑器（原模型 → 突变 → 发育 的界面证据链）。
@@ -48,6 +49,10 @@ export function DNA2BrainPanel() {
   const [base, setBase] = useState<Base>("A");
   const [mutation, setMutation] = useState<MutationResult | null>(null);
   const [development, setDevelopment] = useState<DevelopmentResult | null>(null);
+  /** 基线发育结果（§5 Before）：首次 DEVELOP 即设为基线，之后每次 DEVELOP 都是 After。 */
+  const [baseline, setBaseline] = useState<DevelopmentResult | null>(null);
+  /** 已应用突变（§5 DNA difference 的真实记录）。 */
+  const [mutations, setMutations] = useState<MutationDiff[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +69,8 @@ export function DNA2BrainPanel() {
       setGenome(fresh);
       setMutation(null);
       setDevelopment(null);
+      setBaseline(null);
+      setMutations([]);
       setPosition(0);
     } catch (e) {
       setError(String(e));
@@ -83,6 +90,7 @@ export function DNA2BrainPanel() {
     try {
       const result = await mutateGenome(genome.genome_id, { position, base });
       setMutation(result);
+      setMutations((current) => [...current, result.diff]);
       setDevelopment(null); // 序列已变，旧发育结果作废
       setGenome(await getGenome(result.new_genome_id));
     } catch (e) {
@@ -97,7 +105,10 @@ export function DNA2BrainPanel() {
     setBusy(true);
     setError(null);
     try {
-      setDevelopment(await develop({ genome_id: genome.genome_id, seed: DEV_SEED }));
+      const result = await develop({ genome_id: genome.genome_id, seed: DEV_SEED });
+      // 首次 DEVELOP = 基线；之后每次都是「改后」，与基线对比（§5）。
+      setBaseline((current) => current ?? result);
+      setDevelopment(result);
     } catch (e) {
       setError(String(e));
     } finally {
@@ -240,6 +251,25 @@ export function DNA2BrainPanel() {
             ))}
           </dl>
         </div>
+
+          {/* §5 / §11 compare：基线 vs 改后 */}
+          <section className="border border-border p-2">
+            <div className="mb-1 flex items-center justify-between">
+              <span className="font-pixel text-[10px] leading-none">BEFORE / AFTER</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBaseline(development);
+                  setMutations([]);
+                }}
+                disabled={!development}
+                className="border border-border px-2 py-0.5 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+              >
+                SET BASELINE
+              </button>
+            </div>
+            <DevCompare before={baseline} after={development} mutations={mutations} />
+          </section>
 
           <p className="shrink-0 text-xs text-muted-foreground">
             {error ? `⚠ ${error}` : "点选碱基或用 POS 定位，MUTATE 单点突变后 DEVELOP 重算表型。"}
