@@ -2,16 +2,15 @@
 
 > 来源：四项**只读**审计（`research/notes/参数一致性审计.md`、`引用登记缺口.md`、`前端对接需求清单.md`、
 > `验收清单-落差审计.md`）+ Arena / experiment 侧落地。**我未改动你 lane 的任何文件**（单写者约束）。
-> 每条都带证据位置。**已解决项已删除**（2026-09-26 更新）：P0-2 DanioNet、P0-5 选择机制与 loader、
-> A3/A4/A6/A12 参数总表形态、A11 `default_model.yaml` 读取方 —— 均已在 `main` 上闭合。
+> 每条都带证据位置。**已解决项已删除**（2026-09-26 更新）：P0-2 DanioNet、P0-4 学习层（BC，`173f911`）、
+> P0-5 选择机制与 loader、A3/A4/A6/A12 参数总表形态、A11 `default_model.yaml` 读取方 —— 均已在 `main` 上闭合。
 
 ## 一、仍阻断正式实验 / 论文主线
 
 | # | 事项 | 证据 | 为什么阻断 |
 |---|---|---|---|
-| P0-4 | **学习层（BC）未入库** | `learning/*.py` 为未提交 WIP（`data.py`/`loss.py`/`train.py`/`stats.py`/`report.py`） | BC 预算一致无对象；**遗传边界（ΔW 不遗传）**——论文核心卖点——无实证；Exp D 的 BC Dale 消融缺一半 |
 | P0-8 | **Demo 服务层缺失，但文档仍在承诺** | `api/API与系统工程.md` §9 写 `make demo` 等价 `start_demo.sh` 并开 `http://127.0.0.1:8000`；而 `scripts/start_demo.sh`、`scripts/serve_api.py`、Makefile 的 `api`/`demo` 目标已被 `b4170aa` 删除 | 文档承诺 ↔ 仓库现状**冲突**；路演「Live Demo」时段当前**无载体** |
-| 代循环（原 P0-5 残余） | **`advance_generation` 无调用方** | `evolution/population.py::advance_generation`（选择/繁殖已就绪）无生产 caller；缺"评估回填 fitness → 下一代"的循环 | Exp F 的 allele/phenotype frequency 无来源；多代演化跑不起来 |
+| 代循环（原 P0-5 残余） | **`advance_generation` 无调用方** | `evolution/population.py::advance_generation`（选择/繁殖已就绪）无生产 caller；缺"评估回填 fitness → 下一代"的循环 | Exp F 的 allele/phenotype frequency 无来源；多代演化跑不起来；**BC 端到端实验**（Stage-1 轨迹 → 训练 → ΔW 不遗传实证）亦待接 |
 
 ## 二、需你 / 用户拍板（我不能自行发明）
 
