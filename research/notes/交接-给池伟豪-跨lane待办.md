@@ -1,40 +1,58 @@
-# 交接：给池伟豪的跨 lane 待办（2026-09-26）
+# 交接：跨 lane 待办（2026-09-26 晚 更新）
 
-> 来源：四项**只读**审计（`research/notes/参数一致性审计.md`、`引用登记缺口.md`、`前端对接需求清单.md`、
-> `验收清单-落差审计.md`）+ Arena / experiment 侧落地。**我未改动你 lane 的任何文件**（单写者约束）。
-> 每条都带证据位置。**已解决项已删除**（2026-09-26 更新）：P0-2 DanioNet、P0-4 学习层（BC，`173f911`）、
-> P0-5 选择机制与 loader、A3/A4/A6/A12 参数总表形态、A11 `default_model.yaml` 读取方、P0-9 `Fish.genome_id` 占位 —— 均已在 `main` 上闭合。
+> 来源：只读审计（`参数一致性审计.md`、`引用登记缺口.md`、`前端对接需求清单.md`、`验收清单-落差审计.md`）
+> + arena↔上下游对齐审计 + 本轮落地（P0-9/A1–A5/event log 落盘/R1/R6/R8）。每条带证据位置。
+> **已闭合（不再列出）**：P0-2 DanioNet、P0-4 learning BC、P0-5 选择机制与 loader、P0-9 `Fish.genome_id`、
+> A3/A4/A6/A11/A12 参数总表形态、event log 无 producer、事件样例陈旧、Mihalitsis 登记、arena H3 探针状态。
 
-## 一、仍阻断正式实验 / 论文主线
+## 一、阻断主线（代码未接）
 
-| # | 事项 | 证据 | 为什么阻断 |
+| # | 事项 | 证据 | 影响 |
 |---|---|---|---|
-| P0-8 | **Demo 服务层缺失，但文档仍在承诺** | `api/API与系统工程.md` §9 写 `make demo` 等价 `start_demo.sh` 并开 `http://127.0.0.1:8000`；而 `scripts/start_demo.sh`、`scripts/serve_api.py`、Makefile 的 `api`/`demo` 目标已被 `b4170aa` 删除 | 文档承诺 ↔ 仓库现状**冲突**；路演「Live Demo」时段当前**无载体** |
-| 代循环（原 P0-5 残余） | **`advance_generation` 无调用方** | `evolution/population.py::advance_generation`（选择/繁殖已就绪）无生产 caller；缺"评估回填 fitness → 下一代"的循环 | Exp F 的 allele/phenotype frequency 无来源；多代演化跑不起来；**BC 端到端实验**（Stage-1 轨迹 → 训练 → ΔW 不遗传实证）亦待接 |
+| B1 | **代循环未接** | `evolution/population.py::advance_generation` 无生产 caller；缺「评估回填 fitness → 下一代」 | Exp F 的 allele/phenotype frequency 无来源；多代演化跑不起来 |
+| B2 | **BC 端到端未接** | `learning/` 已入库，但无「Stage-1 轨迹 → 训练 → ΔW 不遗传实证」编排 | 论文核心卖点（遗传边界）缺 Exp D 实证 |
+| B3 | **P0-8 Demo 服务层缺** | `api/API与系统工程.md §9` 承诺 `make demo`；`scripts/start_demo.sh`/`serve_api.py`/Makefile `demo` 目标已随 `b4170aa` 删除 | 路演「Live Demo」无载体；文档承诺↔现状冲突 |
+| B4 | **轨迹双产出链路** | `experiment/collect.py`（1 受控鱼、truncated）vs `run_arena --emit-trajectories`（全部存活鱼、truncated=False）；`core §4.5` 状态 `草案待确认`（用户裁决「挂账不合并」） | 产出方不唯一，`core §4.5` 无法恢复已定稿 |
 
-## 二、需你 / 用户拍板（我不能自行发明）
+## 二、需裁决（设计选择，不可 AI 填空）
 
 | # | 事项 | 证据 | 待定 |
 |---|---|---|---|
-| A14 | **`arena/env.py` 随机源未走 `SeedManager`** | `env.py` 一个 `np.random.default_rng(master)` 同时驱动出生与每步游走，拆不开成两个 namespace | 需新增命名空间（**已定 id=9 为 `arena_dynamics`**，但 **8 已被在飞的 `bc` 占用**）→ 待 `bc` 落地后改 `core/seed.py`+`core §3`+`env.py`。此前跨 lane 复现只能靠 master seed 整体复现 |
-| 追加-2 | **`encounters` 口径** | `prey_capture = captures / max(encounters, 1)`，分母为尺寸门之前的纯距离接触数；实测（3 seed × 12 鱼）中位数 2 / 最大 225 / **前 3 位占 65.7%** | 是否改「去重」口径（见 `experiment/实验与评价体系.md` 阅读问题 #13，涉我 lane 的 arena S6 语义）→ 我未动 |
+| D1 | **A14 arena 随机源** | `env.py` 单条 `default_rng(master)` 同时驱动 spawn 与逐步游走 | 拆 `arena_spawn`/`arena_dynamics`（id 9 已可用）会改 RNG 流、**作废 §18.11 基线** → 暂缓 |
+| D2 | **H3 探针实现** | `arena §14` 任务定义已定稿、实现未做；`§19 P1 #8` | 用 `integrator_memory` 激活替代（零代码）or 实现探针（会加字段/可能加事件） |
+| D3 | **`encounters` 去重口径** | `prey_capture=captures/max(encounters,1)`；实测中位 2/最大 225/前 3 占 65.7% | 是否改去重口径（`experiment §7 #1` 已由 arena S6 明确粒度，剩口径抉择） |
+| D4 | **捕获成功率随机化** | `arena §19 P0.3` 余项；当前 `P_capture_success=1.0` | 是否引入随机失败（影响指标方差与基线） |
+| D5 | **环境三组 M4** | `arena §12`/`M4`：`environment` 字段不改变任何参数，「环境选择」尚无实际因果 | 是否做高价值 prey 靠近 predator 等**场景布置** |
 
-## 三、我方（池伟豪 lane）待补
+## 三、下游文档待纠正（零行为，需对方 lane）
 
 | # | 事项 | 证据 | 建议 |
 |---|---|---|---|
-| 接线 | **逐代演化闭环** | `advance_generation` 就绪但无 caller | 编排：`pipeline` 评估 → fitness 回填 `Individual` → `advance_generation` 产下一代（见上「代循环」） |
+| C1 | **`predator_encounters` 口径** | arena S7=目标获取计数（owner）；`experiment §2.2` 写「与天敌接触计数」，且为 `escape_success` 分母 | 改 `experiment` 措辞 |
+| C2 | **评估驱动方** | `learning §5`「评估必须 DanioNet」vs `experiment §3.3`「evaluation episodes 即 `run_arena.py` 现状」（ExpertPolicy） | `experiment` 明确：`run_arena`=环境 pre-check/基线；模型评估走 `pipeline/run_arena_episode`(DanioNet) |
+| C3 | **规模口径** | `experiment §4` 泛述「n_fish=12 不变」与 Exp F 48-genome 协议张力（arena §3 已澄清两种规模） | `experiment` 同步限定「12=ExpertPolicy pre-check；48=演化评估」 |
+| C4 | **`configs/experiment_environments.yaml` 注释** | 称「填 `missing_required` 第 1 项」，但该项已变 penetrance | 修注释 |
 
----
+## 四、契约 / 文献 / 声明债务
 
-## 追加（2026-09-26）：core ↔ arena 的**已冻结**接口，可直接依赖
+| # | 事项 | 证据 |
+|---|---|---|
+| E1 | **`penetrance` 无 owner 定义** | `参数总表.missing_required` 第 1 项；`experiment` 0 处 |
+| E2 | **`trajectory_example.jsonl` 仍陈旧** | 8 行仅 4 键、无 header；`schemas/examples/README.md:17` 标待重生成（对照 `event_log` 已闭环） |
+| E3 | **文献待登记** | `bibliography.md` `待登记-2`（Arena 生物学 5 组，一条未登记）、`-3`（`reference_magnitudes` 6 条）、`-4`（#217 License 复核）、`-5`（前端资源） |
+| E4 | **`docs/declaration/THIRD_PARTY.md` 空表** | 开来源码机制对照 `[bib#215]–[bib#220]` 未声明；`待登记-4` |
+| E5 | **参数总表 arena 组** | 1 `missing`（`body_length_mm`，属长度契约）、33 `no_basis`；`env_*` 三组状态「草案待确认」 |
 
-1. **`prey_capture` 口径（§4）**：`prey_capture = captures / max(encounters, 1)`，分母 = **尺寸门之前**的纯距离接触数（`arena` S6），**不是** `capture_attempts`。`capture_attempts` 降为诊断列（`capture_attempts − captures` = 「进过口但吃不下」）。实现 `experiment/metrics.py::prey_capture_rate`；每鱼记录 16 列。依据 `experiment/实验与评价体系.md` §4。
-2. **可用的驱动/评价入口**（均在 `main`，已被测试守护）：
-   - `scripts/run_arena.py --experiment-id <id>`（`--emit-trajectories` 可落 Stage-1 轨迹）：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`（`metrics.csv`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`）。
-   - `scripts/make_figs.py` / `scripts/make_tables.py`：只读 run 目录，出图/出表（含 `diagnostics.md` 口径诊断）。
-   - 基线（对照用，**不入库、可重生成**，`exp_arena_expert_ref_v2`）：`survival 0.9472 ± 0.0459`、`prey_capture 0.5407 ± 0.1180`、`escape_success 0.2292 ± 0.0625`、`energy_efficiency −1.031e−3 ± 4.64e−5`、`composite_fitness 0.5123 ± 0.0428`。
+## 五、arena 实现完善（P2，勿混入基线改动）
 
-## 追加（2026-09-26）：Stage-1 轨迹采集器已就绪
+- `selected neural activity snapshots` 未实现（`arena §13` / `M3`）。
+- `PreyPolicy.avoid_gain` 死参数（S12/F2/M6）。
+- `arena.collision` 默认场景仍多为 0（`§18.9`/A7）→ 需专门「密集障碍」对照场景；活鱼 escape、空种群终止、`_free_spot` 回退分支缺专项测试。
+- `api` 端点残留引用（`/v1/sessions/...snapshot`、`API接口.md §7.2`、`arena_config_path`）随 `api/` 重写一体处理（= B3）。
 
-`scripts/run_arena.py --emit-trajectories` → 每 run 落 `trajectories/episode_ep0001.jsonl`（首行 header + 逐 step），字段/格式严格照 `schemas/trajectory.schema.json`（jsonschema 逐条校验）。实跑 `exp_traj_smoke`（1 seed）6601 step，obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全通过。**唯一缺口 = 上表 P0-9**（`genome_id` 全为 `"unknown"`）。
+## 六、已冻结、可直接依赖（供对齐）
+
+- **评价入口**：`scripts/run_arena.py`（落 `metrics.csv`/`population.jsonl`/`episodes.jsonl`/**`events.jsonl`**/`seed_summary.json`）；`--emit-trajectories` 落 Stage-1 轨迹（`genome_id` 已为稳定 ID）。
+- **event log**：`schemas/event_log.schema.json`；`experiment/events.py`（header + 8 类事件）。
+- **基线（可重生成、不入库）** `exp_arena_expert_ref_v2`：`survival 0.9472`、`prey_capture 0.5407`、`escape_success 0.2292`、`energy_efficiency −1.031e−3`、`composite_fitness 0.5123`。
+- **稳定 ID / 世代**：`DanioArena(..., fish_ids, genome_ids, generation)`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均注入。
