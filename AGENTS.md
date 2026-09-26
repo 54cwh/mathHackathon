@@ -47,7 +47,7 @@ mathHackathon/
 ├── tests/                      # 冒烟 + 单测
 ├── paper/                      # LaTeX 论文
 ├── schemas/                    # JSON Schema（genome / fish / experiment）
-├── docs/                       # 跨模块协作文档（AI工作流 / 参数总表 / THIRD_PARTY / 赛题补充说明 / 验收清单 等）
+├── docs/                       # 跨模块协作文档（AI工作流 / 参数总表 / declaration / 赛题补充说明 / 验收清单 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── prompts/                    # AI 角色提示词
 ├── artifacts/                  # 冻结演示资产（入库）
