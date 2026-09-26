@@ -5,8 +5,7 @@ import { StatusPlaceholder } from "@/components/StatusPlaceholder";
 import { BrainForgeVisual } from "@/visuals/BrainForgeVisual";
 import { subscribe, type BrainActivationPayload } from "@/api/ws";
 import { DevelopmentPipeline } from "@/panels/DevelopmentPipeline";
-import { getLatestDevelopment, subscribeDevelopment } from "@/store/labBus";
-import type { DevelopmentTraceSample } from "@/api/types";
+
 
 /** 轨迹播放帧率（采样点少，慢放才看得清）。 */
 const PIPELINE_FPS = 3;
@@ -33,11 +32,11 @@ export function BrainForgePanel() {
   const sessionId = useUiStore((s) => s.sessionId);
   const [activation, setActivation] = useState<BrainActivationPayload | null>(null);
   const lastRef = useRef(0);
-  // §4 发育时间线：游标/播放由本面板持有，同一游标同时驱动画布几何与曲线（必须同步）
-  const [trace, setTrace] = useState<DevelopmentTraceSample[] | null>(
-    () => getLatestDevelopment().trace,
-  );
-  const [genomeId, setGenomeId] = useState<string | null>(() => getLatestDevelopment().genomeId);
+  // §4 发育时间线：游标/播放由本面板持有，同一游标同时驱动画布几何与曲线（必须同步）。
+  // 发育产物来自 store 单一真相（`通用层接口.md` §7）；本面板不自持副本。
+  const development = useUiStore((s) => s.development);
+  const trace = development?.trace ?? null;
+  const genomeId = development?.genomeId ?? null;
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
   /** 真实连接图层（用户 2026-09-27 裁决允许"可溯源真图"；默认开，可关）。 */
@@ -45,19 +44,17 @@ export function BrainForgePanel() {
   const cursorRef = useRef(0);
   const playingRef = useRef(false);
 
-  useEffect(
-    () =>
-      subscribeDevelopment((payload) => {
-        setTrace(payload.trace);
-        setGenomeId(payload.genomeId);
-        // 新轨迹到达即从第 0 帧开始播放
-        cursorRef.current = 0;
-        setCursor(0);
-        playingRef.current = true;
-        setPlaying(true);
-      }),
-    [],
-  );
+  // 新轨迹到达即从第 0 帧开始播放；`handledSeq` 记挂载时的序号，避免挂载即重放。
+  const devSeq = development?.seq ?? 0;
+  const handledSeq = useRef(devSeq);
+  useEffect(() => {
+    if (devSeq === handledSeq.current) return;
+    handledSeq.current = devSeq;
+    cursorRef.current = 0;
+    setCursor(0);
+    playingRef.current = true;
+    setPlaying(true);
+  }, [devSeq]);
 
   useEffect(() => {
     let raf = 0;

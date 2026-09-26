@@ -5,7 +5,7 @@ import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
-import { focusGenome, subscribeIndividuals } from "@/store/labBus";
+
 import {
   MASTER_SEED,
   createSession,
@@ -62,8 +62,9 @@ export function DanioArenaPanel() {
   const [card, setCard] = useState<FishCard | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** 已在 Arena 的实验室个体（chip 列表；点选比在画布上瞎点可靠）。 */
-  const [individuals, setIndividuals] = useState<import("@/api/types").SpawnedIndividual[]>([]);
+  /** 已在 Arena 的实验室个体（chip 列表；来自 store 单一真相）。 */
+  const individuals = useUiStore((s) => s.individuals);
+  const focusGenome = useUiStore((s) => s.focusGenome);
   const tickRef = useRef(0);
   /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
@@ -115,8 +116,6 @@ export function DanioArenaPanel() {
       if (created) void deleteSession(created).catch(() => undefined);
     };
   }, [resetNonce, modelDriven, setSessionId, setRunning]);
-
-  useEffect(() => subscribeIndividuals(setIndividuals), []);
 
   // ---- WS: 鱼层 + 事件 ----------------------------------------------------
   useEffect(() => {

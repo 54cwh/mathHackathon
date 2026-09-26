@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUiStore } from "@/store/ui";
 import { Dna } from "lucide-react";
 import { Panel } from "@/components/Panel";
@@ -7,8 +7,8 @@ import { NucleotideStrip } from "@/visuals/NucleotideStrip";
 import { createGenome, develop, getGenome, mutateGenome } from "@/api/lab";
 import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResult } from "@/api/types";
 import { DevCompare } from "@/panels/DevCompare";
-import { publishDevelopment, publishIndividual, subscribeFocus } from "@/store/labBus";
-import { spawnIndividual, type SpawnedIndividual } from "@/api/arena";
+
+import { spawnIndividual } from "@/api/arena";
 import { BreedingLab } from "@/panels/BreedingLab";
 
 /**
@@ -49,9 +49,13 @@ export function DNA2BrainPanel() {
   const [mutations, setMutations] = useState<MutationDiff[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  /** 已送入 Arena 的个体（按 genome 去重；显示 fish_id 与连接组规模）。 */
-  const [spawned, setSpawned] = useState<Record<string, SpawnedIndividual>>({});
   const sessionId = useUiStore((s) => s.sessionId);
+  /** 单一真相：已入 Arena 的实验室个体（store 持有；本面板只读，`通用层接口.md` §7）。 */
+  const individuals = useUiStore((s) => s.individuals);
+  const addIndividual = useUiStore((s) => s.addIndividual);
+  const publishDevelopment = useUiStore((s) => s.publishDevelopment);
+  /** 已请求过 spawn 的 genome（UI 本地簿记：防重复请求；不属领域状态）。 */
+  const requestedRef = useRef<Set<string>>(new Set());
 
   /**
    * 4 条**同源**单倍体（pair0.mat / pair0.pat / pair1.mat / pair1.pat），顺序即 `position ∈ [0,512)`
@@ -106,7 +110,7 @@ export function DNA2BrainPanel() {
     } finally {
       setBusy(false);
     }
-  }, []);
+  }, [publishDevelopment]);
 
   useEffect(() => {
     void loadFresh();
@@ -141,17 +145,18 @@ export function DNA2BrainPanel() {
         );
         return;
       }
-      if (spawned[genomeId]) return;
+      if (requestedRef.current.has(genomeId)) return;
+      requestedRef.current.add(genomeId);
       try {
         const individual = await spawnIndividual(sessionId, genomeId);
-        setSpawned((current) => ({ ...current, [genomeId]: individual }));
-        publishIndividual(individual); // → Arena 面板的可点 chip
+        addIndividual(individual); // → Arena 的可点 chip + Lab 的 IN ARENA 列表
       } catch (e) {
+        requestedRef.current.delete(genomeId); // 失败允许重试
         // 已存在（409）/ 非 viable（422）等：不打断开发流程，只在提示区显示
         setError(String(e));
       }
     },
-    [sessionId, spawned],
+    [sessionId, addIndividual],
   );
 
   /** 把某个 genome 载入编辑器并**立即发育**（育种产出的子代走这条路）。 */
@@ -176,7 +181,7 @@ export function DNA2BrainPanel() {
         setBusy(false);
       }
     },
-    [sendToArena],
+    [sendToArena, publishDevelopment],
   );
 
   // 会话就绪后补送排队中的个体（例如先点了 DEVELOP、Arena 会话还在建）
@@ -186,8 +191,16 @@ export function DNA2BrainPanel() {
     setPendingSpawn([]);
   }, [sessionId, pendingSpawn, sendToArena]);
 
-  // 点 Arena 里的实验室鱼 → 把它的基因组载入本面板（§15.6 三栏联动）
-  useEffect(() => subscribeFocus((genomeId) => void adoptGenome(genomeId)), [adoptGenome]);
+  // 点 Arena 里的实验室鱼 / chip → 把它的基因组载入本面板（§15.6 三栏联动）。
+  // store 的 `focusNonce` 自增即一次焦点事件；用 ref 防止挂载时误触发与重复处理。
+  const focusNonce = useUiStore((s) => s.focusNonce);
+  const activeGenomeId = useUiStore((s) => s.activeGenomeId);
+  const handledFocus = useRef(0);
+  useEffect(() => {
+    if (focusNonce === 0 || focusNonce === handledFocus.current) return;
+    handledFocus.current = focusNonce;
+    if (activeGenomeId) void adoptGenome(activeGenomeId);
+  }, [focusNonce, activeGenomeId, adoptGenome]);
 
   async function handleDevelop() {
     if (!genome) return;
@@ -383,11 +396,11 @@ export function DNA2BrainPanel() {
           </dl>
         </div>
 
-          {Object.keys(spawned).length > 0 && (
+          {individuals.length > 0 && (
             <div className="shrink-0 border border-border p-2">
               <div className="mb-1 font-pixel text-[10px] leading-none">IN ARENA</div>
               <ul className="space-y-0.5 font-mono text-[10px]">
-                {Object.values(spawned).map((individual) => (
+                {individuals.map((individual) => (
                   <li key={individual.fish_id} className="flex justify-between gap-2">
                     <span className="truncate">{individual.fish_id}</span>
                     <span className="text-muted-foreground">
