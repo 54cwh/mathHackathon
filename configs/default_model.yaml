@@ -36,12 +36,19 @@ connectome:
   distance_space: unit_square
   regulatory_gamma: 1.0
   w_bar_initial: 0.5
+  ablation_random_density: 0.15
   tau_min: 1.0
   tau_max: 10.0
 network:
   sensory_dim: 12
   action_dim: 2
   activation: tanh
+  input_weight_scope: per_cell_type
+  input_weight_std: 0.289
+  hunger_gain_std: 0.1
+  neuron_bias_std: 0.1
+  motor_pool_split: median_x
+  action_pooling: mean
 learning:
   method: behavior_cloning
   mini_batch_updates: 20

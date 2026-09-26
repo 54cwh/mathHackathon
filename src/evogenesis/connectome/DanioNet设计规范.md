@@ -1,6 +1,7 @@
 # DanioNet 设计规范
 
 > **管辖范围**：六类功能语义、12 维输入**语义**、神经动力学、连续动作、lifetime learning 与遗传边界、baselines/ablations。产出：activation / 动作 `(ω,v)` / `ΔW`。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+> 状态：**v1.0 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
 
 ## 1. 六类神经元
 - Sensory
@@ -54,6 +55,8 @@ m_iH_t
 
 依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 
+**`U_i,m_i,b_i` 来源（定稿）**：三者按 **cell type** 取固定先验、不学习——`U_i=U_{type_i}`、`m_i=m_{type_i}`、`b_i=b_{type_i}`，其中 `U∈R^{6×12}`、`m,b∈R^6` 由 seed 初始化（`U~N(0,(1/√12)²)`、`m~N(0,0.1²)`、`b~N(0,0.1²)`）。理由：RGCD 输出契约 `(A,Z,τ,W⁰,M)` 保持冻结，感官增益经 cell type 与基因型挂钩；`ΔW` 只改 `w`，与 §7 遗传边界自洽。属**设计选择**（登记 `docs/参数总表.json`）。
+
 所有网络 padding 到 48 nodes，通过 neuron mask / adjacency mask batch。
 
 ## 4. 连续动作
@@ -73,10 +76,20 @@ v_t=\sigma(y_v)
 
 “Escape”不是离散标签，而是高威胁状态下的大转向 + 高推进。
 
+**合成规则（定稿，G3）**：设 \(M_L,M_R\) 为 left/right motor 池（划分见 §5），取**均值池化**：
+
+\[
+y_\omega=\overline{h}_{M_L}-\overline{h}_{M_R},\qquad y_v=\overline{h}_{M},
+\]
+
+其中 \(\overline{h}_{S}=|S|^{-1}\sum_{i\in S}h_i\) 为集合 \(S\) 上的激活均值。left 池主导得 \(\omega>0\)（即 `Arena §5` 的 \(+\theta\) 方向）；\(y_v\) 可为负，经 \(\sigma\) 映射回 \(v\in[0,1]\)。均值对池大小不变、零新参数；属**设计选择**。视觉左右由渲染坐标决定，不在本契约内。
+
 ## 5. 左右竞争
 Motor neurons 标记 left/right side。Inhibitory prior 提高 contralateral inhibition，允许左右 motor pools 竞争。
 
-依据：左右转向竞争与 heading-direction 回路 `[bib#6]`；自发探索中的左右交替与 ARTR 群体 `[bib#7]`。marker 规则待定（G2）。
+**标记规则（定稿，G2）**：把 motor 池按发育坐标 \(x_i\) 的**中位数二分**——\(x_i\) 低于中位者标 left、其余标 right（同值按神经元索引破平）。保证两池非空（满足 `development/RGCD数学模型.md` §7 developmental viability）。说明：位置是**归一化发育方域**坐标、非世界坐标，"left/right"为此轴上的标记约定，世界手性由 §4 的 \(\omega\) 符号约定固定。属**设计选择**。
+
+依据：左右转向竞争与 heading-direction 回路 `[bib#6]`；自发探索中的左右交替与 ARTR 群体 `[bib#7]`。
 
 ## 6. Lifetime Learning
 Stage 1：透明 ExpertPolicy 产生轨迹。
@@ -119,10 +132,10 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 依据与量化：发育编码网络的对照基线取 NEAT / HyperNEAT / ES-HyperNEAT（Stanley & Miikkulainen 2002；Stanley et al. 2009；Risi & Stanley 2012）。"同一数量级"建议判据 `|log10(N_base) − log10(N_ours)| ≤ 1`，统一按连接（权重）数比较，并注意不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。出处：`research/reference/design-basis-connectome.md`。
 
 ## 9. Ablations
-- w/o GRN
+- `w/o GRN`：关闭 GRN 发育步，`A` 改按 `Bernoulli(0.15)` 独立采样（禁 self-loop），保留同 `N`、同 \(\tau\)、同 `W⁰` 幅度与 Dale 符号——只隔离"GRN 发育"变量（同密度、同尺度）
 - allele 聚合：加性（mean）vs 完全显性（max）
 - homogeneous tau（基线取异质 τ 的均值；另做 τ 网格扫描防选值偏袒）`[bib#27][bib#28]`
-- w/o spatial wiring cost
+- w/o spatial wiring cost（\(\lambda=0\)）
 - BC 有 / 无 Dale 符号约束 `[bib#30][bib#31]`
 - P1：w/o epistasis
 
@@ -132,10 +145,8 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 > 逐份阅读本文时发现的未定义点，需与 04 / 07 / 16 对齐后确认。
 
-1. **12 维输入与 Arena 视野的对应未定义**：§2 列出 12 项，但各项如何由 arena/Danio_Arena设计规范.md 的 left/right channel、radius、FOV 计算未写（arena/Danio_Arena设计规范.md 阅读问题 #1 的另一侧）。
-2. **`U_i x_t`、`m_i H_t`、`b_i` 的来源未定义**：§3 动力学中这三项是发育得到、固定先验还是可学习未写（关联 G1）。
-3. **动作合成未定义（G3）**：§4 的 `y_ω,y_v` 取自哪些 motor 细胞、左右 pool 如何合成 `ω,v` 未写，与 §5“左右竞争”的衔接缺失。
-4. **左右 motor 标记规则未定义（G2）**：§5 称“Motor neurons 标记 left/right side”，但标记规则未写。
-5. **BC 超参与 Stage 1 专家未定义**：§6 的 `λ_ω,λ_v` 未给；ExpertPolicy 权重 `w_p0,k_H,w_d,w_o`（G4）不在 config。
-6. **Ablation 实现未定**：§9 的 `w/o GRN`（随机固定结构？）未写；`homogeneous tau` 已定基线值（§9），`w/o epistasis` 已标 P1。
-7. **BC 训练数据与预算未定义**：每条 viable 网络的轨迹条数、K=20 的 batch 定义、是否含 padding/mask 处理未写。
+（无遗留：
+- #2 `U/m/b` → §3（cell-type 固定先验）；#3 动作合成 → §4（均值池化）；#4 左右标记 → §5（x 中位数二分）；#6 `w/o GRN` → §9（同密度随机结构）。
+- #1 12 维编码归 `arena/Danio_Arena设计规范.md` §4.1（现 `草案待确认` + 认领表 A1）；本文件 §2 只定义语义/顺序/值域。
+- #5 `λ_ω,λ_v` 归 `learning/行为克隆学习.md` §6；ExpertPolicy 权重 `w_p0,k_H,w_d,w_o` 归 `arena/Danio_Arena设计规范.md` §11（G4）。
+- #7 BC 轨迹条数/预算/padding 归 `learning` 数据管线（§3 已定 padding 到 48 + mask）。）
