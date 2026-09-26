@@ -59,4 +59,4 @@
 
 - 事件名的**权威名单**是 `tests/test_arena.py::KNOWN_EVENTS`（`arena.spawn` / `arena.prey_captured` / `arena.capture_attempt` / `arena.escape` / `arena.energy_depleted` / `arena.episode_end` / `arena.fish_captured` / `arena.collision`）；新增事件必须先改该集合。**8 项，不多不少。**
 - 回归与契约加强用例：Arena 侧 #12–#15 与 API 侧 #9 共 5 个测试函数，分别覆盖 reset 幂等 / episode 幂等 / 死鱼不计逃脱 / 目标获取计数 / pause 阻塞推进；API 侧 #6 断言 RFC 7807 五字段（`type` / `title` / `status` / `detail` / `instance`）。
-- Arena 与 API 的完整实现说明见 `src/evogenesis/arena/Danio_Arena实现说明.md` 与 `src/evogenesis/api/API接口.md`（模块内文档描述**实现现状与其契约状态**，不替代 `src/evogenesis/arena/Danio_Arena设计规范.md` 与 `src/evogenesis/api/API与系统工程.md` 的上位规格）。
+- Arena 的完整契约与实现映射见 `src/evogenesis/arena/Danio_Arena设计与实现说明.md`；API 实现说明见 `src/evogenesis/api/API接口.md`。合并稿的前半部分描述规范，§18 描述实现现状与契约状态。

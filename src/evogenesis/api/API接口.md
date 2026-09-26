@@ -332,8 +332,8 @@ class SessionCreate(BaseModel):
 | 字段 | 是否生效 | 说明 |
 |---|---|---|
 | `master_seed` | ✅ 生效 | 传给 `DanioArena(master_seed=...)`，是**唯一的复现开关** |
-| `environment` | ⚠️ **仅存储回显** | 写入 `Session.environment` 并在 `SessionSummary` 回显；**不改变任何 Arena 参数** —— `food_rich` / `predator_rich` / `resource_scarce` 三档行为完全一致（实测三档位的 `population` / `prey_remaining` 与初始世界完全相同）。场景布置见 `../arena/Danio_Arena设计规范.md` §12 |
-| `arena_config_path` | ❌ **未生效** | `Session.__init__` **完全不读**该字段，也不读 `configs/default_arena.yaml`；Arena 用 `ArenaConfig()` 的 Python 硬编码默认值（见 `../arena/Danio_Arena实现说明.md` §2.3） |
+| `environment` | ⚠️ **仅存储回显** | 写入 `Session.environment` 并在 `SessionSummary` 回显；**不改变任何 Arena 参数** —— `food_rich` / `predator_rich` / `resource_scarce` 三档行为完全一致（实测三档位的 `population` / `prey_remaining` 与初始世界完全相同）。场景布置见 `../arena/Danio_Arena设计与实现说明.md` §12 |
+| `arena_config_path` | ❌ **未生效** | `Session.__init__` **完全不读**该字段，也不读 `configs/default_arena.yaml`；Arena 用 `ArenaConfig()` 的 Python 硬编码默认值（见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射） |
 | `model_config_path` | ❌ **未生效** | 同上；`configs/default_model.yaml` 是否存在于仓库亦无校验 |
 
 **结论：`SessionCreate` 当前实际只有 `master_seed` 一个有效开关。** 两个 `*_config_path` 是**留给后续接入的占位契约** —— 一旦真正生效，它们即成为对外契约的一部分（改字段集须双方同步）。
@@ -355,7 +355,7 @@ class SessionCreate(BaseModel):
 - 调用方若要"本步新增事件"，须自行 diff `seq`。
 - `200` 是硬编码常量，见 §11 L5。
 
-逐事件语义与 8 项事件词表见 `../arena/Danio_Arena实现说明.md` §4.2。
+逐事件语义与 8 项事件词表见 `../arena/Danio_Arena设计与实现说明.md` §18 实现映射。
 
 ---
 

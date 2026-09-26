@@ -140,7 +140,7 @@ mathHackathon/
 | `genome/生物学与进化遗传学基础.md` | 产出表达后的基因组 / gene products |
 | `development/RGCD数学模型.md` | 产出发育结果 `(A, Z, τ, W⁰, M)`（§1 已声明） |
 | `connectome/DanioNet设计规范.md` | 产出每步 activation、动作 `(ω, v)`、当代 `ΔW` |
-| `arena/Danio_Arena设计规范.md`（+ `Danio_Arena实现说明.md`） | 产出 observation（12 维）、事件日志、每鱼记录；定义动作 `(ω,v)` 如何作用于世界 |
+| `arena/Danio_Arena设计与实现说明.md`（兼容入口：`Danio_Arena设计规范.md`、`Danio_Arena实现说明.md`） | 产出 observation（12 维）、事件日志、每鱼记录；定义动作 `(ω,v)` 如何作用于世界，并映射到当前实现 |
 | `evolution/遗传繁殖与演化模型.md` | 产出 fitness、下一代 genome |
 | `learning/行为克隆学习.md` | 产出 `ΔW`（横向，接 connectome） |
 | `experiment/实验与评价体系.md` | 拥有指标与 run 目录布局（横向） |
