@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.2 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.3 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 
@@ -113,9 +113,9 @@ P\mathbf p_i+
 
 **形状（定稿）**：\(\mathbf g_i\in\mathbb R^8\)（`grn.dim=8`）、\(\mathbf q(G)\in\mathbb R^8\)、\(\mathbf p_i\in\mathbb R^2\) 原样输入（不做 embedding）；\(W_g\in\mathbb R^{8\times8}\)、\(B\in\mathbb R^{8\times8}\)、\(P\in\mathbb R^{8\times2}\)、\(\mathbf b\in\mathbb R^8\)。
 
-**初始化（定稿）**：\(W_g\) 取 Glorot/Xavier `[bib#126]` 后重标定谱半径 \(\rho(W_g)=0.9\)；\(B,P\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf b\sim\mathcal N(0,0.1^2)\)。全部由 seed manager 派生。
+**初始化（定稿）**：\(W_g\) 取 Glorot/Xavier `[bib#126]` 后重标定谱半径 \(\rho_{\mathrm{spec}}(W_g)=0.9\)；\(B,P\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf b\sim\mathcal N(0,0.1^2)\)。全部由 seed manager 派生。
 
-依据与限定："谱半径 \(<1\Rightarrow\) echo-state property"是**经验条件**（Yildiz et al. 2012 `[bib#127]` 给出反例），故按稳定性启发式使用、并记录 \(\rho(W_g)\)；未找到阻尼 sigmoid GRN 的专属初始化惯例，其余尺度为**设计选择**。
+依据与限定："谱半径 \(<1\Rightarrow\) echo-state property"是**经验条件**（Yildiz et al. 2012 `[bib#127]` 给出反例），故按稳定性启发式使用、并记录 \(\rho_{\mathrm{spec}}(W_g)\)；未找到阻尼 sigmoid GRN 的专属初始化惯例，其余尺度为**设计选择**。
 
 ## 5. Proliferation
 \[
@@ -142,7 +142,7 @@ daughter：
 24\le N\le48
 \]
 
-**参数与初始化（定稿）**：\(\mathbf w_d\in\mathbb R^8\)、\(b_d\in\mathbb R\)；\(\mathbf w_d\sim\mathcal N(0,(1/\sqrt8)^2)\)、\(b_d=0\)（分裂概率约 0.5）。分裂扰动 \(\epsilon_p\sim\mathcal N(0,0.05^2)\)（单位方域）、\(\epsilon_g\sim\mathcal N(0,0.1^2)\)；\(\mathbf p_{daughter}\) 裁剪回 \([0,1]^2\)。尺度均为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
+**参数与初始化（定稿）**：\(\mathbf w_d\in\mathbb R^8\)、\(b_d\in\mathbb R\)；\(\mathbf w_d\sim\mathcal N(0,(1/\sqrt8)^2)\)、\(b_d=0\)（分裂概率约 0.5）。分裂扰动 \(\epsilon_p\in\mathbb R^2\sim\mathcal N(0,0.05^2)\)（单位方域）、\(\epsilon_g\in\mathbb R^8\sim\mathcal N(0,0.1^2)\)；\(\mathbf p_{daughter}\) 裁剪回 \([0,1]^2\)。尺度均为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
 
 ## 6. Cell identity
 \[
@@ -150,7 +150,7 @@ daughter：
 \]
 
 \[
-\mathbf z_i=softmax(\mathbf l_i)
+\mathbf z_i=softmax(\mathbf l_i),\qquad \mathbf l_i,\ \mathbf z_i\in\mathbb R^6
 \]
 
 \[
@@ -187,7 +187,7 @@ zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps
 - (i) 无 NaN、无 Inf；
 - (ii) \(|h_i^t|<1\) 对所有 \(i,t\) 成立（**解析保证**：更新是 \(h_i^t\) 与 \(\tanh(\cdot)\in(-1,1)\) 的凸组合，权重 \((1-1/\tau_i),\,1/\tau_i\ge0\) 且和为 1，由 \(h^0=0\) 归纳即得——非工程阈值）；
 - (iii) 不永久全饱和：尾 10 步（\(t=40..49\)）平均饱和比例 \(<0.9\)，饱和定义为 \(|h_i^t|>1-10^{-3}\)；
-- (iv) \(\rho(W_g)<1\)（tanh 稳定性启发式，`[bib#127]`）。
+- (iv) \(\rho_{\mathrm{spec}}(W_g)<1\)（tanh 稳定性启发式，`[bib#127]`）。
 
 (iii)(iv) 为**工程判据**（设计选择）；(ii) 是模型的数学性质，报告可直接引用。
 
@@ -197,7 +197,7 @@ zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps
 =
 \mathbf z_i^T C\mathbf z_j
 -\lambda d_{ij}
-+\gamma R(\mathbf g_i,\mathbf g_j,\mathbf p_i,\mathbf p_j)
++\gamma R(\mathbf g_i,\mathbf g_j)
 +b_A
 \]
 
@@ -216,10 +216,10 @@ d_{ij}=\|\mathbf p_i-\mathbf p_j\|_2
 **\(\gamma R(\cdot)\) 形式（定稿）**：取**中心化双线性 / Pearson 相关**。令 \(\bar g,\hat\sigma\) 为本代 \(N\) 个神经元在各分量上的均值与标准差，\(\hat{\mathbf g}_i=(\mathbf g_i-\bar g)\oslash\hat\sigma\)，则
 
 \[
-R_{ij}=\frac{1}{8}\sum_{k=1}^{8}\hat g_{ik}\hat g_{jk}\in[-1,1],\qquad M=I\ (\text{零参数}).
+R_{ij}=\frac{1}{8}\sum_{k=1}^{8}\hat g_{ik}\hat g_{jk}\in[-1,1],\qquad K=I\ (\text{零参数}).
 \]
 
-中心化**只用于 \(R\) 项**，§4 的 \(\mathbf g\) 语义不变。依据：转录组/细胞类型相似度预测连线的双线性模型（Qiao et al. 2024 *eLife* `[bib#111]`；Kovács et al. 2020 *PNAS* `[bib#112]`；识别分子为异源、\(M\) 可非对角但 \(I\) 为可解释 MVP，Sanes & Zipursky 2020 `[bib#119]`）。**限定**：单用表达相似度预测连线的证据仅 AUC≈0.64（`[bib#111]`；Hayashi et al. 2022 反 Hebbian `[bib#121]`），故 \(R\) 按**弱偏置**使用并须报 \(\gamma=0\) 消融。
+中心化**只用于 \(R\) 项**，§4 的 \(\mathbf g\) 语义不变。依据：转录组/细胞类型相似度预测连线的双线性模型（Qiao et al. 2024 *eLife* `[bib#111]`；Kovács et al. 2020 *PNAS* `[bib#112]`；识别分子为异源、\(K\) 可非对角但 \(I\) 为可解释 MVP，Sanes & Zipursky 2020 `[bib#119]`）。**限定**：单用表达相似度预测连线的证据仅 AUC≈0.64（`[bib#111]`；Hayashi et al. 2022 反 Hebbian `[bib#121]`），故 \(R\) 按**弱偏置**使用并须报 \(\gamma=0\) 消融。
 
 **系数（定稿）**：\(\gamma=1.0\) 固定（属 \(\Theta_D\)，不演化；敏感性搜索 \(\{0.5,1,2\}\)）；\(\lambda=2.0\)（单位方域，\(E[d]\approx0.521\Rightarrow\lambda d\approx1.04\)，与 \(z_i^\top Cz_j\in[-2,2]\) 配平）。\(b_A\) 用**二分反解**到实测 off-diagonal density 落在 \([0.10,0.20]\)（目标 0.15）：
 
@@ -316,6 +316,21 @@ behavior effect（四维向量，不合成标量）：
 \]
 
 三个量——\(d_{edge}^{(l)}\)、\(d_{\tau}^{(l)}\)、\(\Delta \mathbf B_l\)——并列展示，不合成单一总分；权重 \(w_1\ldots w_4\) 不使用。
+
+**\(\Delta B_l\) 四分量口径（定稿）**：对每个 locus \(l\)，取 \(K\) 个**匹配块**（同 `environment_id`、同 `episode_seed`，每块一条野生型 \(+\) 一条突变体），分量沿用 fitness 同口径的**原始率**（不做代内 min-max、不除以野生型基线）：
+
+\[
+\Delta X_l=\frac1K\sum_{k=1}^{K}\big[x_X(G^{(l)},k)-x_X(G,k)\big],\qquad X\in\{\mathrm{Capture,Escape,Survival,Energy}\}
+\]
+
+\[
+x_{\text{Survival}}=\frac{\text{survival\_steps}}{600},\quad
+x_{\text{Capture}}=\frac{\text{captures}}{\max(\text{capture\_attempts},1)},\quad
+x_{\text{Escape}}=\frac{\text{escape\_successes}}{\max(\text{predator\_encounters},1)},\quad
+x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
+\]
+
+分量各自报告 Hedges \(g_z=J(K-1)\,\Delta X_l/s_{d_X}\)（\(J(m)=1-\frac{3}{4m-1}\)）与配对 CI；**不合成标量**。出处 `research/reference/delta-B-and-penetrance.md`。
 
 ## 13. 参数形状与初始化总表（定稿）
 

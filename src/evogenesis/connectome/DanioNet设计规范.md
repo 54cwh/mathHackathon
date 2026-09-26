@@ -51,7 +51,7 @@ m_iH_t
 \right)
 \]
 
-默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6）。\(\Delta W\) 遵守 Dale sign 约束：符号由突触前类型固定，只改幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)）`[bib#29][bib#30][bib#31]`。\(\Delta W\) **形状与 \(W^{(0)}\) 相同**（\(N\times N\)，batch 内 padding 到 48），**仅在既有连接支撑上非零**：\(\Delta W=M\odot\Delta\theta\)，\(M=A\) 且训练期**冻结**（不新增连接），padding 行列恒 0 并从 loss / 梯度 / 更新中排除；被优化的是与 \(W^{(0)}\) 同形状、同 dtype 的 \(\theta\)（支撑外梯度屏蔽），\(sign(w^{(0)})\) 训练期不变。张量与梯度统一 `float32`（`core §7`）。
+默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6）。\(\Delta W\) 遵守 Dale sign 约束：符号由突触前类型固定，只改幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)）`[bib#29][bib#30][bib#31]`。\(\Delta W\) **形状与 \(W^{(0)}\) 相同**（\(N\times N\)，batch 内 padding 到 48），**仅在既有连接支撑上非零**：有效权重 \(W=A\odot\big(\mathrm{sign}(W^{(0)})\odot \mathrm{softplus}(\Theta)\big)\)（逐元素），初值 \(\Theta=\mathrm{softplus}^{-1}(|W^{(0)}|)\)（`EvoGenesis项目总纲.md` §4），故 \(\Delta W=W-W^{(0)}\)。支撑 \(A\) 训练期**冻结**（不新增连接），padding 行列恒 0 并从 loss / 梯度 / 更新中排除；被优化的是与 \(W^{(0)}\) 同形状、同 dtype 的 \(\Theta\)（支撑外梯度屏蔽），\(\mathrm{sign}(W^{(0)})\) 训练期不变。张量与梯度统一 `float32`（`core §7`）。
 
 依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 
@@ -79,10 +79,10 @@ v_t=\sigma(y_v)
 **合成规则（定稿，G3）**：设 \(M_L,M_R\) 为 left/right motor 池（划分见 §5），取**均值池化**：
 
 \[
-y_\omega=\overline{h}_{M_L}-\overline{h}_{M_R},\qquad y_v=\overline{h}_{M},
+y_\omega=\overline{h}_{M_L}-\overline{h}_{M_R},\qquad y_v=\overline{h}_{M_{\mathrm{motor}}},
 \]
 
-其中 \(\overline{h}_{S}=|S|^{-1}\sum_{i\in S}h_i\) 为集合 \(S\) 上的激活均值。left 池主导得 \(\omega>0\)（即 `Arena §5` 的 \(+\theta\) 方向）；\(y_v\) 可为负，经 \(\sigma\) 映射回 \(v\in[0,1]\)。均值对池大小不变、零新参数；属**设计选择**。视觉左右由渲染坐标决定，不在本契约内。
+其中 \(M_{\mathrm{motor}}=M_L\cup M_R\) 为**全 motor 池**（与 RGCD 产出的 active neuron mask \(M\) 不同名），\(\overline{h}_{S}=|S|^{-1}\sum_{i\in S}h_i\) 为集合 \(S\) 上的激活均值。left 池主导得 \(\omega>0\)（即 `Arena §5` 的 \(+\theta\) 方向）；\(y_v\) 可为负，经 \(\sigma\) 映射回 \(v\in[0,1]\)。均值对池大小不变、零新参数；属**设计选择**。视觉左右由渲染坐标决定，不在本契约内。
 
 ## 5. 左右竞争
 Motor neurons 标记 left/right side。Inhibitory prior 提高 contralateral inhibition，允许左右 motor pools 竞争。
@@ -149,4 +149,4 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 - #2 `U/m/b` → §3（cell-type 固定先验）；#3 动作合成 → §4（均值池化）；#4 左右标记 → §5（x 中位数二分）；#6 `w/o GRN` → §9（同密度随机结构）。
 - #1 12 维编码归 `arena/Danio_Arena设计与实现说明.md` §4.1（现 `草案待确认` + 认领表 A1）；本文件 §2 只定义语义/顺序/值域。
 - #5 `λ_ω,λ_v` 归 `learning/行为克隆学习.md` §6；ExpertPolicy 权重 `w_p0,k_H,w_d,w_o` 归 `arena/Danio_Arena设计与实现说明.md` §11（G4）。
-- #7 BC 轨迹条数/预算/padding 归 `learning` 数据管线（§3 已定 padding 到 48 + mask）。）
+- #7 BC 轨迹条数/预算归 `learning/行为克隆学习.md` §3；padding 到 48 + mask 见本文件 §3。）

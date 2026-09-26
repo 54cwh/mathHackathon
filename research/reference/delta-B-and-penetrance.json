@@ -1,0 +1,592 @@
+{
+  "meta": {
+    "search_time": "2026-09-26",
+    "topic": "RGCD §12 ΔB_l 四分量操作化（配对/归一化/效应量） 与 genome §3 penetrance 计算式（阈值表型）",
+    "scope": "为两个已定稿但口径未定的契约服务：(1) RGCD §12 只给出 ΔB_l=(ΔCapture,ΔEscape,ΔSurvival,ΔEnergy) 的四个名字，未定义每分量算法、聚合层级、归一化与统计口径；(2) genome §3 要求‘须同时报告各类 penetrance’，但未给 penetrance 计算式与连续 N/τ 异质性的离散化规则。本文件只做外部依据采集与候选评估，不修改 research/reference/ 以外任何文件，不登记 bibliography.md。",
+    "sources_summary": "OpenAlex（检索、元数据、引用数，检索日 2026-09-26）、GitHub CLI gh api（仓库 star/license/最近 push，核实于 2026-09-26）、本仓库已冻结文档（genome §3、RGCD §12、evolution §5、arena §6）与既有调研（phenotype-threshold-mendel、phenotype-E-A-B-definition）。统计功效/精度部分为本报告用 Python 对 n=160、9:3:3:1 类大小所做的精确二项与 Wilson CI 计算（非文献数值，见 conclusions 与 not_found）。arXiv MCP 本次仍返回 HTTP 406，未能取 arXiv 全文，已在 not_found 记录。",
+    "owns": "ΔB_l 四分量与 penetrance 的候选定义、外部依据与推荐；不拥有 genome/RGCD 规范本身，不拥有 θ_N/θ_H 数值、也不拥有 a*(g)（基因型→架构档映射）的冻结权。",
+    "notes": "所有引用数与日期以 2026-09-26 的 OpenAlex 页面为准；star/license 以同日 gh api 为准。θ_N/θ_H/θ_N^obs/θ_H^obs 的数值无文献来源，属标定/反解项，不得编造。‘四维行为效应向量’与‘2×2 架构档 penetrance’是项目自定义演示装置，无同行评审文献直接为其背书；文献只支撑其统计构件（效应量、配对设计、liability-threshold、penetrance 定义、二分化的代价）。"
+  },
+  "field_schema": {
+    "item.name": "string, required",
+    "item.type": "paper | repo | book | dataset | other, required",
+    "item.url": "string, required, 主链接（DOI/GitHub）",
+    "item.source": "string, required, OpenAlex / GitHub / archive.org / 本仓库",
+    "item.source_url": "string, required, 来源页",
+    "item.date": "string, optional, 发表年或最近 push",
+    "item.metrics": "string | null, optional, 引用数或 star 数；找不到置 null 并说明",
+    "item.license": "string | null, optional",
+    "item.peer_reviewed": "boolean | null, required, 是否同行评审；教材/预印本/仓库置 false 并说明",
+    "item.summary": "string, required",
+    "item.relevance": "number 1-5, optional",
+    "item.notes": "string, optional"
+  },
+  "items": [
+    {
+      "name": "Average excess and average effect of a gene substitution (Fisher 1941, Annals of Eugenics 11(1):53-63)",
+      "type": "paper",
+      "url": "https://doi.org/10.1111/j.1469-1809.1941.tb02272.x",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2039282470",
+      "date": "1941",
+      "metrics": "cited_by_count=999 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "定义 gene substitution 的 average effect：在固定遗传背景下替换一个等位基因所导致的表型期望变化；是‘单突变平均效应’的量化遗传学原型。",
+      "relevance": 5,
+      "notes": "本项目的 ΔB_l 在配对设计下即为该 locus 的因果 average effect（hold background/environment fixed，只改一个 base）。原刊 closed access，本会话只取元数据。"
+    },
+    {
+      "name": "The causal meaning of Fisher's average effect (Lee & Chow 2013, Genetics Research 95(2-3):89-100)",
+      "type": "paper",
+      "url": "https://doi.org/10.1017/S0016672313000074",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2070806897",
+      "date": "2013",
+      "metrics": "cited_by_count=39 (OpenAlex, 2026-09-26)",
+      "license": "bronze OA",
+      "peer_reviewed": true,
+      "summary": "区分 Fisher 的 average effect（因果：实际改变同源等位状态引起的表型变化）与 average excess（相关：群体中携带某等位基因者的平均偏差），并指出二者在非随机关联下不同。",
+      "relevance": 5,
+      "notes": "支持本项目把 ΔB_l 定义为‘控制背景 + 单碱基替换’的因果配对差，而非观察性相关差。"
+    },
+    {
+      "name": "The distribution of fitness effects of new mutations (Eyre-Walker & Keightley 2007, Nature Reviews Genetics 8(8):610-618)",
+      "type": "paper",
+      "url": "https://doi.org/10.1038/nrg2146",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2062210712",
+      "date": "2007",
+      "metrics": "cited_by_count=1666 (OpenAlex, 2026-09-26)",
+      "license": "green OA (figshare)",
+      "peer_reviewed": true,
+      "summary": "突变效应通常以‘效应量分布（DFE）’而非单点均值报告；分布形状本身是结论的一部分。",
+      "relevance": 4,
+      "notes": "支持 Genome Sensitivity Map 报告 per-locus ΔB 的分布，而不是只报均值。"
+    },
+    {
+      "name": "Distribution Theory for Glass's Estimator of Effect size and Related Estimators (Hedges 1981, Journal of Educational Statistics 6(2):107-128)",
+      "type": "paper",
+      "url": "https://doi.org/10.3102/10769986006002107",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2059527510",
+      "date": "1981",
+      "metrics": "cited_by_count=5097 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "给出标准化均值差的精确分布、小样本偏差与无偏校正因子 J（即 Hedges' g 的由来）。",
+      "relevance": 5,
+      "notes": "ΔB 各分量单位不同（比例 vs 能量/步），用 g 做无量纲化但不跨分量求和，符合 §12‘不合成标量’。"
+    },
+    {
+      "name": "Statistical Power Analysis for the Behavioral Sciences (Cohen 1988/2013, 2nd ed., Routledge)",
+      "type": "book",
+      "url": "https://doi.org/10.4324/9780203771587",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W4299627282",
+      "date": "1988 (2013 reissue)",
+      "metrics": "cited_by_count=25414 (OpenAlex, 2026-09-26, Routledge reissue record)",
+      "license": null,
+      "peer_reviewed": false,
+      "summary": "Cohen's d 家族与效应量小/中/大基线的权威来源；含配对设计 d_z 的口径。",
+      "relevance": 4,
+      "notes": "教材（非同行评审期刊），作为方法惯例引用；本项目不依赖其经验基线数值。"
+    },
+    {
+      "name": "Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs (Lakens 2013, Frontiers in Psychology 4:863)",
+      "type": "paper",
+      "url": "https://doi.org/10.3389/fpsyg.2013.00863",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2137070227",
+      "date": "2013",
+      "metrics": "cited_by_count=10479 (OpenAlex, 2026-09-26)",
+      "license": "gold OA",
+      "peer_reviewed": true,
+      "summary": "可在论文中直接引用的效应量计算与报告规范；含独立样本与配对样本 d 的公式与 CI。",
+      "relevance": 5,
+      "notes": "用于把 ΔB 的原始单位差与无量纲 g 并列报告。"
+    },
+    {
+      "name": "A review of effect sizes and their confidence intervals, Part I: The Cohen's d family (Goulet-Pelletier & Cousineau 2018, The Quantitative Methods for Psychology 14(4):242-256)",
+      "type": "paper",
+      "url": "https://doi.org/10.20982/tqmp.14.4.p242",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2905628759",
+      "date": "2018",
+      "metrics": "cited_by_count=402 (OpenAlex, 2026-09-26)",
+      "license": "bronze OA",
+      "peer_reviewed": true,
+      "summary": "系统给出两独立组与两重复测量（配对样本）设计的 Cohen's d 与 Hedges' g 公式及 CI。",
+      "relevance": 5,
+      "notes": "配对样本用 d_z / g_z（差值的 SD 标准化）是本项目同 seed 配对设计的正确口径。"
+    },
+    {
+      "name": "Combining effect size estimates in meta-analysis with repeated measures and independent-groups designs (Morris & DeShon 2002, Psychological Methods 7(1):105-125)",
+      "type": "paper",
+      "url": "https://doi.org/10.1037/1082-989x.7.1.105",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2076029586",
+      "date": "2002",
+      "metrics": "cited_by_count=2443 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "重复测量与独立组设计的效应量不可直接混用；必须变换到同一度量并按设计专用方差估计精度。",
+      "relevance": 4,
+      "notes": "支持 ΔB 的报告须显式声明配对设计，并用配对方差，不得回退为独立样本 d 而不声明。"
+    },
+    {
+      "name": "Unrepeatable Repeatabilities: A Common Mistake (Lessells & Boag 1987, The Auk 104(1):116-121)",
+      "type": "paper",
+      "url": "https://doi.org/10.2307/4087240",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2017917281",
+      "date": "1987",
+      "metrics": "cited_by_count=2969 (OpenAlex, 2026-09-26)",
+      "license": "bronze OA",
+      "peer_reviewed": true,
+      "summary": "repeatability 的正确估计（组内/组间方差分解）与常见错误；行为测量在个体内与个体间分层的经典依据。",
+      "relevance": 4,
+      "notes": "支撑‘按鱼配对/分层’而非把同一鱼的多 episode 当独立样本。"
+    },
+    {
+      "name": "Quantifying individual variation in behaviour: mixed-effect modelling approaches (Dingemanse & Dochtermann 2012, Journal of Animal Ecology 82(1):39-54)",
+      "type": "paper",
+      "url": "https://doi.org/10.1111/1365-2656.12013",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2009172303",
+      "date": "2012",
+      "metrics": "cited_by_count=1124 (OpenAlex, 2026-09-26)",
+      "license": "bronze OA",
+      "peer_reviewed": true,
+      "summary": "把行为表型方差分解为个体间与个体内成分；不同成分的生态/演化含义不同。",
+      "relevance": 4,
+      "notes": "支持 ΔB 的‘种群层面’应区分个体均值与个体内重复，并显式声明聚合层级。"
+    },
+    {
+      "name": "Statistics for Evaluating Pre-post Change: Relation Between Change in the Distribution Center and Change in the Individual Scores (Estrada, Ferrer & Pardo 2019, Frontiers in Psychology 9:2696)",
+      "type": "paper",
+      "url": "https://doi.org/10.3389/fpsyg.2018.02696",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2903666340",
+      "date": "2019",
+      "metrics": "cited_by_count=122 (OpenAlex, 2026-09-26)",
+      "license": "gold OA",
+      "peer_reviewed": true,
+      "summary": "区分布局中心变化（average-based）与个体变化（individual-based）两类统计量，并给出两者关系。",
+      "relevance": 4,
+      "notes": "用于向评审解释：配对差均值 == 两组均值之差（点估计），配对只降低方差。"
+    },
+    {
+      "name": "Some properties of simulation interval estimators under dependence induction (Nelson 1987, Operations Research Letters 6(4):175-181)",
+      "type": "paper",
+      "url": "https://doi.org/10.1016/0167-6377(87)90015-0",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W4235061496",
+      "date": "1987",
+      "metrics": "cited_by_count=6 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "common random numbers（CRN）通过诱导正相关降低两方案差值估计的方差；给出区间估计性质。",
+      "relevance": 4,
+      "notes": "本项目‘同 seed 同环境’配对即 CRN；引用数低但为 CRN 方差缩减的早期理论条目之一。"
+    },
+    {
+      "name": "Advances in Genetic Algorithm Optimization of Traffic Signals (Kesur 2009, Journal of Transportation Engineering 135(4):160-171)",
+      "type": "paper",
+      "url": "https://doi.org/10.1061/(asce)0733-947x(2009)135:4(160)",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2108002664",
+      "date": "2009",
+      "metrics": "cited_by_count=34 (OpenAlex, 2026-09-26)",
+      "license": "green OA",
+      "peer_reviewed": true,
+      "summary": "在随机仿真 + 遗传算法中用 common random numbers 降低适应度评估方差，并讨论 replication 数与计算分配。",
+      "relevance": 4,
+      "notes": "与本项目‘同一批 episode 同 seed 评估突变体/野生型’完全同构，可直接引用为工程依据。"
+    },
+    {
+      "name": "Green Simulation of Pandemic Disease Propagation (Wilson, Alabdulkarim & Goldsman 2019, Symmetry 11(4):580)",
+      "type": "paper",
+      "url": "https://doi.org/10.3390/sym11040580",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2938913892",
+      "date": "2019",
+      "metrics": "cited_by_count=0 (OpenAlex, 2026-09-26; 新刊文)",
+      "license": "gold OA",
+      "peer_reviewed": true,
+      "summary": "用 common random numbers 跨情景复用随机数流以减少重仿真、降低方差。",
+      "relevance": 3,
+      "notes": "CRN 的现代应用例；引用数低，仅作补充。"
+    },
+    {
+      "name": "The cost of dichotomising continuous variables (Altman & Royston 2006, BMJ 332(7549):1080)",
+      "type": "paper",
+      "url": "https://doi.org/10.1136/bmj.332.7549.1080",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W1969298821",
+      "date": "2006",
+      "metrics": "cited_by_count=2702 (OpenAlex, 2026-09-26)",
+      "license": "bronze OA",
+      "peer_reviewed": true,
+      "summary": "把连续变量二分会导致信息损失与统计功效下降；应优先保留连续度量或至少并列报告。",
+      "relevance": 5,
+      "notes": "直接约束 penetrance 的离散化：penetrance 是派生摘要，须与连续 N/H 分布同时报告。"
+    },
+    {
+      "name": "On the practice of dichotomization of quantitative variables (MacCallum, Zhang, Preacher & Rucker 2002, Psychological Methods 7(1):19-40)",
+      "type": "paper",
+      "url": "https://doi.org/10.1037/1082-989x.7.1.19",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2108096958",
+      "date": "2002",
+      "metrics": "cited_by_count=3434 (OpenAlex, 2026-09-26)",
+      "license": "green OA",
+      "peer_reviewed": true,
+      "summary": "系统论证中位数/阈值二分对测量与统计分析的损害，以及‘以同一样本选阈值’带来的循环。",
+      "relevance": 5,
+      "notes": "支持：θ_N^obs/θ_H^obs 必须在独立校准集上定，不得在报告样本上调。"
+    },
+    {
+      "name": "The inheritance of liability to certain diseases, estimated from the incidence among relatives (Falconer 1965, Annals of Human Genetics 29(1):51-76)",
+      "type": "paper",
+      "url": "https://doi.org/10.1111/j.1469-1809.1965.tb00500.x",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W1997887791",
+      "date": "1965",
+      "metrics": "cited_by_count=1691 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "liability-threshold 模型奠基：离散表型由连续易患性越过阈值产生，阈值性状的遗传可用潜变量框架处理。",
+      "relevance": 5,
+      "notes": "penetrance 的阈值化解释与 1-Φ((θ-μ_g)/σ) 的上游依据。"
+    },
+    {
+      "name": "Introduction to Quantitative Genetics, 4th ed. — Ch.18 Threshold characters (Falconer & Mackay 1996)",
+      "type": "book",
+      "url": "https://archive.org/details/IntroductionToQuantitativeGenetics",
+      "source": "archive.org",
+      "source_url": "https://archive.org/details/IntroductionToQuantitativeGenetics",
+      "date": "1996",
+      "metrics": null,
+      "license": "archive.org 借阅（受版权限制）",
+      "peer_reviewed": false,
+      "summary": "阈值性状章节给出 liability-threshold 的标准推导与阈值/incidence 关系，是 P(L>T|g)=1-Φ((T-μ)/σ) 的教科书锚点。",
+      "relevance": 5,
+      "notes": "metrics 置 null：archive.org 无引用计数；本会话沿用既有调研 phenotype-threshold-mendel 对同一版本的登记。"
+    },
+    {
+      "name": "The Evolution of Threshold Traits in Animals (Roff 1996, The Quarterly Review of Biology 71(1):3-35)",
+      "type": "paper",
+      "url": "https://doi.org/10.1086/419266",
+      "source": "OpenAlex",
+      "source_url": "https://doi.org/10.1086/419266",
+      "date": "1996",
+      "metrics": null,
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "阈值性状的演化综述：连续潜变量→离散表型，阈值位置与遗传方差共同决定表型比例。",
+      "relevance": 4,
+      "notes": "metrics 置 null：本会话未单独复核该条引用数（既有 phenotype-threshold-mendel.json 已登记同一 DOI，未杜撰数值）。"
+    },
+    {
+      "name": "Where genotype is not predictive of phenotype: towards an understanding of the molecular basis of reduced penetrance in human inherited disease (Cooper et al. 2013, Human Genetics 132(10):1077-1130)",
+      "type": "paper",
+      "url": "https://doi.org/10.1007/s00439-013-1331-2",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2124821411",
+      "date": "2013",
+      "metrics": "cited_by_count=685 (OpenAlex, 2026-09-26)",
+      "license": "CC-BY",
+      "peer_reviewed": true,
+      "summary": "penetrance 的权威定义：携带某基因型的个体中呈现相应表型的比例；不呈现即 reduced/incomplete penetrance。",
+      "relevance": 5,
+      "notes": "支持 pen(g)=P(表型 | 基因型) 的规范化表述；并说明 penetrance 可为年龄/性别/修饰基因/环境依赖。"
+    },
+    {
+      "name": "Incomplete Penetrance and Variable Expressivity: From Clinical Studies to Population Cohorts (Kingdom & Wright 2022, Frontiers in Genetics 13:920390)",
+      "type": "paper",
+      "url": "https://doi.org/10.3389/fgene.2022.920390",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W4287218243",
+      "date": "2022",
+      "metrics": "cited_by_count=295 (OpenAlex, 2026-09-26)",
+      "license": "gold OA",
+      "peer_reviewed": true,
+      "summary": "把 penetrance 明确为二元现象（基因型是否导致预期表型），并区分 incomplete penetrance 与 variable expressivity。",
+      "relevance": 5,
+      "notes": "支持本项目把 penetrance 定义为‘被分到目标架构档的比例’，且与 expressivity（N/τ 的连续分布）分开报告。"
+    },
+    {
+      "name": "Sire evaluation for ordered categorical data with a threshold model (Gianola & Foulley 1983, Genetics Selection Evolution 15(2):201-224)",
+      "type": "paper",
+      "url": "https://doi.org/10.1186/1297-9686-15-2-201",
+      "source": "OpenAlex",
+      "source_url": "https://doi.org/10.1186/1297-9686-15-2-201",
+      "date": "1983",
+      "metrics": null,
+      "license": "gold OA (BMC)",
+      "peer_reviewed": true,
+      "summary": "把阈值性状写成有阈值的潜变量模型并给出估计框架；是‘阈值模型’的统计实现锚点。",
+      "relevance": 3,
+      "notes": "metrics 置 null：本会话未复核引用数；既有 phenotype-threshold-mendel.json 已登记同一 DOI。"
+    },
+    {
+      "name": "Canalization of development and the inheritance of acquired characters (Waddington 1942, Nature 150:563-565)",
+      "type": "paper",
+      "url": "https://doi.org/10.1038/150563a0",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2051510586",
+      "date": "1942",
+      "metrics": null,
+      "license": null,
+      "peer_reviewed": true,
+      "summary": "canalization：发育缓冲使相同基因型在不同扰动下仍趋同，是阈/档表型不完全外显的机制来源之一。",
+      "relevance": 4,
+      "notes": "metrics 置 null：本会话未复核引用数（既有 phenotype-E-A-B-definition 已引 Waddington，未杜撰数值）。"
+    },
+    {
+      "name": "raphaelvallat/pingouin",
+      "type": "repo",
+      "url": "https://github.com/raphaelvallat/pingouin",
+      "source": "GitHub",
+      "source_url": "https://github.com/raphaelvallat/pingouin",
+      "date": "pushed_at=2026-09-09",
+      "metrics": "stargazers_count=1931 (gh api, 2026-09-26)",
+      "license": "GPL-3.0",
+      "peer_reviewed": false,
+      "summary": "Python/Pandas 统计包，含 Cohen's d / Hedges g（独立与配对）、配对 t/Wilcoxon、效应量 CI。",
+      "relevance": 4,
+      "notes": "风险：GPL-3.0 为 copyleft，若与项目代码一起分发可能要求整体 GPL 兼容；只作本地分析/开发工具尚可，进 artifacts 或交付包前需法务确认。依赖为 numpy/scipy/pandas/matplotlib，可离线安装。"
+    },
+    {
+      "name": "statsmodels/statsmodels",
+      "type": "repo",
+      "url": "https://github.com/statsmodels/statsmodels",
+      "source": "GitHub",
+      "source_url": "https://github.com/statsmodels/statsmodels",
+      "date": "pushed_at=2026-09-25",
+      "metrics": "stargazers_count=11652 (gh api, 2026-09-26)",
+      "license": "BSD-3-Clause",
+      "peer_reviewed": false,
+      "summary": "Python 统计建模库：配对 t 检验、Wilcoxon 符号秩、描述统计与回归，许可证宽松。",
+      "relevance": 4,
+      "notes": "推荐作为配对检验的实现（BSD-3，无 copyleft 风险）；效应量本身可自行按 Hedges 1981 实现。"
+    },
+    {
+      "name": "easystats/effectsize",
+      "type": "repo",
+      "url": "https://github.com/easystats/effectsize",
+      "source": "GitHub",
+      "source_url": "https://github.com/easystats/effectsize",
+      "date": "pushed_at=2026-09-01",
+      "metrics": "stargazers_count=353 (gh api, 2026-09-26)",
+      "license": "NOASSERTION (GitHub 未识别具体 SPDX)",
+      "peer_reviewed": false,
+      "summary": "R 语言效应量包，覆盖 Cohen's d / Hedges g / 配对设计口径。",
+      "relevance": 2,
+      "notes": "R 生态，本项目 Python 栈不可直接用；仅作公式与口径交叉参考。license 需自行确认。"
+    },
+    {
+      "name": "phenotype-threshold-mendel.json（项目既有调研）",
+      "type": "other",
+      "url": "research/reference/phenotype-threshold-mendel.json",
+      "source": "本仓库",
+      "source_url": "research/reference/phenotype-threshold-mendel.json",
+      "date": "2026-09-26",
+      "metrics": null,
+      "license": null,
+      "peer_reviewed": false,
+      "summary": "已给出‘四类基因型→架构档’的推荐映射与‘160 例为演示非验证’的功效结论。",
+      "relevance": 5,
+      "notes": "本文件不重复其 160 功效分析，只补充 per-class n=10 的 penetrance 精度（本报告自算）。"
+    },
+    {
+      "name": "phenotype-E-A-B-definition.json（项目既有调研）",
+      "type": "other",
+      "url": "research/reference/phenotype-E-A-B-definition.json",
+      "source": "本仓库",
+      "source_url": "research/reference/phenotype-E-A-B-definition.json",
+      "date": "2026-09-26",
+      "metrics": null,
+      "license": null,
+      "peer_reviewed": false,
+      "summary": "已给出 E_A/E_B 的候选定义与 θ 反解区间；本文件引用其 θ∈(0,0.5) 与 C2 推荐。",
+      "relevance": 4,
+      "notes": "本文件不重定义 E_A/E_B。"
+    }
+  ],
+  "candidates": {
+    "delta_B": [
+      {
+        "id": "D1",
+        "name": "配对个体差均值（同 seed 同环境，CRN）+ 标准化 g_z",
+        "definition": "对 locus l、野生型 G、突变体 G^(l)，取 K 个匹配块 k=(environment_id, episode_seed)，每块以同一 seed 各跑 1 条野生型与 1 条突变体。逐鱼原始率按 fitness 同口径（不做代内 min-max）：x_S=survival_steps/600、x_P=captures/max(capture_attempts,1)、x_E=escape_successes/max(predator_encounters,1)、x_Q=(E(T)-E_max)/T, T=survival_steps。ΔX_l=(1/K)Σ_k[x_X(G^(l),k)-x_X(G,k)]；标准化 g_{X,l}=J(K-1)·ΔX_l/s_{d_X}, J(m)=1-3/(4m-1)。",
+        "aggregation": "先个体配对，再对块平均（= 种群均值差，点估计相同）；样本量单位是 K 个匹配块。",
+        "normalization": "原始单位 + 每分量独立 Hedges g_z；不做代内 min-max，不做基期比值。",
+        "pros": "CRN 消除共同环境方差（Nelson 1987; Kesur 2009）；不需要独立同分布假设；与 fitness 口径一致；不合成标量。",
+        "cons": "突变与野生型轨迹在第一次行为分歧后随机流解耦，方差缩减为部分（非全抵消）；需要 1:1 seed 配对基础设施。",
+        "verdict": "推荐直接用（ΔB 主定义）"
+      },
+      {
+        "id": "D2",
+        "name": "独立组种群均值差 + pooled Hedges g",
+        "definition": "ΔX_l=mean_i x_X(G^(l))-mean_j x_X(G)，用合并 SD 标准化。",
+        "aggregation": "种群层面，不配对。",
+        "normalization": "同 D1（原始单位 + g）。",
+        "pros": "实现最简单，不需要 seed 配对。",
+        "cons": "在 1:1 配对可用时，点估计与 D1 相同但方差更大（丢弃配对信息）；若两组个体数不同则不可比。",
+        "verdict": "仅作参考（无配对能力时的退化基线，须显式声明）"
+      },
+      {
+        "id": "D3",
+        "name": "相对变化（对野生型基线取比值）",
+        "definition": "ΔX_l=(x_X(G^(l))-x_X(G))/x_X(G)。",
+        "aggregation": "同 D1/D2。",
+        "normalization": "除以基线。",
+        "pros": "无量纲。",
+        "cons": "基线为 0 时未定义（capture rate 常为 0）；比值估计量在小样本下有偏；对分量间尺度敏感，易被误读为可直接相加。",
+        "verdict": "不建议"
+      },
+      {
+        "id": "D4",
+        "name": "代内 min-max 归一化后的 S/P/Esc/Q 差（即 fitness F 的分量）",
+        "definition": "先用 evolution §5 的代内 min-max 把各分量归一到 [0,1]，再作差。",
+        "aggregation": "代内 cohort 相对量。",
+        "normalization": "代内 min-max。",
+        "pros": "与 F 的构造一致。",
+        "cons": "ΔB 将变成‘相对当代 cohort’的量，跨 run/跨突变不可比；直接违反 evolution §5‘跨代、跨环境比较一律用原始指标’。",
+        "verdict": "不建议（ΔB 是敏感性诊断，必须跨 run 可比）"
+      },
+      {
+        "id": "D5",
+        "name": "四分量加权合成为单一标量",
+        "definition": "Σ w_j ΔX_j。",
+        "aggregation": "—",
+        "normalization": "—",
+        "pros": "便于排序。",
+        "cons": "RGCD §12 明文‘不合成标量、不使用 w_1..w_4’；且四分量量纲不一致。",
+        "verdict": "不建议（且违反既有契约）"
+      }
+    ],
+    "penetrance": [
+      {
+        "id": "P1",
+        "name": "经验架构档 penetrance（阈值化发育产物）",
+        "definition": "genotype 类 g∈{A_B_,A_bb,aaB_,aabb}，目标架构档 a*(g)∈2×2；个体 i 的观测档 â_i=(1[N_i>θ_N^obs], 1[H_i>θ_H^obs])，N_i=|M_i|，H_i=CV_τ(i)=SD_i(τ)/mean_i(τ)；pen(g)=#{i:g_i=g, â_i=a*(g)}/#{i:g_i=g}。",
+        "pros": "非参数、无需正态假设；直接回答‘该基因型有多少比例真的落到目标架构档’；同时给出混淆矩阵可诊断是 N 轴还是 H 轴泄漏。",
+        "cons": "依赖 θ^obs 的标定与 N/H 统计量的选择；二分损失信息（Altman & Royston 2006; MacCallum 2002）；aabb 类 n≈10，精度差。",
+        "verdict": "推荐直接用（须并列连续 N/H 分布与 Wilson CI）"
+      },
+      {
+        "id": "P2",
+        "name": "表达层 penetrance（直接用 E_A>θ_N、E_B>θ_H 判 high）”",
+        "definition": "observed high_N ⟺ E_A>θ_N（genome §3 字面式），pen(g)=P(该基因型被判 high | g)。",
+        "pros": "与 genome §3 现有文字完全一致。",
+        "cons": "在冻结的离散设定下 E_A∈{1,0.5,0}、θ_N∈(0,0.5)，A_/aa 的 high 判定解析地完全分离，penetrance 恒为 1；除非引入噪声，否则无法 <1，失去‘penetrance’的信息量。",
+        "verdict": "仅作参考（作为‘阈值分离率’诊断，而非 penetrance 主定义）"
+      },
+      {
+        "id": "P3",
+        "name": "liability-threshold 模型 penetrance（解析）",
+        "definition": "把连续架构量 y∈{N,H} 写成 genotype 类均值 μ_g、类内 SD σ 的潜变量，阈值 θ^obs：pen_model(g)=1-Φ((θ^obs-μ_g)/σ)。",
+        "pros": "给出标准阈值表型公式，便于跨类比较与解释方向（μ_g 离阈值越远 pen 越高）。",
+        "cons": "正态/类内同方差假设未必成立；μ_g、σ 需从样本估，样本小时不稳定；二维 N×H 需独立性才可因子化。",
+        "verdict": "仅作参考（诊断与解释用，不作主定义）"
+      },
+      {
+        "id": "P4",
+        "name": "不做离散化，只报连续 expressivity",
+        "definition": "直接报告每 genotype 类的 N、CV_τ 分布（violin/ECDF），不报 penetrance。",
+        "pros": "信息守恒，统计功效最高（Altman & Royston 2006; MacCallum 2002）。",
+        "cons": "不满足 genome §3‘须同时报告 penetrance’的既有要求。",
+        "verdict": "推荐与其并列汇报（P1 的必备补充，不替代 P1）"
+      }
+    ]
+  },
+  "recommendation": {
+    "delta_B": {
+      "doc_target": "RGCD数学模型.md §12 Genome Sensitivity",
+      "one_liner": "对每个 locus l，ΔB_l（四维）由 K 个匹配块（同 environment_id、同 episode_seed；每块各一条野生型与一条突变体）上的配对差均值给出，各分量沿用 fitness 同口径的原始率（不做代内 min-max、不除以野生型基线），并按分量各自报告 Hedges g_z 与配对 CI，不合成标量。",
+      "formula_latex": "\\Delta X_l=\\frac{1}{K}\\sum_{k=1}^{K}\\big[x_X(G^{(l)},k)-x_X(G,k)\\big],\\quad X\\in\\{\\mathrm{Capture,Escape,Survival,Energy}\\}",
+      "components": {
+        "Survival": "x_Survival = survival_steps / 600（episode 固定跑满 600 步；与 fitness S 同口径）",
+        "Capture": "x_Capture = captures / max(capture_attempts, 1)（与 fitness P 同口径）",
+        "Escape": "x_Escape = escape_successes / max(predator_encounters, 1)（与 fitness Esc 同口径；分母 0 时约定为 0 并在 notes 标非估计）",
+        "Energy": "x_Energy = (E_i(T_i) - E_max) / T_i, T_i = survival_steps_i（evolution §5 Q 简化式；能量/步）"
+      },
+      "standardized_effect": "g_{X,l}=J(K-1)\\cdot \\Delta X_l / s_{d_X},\\quad J(m)=1-\\frac{3}{4m-1},\\quad s_{d_X}=\\mathrm{SD}_k[\\,x_X(G^{(l)},k)-x_X(G,k)\\,]（Hedges 1981 小样本校正）",
+      "uncertainty": "\\Delta X_l \\pm t_{0.975,K-1}\\, s_{d_X}/\\sqrt{K}；K<8 或差值强偏时改用 Wilcoxon signed-rank 并报精确 CI。",
+      "aggregation_decision": "先按匹配块做个体级配对差，再对 K 取平均。配对为双射时该均值恒等于‘突变种群均值−野生存群均值’，故点估计与种群层面一致；配对的收益是去掉个体/环境共同方差、把精度锚在 s_d/√K。多层 episode 时把 fish 当随机效应、block 当固定配对（Dingemanse & Dochtermann 2012），不得把同一 fish 的多 episode 当独立样本（Lessells & Boag 1987）。",
+      "normalization_decision": "用原始单位（三比例为 [0,1]，能量为 能量/步）；跨分量可比性只通过每分量各自的 g_z 获得；不做代内 min-max（那是 F 的口径，ΔB 必须跨 run 可比，evolution §5）；不做基期比值（零分母与比值偏差）。",
+      "fitness_alignment": "是。分量定义与 evolution §5 的 S/P/Esc/Q 逐字对齐（S=survival_steps/600、P=captures/max(capture_attempts,1)、Esc=escape_successes/max(predator_encounters,1)、Q=净能量积累率）；但只借‘率的定义’，不借‘代内 min-max’。",
+      "fisher_framing": "同 seed 配对、只改一个 base，使 ΔB_l 成为该 locus 的因果 average effect（Fisher 1941；Lee & Chow 2013），而非观察性 average excess。",
+      "display": "Genome Sensitivity Map：每个 locus 一个点，横轴 d_edge（或 d_τ），纵轴四分面 ΔB_l；另给 K 个块的 ΔB 分布（Eyre-Walker & Keightley 2007 的‘分布而非单点’原则）。",
+      "residual_risks": [
+        "CRN 只部分降方差：轨迹在首次行为分歧后随机流解耦，s_d 未必显著小于独立样本方差——须实测并报告。",
+        "capture_attempts 或 predator_encounters 很小时比率不稳（分母 1 时方差大），须报分母的分布或设最小分母阈值并声明。",
+        "四分量相关（captures↔energy）且多 locus 扫描带来多重比较；RGCD 只要求展示，若做显著性需预注册族错误率控制，不得合成标量后单点检验。"
+      ]
+    },
+    "penetrance": {
+      "doc_target": "genome/生物学与进化遗传学基础.md §3",
+      "one_liner": "penetrance 即 P(呈现目标表型 | 基因型)：对本项目，对每个 genotype 类 g 与目标架构档 a*(g)，pen(g)=该基因型个体中观测架构档等于 a*(g) 的比例；观测档由发育产物 N=|M| 与 τ 异质性统计量 H=CV_τ 对阈值 θ_N^obs、θ_H^obs 二分得到，须同时报 Wilson CI 与 2×2 混淆矩阵，并把连续 N/H 分布并列报告。",
+      "definition_latex": "\\mathrm{pen}(g)=\\frac{\\#\\{i:\\,g_i=g,\\ \\hat a_i=a^*(g)\\}}{\\#\\{i:\\,g_i=g\\}},\\qquad \\hat a_i=\\big(\\mathbb 1[N_i>\\theta_N^{\\mathrm{obs}}],\\ \\mathbb 1[H_i>\\theta_H^{\\mathrm{obs}}]\\big)",
+      "standard_definition": "penetrance = P(phenotype | genotype)，即携带某基因型的个体中呈现相应表型的比例（Cooper et al. 2013; Kingdom & Wright 2022）。",
+      "threshold_model_form": "\\mathrm{pen}^{\\mathrm{model}}(g)=1-\\Phi\\!\\left(\\frac{\\theta^{\\mathrm{obs}}-\\mu_g}{\\sigma}\\right)（Falconer 1965; Falconer & Mackay 1996 Ch.18），仅作诊断，不作主定义。",
+      "observed_architecture": "N_i=|M_i|（neuron 数档，24–48）；H_i=CV_τ(i)=SD_i(τ)/mean_i(τ)（τ 异质性档，推荐；备选 IQR(τ)）；阈值 θ_N^obs、θ_H^obs 在独立校准集（≥1000 offspring/类）上取两类中位数中点或错分最小点，登记 docs/参数总表.json；不得在报告样本上调阈值（Altman & Royston 2006; MacCallum et al. 2002）。",
+      "reporting": [
+        "四个 pen(g)（A_B_/A_bb/aaB_/aabb）各带 Wilson 95% CI。",
+        "每个 genotype 类的 2×2 观测架构档混淆矩阵（含 8 格计数），用于定位是 N 轴还是 H 轴泄漏。",
+        "连续 N 与 CV_τ 的分布（violin/ECDF）与 pen 并列，避免二分掩盖双峰或厚尾。",
+        "把 genotype 计数（理想 9:3:3:1）与 phenotype penetrance（含噪声）分成两个数，不混为一个。",
+        "θ^obs 与所用 τ 异质性统计量、校准集代数/seed 全部落盘。"
+      ],
+      "mapping_gap": "genome §3 目前只冻结了两条轴（high_N⟺E_A>θ_N、high_H⟺E_B>θ_H），尚未冻结 a*(g)（四类各自对应哪个 2×2 档）。pen(g) 的写法必须等 a*(g) 冻结后才能写成具体四式；在冻结前用 generic 的 a*(g) 形式，并在文档标注‘映射待定稿’。",
+      "consistency_160": "与‘160 例为演示非统计验证’一致：n=160 下 9:3:3:1 的类大小期望为 90/30/30/10；最小类 aabb 的 n=10。本报告精确计算：若真 penetrance=0.9，n=10 时 Wilson 95% 半宽≈0.19；若以 pen≥0.8 作筛查下界、真值 0.8，观测 pen 落到 ≤0.8 的概率≈0.62（n=30 时≈0.57，n=90 时≈0.54），即小类筛查近乎掷硬币。故 160 只支持‘展示 pen 的定义与计算流程’，不支持对 pen 下界的统计检验；结论沿用 phenotype-threshold-mendel.md。",
+      "dichotomization_caveat": "penetrance 是把连续 N/H 二分后的派生摘要；二分本身损失信息与功效（Altman & Royston 2006; MacCallum et al. 2002）。因此 pen 不是主读数，必须与连续分布并列。",
+      "canalization_note": "pen<1 在本项目中的机制解释为发育 canalization/噪声（Waddington 1942）与阈值附近的连续变异，而非‘文字定义错误’；应在文档写明这一点。"
+    }
+  },
+  "not_found": [
+    {
+      "item": "ΔB 四分量‘行为效应向量’本身的同行评审定义",
+      "reason": "无文献定义项目自定义的四维 Capture/Escape/Survival/Energy 行为效应向量。文献只支撑其构件：因果平均效应（Fisher 1941; Lee & Chow 2013）、配对效应量（Hedges 1981; Lakens 2013; Morris & DeShon 2002）、CRN 方差缩减（Nelson 1987; Kesur 2009）、二分代价（Altman & Royston 2006）。"
+    },
+    {
+      "item": "‘2×2 架构档 penetrance’的直接文献先例",
+      "reason": "penetrance 的一般定义与阈值模型公式有文献（Cooper 2013; Kingdom & Wright 2022; Falconer 1965; Falconer & Mackay 1996），但把 RGCD 产物 N=|M| 与 τ 异质性绑定成 2×2 架构档、再定义其 penetrance 属项目自定义，无同行评审先例。"
+    },
+    {
+      "item": "τ 异质性统计量（CV vs IQR vs SD）的文献裁决",
+      "reason": "无文献规定应选哪个离散度统计量作为‘τ 异质性档’；属项目设计选择，须在 genome §3 冻结并做敏感度分析（本报告推荐 CV_τ，备选 IQR）。"
+    },
+    {
+      "item": "θ_N、θ_H、θ_N^obs、θ_H^obs 的具体数值",
+      "reason": "无文献来源，属标定/反解项（G12，docs/参数总表.json）；本文件只给反解区间与校准协议，不填数值。"
+    },
+    {
+      "item": "genome §3 中四类基因型→架构档的具体映射 a*(g)",
+      "reason": "genome §3 只冻结两条轴，未冻结四类的档位赋值；须由 genome 文档 owner 定稿后方能写成具体 pen 四式。本文件以 generic a*(g) 表述并标为缺口。"
+    },
+    {
+      "item": "arXiv 全文检索（两个主题）",
+      "reason": "arXiv MCP 本次持续返回 HTTP 406，两次尝试（cs.NE/q-bio.PE 与 q-bio.QM/q-bio.PE）均失败；与既有 phenotype-E-A-B-definition.json 记录一致。本文件的论文锚点全部来自 OpenAlex 元数据与 DOI，未使用 arXiv 正文。"
+    },
+    {
+      "item": "penetrance 的 Python 专用库",
+      "reason": "GitHub 未发现权威的、针对阈值表型 penetrance 的 Python 库；pen 由计数+Wilson CI 直接计算即可（statsmodels/scipy 足够），无需新依赖。"
+    }
+  ],
+  "conclusions": [
+    "【推荐直接用 ×2】主题1 ΔB_l：采用 D1——K 个匹配块（同 environment_id、同 episode_seed，各含 1 野生型 + 1 突变体）上的配对差均值；四分量 x_X 沿用 evolution §5 的 S/P/Esc/Q 率定义但用原始值（不做代内 min-max、不取基线比值）；每分量另报 Hedges g_z=J(K-1)ΔX/s_d 与配对 CI，四分量不合成标量。依据：Fisher 1941 + Lee & Chow 2013（因果平均效应）、Hedges 1981 + Lakens 2013 + Goulet-Pelletier & Cousineau 2018（g_z 公式）、Morris & DeShon 2002（配对设计要求）、Nelson 1987 + Kesur 2009（CRN）、Lessells & Boag 1987 + Dingemanse & Dochtermann 2012（分层聚合）。",
+    "【推荐直接用 ×2】主题2 penetrance：采用 P1——pen(g)=#{g_i=g, â_i=a*(g)}/#{g_i=g}，其中 â_i=(1[N_i>θ_N^obs], 1[CV_τ(i)>θ_H^obs])；标准定义 pen=P(phenotype|genotype)（Cooper 2013; Kingdom & Wright 2022），阈值模型式 1-Φ((θ-μ_g)/σ) 仅作诊断（Falconer 1965; Falconer & Mackay 1996）。必须并列连续 N/CV_τ 分布（Altman & Royston 2006; MacCallum 2002）。",
+    "【仅作参考】D2 独立组种群差（无配对能力时的退化基线）；P2 表达层阈值分离率（在离散设定下恒为 1，只能作实现诊断）；P3 模型式 1-Φ((θ^obs-μ_g)/σ)（正态假设、小样本不稳）；P4 只报连续 expressivity（信息最全但不满足 §3 报告要求，故与 P1 并列而非替代）。",
+    "【不建议】D3 对野生型基线取比值（零分母、比值偏差）；D4 用代内 min-max 后的分量差（跨 run 不可比、违反 evolution §5）；D5 四分量加权合成标量（违反 RGCD §12）。",
+    "【阻断项 · 文档缺口】a*(g)（四类基因型→2×2 架构档的具体映射）尚未在 genome §3 冻结：genome §3 只冻结了两条轴。pen(g) 的四个具体式子只有在 a*(g) 定稿后才能写死；在此之前文档只能用 generic a*(g) 并标‘映射待定稿’。",
+    "【阻断项 · 标定缺口】θ_N、θ_H（表达阈值）与 θ_N^obs、θ_H^obs（架构档阈值）数值均无文献来源，须在独立校准集上标定并登记 docs/参数总表.json；不得在报告样本上调阈值（MacCallum 2002 的循环性）。",
+    "【风险】CRN 只部分降低 ΔB 方差（轨迹分歧后随机流解耦），须在同 seed 设计下实测 s_d 并与独立样本方差对比后，才能宣称方差缩减收益。",
+    "【风险】pingouin 为 GPL-3.0（copyleft），不宜作为交付/入库依赖；效应量与配对检验建议用 statsmodels（BSD-3）+ 自行实现 Hedges 1981 的 J 校正。",
+    "【与 160 的一致性】本报告自算：n=160 下最小类 aabb 期望 n=10，Wilson 95% 半宽在 p≈0.9 时 ≈0.19；以 pen≥0.8 作筛查、真值 0.8 时观测落到界下的概率 ≈0.62。故 160 只支持‘演示 pen 的定义与流程’，不支持对 pen 下界的统计验证——与 phenotype-threshold-mendel.md 结论一致。",
+    "【下一步】把 D1 公式与 P1 公式分别回写 RGCD §12、genome §3；补 a*(g) 冻结与 θ^obs 标定协议；在 configs 与参数总表登记阈值；实现后用一组同 seed 的野生型/突变体最小实验验证 ΔB 的配对方差确实小于非配对。"
+  ]
+}

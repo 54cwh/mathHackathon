@@ -682,29 +682,29 @@
     },
     {
       "name": "bc_loss_weight_omega",
-      "value": null,
+      "value": 0.4,
       "unit": "dimensionless weight",
       "group": "learning",
       "grade": "D",
-      "status": "missing",
-      "basis": "core §4.3 行为克隆损失 L=λ_ω·MSE(ω)+λ_v·MSE(v) 引入该权重，但全文未给取值；属未定项，回写定稿前实现不得自行选定",
-      "source": "src/evogenesis/core/核心机制与数据流.md §4.3",
-      "config": null,
+      "status": "no_basis",
+      "basis": "目标尺度归一化 λ_i=1/σ_i²（σ_i=训练集动作标准差，下限 0.05·R_i，R_ω=2/R_v=1），整体缩放使 λ_ω+λ_v=2；0.4 为未取训练统计量前的预注册回退值（按 R² 归一）",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §6",
+      "config": "configs/default_model.yaml → learning.loss_weight_omega",
       "sensitivity": null,
-      "suggest": null
+      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
     },
     {
       "name": "bc_loss_weight_v",
-      "value": null,
+      "value": 1.6,
       "unit": "dimensionless weight",
       "group": "learning",
       "grade": "D",
-      "status": "missing",
-      "basis": "core §4.3 行为克隆损失 L=λ_ω·MSE(ω)+λ_v·MSE(v) 引入该权重，但全文未给取值；属未定项，回写定稿前实现不得自行选定",
-      "source": "src/evogenesis/core/核心机制与数据流.md §4.3",
-      "config": null,
+      "status": "no_basis",
+      "basis": "目标尺度归一化 λ_i=1/σ_i²（σ_i=训练集动作标准差，下限 0.05·R_i，R_ω=2/R_v=1），整体缩放使 λ_ω+λ_v=2；1.6 为未取训练统计量前的预注册回退值（按 R² 归一）",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §6",
+      "config": "configs/default_model.yaml → learning.loss_weight_v",
       "sensitivity": null,
-      "suggest": null
+      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
     },
     {
       "name": "motif_length",
@@ -1067,11 +1067,9 @@
   "missing_required": {
     "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。",
     "items": [
-      "动作合成 y_ω, y_v 的左右池合成规则（G3）",
-      "motor 左/右归属规则（G2）",
-      "BC 损失权重 λ_ω、λ_v（core §4.3）",
       "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id",
-      "二基因位点表型阈值 θ_N、θ_H（genome §3/§6，G12；需 pilot 反解；约束 θ∈(0,0.5)，否则 Aa 退化为完全隐性）"
+      "二基因位点表型阈值 θ_N、θ_H（genome §3/§6，G12；需 pilot 反解；约束 θ∈(0,0.5)，否则 Aa 退化为完全隐性）",
+      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 与 τ 异质性统计量（CV；genome §3；须在独立校准集上定）"
     ]
   },
   "citation_risks": [

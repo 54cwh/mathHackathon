@@ -629,3 +629,294 @@
 137. Eiben AE, Smith JE. **Introduction to Evolutionary Computing** (2nd ed.). *Springer, Natural Computing Series* (2015). `未标注`（教科书，非期刊同行评审）.
     DOI: https://doi.org/10.1007/978-3-662-44874-8
     用途：教科书级明文（§5.2.4）——tournament selection 比较相对而非绝对适应度，故对 fitness 的 translation/transposition 不变，与 ranking 同具尺度不变性；支撑「tournament 对绝对适应度不变」命题的主引用。
+
+---
+
+## 依据新增（模型链定义与实现参考，2026-09-26）
+
+> 来源：`research/reference/{phenotype-E-A-B-definition, module-ownership-and-shapes, bc-loss-weighting, delta-B-and-penetrance}.json`。已按 DOI / 稳定链接 / 标题与 #1–#137 比对去重，四套调研之间亦去重；新增如下。
+> 评审状态：`peer-reviewed` 作设计依据；`preprint` 仅作相关工作；官方文档 / 开源实现 / 教材标 `未标注`。核验沿用上游调研（OpenAlex / DOI / 官方站点），本表登记未逐条重核。
+
+138. The Correlation between Relatives on the Supposition of Mendelian Inheritance (Fisher 1918). `peer-reviewed`.
+    DOI: https://doi.org/10.1017/s0080456800012163
+    用途：把孟德尔因子与连续性状方差联系起来的奠基文献：多位点 allele 效应可加性分解，是 additive gene action / gene dosage 的原始锚点。
+
+139. The Evolution of Threshold Traits in Animals (Roff 1996). `peer-reviewed`.
+    DOI: https://doi.org/10.1086/419266
+    用途：阈值性状综述：离散形态由潜在连续变量 + 一个/多个阈值决定，且阈值模型适用于多基因（polygenic）而非简单孟德尔；支持'连续量 -> 阈值 -> 离散类'的建模惯例。
+
+140. Canalization of development and the inheritance of acquired characters (Waddington 1942). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/150563a0
+    用途：canalization 概念起点：发育在扰动下仍沿既定轨迹，表型对遗传/环境噪声具缓冲。支持'阈值/饱和非线性使小扰动不外显'的读法。
+
+141. Order-preserving principles underlying genotype-phenotype maps ensure high additive proportions of genetic variance (Gjuvsland et al. 2011). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1420-9101.2011.02358.x
+    用途：GP map 的单调/保序性（allele 含量增加 => 表型不降）是加性方差占比高的前提；支持把 E 定义为对 allele 含量的单调函数（加性/gene dosage）。
+
+142. Monotonicity is a key feature of genotype-phenotype maps (Gjuvsland et al. 2013). `peer-reviewed`.
+    DOI: https://doi.org/10.3389/fgene.2013.00216
+    用途：给出 GP map 单调性的两个度量，并论证调控网络设计原则会生成高度单调的 GP map；为 E 取'allele 剂量的单调聚合'提供量化依据。
+
+143. Transcriptional regulation by the numbers: models (Bintu et al. 2005). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.gde.2005.02.007
+    用途：转录调控的热力学/占据模型：启动子占据由 TF 浓度与结合位点亲和力决定，转录速率随之给定；这是'motif/PWM affinity -> 表达强度'的标准映射，属表达层。
+
+144. Transcriptional regulation by the numbers: applications (Bintu et al. 2005). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.gde.2005.02.006
+    用途：上文的配套应用：把结合位点亲和力、协同性、TF 浓度组合成可拟合的表达预测式；支持 E 由 motif 亲和力（而非网络拓扑）读出。
+
+145. PWhiddy/Growing-Neural-Cellular-Automata-Pytorch. `未标注（开源实现）`.
+    链接: https://github.com/PWhiddy/Growing-Neural-Cellular-Automata-Pytorch
+    用途：人工发育系统（NCA）参考实现；非 diploid、无 motif->expression 编码，仅作背景对照。
+
+146. chenmingxiang110/Growing-Neural-Cellular-Automata. `未标注（开源实现）`.
+    链接: https://github.com/chenmingxiang110/Growing-Neural-Cellular-Automata
+    用途：NCA 参考实现；Python；无 diploid 聚合，仅作背景对照。
+
+147. mspitzna/NCAtorch. `未标注（开源实现）`.
+    链接: https://github.com/mspitzna/NCAtorch
+    用途：轻量 NCA（PyTorch）；非 diploid motif->expression，仅作参考。
+
+148. jdisset/grgen. `未标注（开源实现）`.
+    链接: https://github.com/jdisset/grgen
+    用途：通用人工 GRN 库；C++，非 Python 生态，不建议依赖。
+
+149. d9w/AGRN.jl. `未标注（开源实现）`.
+    链接: https://github.com/d9w/AGRN.jl
+    用途：Julia 人工 GRN 演化库；非 Python，不建议。
+
+150. Sisyphus192/Kern-AGRN. `未标注（开源实现）`.
+    链接: https://github.com/Sisyphus192/Kern-AGRN
+    用途：Python 人工 GRN；停更、无许可证，不建议。
+
+151. Mehrshad-Ebadi/With_Mutation (aGRN + WGD). `未标注（开源实现）`.
+    链接: https://github.com/Mehrshad-Ebadi/With_Mutation
+    用途：人工 GRN + 全基因组复制建模；Jupyter，无许可证、无社区验证，不建议。
+
+152. Reil (1999), Dynamics of Gene Expression in an Artificial Genome — Implications for Biological and Artificial Ontogeny. `peer-reviewed`.
+    DOI: https://doi.org/10.1007/3-540-48304-7_63
+    用途：人工基因组模型的奠基工作：基因组序列编码基因及其调控区，基因表达由转录因子产物与调控位点的匹配决定；是 Banzhaf/Kuo 系列 ARN 的直接源头。
+
+153. Knabe, Nehaniv & Schilstra (2008), Regulation of gene regulation — smooth binding with dynamic affinity affects evolvability. `peer-reviewed`.
+    DOI: https://doi.org/10.1109/cec.2008.4630901
+    用途：对比静态绑定与『按 site–product 匹配质量决定绑定概率』的 smooth binding 模型；明确把调控位点识别建模为基因组调控区的读出函数，再进入网络动力学。
+
+154. Stormo (2000), DNA binding sites: representation and discovery. `peer-reviewed`.
+    DOI: https://doi.org/10.1093/bioinformatics/16.1.16
+    用途：PWM/PSSM 表示与 binding-site 预测的经典综述：把『给定 motif 表示 → 扫描新序列 → 预测位点』定义为序列层面的分析问题。
+
+155. Sherman & Cohen (2012), Thermodynamic State Ensemble Models of cis-Regulation. `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pcbi.1002407
+    用途：系统给出由调控 DNA 的位点构成与结合常数预测基因表达的模型类；明确把『表达 = f(位点、亲和力)』放在调控 DNA 解读层。
+
+156. Cartharius et al. (2005), MatInspector and beyond: promoter analysis based on transcription factor binding sites. `peer-reviewed`.
+    DOI: https://doi.org/10.1093/bioinformatics/bti473
+    用途：启动子分析工具：摘要明言『promoter analysis is an essential step on the way to identify regulatory networks』，即 TFBS 预测是构建调控网络之前的序列层步骤。
+
+157. Frankle & Carbin (2019), The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks. `peer-reviewed`.
+    链接: https://arxiv.org/abs/1803.03635（DOI: 10.48550/arXiv.1803.03635）
+    用途：『中奖彩票』假说：在一个固定稀疏子网络（固定 mask/支撑）上用原始初始化独立训练，只更新存活连接；是『支撑冻结、只改幅度』的标准范式。
+
+158. Hoefler, Alistarh, Ben-Nun, Dryden & Peste (2021), Sparsity in Deep Learning: Pruning and growth for efficient inference and training in neural networks. `preprint`.
+    链接: https://arxiv.org/abs/2102.00554（DOI: 10.48550/arXiv.2102.00554）
+    用途：稀疏深度学习综述，形式化 W = M ⊙ W（mask 与权重同形状）、区分固定 mask 训练与动态改 mask 训练，并讨论稀疏梯度/更新。
+
+159. PyTorch Pruning Tutorial (Michela Paganini), torch.nn.utils.prune. `未标注（工程文档）`.
+    链接: https://docs.pytorch.org/tutorials/intermediate/pruning_tutorial.html
+    用途：官方惯例：剪枝 mask 以 buffer `weight_mask` 保存，形状与 weight 相同；前向用 `weight = weight_mask * weight_orig`，参数仍为同形状 `weight_orig`。
+
+160. PyTorch MaskedTensor Overview. `未标注（工程文档）`.
+    链接: https://docs.pytorch.org/tutorials/unstable/maskedtensor_overview.html
+    用途：mask 语义：梯度只提供给被选中的子集（masked-in），等价于把支撑外元素的梯度屏蔽，而非置零后继续更新。
+
+161. PyTorch, torch.set_default_dtype. `未标注（工程文档）`.
+    链接: https://pytorch.org/docs/stable/generated/torch.set_default_dtype.html
+    用途：PyTorch 浮点默认 dtype 为 torch.float32；可用 set_default_dtype 改为 float64（float32↔complex64，float64↔complex128）。
+
+162. PyTorch Tensor Attributes — type promotion. `未标注（工程文档）`.
+    链接: https://pytorch.org/docs/stable/tensor_attributes.html
+    用途：类型提升规则：混合 dtype 的算术按『满足条件的最小 dtype』提升；浮点标量算子的 dtype 取 get_default_dtype()；与 NumPy 不同，PyTorch 不检查标量数值来决定最小 dtype。
+
+163. PyTorch, Numerical accuracy（notes）. `未标注（工程文档）`.
+    链接: https://pytorch.org/docs/stable/notes/numerical_accuracy.html
+    用途：浮点加法不满足结合律，PyTorch 不保证数学等价计算得到 bitwise 一致结果；跨版本/跨平台、尤其 CPU 与 GPU 之间结果可不同。
+
+164. PyTorch, Reproducibility（notes）. `未标注（工程文档）`.
+    链接: https://pytorch.org/docs/stable/notes/randomness.html
+    用途：Bitwise 一致不跨设备/后端/版本保证；不同 SDPA backend 浮点累加顺序不同即结果不同；需显式 use_deterministic_algorithms 才可能确定。
+
+165. NumPy, Array creation（basics）. `未标注（工程文档）`.
+    链接: https://numpy.org/doc/stable/user/basics.creation.html
+    用途：NumPy 默认浮点为双精度 float64（np.zeros/ones 等默认 dtype=float64，平台相关整数默认）。
+
+166. NumPy, Data type promotion. `未标注（工程文档）`.
+    链接: https://numpy.org/doc/stable/reference/arrays.promotion.html
+    用途：NumPy 提升规则：Python float 与 float32 数组交互通常保持 float32（按值），但若按类型提升（result_type(type(x), f32)）则得 float64；整数默认 int64。
+
+167. Micikevicius et al. (2018), Mixed Precision Training. `peer-reviewed`.
+    链接: https://arxiv.org/abs/1710.03740（DOI: 10.48550/arXiv.1710.03740）
+    用途：混合精度训练标准做法：权重/激活/梯度低精度存储，但保留一份 float32 master copy 用于参数更新，以维持更新保真度。
+
+168. PyTorch, Automatic Mixed Precision package — torch.amp. `未标注（工程文档）`.
+    链接: https://pytorch.org/docs/stable/amp.html
+    用途：autocast 选择性降精度：若多输入 op 中任一为 float32，则将全部输入 cast 到 float32 再算，保证数值稳定；列出按最宽 dtype 提升的算子。
+
+169. PyTorch Forums, Huge performance decrease when matrix multiplication goes from float32 to float64. `未标注（工程文档）`.
+    链接: https://discuss.pytorch.org/t/huge-performance-decrease-when-matrix-multiplication-goes-from-float32-to-float64/190689
+    用途：社区实测：A6000（torch 2.1 / CUDA 12.1）上 float64 矩阵乘比 float32 慢约 40–50×；消费级 GPU 缺 FP64 加速。
+
+170. Multi-Task Learning Using Uncertainty to Weigh Losses for Scene Geometry and Semantics (Kendall, Gal & Cipolla, CVPR 2018). `未标注`.
+    链接: https://openaccess.thecvf.com/content_cvpr_2018/papers/Kendall_Multi-Task_Learning_Using_CVPR_2018_paper.pdf
+    用途：不确定性加权（UW）的代表作：对回归任务取高斯似然，得到 L = (1/(2 sigma_i^2)) * L_i + log sigma_i，sigma_i 通过梯度下降学习；权重随任务噪声增大而减小，log sigma 项防止 sigma 无限增大。作者在回归里回归 s := log sigma^2（而非 sigma^2）以保证数值稳定。
+
+171. GradNorm: Gradient Normalization for Adaptive Loss Balancing in Deep Multitask Networks (Chen, Badrinarayanan, Lee & Rabinovich, ICML 2018). `未标注`.
+    链接: http://proceedings.mlr.press/v80/chen18a/chen18a.pdf
+    用途：GradNorm：按共享层上的**逐任务梯度范数**动态调权，目标范数为 Gbar_W * r_i(t)^alpha，用 L_grad = sum |G_W^(i) - Gbar_W * r_i^alpha|_1 更新权重，并每步重归一化 sum w_i = T。含一个超参 alpha 与权重学习率。
+
+172. Multi-Task Learning for Dense Prediction Tasks: A Survey (Vandenhende et al., TPAMI 2021). `未标注`.
+    DOI: https://doi.org/10.1109/tpami.2021.3054719
+    用途：多任务学习综述，把损失平衡（loss balancing）方法系统归类为：不确定性加权（Kendall）、GradNorm、DWA、GLS 等，并指出权重选择对多任务性能敏感、需要方法特定的学习率调参。
+
+173. Analytical Uncertainty-Based Loss Weighting in Multi-Task Learning (Kirchdorfer et al., GCPR 2024). `preprint`.
+    链接: https://arxiv.org/abs/2408.07985（DOI: 10.48550/arXiv.2408.07985）
+    用途：把 Kendall UW 改成解析解：最优不确定性权重正比于 **损失倒数**（omega_t = 1/L_t），再用带温度的 softmax 归一化（UW-SO）；并系统报告 UW 的'更新惯性'：权重初值错位后需约 100 个 epoch（占训练 1/4）才恢复。
+
+174. Investigating Uncertainty Weighting for Multi-Task Learning: Insights and Analytical Alternative (Kirchdorfer et al., IJCV 2025). `未标注`.
+    DOI: https://doi.org/10.1007/s11263-025-02625-x
+    用途：对 Kendall UW 的批判性研究，确认其三类局限：易过拟合、homoscedastic 假设过强、对很多常用损失缺乏理论依据；并指出学习到的 sigma_k 会在训练中收缩，导致任务权重无上界地变大、过度优化'看起来好优化'的任务。
+
+175. Reasonable Effectiveness of Random Weighting: A Litmus Test for Multi-Task Learning (Lin et al., TMLR 2022). `preprint`.
+    链接: https://arxiv.org/abs/2111.10603（DOI: 10.48550/arXiv.2111.10603）
+    用途：提出随机损失加权（RLW）/随机梯度加权（RGW），在五个图像数据集与两个多语言任务上与 12 个 SOTA 方法对比，随机权重即可取得可比性能；主张把随机加权作为必要 baseline 来检验复杂动态加权是否真有增益。
+
+176. MultiNet++: Multi-Stream Feature Aggregation and Geometric Loss Strategy for Multi-Task Learning (Chennupati et al., CVPRW 2019). `未标注`.
+    DOI: https://doi.org/10.1109/cvprw.2019.00159
+    用途：几何损失策略（GLS）：用各任务损失的几何平均代替加权和，从而无需人为设权重、天然对尺度不敏感。
+
+177. Gradient Surgery for Multi-Task Learning (Yu et al., NeurIPS 2020, PCGrad). `preprint`.
+    链接: https://arxiv.org/abs/2001.06782（DOI: 10.48550/arXiv.2001.06782）
+    用途：PCGrad：当任务梯度余弦为负（冲突）时，把一个任务的梯度投影到另一个的正交平面上以消除冲突；在 RL 与监督多任务上提升。
+
+178. Auto-Lambda: Disentangling Dynamic Task Relationships (Liu et al., TMLR 2022). `preprint`.
+    链接: https://arxiv.org/abs/2202.03091（DOI: 10.48550/arXiv.2202.03091）
+    用途：用梯度元学习自动学习任务间连续、动态的权重关系（Auto-Lambda）。
+
+179. Efficient BackProp (LeCun, Bottou, Orr & Müller, 1998; Neural Networks: Tricks of the Trade). `未标注`.
+    链接: http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf
+    用途：经典训练技巧：sigmoid 输出单元若用 MSE 会在饱和区梯度极小；'Choose target values at the point of the maximum second derivative on the sigmoid so as to avoid saturating the output units'；权重初始化应使 sigmoid 主要工作在**线性区**，过大权重导…
+
+180. Deep Learning, Chapter 6 (Goodfellow, Bengio & Courville, MIT Press 2016) §6.2.2.2. `未标注`.
+    链接: https://www.deeplearningbook.org/contents/mlp.html
+    用途：教材明确：用了 MSE 时，'the loss can saturate anytime sigma(z) saturates'——sigmoid 在 z 很大/很小时饱和；梯度可能小到无法学习，'whether the model has the correct answer or the incorrect answer'。因此 sigmoid 输出应优先配最大似然/交叉熵，而非 MSE。
+
+181. scikit-learn StandardScaler 官方文档（按特征去均值、缩放到单位方差）. `未标注（工程文档）`.
+    链接: https://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html
+    用途：标准化定义：z = (x - u) / s，按特征独立计算均值与标准差；并说明若某特征方差比其它大几个数量级，会主导目标函数、使估计器无法正确学习其它特征。统计量在**训练集**上计算并保存、再 transform 后续数据。
+
+182. Stable-Baselines3 — Reinforcement Learning Tips and Tricks（动作空间归一化）. `未标注（工程文档）`.
+    链接: https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
+    用途：连续控制最佳实践：'normalize your action space and make it symmetric if it is continuous'，建议缩放到 [-1,1]；并给出官方 VecNormalize 实现。
+
+183. robomimic 数据格式文档 — 'Actions should be normalized between -1 and 1'. `未标注（工程文档）`.
+    链接: https://robomimic.github.io/docs/datasets/overview.html
+    用途：机器人模仿学习数据约定：动作应归一化到 [-1,1]，'because this range enables easier policy learning via the use of tanh layers'；并提供 get_dataset_info.py 来检查动作范围是否违规。
+
+184. LibMTL: A PyTorch Library for Multi-Task Learning (JMLR 2023). `未标注（开源实现）`.
+    链接: https://github.com/median-research-group/LibMTL
+    用途：PyTorch 多任务学习库，统一实现 EW（等权）、UW（Kendall）、GradNorm、DWA、GLS、PCGrad、IMTL、CAGrad、RLW 等，命令行一行切换 --weighting 即可对比。JMLR 2023 接收。
+
+185. lucidrains/gradnorm-pytorch — practical GradNorm implementation. `未标注（开源实现）`.
+    链接: https://github.com/lucidrains/gradnorm-pytorch
+    用途：GradNorm 的轻量 PyTorch 实现，可插入任意多损失模型。
+
+186. tianheyu927/PCGrad — official code for Gradient Surgery for Multi-Task Learning. `未标注（开源实现）`.
+    链接: https://github.com/tianheyu927/PCGrad
+    用途：PCGrad 官方 TensorFlow/PyTorch 实现。
+
+187. lorenmt/auto-lambda — official implementation of Auto-Lambda (TMLR 2022). `未标注（开源实现）`.
+    链接: https://github.com/lorenmt/auto-lambda
+    用途：Auto-Lambda（梯度元学习动态任务加权）官方实现。
+
+188. Average excess and average effect of a gene substitution (Fisher 1941, Annals of Eugenics 11(1):53-63). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1469-1809.1941.tb02272.x
+    用途：定义 gene substitution 的 average effect：在固定遗传背景下替换一个等位基因所导致的表型期望变化；是‘单突变平均效应’的量化遗传学原型。
+
+189. The causal meaning of Fisher's average effect (Lee & Chow 2013, Genetics Research 95(2-3):89-100). `peer-reviewed`.
+    DOI: https://doi.org/10.1017/S0016672313000074
+    用途：区分 Fisher 的 average effect（因果：实际改变同源等位状态引起的表型变化）与 average excess（相关：群体中携带某等位基因者的平均偏差），并指出二者在非随机关联下不同。
+
+190. The distribution of fitness effects of new mutations (Eyre-Walker & Keightley 2007, Nature Reviews Genetics 8(8):610-618). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nrg2146
+    用途：突变效应通常以‘效应量分布（DFE）’而非单点均值报告；分布形状本身是结论的一部分。
+
+191. Distribution Theory for Glass's Estimator of Effect size and Related Estimators (Hedges 1981, Journal of Educational Statistics 6(2):107-128). `peer-reviewed`.
+    DOI: https://doi.org/10.3102/10769986006002107
+    用途：给出标准化均值差的精确分布、小样本偏差与无偏校正因子 J（即 Hedges' g 的由来）。
+
+192. Statistical Power Analysis for the Behavioral Sciences (Cohen 1988/2013, 2nd ed., Routledge). `未标注`.
+    DOI: https://doi.org/10.4324/9780203771587
+    用途：Cohen's d 家族与效应量小/中/大基线的权威来源；含配对设计 d_z 的口径。
+
+193. Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs (Lakens 2013, Frontiers in Psychology 4:863). `peer-reviewed`.
+    DOI: https://doi.org/10.3389/fpsyg.2013.00863
+    用途：可在论文中直接引用的效应量计算与报告规范；含独立样本与配对样本 d 的公式与 CI。
+
+194. A review of effect sizes and their confidence intervals, Part I: The Cohen's d family (Goulet-Pelletier & Cousineau 2018, The Quantitative Methods for Psychology 14(4):242-256). `peer-reviewed`.
+    DOI: https://doi.org/10.20982/tqmp.14.4.p242
+    用途：系统给出两独立组与两重复测量（配对样本）设计的 Cohen's d 与 Hedges' g 公式及 CI。
+
+195. Combining effect size estimates in meta-analysis with repeated measures and independent-groups designs (Morris & DeShon 2002, Psychological Methods 7(1):105-125). `peer-reviewed`.
+    DOI: https://doi.org/10.1037/1082-989x.7.1.105
+    用途：重复测量与独立组设计的效应量不可直接混用；必须变换到同一度量并按设计专用方差估计精度。
+
+196. Unrepeatable Repeatabilities: A Common Mistake (Lessells & Boag 1987, The Auk 104(1):116-121). `peer-reviewed`.
+    DOI: https://doi.org/10.2307/4087240
+    用途：repeatability 的正确估计（组内/组间方差分解）与常见错误；行为测量在个体内与个体间分层的经典依据。
+
+197. Quantifying individual variation in behaviour: mixed-effect modelling approaches (Dingemanse & Dochtermann 2012, Journal of Animal Ecology 82(1):39-54). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/1365-2656.12013
+    用途：把行为表型方差分解为个体间与个体内成分；不同成分的生态/演化含义不同。
+
+198. Statistics for Evaluating Pre-post Change: Relation Between Change in the Distribution Center and Change in the Individual Scores (Estrada, Ferrer & Pardo 2019, Frontiers in Psychology 9:2696). `peer-reviewed`.
+    DOI: https://doi.org/10.3389/fpsyg.2018.02696
+    用途：区分布局中心变化（average-based）与个体变化（individual-based）两类统计量，并给出两者关系。
+
+199. Some properties of simulation interval estimators under dependence induction (Nelson 1987, Operations Research Letters 6(4):175-181). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/0167-6377(87)90015-0
+    用途：common random numbers（CRN）通过诱导正相关降低两方案差值估计的方差；给出区间估计性质。
+
+200. Advances in Genetic Algorithm Optimization of Traffic Signals (Kesur 2009, Journal of Transportation Engineering 135(4):160-171). `peer-reviewed`.
+    DOI: https://doi.org/10.1061/(asce)0733-947x(2009)135:4(160)
+    用途：在随机仿真 + 遗传算法中用 common random numbers 降低适应度评估方差，并讨论 replication 数与计算分配。
+
+201. Green Simulation of Pandemic Disease Propagation (Wilson, Alabdulkarim & Goldsman 2019, Symmetry 11(4):580). `peer-reviewed`.
+    DOI: https://doi.org/10.3390/sym11040580
+    用途：用 common random numbers 跨情景复用随机数流以减少重仿真、降低方差。
+
+202. The cost of dichotomising continuous variables (Altman & Royston 2006, BMJ 332(7549):1080). `peer-reviewed`.
+    DOI: https://doi.org/10.1136/bmj.332.7549.1080
+    用途：把连续变量二分会导致信息损失与统计功效下降；应优先保留连续度量或至少并列报告。
+
+203. On the practice of dichotomization of quantitative variables (MacCallum, Zhang, Preacher & Rucker 2002, Psychological Methods 7(1):19-40). `peer-reviewed`.
+    DOI: https://doi.org/10.1037/1082-989x.7.1.19
+    用途：系统论证中位数/阈值二分对测量与统计分析的损害，以及‘以同一样本选阈值’带来的循环。
+
+204. Where genotype is not predictive of phenotype: towards an understanding of the molecular basis of reduced penetrance in human inherited disease (Cooper et al. 2013, Human Genetics 132(10):1077-1130). `peer-reviewed`.
+    DOI: https://doi.org/10.1007/s00439-013-1331-2
+    用途：penetrance 的权威定义：携带某基因型的个体中呈现相应表型的比例；不呈现即 reduced/incomplete penetrance。
+
+205. Incomplete Penetrance and Variable Expressivity: From Clinical Studies to Population Cohorts (Kingdom & Wright 2022, Frontiers in Genetics 13:920390). `peer-reviewed`.
+    DOI: https://doi.org/10.3389/fgene.2022.920390
+    用途：把 penetrance 明确为二元现象（基因型是否导致预期表型），并区分 incomplete penetrance 与 variable expressivity。
+
+206. raphaelvallat/pingouin. `未标注（开源实现）`.
+    链接: https://github.com/raphaelvallat/pingouin
+    用途：Python/Pandas 统计包，含 Cohen's d / Hedges g（独立与配对）、配对 t/Wilcoxon、效应量 CI。
+
+207. statsmodels/statsmodels. `未标注（开源实现）`.
+    链接: https://github.com/statsmodels/statsmodels
+    用途：Python 统计建模库：配对 t 检验、Wilcoxon 符号秩、描述统计与回归，许可证宽松。
+
+208. easystats/effectsize. `未标注（开源实现）`.
+    链接: https://github.com/easystats/effectsize
+    用途：R 语言效应量包，覆盖 Cohen's d / Hedges g / 配对设计口径。
