@@ -6,9 +6,9 @@
 - **参考种子** = `configs/demo_seed.yaml::master_seed`（`250927`）；参考基因组与 motif
   目录由它派生。
 - **`genome_id`** 由 `core.ids.mint_id("lab", "genome", 0, index)` 铸造（`core §3.1`）。
-- **单点位置约定**：`position ∈ [0, 512)` 线性覆盖二倍体，顺序
+- **单点位置约定（已定稿 2026-09-27）**：`position ∈ [0, 512)` 线性覆盖二倍体，顺序
   `pair0.maternal[0:128] → pair0.paternal[0:128] → pair1.maternal[0:128] → pair1.paternal[0:128]`
-  （`MutationRequest` 不含 haplotype 字段，故位置须唯一编码）。
+  （`MutationRequest` 不含 haplotype 字段，故位置须唯一编码；`story-mutations` 同坐标）。
 - **随机源**：创建/变异/繁殖经 `SeedManager(参考种子)` 的独立命名空间 + 全局序号派生，
   不在本层自建全局随机源（`core §3`）。
 - **纯内存、无持久化**（同会话语义）；进程重启即失。

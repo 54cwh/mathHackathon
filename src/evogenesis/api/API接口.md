@@ -205,7 +205,7 @@
 
 | 端点 | 方法 | 用途 | 未实现原因 |
 |---|---|---|---|
-| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 「清晰变化」三类判据未定义；Integrator 类依赖 H3 探针（`交互与可视化.md` 阅读问题 6、`arena §14`） |
+| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 替代方向**已定**（互补映射，`genome §5`）、坐标**已定**（0..511，§2.3）；但**分类判据仍开放**（Neutral/Integrator/Threat 的度量与阈值待定） |
 
 ```json
 {"type":"about:blank","title":"Not Implemented","status":501,
@@ -261,10 +261,11 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `/v1/breedings` | POST | 请求 `BreedingRequest` → `201` `BreedingResult` |
 | `/v1/sessions/{session_id}/evolutions` | POST | 会话内演化（**过渡**：复用环境选择 job）→ `202` `JobStatus`；`?generations=` 缺省取 `configs/experiment.yaml` |
 
+**已定稿（2026-09-27 用户确认）**：**单点位置** `position ∈ [0, 512)` 线性覆盖二倍体，顺序 `pair0.maternal → pair0.paternal → pair1.maternal → pair1.paternal`（`MutationRequest` 无 haplotype 字段，位置须唯一编码）；与 `story-mutations` 的 `position` **同坐标**（`genome §3.1`）。
+
 **本实现自行选定的语义（`草案待确认`，须确认后方可作契约）**：
 - **参考种子** = `configs/demo_seed.yaml::master_seed`（`250927`）；参考 motif 目录由它派生（`genome §6`）。
 - **`genome_id`** = `core.ids.mint_id("lab","genome",0,index)`（`core §3.1`）。
-- **单点位置**：`position ∈ [0, 512)` 线性覆盖二倍体，顺序 `pair0.maternal → pair0.paternal → pair1.maternal → pair1.paternal`（`MutationRequest` 无 haplotype 字段，位置须唯一编码）。
 - **随机源**：经 `SeedManager(参考种子)` 的**已注册命名空间**（创建=`initial_population`；繁殖=`crossover`/`mutation`）；不新建命名空间（`core §3`）。
 - **`dev_trace` / `phenotype` 字段**：`dev_trace`={`q`(8)、`cell_type_counts`、`tau`({mean,std})、`n_neurons`、`n_edges`、`viable`、`viability_reason`}；`phenotype`={`n_neurons`、`n_edges`、`edge_density`、`tau_mean`、`tau_std`、`viable`}。
 - **store**：纯内存、无持久化（同会话语义）；`GenomeRecord` 含 `lineage`（父 id）。
