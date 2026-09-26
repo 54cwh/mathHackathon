@@ -23,59 +23,63 @@ from evogenesis.api.schemas import (
 
 router = APIRouter(prefix="/v1")
 
-_NOT_IMPL = HTTPException(
-    status_code=501,
-    detail=(
-        "Pipeline not implemented yet -- owned by 池伟豪 (genome/development/breeding/evolution)."
-    ),
-)
+
+def _not_impl() -> HTTPException:
+    """每次新实例（不复用异常对象，避免 traceback 链累积）。"""
+    return HTTPException(
+        status_code=501,
+        detail=(
+            "Pipeline not implemented yet -- owned by 池伟豪 "
+            "(genome/development/breeding/evolution)."
+        ),
+    )
 
 
 @router.get("/story-mutations", response_model=list[StoryMutation])
 def list_story_mutations() -> list[StoryMutation]:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.post("/genomes/{genome_id}/mutations", response_model=MutationResult)
 def mutate_genome(genome_id: str, req: MutationRequest) -> MutationResult:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.post("/developments", response_model=DevelopmentResult)
 def develop(req: DevelopmentRequest) -> DevelopmentResult:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.post("/breedings", response_model=BreedingResult)
 def breed(req: BreedingRequest) -> BreedingResult:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.post("/sessions/{session_id}/evolutions", status_code=202, response_model=JobStatus)
 def evolve(session_id: str) -> JobStatus:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.post("/experiments", status_code=202, response_model=JobStatus)
 def start_experiment(req: ExperimentCreate) -> JobStatus:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.get("/experiments", response_model=Page)
 def list_experiments(limit: int = 20, cursor: str | None = None) -> Page:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.get("/experiments/{experiment_id}", response_model=ExperimentDetail)
 def get_experiment(experiment_id: str) -> ExperimentDetail:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.get("/jobs/{job_id}", response_model=JobStatus)
 def get_job(job_id: str) -> JobStatus:
-    raise _NOT_IMPL
+    raise _not_impl()
 
 
 @router.post("/jobs/{job_id}/cancel", response_model=JobStatus)
 def cancel_job(job_id: str) -> JobStatus:
-    raise _NOT_IMPL
+    raise _not_impl()

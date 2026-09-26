@@ -4,8 +4,8 @@
 
 > **管辖范围**：逐端点接口参考（请求/响应/错误/实现细节）。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
 
-> 状态：v1.2 接口参考（**契约**）。§6–§11「实现现状」为 `d894cbb` 移除前实现的**历史记录**，非现状（`api/` 实现层已移除、待重写）。
-> 归属：李辰钊（Arena / 系统）
+> 状态：v1.2 接口参考（**契约**）。§6–§11「实现现状」已按 2026-09-26 重写后的实现回填。
+> 归属：池伟豪（`api/` 全部端点；2026-09-26 裁定，见 §6）
 > 上游契约：同目录 `API与系统工程.md`（命名规范 R1–R11、系统与部署约定）、`../arena/Danio_Arena设计与实现说明.md`、`../core/核心机制与数据流.md`、`../../../docs/参数总表.json`
 > ⚠️ 本文件 **§0–§5 讲"接口是什么"（契约参考）**，**§6–§11 讲"实现现在是什么样"（现状与契约边界）**。
 > 凡上游文档未定义的数值与语义，状态一律为 `草案待确认`，逐条列在 `research/notes/arena-api-决策认领表.md`，须经双方认领后写进上游文档才能升为契约。
@@ -124,6 +124,7 @@
 - **副作用**：推进仿真；到 `episode_steps`（默认 600）后不再前进。
 - **错误**：`404` —— 会话不存在。
 - **语义（已定稿）**：**推进仿真前进 `steps` 步**（`B1` 已闭合）；上游 `API与系统工程.md §4.3` 措辞已同步为「推进 `steps` 步」。
+- `use_expert=false` 时不注入动作（每条存活鱼按 `(ω,v)=(0,0)`），仅环境规则推进。
 - **代码位置**：`session.py` → `release`。
 
 ### 1.7 POST `/v1/sessions/{session_id}/pause` — 暂停 / 恢复仿真
@@ -330,7 +331,7 @@
 | 持久化 | **无**。无磁盘、无 DB、无快照 |
 | TTL / 淘汰 | **无**。不设过期、不设上限、不 LRU |
 | 进程重启 | **全部会话丢失**。这是 MVP 的明确取舍（`SessionManager` docstring："Holds live sessions in memory (MVP; no persistence)"） |
-| 并发 | 单进程内共享该 dict，**无锁**。uvicorn 默认单 worker 下安全；多 worker（`--workers >1`）会让同一 `session_id` 落到不同进程而表现为随机 404 |
+| 并发 | 每个 `Session` 持 `threading.Lock`，`advance` / `reset` / `snapshot` / `fish_card` / `leaderboard` / `summary` 串行化；`SessionManager` 表本身无锁。uvicorn 默认单 worker 安全；多 worker（`--workers >1`）会让同一 `session_id` 落到不同进程而表现为随机 404 |
 | `session_id` 规则 | `f"session_{uuid.uuid4().hex[:12]}"` —— 前缀 `session_` + **12 位十六进制**（48 bit 随机）。**不是顺序号**；调用方**不得据其结构推断顺序或身份**，仅可作展示用途剥离前缀（`frontend/src/panels/DanioArenaPanel.tsx` 即仅做前缀剥离 + 截断展示）。注意这是**运行期会话令牌**，与 `core §3.1` 的稳定 ID（`fish_id` / `genome_id` …）不是同一物 |
 | 不存在时行为 | 所有 `/v1/sessions/{session_id}/*` 端点走 `_get_session()`，未命中抛 `HTTPException(404, detail=f"session {session_id} not found")`，响应体为 RFC 7807（见 §4） |
 
@@ -361,7 +362,7 @@ class SessionCreate(BaseModel):
 - **`steps` 无上界校验** —— 实测 `steps=100000` 被接受并同步跑完（止步于 `episode_steps = 600`）。
 - 端点是**同步阻塞**的：`release` 在请求线程内跑完 N 步仿真后才返回；无 `202`、无 job、无后台任务。
 - `pause` 后 `release` 会整段短路（首行 `if not self.running: return`），仍返回 `200` + `SessionSummary`（`step` 不变）—— 调用方无法从状态码区分"推进了"与"被暂停"。
-- episode 因团灭提前结束时 `StepResult.done=True`，`advance()` 立即 `break`（无空转）；要区分"跑满 600"与"提前结束"，看 snapshot 的 `step` 与 `events` 里 `arena.episode_end`。
+- episode 到达 `episode_steps` 时 `StepResult.done=True`（A9：跑满全程，个体死亡**不**结束 episode），`advance()` 随即 `break`；`snapshot.step` 上限即 `episode_steps`（默认 600），`events` 末尾有 `arena.episode_end`。
 
 ### 7.4 `snapshot.events` 的口径
 
@@ -370,7 +371,7 @@ class SessionCreate(BaseModel):
 - 刚创建 / 刚 `reset()` 时恰为 **39 条** `arena.spawn`（12 fish + 24 prey + 3 predator；障碍不发事件）。
 - 推进到第 600 步时最多 200 条且**跨越很多步**。
 - 调用方若要"本步新增事件"，须自行 diff `seq`。
-- `200` 是硬编码常量，见 §11 L5。
+- `200` 为模块常量 `session._EVENTS_TAIL`，见 §11 L5。
 
 逐事件语义与 8 项事件词表见 `../arena/Danio_Arena设计与实现说明.md` §18 实现映射。
 
@@ -475,7 +476,7 @@ class SessionCreate(BaseModel):
 | # | 待决项 | 说明 |
 |---|---|---|
 | **L1** | 会话纯内存 | 无持久化 / TTL / 淘汰；进程重启全丢；唯一释放途径是 `DELETE`。多 worker 会表现为随机 404 |
-| **L2** | `*_config_path` 接收但未生效 | 调用方以为改了配置，实际没有；**复现一局只能靠 `master_seed` + 代码里的默认参数** |
+| **L2** | `model_config_path` 接收但未生效（`arena_config_path` 已生效） | Demo 走 `ExpertPolicy`，不加载 DanioNet；已回写 §7.2；接入模型驱动时生效 |
 | **L3** | `release` 的 `steps` 无上界、端点同步阻塞 | 实测 `steps=100000` 被接受并同步跑（止步 600，但仍占满请求）；慢客户端会阻塞 worker |
 | **L4** | 暂停无调度器 | `pause` 真的阻塞 `release`，但服务端仍**无调度器 / 无后台推进 / 无独立 resume 端点**；前端仍须自停轮询 |
 | **L5** | `snapshot.events` 的 `200` 是无文档魔数 | 后改它无从知晓影响面；建议提为模块常量并纳入本文档 |

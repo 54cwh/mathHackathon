@@ -16,6 +16,7 @@ from evogenesis.api.schemas import WSMessage
 
 router = APIRouter()
 _ws_seq = 0
+_MAX_ECHO = 4096  # 回显上限：防误发/恶意大消息被放大回传
 
 
 def _next_seq() -> int:
@@ -40,6 +41,6 @@ async def ws_endpoint(ws: WebSocket) -> None:
             try:
                 WSMessage.model_validate_json(raw)
             except Exception:
-                await ws.send_text(_frame("sys.error", {"echo": raw}))
+                await ws.send_text(_frame("sys.error", {"echo": raw[:_MAX_ECHO]}))
     except WebSocketDisconnect:
         return

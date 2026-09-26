@@ -1,18 +1,31 @@
 """API 契约测试（`API接口.md` §1/§3/§4；`前端驱动-API实现清单.md` §1/§7）。
 
 覆盖前端 Demo 必需的 6 个 REST 端点（含 snapshot 的 `prey`/`predators`/`obstacles`
-三键）、204 无体、RFC 7807、stub 501、WS 信封，以及 `master_seed` 复现性。
+三键）、204 无体、RFC 7807（404/422/501）、stub 501、WS 信封、`master_seed` 复现性、
+`environment` 仅回显、坐标边界，以及 release 止步于 `episode_steps`。
 """
 
 from __future__ import annotations
 
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 
 from evogenesis.api.app import app
+from evogenesis.api.session import _manager
 
 client = TestClient(app)
+
+WORLD_W, WORLD_H = 100.0, 60.0
+
+
+@pytest.fixture(autouse=True)
+def _clean_sessions():
+    """每个测试独立：清空模块级内存会话表（避免跨测试累积）。"""
+    _manager._sessions.clear()
+    yield
+    _manager._sessions.clear()
 
 
 def _create(master_seed: int = 250927, environment: str = "food_rich") -> dict:
@@ -53,6 +66,23 @@ def test_create_session_and_snapshot_full_field_set() -> None:
     assert snap["events"]  # 初始 39 条 arena.spawn
 
 
+def test_get_session() -> None:
+    sid = _create()["session_id"]
+    resp = client.get(f"/v1/sessions/{sid}")
+    assert resp.status_code == 200
+    assert resp.json()["session_id"] == sid
+
+
+def test_fish_card_and_leaderboard() -> None:
+    sid = _create()["session_id"]
+    card = client.get(f"/v1/sessions/{sid}/fish/fish_00")
+    assert card.status_code == 200
+    assert card.json()["fish_id"] == "fish_00"
+    board = client.get(f"/v1/sessions/{sid}/leaderboard")
+    assert board.status_code == 200
+    assert len(board.json()["entries"]) == 12
+
+
 def test_release_advances_and_returns_summary() -> None:
     sid = _create()["session_id"]
     resp = client.post(f"/v1/sessions/{sid}/release?steps=30&use_expert=true")
@@ -61,6 +91,18 @@ def test_release_advances_and_returns_summary() -> None:
         resp.json()
     )
     assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 30
+
+
+def test_release_clamps_at_episode_end() -> None:
+    sid = _create()["session_id"]
+    client.post(f"/v1/sessions/{sid}/release?steps=601")
+    assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 600
+
+
+def test_release_use_expert_false_advances() -> None:
+    sid = _create()["session_id"]
+    client.post(f"/v1/sessions/{sid}/release?steps=5&use_expert=false")
+    assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 5
 
 
 def test_reset_returns_to_step_zero() -> None:
@@ -88,6 +130,13 @@ def test_missing_session_returns_rfc7807() -> None:
     assert body["status"] == 404 and body["detail"]
 
 
+def test_validation_error_returns_rfc7807_422() -> None:
+    resp = client.post("/v1/sessions", json={"master_seed": "not-an-int"})
+    assert resp.status_code == 422
+    assert resp.headers["content-type"].startswith("application/problem+json")
+    assert resp.json()["status"] == 422
+
+
 def test_pause_toggles_and_blocks_release() -> None:
     sid = _create()["session_id"]
     assert client.post(f"/v1/sessions/{sid}/pause").json()["running"] is False
@@ -106,8 +155,31 @@ def test_master_seed_reproducible() -> None:
     assert sa["fish"] == sb["fish"]  # 同一 master_seed 布局完全一致
 
 
+def test_environment_is_echo_only() -> None:
+    a = _create(master_seed=250927, environment="food_rich")
+    b = _create(master_seed=250927, environment="predator_rich")
+    assert a["environment"] == "food_rich" and b["environment"] == "predator_rich"
+    sa = client.get(f"/v1/sessions/{a['session_id']}/snapshot").json()
+    sb = client.get(f"/v1/sessions/{b['session_id']}/snapshot").json()
+    assert sa["fish"] == sb["fish"]  # environment 不改变任何 Arena 参数（§7 硬边界）
+
+
+def test_snapshot_within_world_bounds() -> None:
+    sid = _create()["session_id"]
+    snap = client.get(f"/v1/sessions/{sid}/snapshot").json()
+    for f in snap["fish"].values():
+        assert 0.0 <= f["x"] <= WORLD_W and 0.0 <= f["y"] <= WORLD_H
+    for p in snap["prey"].values():
+        assert 0.0 <= p["x"] <= WORLD_W and 0.0 <= p["y"] <= WORLD_H
+
+
 def test_model_stubs_return_501() -> None:
-    assert client.post("/v1/developments", json={"genome_id": "g0", "seed": 0}).status_code == 501
+    resp = client.post("/v1/developments", json={"genome_id": "g0", "seed": 0})
+    assert resp.status_code == 501
+    assert resp.headers["content-type"].startswith("application/problem+json")
+    body = resp.json()
+    assert {"type", "title", "status", "detail", "instance"} <= set(body)
+    assert body["instance"] == "/v1/developments"
     assert client.post("/v1/breedings", json={"genome_a": "a", "genome_b": "b"}).status_code == 501
 
 

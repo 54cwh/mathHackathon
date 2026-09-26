@@ -40,13 +40,17 @@ def health() -> dict[str, str]:
 def _problem(
     request: Request, status: int, detail: str, type_uri: str = "about:blank"
 ) -> JSONResponse:
-    """RFC 7807 problem details（R10）。"""
+    """RFC 7807 problem details（R10）。非标准状态码安全回退，避免处理器自身抛错。"""
+    try:
+        title = HTTPStatus(status).phrase
+    except ValueError:
+        title = "Error"
     return JSONResponse(
         status_code=status,
         media_type="application/problem+json",
         content=Problem(
             type=type_uri,
-            title=HTTPStatus(status).phrase,
+            title=title,
             status=status,
             detail=detail,
             instance=request.url.path,

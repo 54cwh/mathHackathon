@@ -10,6 +10,7 @@
 
 from __future__ import annotations
 
+import threading
 import uuid
 from pathlib import Path
 
@@ -29,6 +30,9 @@ from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.pipeline import arena_seeds_for
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+
+#: `snapshot.events` 返回的最近事件条数（`API接口.md` §7.4）。
+_EVENTS_TAIL = 200
 
 
 def _resolve(path: str) -> Path:
@@ -54,30 +58,39 @@ class Session:
         spawn_seed, dynamics_seed = arena_seeds_for(create.master_seed, 0)
         self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)
         self.expert = expert_policy_from_config(self.arena.cfg)
+        # 同步 `def` 路由由 FastAPI 丢进线程池并发执行，单 worker ≠ 单线程；同一会话的
+        # 并发调用须串行化（见 `API接口.md` §7.1）。
+        self._lock = threading.Lock()
         self.reset_arena()
 
     def reset_arena(self) -> None:
-        self.arena.reset()
-        self.generation = 0
-        self.running = True
+        with self._lock:
+            self.arena.reset()
+            self.generation = 0
+            self.running = True
 
     def advance(self, steps: int = 1, use_expert: bool = True) -> None:
         """推进仿真 `steps` 步（`B1` 定稿）；`running=False` 时整段短路。"""
-        if not self.running:
-            return
-        for _ in range(steps):
-            if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
-                break
-            actions: dict[str, tuple[float, float]] = {}
-            if use_expert:
-                for fid, fish in self.arena.fish.items():
-                    if fish.alive:
-                        actions[fid] = self.expert(self.arena.observe(fid))
-            result = self.arena.step(actions)
-            if result.done:
-                break
+        with self._lock:
+            if not self.running:
+                return
+            for _ in range(steps):
+                if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
+                    break
+                actions: dict[str, tuple[float, float]] = {}
+                if use_expert:
+                    for fid, fish in self.arena.fish.items():
+                        if fish.alive:
+                            actions[fid] = self.expert(self.arena.observe(fid))
+                result = self.arena.step(actions)
+                if result.done:
+                    break
 
     def snapshot(self) -> Snapshot:
+        with self._lock:
+            return self._snapshot()
+
+    def _snapshot(self) -> Snapshot:
         fish_out = {
             fid: {
                 "x": float(f.pos[0]),
@@ -114,10 +127,14 @@ class Session:
             prey=prey_out,
             predators=pred_out,
             obstacles=obst_out,
-            events=[e.to_dict() for e in self.arena.events[-200:]],
+            events=[e.to_dict() for e in self.arena.events[-_EVENTS_TAIL:]],
         )
 
     def fish_card(self, fish_id: str) -> FishCard:
+        with self._lock:
+            return self._fish_card(fish_id)
+
+    def _fish_card(self, fish_id: str) -> FishCard:
         f = self.arena.fish[fish_id]
         return FishCard(
             fish_id=f.entity_id,
@@ -139,6 +156,10 @@ class Session:
         )
 
     def leaderboard(self) -> Leaderboard:
+        with self._lock:
+            return self._leaderboard()
+
+    def _leaderboard(self) -> Leaderboard:
         entries = [
             LeaderboardEntry(
                 rank=rank,
@@ -179,18 +200,17 @@ class SessionManager:
         return self._sessions.pop(session_id, None) is not None
 
     def summary(self, s: Session) -> SessionSummary:
-        n_alive = sum(1 for f in s.arena.fish.values() if f.alive)
-        n_prey = sum(1 for p in s.arena.prey.values() if p.alive)
-        return SessionSummary(
-            session_id=s.session_id,
-            generation=s.generation,
-            environment=s.environment,
-            population=len(s.arena.fish),
-            running=s.running,
-            master_seed=s.master_seed,
-            fish_alive=n_alive,
-            prey_remaining=n_prey,
-        )
+        with s._lock:
+            return SessionSummary(
+                session_id=s.session_id,
+                generation=s.generation,
+                environment=s.environment,
+                population=len(s.arena.fish),
+                running=s.running,
+                master_seed=s.master_seed,
+                fish_alive=sum(1 for f in s.arena.fish.values() if f.alive),
+                prey_remaining=sum(1 for p in s.arena.prey.values() if p.alive),
+            )
 
 
 router = APIRouter(prefix="/v1")
