@@ -15,7 +15,7 @@
 | `fish_example.json` | `schemas/fish.schema.json` | schema 已冻结，实例已通过校验 |
 | `experiment_example.json` | `schemas/experiment.schema.json` | schema 已冻结，实例已通过校验 |
 | `trajectory_example.jsonl` | 已定稿 `schemas/trajectory.schema.json` | ⚠️ 陈旧：8 行仅 4 键、无 header，未通过校验（`research/notes/评估指标与事件映射-草案.md` S-09）；待重生成 |
-| `event_log_example.jsonl` | 事件词表 v1（`arena/Danio_Arena实现说明.md` §4.2） | ⚠️ 陈旧：4 行、payload/result 与实现不符、缺 4 类（实现说明 §4.4）；待重生成 |
+| `event_log_example.jsonl` | 事件词表 v1（`arena/Danio_Arena设计与实现说明.md` §18.4.2） | ⚠️ 陈旧：4 行、payload/result 与实现不符、缺 4 类（§18.4.4）；待重生成 |
 
 ## 生成来源（provenance）
 

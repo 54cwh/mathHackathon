@@ -10,7 +10,7 @@
       "per_fish_fields": "captures, encounters（d<capture_radius 的近距接触数）, predator_encounters（被捕食者锁定次数，非近距遭遇）, escape_successes（捕食者换掉仍存活目标的次数）, collisions, energy_trace, survival_steps, motor_commands (ω,v)",
       "events": "arena.prey_captured, arena.fish_captured{survival_steps}, arena.energy_depleted{survival_steps}, arena.escape（当前无 reaction_latency_steps 字段）, arena.capture_attempt{result}",
       "fitness": "composite_fitness = 0.35*survival + 0.25*prey_capture + 0.20*escape_success + 0.20*energy_efficiency，权重和=1，各分量取值范围与归一化未在代码中强制（src/evogenesis/experiment/metrics.py）",
-      "known_gaps": "默认 600 步内 arena.escape 与 arena.collision 均为 0；饥饿不会发生（C_base*600=0.48<E_max=1.0）；escape success 判定（S17）与 survival 归一化均为未定义点（Danio_Arena设计与实现说明.md §17 待裁决条款（原设计规范 §13 阅读问题 6/7））",
+      "known_gaps": "默认 600 步内 arena.escape 与 arena.collision 均为 0；饥饿不会发生（C_base*600=0.48<E_max=1.0）；escape success 判定（S17）与 survival 归一化均为未定义点（Danio_Arena设计与实现说明.md §17 待裁决条款（原「阅读问题」6/7））",
       "note": "以上为只读核对，未修改任何代码或配置。"
     }
   },

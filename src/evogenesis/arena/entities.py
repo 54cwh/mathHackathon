@@ -16,7 +16,7 @@ class Entity:
     size: float = 1.0
 
     def advance(self, dt: float, world_w: float, world_h: float) -> None:
-        """Danio_Arena设计与实现说明.md section 5: theta_{t+1} = theta_t + omega*dt was applied by caller;
+        """Danio_Arena设计与实现说明.md §5: theta_{t+1} = theta_t + omega*dt applied by caller;
         position uses the NEW heading."""
         self.pos = (
             self.pos + self.speed * np.array([np.cos(self.heading), np.sin(self.heading)]) * dt

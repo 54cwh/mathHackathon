@@ -322,7 +322,7 @@
     "alternative_single_owner": "若坚持最严格的 producer-owns，可把 12 维（含语义名）整体归 Arena 拥有，DanioNet §2 仅保留一行「输入为 arena.observation_12d，见 Arena §4，不在此重定义」。二者均可消除循环；推荐前者，因为网络输入接口契约应与网络同处文档。",
     "docs_touched_required": [
       "src/evogenesis/connectome/DanioNet设计规范.md §2（把「待闭合」行改为接口契约声明）",
-      "src/evogenesis/arena/Danio_Arena设计与实现说明.md §4.1 12 维 observation 编码（已定稿，原阅读问题 #1 已闭合）",
+      "src/evogenesis/arena/Danio_Arena设计与实现说明.md §4.1 12 维 observation 编码（本节已建；归一化口径仍列 §17 待裁决）",
       "core/核心机制与数据流.md §10（登记 observation_12d 边界对象）",
       "docs/参数总表.json（登记新增归一化常数/核参数及其状态）",
       "configs/default_arena.yaml（如需新增 looming 归一化参考值、距离核参数、size→radius 映射）"

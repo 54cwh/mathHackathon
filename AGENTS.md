@@ -28,7 +28,7 @@ mathHackathon/
 │   │   └── RGCD数学模型.md
 │   ├── connectome/             # 连接生成与 DanioNet 动力学
 │   │   └── DanioNet设计规范.md
-│   ├── arena/                  # 二维生态仿真：感官 / 物理 / 规则
+│   ├── arena/                  # 二维生态仿真：感官 / 物理 / 规则 + 实现映射
 │   │   └── Danio_Arena设计与实现说明.md
 │   ├── evolution/              # 繁殖、选择、drift
 │   │   └── 遗传繁殖与演化模型.md

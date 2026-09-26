@@ -54,7 +54,7 @@ class GrowthConfig:
 
 @dataclass(frozen=True)
 class ActorDefaults:
-    """MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing."""
+    """MVP calibration knobs -- Danio_Arena设计与实现说明.md: values from play-testing."""
 
     prey_speed: float = 0.35
     prey_size_min: float = 0.30
