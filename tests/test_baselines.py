@@ -103,3 +103,26 @@ def test_complexity_reports_sparse_theoretical_cost():
     assert got["flops_theoretical"] == 2 * got["macs_theoretical"]
     dense = BASELINES["mlp"](master_seed=MASTER_SEED, index=0).complexity()
     assert dense["macs_theoretical"] == dense["macs_implemented"]
+
+
+def test_action_ranges_match_danionet(baseline):
+    """§4/§8 定稿：基线 (ω, v) 与 DanioNet 同映射——ω=tanh∈[-1,1]、v=σ∈[0,1]。"""
+    name, net = baseline
+    net.reset()
+    omega, v = net.step(_obs())
+    assert float(omega.abs().max()) <= 1.0
+    assert float(v.min()) >= 0.0 and float(v.max()) <= 1.0
+
+
+def test_sparse_support_is_independent_of_initial_weights():
+    """`baseline_support` 守护：支撑 mask 与初始递归幅度分属两条流，激活权重不系统性偏号。
+
+    回归背景：曾让 mask 与 θ 取自同一 `baseline_init` 子序列（重开流），使被选中的递归权重
+    全为负（全抑制），人为削弱该臂。此处断言各 index 下激活权重同时含正负。
+    """
+    for index in (0, 1, 6):
+        net = BASELINES["fixed_sparse_rnn"](master_seed=MASTER_SEED, index=index)
+        rec = net.theta[: net.hidden * net.hidden].detach().view(net.hidden, net.hidden)
+        active = rec[net.support]
+        assert int(active.numel()) > 0
+        assert float(active.max()) > 0.0 and float(active.min()) < 0.0

@@ -151,11 +151,11 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 - **Fixed Sparse RNN**：递归矩阵 \(W_{rec}\) 为**固定稀疏**（mask 于初始化时按 \(\mathrm{Bernoulli}(0.15)\) 抽样后**冻结**，与 §9 `w/o GRN` 同密度；禁 self-loop 不加限制），输入/读出为稠密；\(\rho\) 属**设计选择（D）**，无外部依据。
 - **符号约束**：三个 baseline **均不施加 Dale 符号约束**（等价 `sign_constrained=False`）；DanioNet 的 Dale 约束视作其归纳偏置计入对比，§9 另设「BC 有/无 Dale」消融单独隔离该变量。
-- **初始化**：权重由 `core §3` 的 `baseline_init` 命名空间（id = 10）派生，实体 `t` 取该个体在种群内的 `index`；与 DanioNet 的 `network_init`（全局单表）分离。`float32`。
+- **初始化**：权重由 `core §3` 的 `baseline_init` 命名空间（id = 10）派生，实体 `t` 取该个体在种群内的 `index`；与 DanioNet 的 `network_init`（全局单表）分离。`Fixed Sparse RNN` 的递归**支撑 mask 走独立命名空间 `baseline_support`（id = 13）**，同 `t` 语义——支撑与初始权重分属两条独立随机流，避免支撑与幅度同源相关（若同源，被 `mask` 选中的递归权重会系统性偏负，使该臂被人为削弱）。`float32`。
 
 **接口契约（与 DanioNet 同构，保证同一套 BC 训练与测量可用）**：`n_neurons`（list，长度 = batch，元素 = H）、`active_counts`、`theta`（**唯一** `nn.Parameter`，供 `learning::train_bc` 的 Adam 更新）、`sign_constrained=False`、`reset()`、`step(observations) -> (ω, v)`、`complexity()`（返回 `parameter_count` / `active_edges` / `macs_implemented` / `macs_theoretical` / `flops_*`）。
 > **`support` 不在基线契约内**：DanioNet 的 `support`（bool mask，支撑 \(A\)）是 DanioNet 专有缓冲，`MLPPolicy` / `GRUPolicy` 无此属性（仅 `FixedSparseRNNPolicy` 有 `support`）；`experiment/measure.py::network_complexity` 只适用于 DanioNet。基线的结构量一律经自身 `complexity()` 自报，不共用 DanioNet 的支撑缓冲。
-> **动作区间不一致（待核，公平性）**：基线 `step()` 的 `(ω, v)` 由**同一个 `tanh`** 给出，故 \(v\in[-1,1]\)；DanioNet 的 \((\omega,v)=(\tanh(y_\omega),\sigma(y_v))\)，\(v\in[0,1]\)（§4）。同一份 BC 数据下二者的 `v` 区间不同，需在 Experiment C 对照训练时确认是否影响公平性（若确认，须修正基线读出或统一口径）。
+> **动作映射与 DanioNet 一致（定稿，2026-09-26）**：基线 `step()` 的 `(ω, v)` 与 `§4` 同映射——\(\omega=\tanh(y_\omega)\)、\(v=\sigma(y_v)\)，故 \(v\in[0,1]\)，与 DanioNet 完全相同。此前基线对两维同用 `tanh`（\(v\in[-1,1]\)），与 `Arena` 把 \(v\) 截到 \([0,1]\) 的读出口径冲突、使基线约一半速度被削为 0，已修正为 `σ` 读出（统一口径，`experiment §3.3`）。
 
 **FLOPs 口径（单步前向，含 bias 不计入 MACs）**：\(\text{MACs}_{impl}\) 按**稠密**权重数计（含被 mask 的位置），\(\text{MACs}_{theo}\) 按**实际连接数**计（Sparse RNN 二者不等）；\(\text{FLOPs} = 2 \times \text{MACs}\)；不含 \(\tanh\) 等非线性（与 `实验与评价体系.md` §2.4 同约定）。
 

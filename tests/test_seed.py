@@ -82,6 +82,7 @@ def test_namespaces_frozen():
         "baseline_init": 10,
         "penetrance_calibration": 11,
         "penetrance_report": 12,
+        "baseline_support": 13,
     }
 
 
