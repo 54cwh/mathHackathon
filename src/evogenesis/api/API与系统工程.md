@@ -70,7 +70,7 @@
 | R11 | WS 消息 | 信封 `{v,type,seq,ts,payload}`；`type` 用点分层（`arena.fish_state`、`brain.activation`、`job.progress`、`sys.error`） |
 
 ### 4.2 资源词表
-`sessions`、`genomes`、`mutations`、`developments`、`phenotypes`、`connectomes`、`breedings`、`fish`、`evolutions`、`generations`、`experiments`、`jobs`、`events`、`metrics`、`leaderboard`、`story-mutations`。
+`sessions`、`genomes`、`mutations`、`developments`、`phenotypes`、`connectomes`、`breedings`、`fish`、`evolutions`、`generations`、`experiments`、`environmental-selections`、`jobs`、`events`、`metrics`、`leaderboard`、`story-mutations`。
 
 ### 4.3 端点（草案）
 | 方法 | 路径 | 说明 |
@@ -89,9 +89,12 @@
 | GET | `/v1/sessions/{session_id}/snapshot` | 全场快照：fish（transforms + energy）+ prey / predators / obstacles + events |
 | POST | `/v1/sessions/{session_id}/evolutions` | 演化，`202` + `job_id` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | 排行榜 |
-| POST | `/v1/experiments` | 启动正式实验，`202` + `job_id` |
-| GET | `/v1/experiments` | 实验列表（分页） |
-| GET | `/v1/experiments/{experiment_id}` | 实验元数据 + 指标 |
+| POST | `/v1/experiments` | 启动正式实验（**多协议，未实现**），`202` + `job_id` |
+| GET | `/v1/experiments` | 实验列表（分页，未实现） |
+| GET | `/v1/experiments/{experiment_id}` | 实验元数据 + 指标（未实现） |
+| POST | `/v1/environmental-selections` | **启动环境选择实验（Experiment F，已实现）**，`202` + `job_id` |
+| GET | `/v1/environmental-selections` | 环境选择实验列表（分页，已实现） |
+| GET | `/v1/environmental-selections/{experiment_id}` | 环境选择实验详情（已实现） |
 | GET | `/v1/jobs/{job_id}` | 任务状态 / 进度 |
 | POST | `/v1/jobs/{job_id}/cancel` | 取消任务 |
 

@@ -125,9 +125,9 @@ class Leaderboard(BaseModel):
     entries: list[LeaderboardEntry]
 
 
-# --- experiments -----------------------------------------------------------
-class ExperimentLaunch(BaseModel):
-    """实验启动请求：一请求展开为 N 个 `ExperimentRun`（`schemas/experiment.schema.json`）。"""
+# --- environmental selection (Experiment F; `API接口.md` §2.2) ---------------
+class EnvironmentalSelectionLaunch(BaseModel):
+    """环境选择实验（Experiment F）启动请求：展开为 N 个 `ExperimentRun`。"""
 
     name: str
     seeds: list[int]
@@ -135,14 +135,14 @@ class ExperimentLaunch(BaseModel):
     generations: int = 10
 
 
-class ExperimentSummary(BaseModel):
+class EnvironmentalSelectionSummary(BaseModel):
     experiment_id: str
     name: str
     status: JobStatusKind
     seeds: list[int]
 
 
-class ExperimentDetail(BaseModel):
+class EnvironmentalSelectionDetail(BaseModel):
     experiment_id: str
     name: str
     status: JobStatusKind

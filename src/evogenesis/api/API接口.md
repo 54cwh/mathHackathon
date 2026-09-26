@@ -224,34 +224,34 @@
 
 - **代码位置**：`stubs.py`（§2.1 各同名函数）。
 
-### 2.2 实验与任务（已实现）
+### 2.2 环境选择实验（Experiment F，已实现）
 
-`POST /v1/experiments` 启动一次**演化型实验**（**Experiment F 形态**：`seeds` × `generations` 代 × `environment`，48 个体；复用 `experiment/evolution_run.py::run_evolution`）。每 seed 产出一个 **`ExperimentRun`**（`results/runs/<experiment_id>-s<seed>/`，含 `generations/` 与 `evolution.jsonl`）。请求**即时返回 `202` + `job_id`**，随后在后台线程执行；`seeds` 展开为 N 个 run（B6）。
+`POST /v1/environmental-selections` 启动一次**环境选择实验**（**Experiment F**，`experiment §3.6`：`seeds` × `generations` 代 × `environment`，48 个体；复用 `experiment/evolution_run.py::run_evolution`）。通用实验资源 `/v1/experiments`（多协议）**未实现**（无消费者、协议未定），本资源是其唯一已落地的协议实例。每 seed 产出一个 **`ExperimentRun`**（`results/runs/<experiment_id>-s<seed>/`，含 `generations/` 与 `evolution.jsonl`）。请求**即时返回 `202` + `job_id`**，随后在后台线程执行；`seeds` 展开为 N 个 run（B6）。
 
 | 端点 | 方法 | 请求 / 响应 |
 |---|---|---|
-| `/v1/experiments` | POST | 请求 `ExperimentLaunch` → `202` `JobStatus` |
-| `/v1/experiments` | GET | `Page[ExperimentSummary]`（分页 `?limit=&cursor=`） |
-| `/v1/experiments/{experiment_id}` | GET | `ExperimentDetail`（含 `results.runs`） |
+| `/v1/environmental-selections` | POST | 请求 `EnvironmentalSelectionLaunch` → `202` `JobStatus` |
+| `/v1/environmental-selections` | GET | `Page[EnvironmentalSelectionSummary]`（分页 `?limit=&cursor=`） |
+| `/v1/environmental-selections/{experiment_id}` | GET | `EnvironmentalSelectionDetail`（含 `results.runs`） |
 | `/v1/jobs/{job_id}` | GET | `JobStatus` |
 | `/v1/jobs/{job_id}/cancel` | POST | `JobStatus`（协作式取消：在 seed 边界生效） |
 
-**`ExperimentLaunch` → `ExperimentRun` 字段级映射**：
+**`EnvironmentalSelectionLaunch` → `ExperimentRun` 字段级映射**：
 
-| `ExperimentLaunch` | 去向 |
+| `EnvironmentalSelectionLaunch` | 去向 |
 |---|---|
-| `name` | 仅存 `ExperimentSummary` / `ExperimentDetail.name`（`ExperimentRun` 不含 name，run 以 `experiment_id` 为键） |
+| `name` | 仅存 `EnvironmentalSelectionSummary` / `...Detail.name`（`ExperimentRun` 不含 name，run 以 `experiment_id` 为键） |
 | `seeds[]` | 每 seed 建一个 `ExperimentRun`：`runlayout.create_run_dir(experiment_id, seed, …)` → `metadata.seed` |
 | `environment` | 映射为 Arena 段级 overrides（`experiment/environments.py::load_environment`；`default` = 无覆盖）→ 落 `arena_config_resolved.json`，并作 `environment_id` 进 `events.jsonl` header |
 | `generations` | 传入 `run_evolution(generations=…)` → `evolution.jsonl` 行数 |
 | （服务端铸造）`experiment_id` | `exp_<12hex>`；run 目录名 `<experiment_id>-s<seed>` |
 | （隐含默认）`model_config` / `arena_config` / `evolution_config` | `configs/default_model.yaml` / `default_arena.yaml` / `evolution.yaml`；复制入 `config_snapshot/`，对应 `ExperimentRun.*_config` |
 
-`ExperimentSummary`：`experiment_id`、`name`、`status`、`seeds`；
-`ExperimentDetail`：上述 + `results`（`{"environment", "generations", "runs":[{"seed","run_dir"}]}`）；
+`EnvironmentalSelectionSummary`：`experiment_id`、`name`、`status`、`seeds`；
+`EnvironmentalSelectionDetail`：上述 + `results`（`{"environment", "generations", "runs":[{"seed","run_dir"}]}`）；
 `JobStatus`：`job_id`、`status`(`queued|running|done|failed|cancelled`)、`progress`(0–1)、`detail`。
 
-- **代码位置**：`experiments.py`（实验与任务）；§2.1 模型侧见 `stubs.py`。
+- **代码位置**：`environmental_selections.py`；§2.1 模型侧见 `stubs.py`。
 
 ---
 
@@ -328,11 +328,11 @@
 | POST | `/v1/developments` | **501 stub** | 池伟豪 | `stubs.py::develop` |
 | POST | `/v1/breedings` | **501 stub** | 池伟豪 | `stubs.py::breed` |
 | POST | `/v1/sessions/{session_id}/evolutions` | **501 stub** | 池伟豪 | `stubs.py::evolve` |
-| POST | `/v1/experiments` | **functional**（`202`） | 池伟豪 | `experiments.py::start_experiment` |
-| GET | `/v1/experiments` | **functional** | 池伟豪 | `experiments.py::list_experiments` |
-| GET | `/v1/experiments/{experiment_id}` | **functional** | 池伟豪 | `experiments.py::get_experiment` |
-| GET | `/v1/jobs/{job_id}` | **functional** | 池伟豪 | `experiments.py::get_job` |
-| POST | `/v1/jobs/{job_id}/cancel` | **functional** | 池伟豪 | `experiments.py::cancel_job` |
+| POST | `/v1/environmental-selections` | **functional**（`202`） | 池伟豪 | `environmental_selections.py::start_environmental_selection` |
+| GET | `/v1/environmental-selections` | **functional** | 池伟豪 | `environmental_selections.py::list_environmental_selections` |
+| GET | `/v1/environmental-selections/{experiment_id}` | **functional** | 池伟豪 | `environmental_selections.py::get_environmental_selection` |
+| GET | `/v1/jobs/{job_id}` | **functional** | 池伟豪 | `environmental_selections.py::get_job` |
+| POST | `/v1/jobs/{job_id}/cancel` | **functional** | 池伟豪 | `environmental_selections.py::cancel_job` |
 
 **计数**：functional **16**（9 会话 + `/v1/health` + WS + 5 实验/任务），501 stub **5**（模型侧），合计 **21**。
 
@@ -487,7 +487,7 @@ class SessionCreate(BaseModel):
 | **B3** | `generation` / `environment` 是"稳定 ID"还是标量：上游 §3 列为稳定 ID，代码是 `int` / 字符串枚举 | 实现为标量；改文档还是改代码待认领 |
 | **B4** | 未实现模块的统一约定：501 + "owned by 池伟豪 …" 是否正式写进上游文档 | 已实现共享 `_NOT_IMPL` 单例；响应体已是 RFC 7807 |
 | **B5** | WS 词表：`sys.hello` / `sys.echo`（后者仅为契约演示）是否正式纳入 R11 词表 | `sys.hello` / `sys.error` 已实现；`sys.echo` **未实现**，去留待认领 |
-| **B6** | experiment 契约分裂 | ✅ **已闭合（2026-09-26，方案 C）**：承认两对象——API 侧更名为 `ExperimentLaunch`（多 seed，展开为 N 个 `ExperimentRun`），Tier3 `schemas/experiment.schema.json` 维持单 run `ExperimentRun`；`environment` 枚举统一 |
+| **B6** | experiment 契约分裂 | ✅ **已闭合（2026-09-26，方案 C）**：承认两对象——API 侧落地为 `EnvironmentalSelectionLaunch`（Experiment F 专用资源 `/v1/environmental-selections`，多 seed，展开为 N 个 `ExperimentRun`），Tier3 `schemas/experiment.schema.json` 维持单 run `ExperimentRun`；`environment` 枚举统一 |
 | **B7** | config 未接线：无 loader 读 yaml；`arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors` / `biomass_to_size_gain`）与 dataclass 不匹配 | 未变；见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射 |
 
 **认领表编号之外的新增待决项**（非认领表原有编号，同样不得在未确认前用于指标）：

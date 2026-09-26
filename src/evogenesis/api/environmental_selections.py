@@ -1,10 +1,14 @@
-"""实验与任务端点（`API接口.md` §2.2）。
+"""环境选择实验（Experiment F）端点（`API接口.md` §2.2）。
 
-`POST /v1/experiments` 启动一次**演化型实验**（Experiment F 形态：`seeds` × `generations` 代 ×
-`environment`）。每个 seed 复用 `experiment/evolution_run.py::run_evolution`，产出一个
-**`ExperimentRun`** 目录 `results/runs/<experiment_id>-s<seed>/`（run 目录布局 owner =
-`experiment/runlayout.py`，本文档不另立）。请求即时返回 `202` + `job_id`，随后后台线程执行；
+`POST /v1/environmental-selections` 启动一次**环境选择实验**（`experiment §3.6`：`seeds` ×
+`generations` 代 × `environment`，48 个体）。每个 seed 复用 `run_evolution`
+（`experiment/evolution_run.py`），产出一个 **`ExperimentRun`** 目录
+`results/runs/<experiment_id>-s<seed>/`（run 目录布局 owner = `experiment/runlayout.py`）。
+请求即时返回 `202` + `job_id`，随后后台线程执行；
 `GET /v1/jobs/{job_id}` 轮询进度，`POST /v1/jobs/{job_id}/cancel` 在 seed 边界协作式取消。
+
+> **仅环境选择（Experiment F）**：A–E / BC / penetrance 等其余协议**不在此资源**下。通用实验资源
+> `/v1/experiments` 未实现（无消费者、协议未定）；本资源是**其唯一已落地的协议实例**。
 
 本模块只做**编排 + 任务登记**：仿真/评估/演化算法归 `experiment` / `pipeline` / `evolution`，
 不在此定义。实验与任务均为进程内内存态（无持久化；重启即失，`API接口.md` §7.1）。
@@ -20,9 +24,9 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 
 from evogenesis.api.schemas import (
-    ExperimentDetail,
-    ExperimentLaunch,
-    ExperimentSummary,
+    EnvironmentalSelectionDetail,
+    EnvironmentalSelectionLaunch,
+    EnvironmentalSelectionSummary,
     JobStatus,
     JobStatusKind,
     Page,
@@ -63,7 +67,7 @@ class _Job:
 
 
 @dataclass
-class _Experiment:
+class _Selection:
     experiment_id: str
     name: str
     seeds: list[int]
@@ -74,7 +78,7 @@ class _Experiment:
     runs: list[dict] = field(default_factory=list)
 
 
-_experiments: dict[str, _Experiment] = {}
+_selections: dict[str, _Selection] = {}
 _jobs: dict[str, _Job] = {}
 
 
@@ -82,14 +86,16 @@ def _job_status(job: _Job) -> JobStatus:
     return JobStatus(job_id=job.job_id, status=job.status, progress=job.progress, detail=job.detail)
 
 
-def _run_one(expt: _Experiment, seed: int) -> dict:
-    """跑单个 seed 的演化实验，返回该 `ExperimentRun` 的摘要。"""
-    overrides = None if expt.environment == "default" else load_environment(expt.environment)
+def _run_one(selection: _Selection, seed: int) -> dict:
+    """跑单个 seed 的环境选择实验，返回该 `ExperimentRun` 的摘要。"""
+    overrides = (
+        None if selection.environment == "default" else load_environment(selection.environment)
+    )
     chain = load_model_chain_config(_DEFAULT_MODEL)
     arena_config = load_arena_config(_DEFAULT_ARENA, overrides=overrides)
     evolution_config = load_evolution_config(_DEFAULT_EVOLUTION)
     run_dir = runlayout.create_run_dir(
-        experiment_id=expt.experiment_id,
+        experiment_id=selection.experiment_id,
         seed=seed,
         config_path=str(_DEFAULT_ARENA),
         overrides=overrides,
@@ -97,14 +103,14 @@ def _run_one(expt: _Experiment, seed: int) -> dict:
         extra_configs=(_DEFAULT_MODEL, _DEFAULT_EVOLUTION, DEFAULT_EXPERIMENT_CONFIG_PATH),
     )
     result = run_evolution(
-        experiment_id=expt.experiment_id,
+        experiment_id=selection.experiment_id,
         master_seed=seed,
-        generations=expt.generations,
+        generations=selection.generations,
         chain=chain,
         arena_config=arena_config,
         evolution_config=evolution_config,
         run_dir=run_dir,
-        environment_id=expt.environment,
+        environment_id=selection.environment,
     )
     last = result.summaries[-1] if result.summaries else None
     metrics: dict[str, float] = {}
@@ -131,38 +137,38 @@ def _run_one(expt: _Experiment, seed: int) -> dict:
     }
 
 
-def _worker(expt: _Experiment, job: _Job) -> None:
+def _worker(selection: _Selection, job: _Job) -> None:
     with job.lock:
         if job.cancelled:
             job.status = "cancelled"
-            expt.status = "cancelled"
+            selection.status = "cancelled"
             return
         job.status = "running"
-        expt.status = "running"
+        selection.status = "running"
     try:
-        total = max(1, len(expt.seeds))
-        for index, seed in enumerate(expt.seeds, start=1):
+        total = max(1, len(selection.seeds))
+        for index, seed in enumerate(selection.seeds, start=1):
             with job.lock:
                 if job.cancelled:
                     job.status = "cancelled"
-                    expt.status = "cancelled"
+                    selection.status = "cancelled"
                     return
-            info = _run_one(expt, seed)
+            info = _run_one(selection, seed)
             with job.lock:
-                expt.runs.append(info)
+                selection.runs.append(info)
                 job.progress = index / total
                 if job.cancelled:
                     job.status = "cancelled"
-                    expt.status = "cancelled"
+                    selection.status = "cancelled"
                     return
         with job.lock:
             job.status = "done"
-            expt.status = "done"
+            selection.status = "done"
             job.progress = 1.0
     except Exception as exc:  # noqa: BLE001 - 后台任务：失败须落到 job 状态而非进程
         with job.lock:
             job.status = "failed"
-            expt.status = "failed"
+            selection.status = "failed"
             job.detail = {"error": str(exc)}
 
 
@@ -172,11 +178,11 @@ router = APIRouter(
 )
 
 
-@router.post("/experiments", status_code=202, response_model=JobStatus)
-def start_experiment(launch: ExperimentLaunch) -> JobStatus:
+@router.post("/environmental-selections", status_code=202, response_model=JobStatus)
+def start_environmental_selection(launch: EnvironmentalSelectionLaunch) -> JobStatus:
     experiment_id = f"exp_{uuid.uuid4().hex[:12]}"
     job_id = f"job_{uuid.uuid4().hex[:12]}"
-    expt = _Experiment(
+    selection = _Selection(
         experiment_id=experiment_id,
         name=launch.name,
         seeds=list(launch.seeds),
@@ -185,19 +191,21 @@ def start_experiment(launch: ExperimentLaunch) -> JobStatus:
         job_id=job_id,
     )
     job = _Job(job_id=job_id)
-    _experiments[experiment_id] = expt
+    _selections[experiment_id] = selection
     _jobs[job_id] = job
-    threading.Thread(target=_worker, args=(expt, job), daemon=True).start()
+    threading.Thread(target=_worker, args=(selection, job), daemon=True).start()
     return _job_status(job)
 
 
-@router.get("/experiments", response_model=Page[ExperimentSummary])
-def list_experiments(limit: int = 20, cursor: str | None = None) -> Page[ExperimentSummary]:
+@router.get("/environmental-selections", response_model=Page[EnvironmentalSelectionSummary])
+def list_environmental_selections(
+    limit: int = 20, cursor: str | None = None
+) -> Page[EnvironmentalSelectionSummary]:
     items = [
-        ExperimentSummary(
-            experiment_id=e.experiment_id, name=e.name, status=e.status, seeds=e.seeds
+        EnvironmentalSelectionSummary(
+            experiment_id=s.experiment_id, name=s.name, status=s.status, seeds=s.seeds
         )
-        for e in sorted(_experiments.values(), key=lambda x: x.experiment_id)
+        for s in sorted(_selections.values(), key=lambda x: x.experiment_id)
     ]
     if cursor:
         try:
@@ -210,29 +218,31 @@ def list_experiments(limit: int = 20, cursor: str | None = None) -> Page[Experim
         raise HTTPException(status_code=422, detail=f"invalid cursor: {cursor!r}")
     page = items[start : start + limit]
     next_cursor = str(start + limit) if start + limit < len(items) else None
-    return Page[ExperimentSummary](items=page, next_cursor=next_cursor)
+    return Page[EnvironmentalSelectionSummary](items=page, next_cursor=next_cursor)
 
 
-def _get_experiment(experiment_id: str) -> _Experiment:
-    expt = _experiments.get(experiment_id)
-    if expt is None:
+def _get_selection(experiment_id: str) -> _Selection:
+    selection = _selections.get(experiment_id)
+    if selection is None:
         raise HTTPException(status_code=404, detail=f"experiment {experiment_id} not found")
-    return expt
+    return selection
 
 
-@router.get("/experiments/{experiment_id}", response_model=ExperimentDetail)
-def get_experiment(experiment_id: str) -> ExperimentDetail:
-    expt = _get_experiment(experiment_id)
-    return ExperimentDetail(
-        experiment_id=expt.experiment_id,
-        name=expt.name,
-        status=expt.status,
-        seeds=expt.seeds,
+@router.get(
+    "/environmental-selections/{experiment_id}", response_model=EnvironmentalSelectionDetail
+)
+def get_environmental_selection(experiment_id: str) -> EnvironmentalSelectionDetail:
+    selection = _get_selection(experiment_id)
+    return EnvironmentalSelectionDetail(
+        experiment_id=selection.experiment_id,
+        name=selection.name,
+        status=selection.status,
+        seeds=selection.seeds,
         results={
-            "environment": expt.environment,
-            "generations": expt.generations,
-            "job_id": expt.job_id,
-            "runs": expt.runs,
+            "environment": selection.environment,
+            "generations": selection.generations,
+            "job_id": selection.job_id,
+            "runs": selection.runs,
         },
     )
 
