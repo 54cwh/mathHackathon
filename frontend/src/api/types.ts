@@ -154,10 +154,17 @@ export interface MutationRequest {
   base: Base;
 }
 
+/** Single-point free edit diff (`API接口.md` §2.3). */
+export interface MutationDiff {
+  position: number;
+  from_base: string;
+  to_base: string;
+}
+
 export interface MutationResult {
   genome_id: string;
   new_genome_id: string;
-  diff: Record<string, unknown>;
+  diff: MutationDiff;
 }
 
 export interface DevelopmentRequest {
@@ -165,10 +172,33 @@ export interface DevelopmentRequest {
   seed: number;
 }
 
+/** `dev_trace` fields (`API接口.md` §2.3, 实现语义已定稿). */
+export interface DevelopmentTrace {
+  /** RGCD affinity `q`, length 8 (`RGCD数学模型.md`). */
+  q: number[];
+  /** Cell-type histogram; keys are the backend's `str(int)` labels. */
+  cell_type_counts: Record<string, number>;
+  tau: { mean: number; std: number };
+  n_neurons: number;
+  n_edges: number;
+  viable: boolean;
+  viability_reason: string;
+}
+
+/** `phenotype` summary fields (`API接口.md` §2.3, 实现语义已定稿). */
+export interface DevelopmentPhenotype {
+  n_neurons: number;
+  n_edges: number;
+  edge_density: number;
+  tau_mean: number;
+  tau_std: number;
+  viable: boolean;
+}
+
 export interface DevelopmentResult {
   genome_id: string;
-  dev_trace: Record<string, unknown>;
-  phenotype: Record<string, unknown>;
+  dev_trace: DevelopmentTrace;
+  phenotype: DevelopmentPhenotype;
 }
 
 export interface BreedingRequest {
