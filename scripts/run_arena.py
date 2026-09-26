@@ -30,6 +30,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import subprocess
 import sys
 import time
@@ -38,6 +39,10 @@ from pathlib import Path
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.experiment.environments import (
+    environment_env_vars,
+    load_environment,
+)
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
     episode_metrics,
@@ -57,6 +62,7 @@ EVENT_KEYS = (
 METRIC_COLUMNS = (
     "survival_steps",
     "captures",
+    "capture_attempts",  # 诊断列（§4 分母为 encounters）
     "encounters",
     "predator_encounters",
     "escape_successes",
@@ -70,7 +76,9 @@ METRIC_COLUMNS = (
 )
 
 
-def create_run_dir(experiment_id: str, config: str, seed: int) -> Path:
+def create_run_dir(
+    experiment_id: str, config: str, seed: int, overrides: dict | None = None
+) -> Path:
     """委托 `run_experiment.py` 建目录（布局唯一 owner），返回运行目录。"""
     script = ROOT / "scripts" / "run_experiment.py"
     cmd = [
@@ -86,6 +94,7 @@ def create_run_dir(experiment_id: str, config: str, seed: int) -> Path:
     proc = subprocess.run(
         cmd,
         cwd=ROOT,
+        env={**os.environ, **environment_env_vars(overrides)},
         capture_output=True,
         text=True,
         encoding="utf-8",
@@ -99,9 +108,11 @@ def create_run_dir(experiment_id: str, config: str, seed: int) -> Path:
     return ROOT / "results" / "runs" / experiment_id
 
 
-def run_episode(cfg_path: Path, seed: int, steps: int) -> tuple[dict[str, dict], list, float]:
+def run_episode(
+    cfg_path: Path, seed: int, steps: int, overrides: dict | None = None
+) -> tuple[dict[str, dict], list, float]:
     """跑一局，返回 (每鱼记录, 事件列表, 墙钟秒)。"""
-    cfg = load_arena_config(cfg_path)
+    cfg = load_arena_config(cfg_path, overrides=overrides)
     arena = DanioArena(cfg, master_seed=seed)
     arena.reset()
     expert = ExpertPolicy()
@@ -182,6 +193,11 @@ def _parse_args() -> argparse.Namespace:
         help="稳定实验 ID；run 目录为 results/runs/<id>-s<seed>/",
     )
     parser.add_argument("--config", default="configs/default_arena.yaml")
+    parser.add_argument(
+        "--environment",
+        default=None,
+        help="configs/experiment_environments.yaml 的 environment_id；缺省=基线",
+    )
     parser.add_argument("--seeds", default=DEFAULT_SEEDS, help="逗号分隔；见 experiment_seeds.yaml")
     parser.add_argument("--steps", type=int, default=None, help="默认取 world.episode_steps")
     return parser.parse_args()
@@ -192,7 +208,11 @@ def main() -> None:
     cfg_path = Path(args.config)
     if not cfg_path.is_absolute():
         cfg_path = ROOT / cfg_path
-    cfg = load_arena_config(cfg_path)
+    try:
+        overrides = load_environment(args.environment) if args.environment else None
+    except KeyError as exc:
+        raise SystemExit(str(exc)) from exc
+    cfg = load_arena_config(cfg_path, overrides=overrides)
     steps = args.steps if args.steps is not None else cfg.world.episode_steps
     seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
     e_max = cfg.energy.e_max
@@ -201,8 +221,8 @@ def main() -> None:
     seed_rows: list[dict] = []
     for seed in seeds:
         run_id = f"{args.experiment_id}-s{seed}"
-        run_dir = create_run_dir(run_id, args.config, seed)
-        per_fish, events, elapsed = run_episode(cfg_path, seed, steps)
+        run_dir = create_run_dir(run_id, args.config, seed, overrides)
+        per_fish, events, elapsed = run_episode(cfg_path, seed, steps, overrides)
         rows = [
             {
                 "seed": seed,
@@ -228,6 +248,7 @@ def main() -> None:
         out,
         {
             "experiment_id": args.experiment_id,
+            "environment": args.environment or "default",
             "seeds": seeds,
             "steps": steps,
             "n_individuals": len(all_rows),

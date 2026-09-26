@@ -1,0 +1,42 @@
+# 环境对照三组（E-F Environmental Selection）
+#
+# owner：`experiment/实验与评价体系.md` §7（`core/核心机制与数据流.md` §10 登记：
+#        「环境对照三组的取值与 environment_id」归该文件）。
+# 状态：**草案待确认（2026-09-26）** —— 属**设计选择**（无文献实测依据），
+#       填 `docs/参数总表.json` 的 `missing_required` 第 1 项。
+#
+# 设计原则：**单因子对照**。每个环境相对 `default_arena.yaml`（n_prey=24,
+# n_predators=3）**只改变一个驱动**，使 E-F 的环境效应可归因：
+#   - food_rich        ： 猎物可得性 ↑（只动 n_prey / 其派生 regrowth）
+#   - predator_rich    ： 捕食压力   ↑（只动 n_predators）
+#   - resource_scarce  ： 猎物可得性 ↓（只动 n_prey / 其派生 regrowth）
+#
+# 派生约定：`prey_regrowth_steps = ceil(600 / n_prey)`（**向上取整**，即不早于
+#           名义速率回复；默认 600/24 = 25，与 `default_arena.yaml` 一致）。
+#           ⚠️ 不用 Python 的 `round`：600/48 = 12.5 是**平局**，`round` 走
+#           银行家舍入得 12，语义含混；ceil 无歧义。
+#           故该量**不是**独立旋钮，随 n_prey 机械确定。
+# 未列出的段（world / sensing / energy / growth / actors）一律取默认值，
+# 由 `load_arena_config` 的 dataclass 默认补齐（不得在实验环境里暗改契约值）。
+
+environments:
+  food_rich:
+    label: "Food Rich"
+    isolates: "猎物可得性 ↑"
+    population:
+      n_prey: 48
+      prey_regrowth_steps: 13
+  predator_rich:
+    label: "Predator Rich"
+    isolates: "捕食压力 ↑"
+    population:
+      n_predators: 6
+  resource_scarce:
+    label: "Resource Scarce"
+    isolates: "猎物可得性 ↓"
+    population:
+      n_prey: 12
+      prey_regrowth_steps: 50
+
+# 基线（对照的参照物，不是三组之一）：configs/default_arena.yaml
+baseline: default_arena.yaml

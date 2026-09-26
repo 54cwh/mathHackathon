@@ -105,6 +105,11 @@ def diagnostics(metrics: pd.DataFrame) -> str:
     enc_total = int(encounters.sum())
     top = encounters.sort_values(ascending=False).head(3).sum()
     top_share = (float(top) / enc_total) if enc_total else 0.0
+    # 个体比值均值 != 汇总比值（实测差 ~7x）=> 两个都必须报，且须标明是哪一个。
+    cap_total = int(captures.sum())
+    per_fish_mean = float(metrics["prey_capture"].mean())
+    pooled = (cap_total / enc_total) if enc_total else 0.0
+    ratio_gap = (per_fish_mean / pooled) if pooled else float("nan")
     gap = attempts - captures
     eq = int((gap == 0).sum())
 
@@ -124,6 +129,11 @@ def diagnostics(metrics: pd.DataFrame) -> str:
         f"- 分母偏态：`encounters` 中位数={enc_med:.0f}、最大={enc_max}、合计={enc_total}；"
         f"**前 3 位个体占 {top_share:.1%}** —— 引用该均值时必须并列偏态尾，",
         "否则会被少数「蹲守」个体主导。",
+        f"- **捕获率有两个口径，必须标明**：个体比值均值={per_fish_mean:.4f}；"
+        f"汇总比值={pooled:.4f}（{cap_total} / {enc_total}）；"
+        f"绝对量 captures/episode={cap_total}",
+        f"- 两者相差 {ratio_gap:.1f}x —— 前者是「典型个体的得手率」，"
+        "后者是「全部接触中的得手比例」，**不可互换**。",
         "",
     ]
     if bad:
