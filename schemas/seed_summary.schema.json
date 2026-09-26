@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/seed_summary.schema.json",
+  "title": "EvoGenesis seed_summary.json",
+  "meta": {
+    "owns": "seed_summary.json 字段（producer=experiment/run_artifacts.py + metrics.aggregate_by_seed）",
+    "status": "已定稿"
+  },
+  "description": "该 seed 的个体等权均值（逐 seed 一行的数组）；统计口径见 experiment §1.2。",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+      "seed",
+      "n_individuals",
+      "survival",
+      "capture_rate",
+      "prey_capture",
+      "escape_success",
+      "energy_efficiency",
+      "composite_fitness"
+    ],
+    "properties": {
+      "seed": {
+        "type": "integer"
+      },
+      "n_individuals": {
+        "type": "integer"
+      },
+      "survival": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "capture_rate": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "prey_capture": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "escape_success": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "energy_efficiency": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "composite_fitness": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      }
+    },
+    "description": "逐 seed 一行。"
+  }
+}

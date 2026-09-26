@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/run_metadata.schema.json",
+  "title": "EvoGenesis run metadata",
+  "meta": {
+    "owns": "run 目录 metadata.json 的字段（producer=experiment/runlayout.py）",
+    "status": "已定稿"
+  },
+  "description": "run 元数据。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "experiment_id",
+    "seed",
+    "config",
+    "status",
+    "arena_config_resolved",
+    "extras",
+    "created_at"
+  ],
+  "properties": {
+    "experiment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "seed": {
+      "type": "integer"
+    },
+    "config": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "created",
+        "running",
+        "completed",
+        "bottleneck"
+      ]
+    },
+    "arena_config_resolved": {
+      "type": "boolean"
+    },
+    "extras": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

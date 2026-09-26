@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/population.schema.json",
+  "title": "EvoGenesis population.jsonl record",
+  "meta": {
+    "owns": "population.jsonl 单行字段（producer=experiment/run_artifacts.py）",
+    "status": "已定稿"
+  },
+  "description": "population 单行。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "seed",
+    "fish_id",
+    "generation",
+    "survival_steps",
+    "captures",
+    "encounters",
+    "predator_encounters",
+    "escape_successes",
+    "collisions",
+    "energy_first",
+    "energy_last",
+    "energy_min",
+    "size_first",
+    "size_last",
+    "n_motor_commands"
+  ],
+  "properties": {
+    "seed": {
+      "type": "integer"
+    },
+    "fish_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "generation": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "survival_steps": {
+      "type": "integer"
+    },
+    "captures": {
+      "type": "integer"
+    },
+    "encounters": {
+      "type": "integer"
+    },
+    "predator_encounters": {
+      "type": "integer"
+    },
+    "escape_successes": {
+      "type": "integer"
+    },
+    "collisions": {
+      "type": "integer"
+    },
+    "energy_first": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "energy_last": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "energy_min": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "size_first": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "size_last": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "n_motor_commands": {
+      "type": "integer"
+    }
+  }
+}

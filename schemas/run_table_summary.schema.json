@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/run_table_summary.schema.json",
+  "title": "EvoGenesis results/tables/<id>_summary.json",
+  "meta": {
+    "owns": "results/tables 跨 seed 汇总字段（producer=scripts/run_arena.py）",
+    "status": "已定稿"
+  },
+  "description": "跨 seed 汇总。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "experiment_id",
+    "environment",
+    "emit_behavior_trace",
+    "seeds",
+    "steps",
+    "n_individuals",
+    "per_metric"
+  ],
+  "properties": {
+    "experiment_id": {
+      "type": "string"
+    },
+    "environment": {
+      "type": "string"
+    },
+    "emit_behavior_trace": {
+      "type": "boolean"
+    },
+    "seeds": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "steps": {
+      "type": "integer"
+    },
+    "n_individuals": {
+      "type": "integer"
+    },
+    "per_metric": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mean",
+          "std",
+          "n"
+        ],
+        "properties": {
+          "mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "std": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "n": {
+            "type": "integer"
+          }
+        },
+        "description": "mean±std(n)。"
+      }
+    }
+  }
+}

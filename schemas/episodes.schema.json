@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/episodes.schema.json",
+  "title": "EvoGenesis episodes.jsonl record",
+  "meta": {
+    "owns": "episodes.jsonl 单行字段（producer=experiment/run_artifacts.py）",
+    "status": "已定稿"
+  },
+  "description": "episode 单行。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "seed",
+    "steps",
+    "steps_per_s",
+    "spawn",
+    "capture_attempt",
+    "prey_captured",
+    "collision",
+    "escape",
+    "energy_depleted",
+    "fish_captured",
+    "episode_end",
+    "fish_alive_end",
+    "n_events_total"
+  ],
+  "properties": {
+    "seed": {
+      "type": "integer"
+    },
+    "steps": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "steps_per_s": {
+      "type": "number"
+    },
+    "spawn": {
+      "type": "integer"
+    },
+    "capture_attempt": {
+      "type": "integer"
+    },
+    "prey_captured": {
+      "type": "integer"
+    },
+    "collision": {
+      "type": "integer"
+    },
+    "escape": {
+      "type": "integer"
+    },
+    "energy_depleted": {
+      "type": "integer"
+    },
+    "fish_captured": {
+      "type": "integer"
+    },
+    "episode_end": {
+      "type": "integer"
+    },
+    "fish_alive_end": {
+      "type": "integer"
+    },
+    "n_events_total": {
+      "type": "integer"
+    }
+  }
+}

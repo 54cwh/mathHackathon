@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/evolution.schema.json",
+  "title": "EvoGenesis evolution.jsonl record",
+  "meta": {
+    "owns": "代循环 evolution.jsonl 单行（producer=experiment/evolution_run.py）",
+    "status": "草案待确认"
+  },
+  "description": "代循环单行。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generation",
+    "n_individuals",
+    "n_viable",
+    "fitness_mean",
+    "fitness_std",
+    "bottleneck",
+    "event"
+  ],
+  "properties": {
+    "generation": {
+      "type": "integer"
+    },
+    "n_individuals": {
+      "type": "integer"
+    },
+    "n_viable": {
+      "type": "integer"
+    },
+    "fitness_mean": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fitness_std": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "bottleneck": {
+      "type": "boolean"
+    },
+    "event": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

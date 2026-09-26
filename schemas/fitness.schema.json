@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/fitness.schema.json",
+  "title": "EvoGenesis fitness.jsonl record",
+  "meta": {
+    "owns": "代循环逐个体 fitness.jsonl 单行（producer=experiment/evolution_run.py）",
+    "status": "草案待确认"
+  },
+  "description": "fitness 单行。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "generation",
+    "genome_id",
+    "fish_id",
+    "viable",
+    "failure_reason",
+    "fitness"
+  ],
+  "properties": {
+    "generation": {
+      "type": "integer"
+    },
+    "genome_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fish_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "viable": {
+      "type": "boolean"
+    },
+    "failure_reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fitness": {
+      "type": "number"
+    }
+  }
+}
