@@ -64,6 +64,7 @@ from evogenesis.experiment.run_artifacts import (
     run_summary_payload,
     write_seed_artifacts,
 )
+from evogenesis.experiment.tracking_run import scalar_metrics, track_run
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -188,6 +189,7 @@ def main() -> None:
         all_rows.extend(rows)
         seed_rows.extend(by_seed)
         runlayout.update_run_status(run_dir, "completed")
+        track_run(run_dir, status="completed", metrics=scalar_metrics(by_seed[0]))
         print(f"[{run_id}] {steps} 步 / {len(rows)} 个体 / {elapsed:.1f}s")
 
     summary = summarise_over_seeds(seed_rows)

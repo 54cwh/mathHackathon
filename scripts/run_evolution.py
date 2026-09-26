@@ -20,6 +20,7 @@ from evogenesis.experiment import runlayout
 from evogenesis.experiment.config import DEFAULT_EXPERIMENT_CONFIG_PATH, load_experiment_config
 from evogenesis.experiment.environments import load_environment
 from evogenesis.experiment.evolution_run import run_evolution
+from evogenesis.experiment.tracking_run import track_run
 from evogenesis.pipeline import load_model_chain_config
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -81,6 +82,23 @@ def main() -> None:
         run_dir=run_dir,
         environment_id=args.environment or "default",
         steps=args.steps,
+    )
+    status = "bottleneck" if result.bottleneck else "completed"
+    last = result.summaries[-1] if result.summaries else None
+    metrics = (
+        {
+            "fitness_mean": last.fitness_mean,
+            "fitness_std": last.fitness_std,
+            "n_viable": last.n_viable,
+        }
+        if last is not None
+        else {}
+    )
+    track_run(
+        run_dir,
+        status=status,
+        metrics={k: v for k, v in metrics.items() if v is not None},
+        tags={"generations_run": result.generations_run},
     )
     print(
         f"evolution run: {run_dir}｜generations {result.generations_run}/{generations}"

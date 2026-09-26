@@ -51,6 +51,12 @@
     "created_at": {
       "type": "string",
       "minLength": 1
+    },
+    "mlflow_run_id": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   }
 }

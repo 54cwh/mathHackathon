@@ -36,6 +36,7 @@ from evogenesis.experiment.run_artifacts import (
     run_summary_payload,
     write_metrics_csv,
 )
+from evogenesis.experiment.tracking_run import scalar_metrics, track_run
 from evogenesis.pipeline import (
     arena_seeds_for,
     initial_population,
@@ -138,8 +139,10 @@ def _run_seed(
         weights=weights,
     )
     write_metrics_csv(run_dir, rows)
-    dump_json(run_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
+    by_seed = aggregate_by_seed(rows)
+    dump_json(run_dir / "seed_summary.json", by_seed, indent=2)
     runlayout.update_run_status(run_dir, "completed")
+    track_run(run_dir, status="completed", metrics=scalar_metrics(by_seed[0]))
     print(
         f"chain run: {run_dir}｜viable {result.evaluated_individuals}/{n}"
         f"｜steps {result.steps}｜events {len(result.events)}"
