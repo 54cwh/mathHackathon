@@ -598,7 +598,7 @@
 
 ## 依据新增（GA 选择方法，2026-09-26）
 
-> 来源：`research/reference/ga-selection-methods.json`（含 7 条文献的存在性 / DOI / 卷期页 / 评审状态 / 断言支撑核验）。
+> 来源：`research/reference/bibliography-registration-ga.md`（含 7 条文献的存在性 / DOI / 卷期页 / 评审状态 / 断言支撑核验）。
 > 去重：已与 #1–#130 按 DOI / 标题比对，**无重复**（GA 选择方法此前未登记）。
 > 核验：4 条带 DOI 者于 2026-09-26 经 OpenAlex `batch_resolve_references` 解析（作者/年份/卷期页一致）；2 条无 DOI 的 ICGA 会议论文经 OpenAlex `biblio` 核页码；图书经出版方 / Internet Archive 核 ISBN。登记记录见 `research/reference/bibliography-registration-ga.md`。
 
@@ -1059,6 +1059,22 @@
     用途：**相关工作（近作）**——NDP：网络结构由另一个神经网络（Neural Developmental Program）**仅靠局部通信**驱动「生长」得到，并在演化训练 / 在线 RL / 离线 RL / 监督学习下评估。支撑 §1.3 第 3 段：近年的发育 / 生成式编码已能长出网络结构，但其发育程序本身由梯度或演化训练得到、**不含**显式 DNA / motif 基因组，评价也仍是**静态机器学习基准**，不检验「后天权重的当代扰动不遗传」这一边界的代价。
     ⚠️ 边界：该文的「发育」是**局部通信的细胞自动机式生长**，与本项目 GRN + 细胞命运 + RGCD 距离依赖连接在机制上不同族；只作相关工作对照，不作机制依据。核验：OpenAlex DOI 直查 + Crossref 查询双重确认（2023，MIT Press，ALIFE proceedings）。
 
+227. Fuiman LA, Webb PW. **Ontogeny of routine swimming activity and performance in zebra danios (Teleostei: Cyprinidae).** *Animal Behaviour* (1988). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/S0003-3472(88)80268-9
+    用途：Arena `reference_magnitudes.swim_speed_cruise`（巡航速度/发育标度）。核验：OpenAlex `W2036417293`（作者/年份/期刊一致）。
+
+228. Plaut I. **Effects of fin size on swimming performance, swimming behaviour and routine activity of zebrafish (Danio rerio).** *Journal of Experimental Biology* (2000). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.203.4.813
+    用途：Arena `reference_magnitudes.swim_speed_Ucrit`（临界泳速）。核验：OpenAlex `W1890815322`。
+
+229. Budick SA, O'Malley DM. **Locomotor repertoire of the larval zebrafish: swimming, turning and prey capture.** *Journal of Experimental Biology* (2000). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.203.17.2565
+    用途：Arena `reference_magnitudes.turn_rate_cbend`（C-bend 转向）。核验：OpenAlex `W2133872729`。
+
+230. Patterson BW, Abraham AO, MacIver MA, McLean DL. **Visually guided gradation of prey capture movements in larval zebrafish.** *Journal of Experimental Biology* (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1242/jeb.087742
+    用途：Arena `reference_magnitudes.strike_distance_larval`（幼鱼捕食打击距离）。核验：OpenAlex `W2110531771`。
+
 ---
 
 ## 待登记（未核验；**P0 债**，2026-09-26 由只读审计 `research/notes/引用登记缺口.md` 提出）
@@ -1072,8 +1088,7 @@
 `looming-and-growth.md`、`arena-boundary-collision.md`、`episode-termination-fitness.md` 所引文献**一条都未登记**
 （挂账最早见 `research/notes/arena-设计意见-给李辰钊.md`）。**影响**：凡据其取值的**冻结参数**，其依据目前不可核。
 
-**（待登记-3）`docs/参数总表.json` 的 `reference_magnitudes`** —— 其中 6 条来源（Fuiman & Webb 1988 / Plaut 2000 /
-Fuiman 1986 / Budick & O Malley 2000 / Patterson 2013 / McKee & McHenry 2020）未登记。
+**（待登记-3）`docs/参数总表.json` 的 `reference_magnitudes`** —— ✅ **部分闭合（2026-09-26）**：Fuiman & Webb 1988 / Plaut 2000 / Budick & O'Malley 2000 / Patterson 2013 已核验并登记为 `[bib#227]`–`[bib#230]`；**Fuiman 1986 / McKee & McHenry 2020 仍未登记**（离线检索未能定位到可核实的唯一记录，按「无法核实的不引」保留待登记）。
 
 **（待登记-4）License 复核** —— `[bib#217]` `tghbrk/fish-eat-fish` **未声明许可证**，其机制曾在
 `research/notes/契约决策记录.md`「开源机制对照的采纳」中被列为可借鉴项。**已核实未被实现**：

@@ -2,7 +2,7 @@
 
 - 搜索/写入时间：2026-09-26
 - 目标文件：`research/notes/bibliography.md`
-- 依据文件：`research/reference/ga-selection-methods.json`（刚核验，含 7 条文献的存在性 / DOI / 卷期页 / 评审状态 / 断言支撑结论）
+- 依据文件：`research/reference/bibliography-registration-ga.md`（刚核验，含 7 条文献的存在性 / DOI / 卷期页 / 评审状态 / 断言支撑结论）
 - 写入方式：**只追加**；既有 #1–#130 未改动
 - 去重基准：#1–#130（按 DOI / 标题全文检索）
 - 本次搜索时间（meta）：2026-09-26
@@ -13,7 +13,7 @@
 - 新增章节标题：`## 依据新增（GA 选择方法，2026-09-26）`
 - **已存在清单：无**（7 条点名词条在 #1–#130 中均无 DOI / 标题命中）
 - **未登记清单：无**（点名的 7 条全部可核实并已登记）
-- 说明：`ga-selection-methods.json` 的 `stronger_anchors` 中另有 4 条（Grefenstette & Baker 1989、Katoch et al. 2020 等）与 2 条「仅作参考」条目（Goldberg 1990、Miller & Goldberg 1995），本次任务未点名，**不登记**（见第四节）。
+- 说明：`bibliography-registration-ga.md` 的 `stronger_anchors` 中另有 4 条（Grefenstette & Baker 1989、Katoch et al. 2020 等）与 2 条「仅作参考」条目（Goldberg 1990、Miller & Goldberg 1995），本次任务未点名，**不登记**（见第四节）。
 
 ## 二、新增条目（#131–#137）
 
@@ -27,7 +27,7 @@
 | 136 | Blickle & Thiele 1996 | A Comparison of Selection Schemes Used in Evolutionary Algorithms | Evolutionary Computation 4(4), 361–394 | `peer-reviewed` | 10.1162/evco.1996.4.4.361 | OpenAlex `batch_resolve_references` + `get_work`（W2071806120，article，1996，4(4):361–394，引 602）✔ |
 | 137 | Eiben & Smith 2015 | Introduction to Evolutionary Computing (2nd ed.) | Springer, Natural Computing Series | `未标注`（教科书） | 10.1007/978-3-662-44874-8 | OpenAlex `batch_resolve_references`（W2774185825，book，2015，引 1230）✔ |
 
-### 断言与状态依据（摘自 `ga-selection-methods.json`，本次未新增断言）
+### 断言与状态依据（摘自 `bibliography-registration-ga.md`，本次未新增断言）
 
 - #133 Baker 1985：rank selection **首提**——由 #135 Goldberg & Deb 1991 明文确认（"introduced the notion of ranking selection to genetic algorithm practice"）。
 - #134 Whitley 1989：rank-based selection **系统论证**，**非**首提；与 #133 区分。
@@ -47,7 +47,7 @@
 
 | 条目 | 原因 |
 |---|---|
-| **Forrest 1985**（sigma scaling 首提，Univ. Michigan 未发表技术文档） | 本次任务未点名；`ga-selection-methods.json` 明示其「unpublished / 技术文档」且未提供可核实稳定链接。按硬约束「无法核实的不登记」处理。正文若需 sigma scaling 归属，可改为引 #132 Goldberg 1989（sigma truncation）+ #135（尺度依赖）的组合作支撑，或另行取证后补登。 |
+| **Forrest 1985**（sigma scaling 首提，Univ. Michigan 未发表技术文档） | 本次任务未点名；`bibliography-registration-ga.md` 明示其「unpublished / 技术文档」且未提供可核实稳定链接。按硬约束「无法核实的不登记」处理。正文若需 sigma scaling 归属，可改为引 #132 Goldberg 1989（sigma truncation）+ #135（尺度依赖）的组合作支撑，或另行取证后补登。 |
 | **Goldberg 1990**（Complex Systems 4(4):445–460，Boltzmann tournament） | JSON 列为「仅作参考」；Complex Systems 不注册 DOI。本次未点名，不登记。 |
 | **Miller & Goldberg 1995**（Complex Systems 9(3):193–212） | JSON 列为「仅作参考」，且不支撑「尺度无关」显式命题。本次未点名，不登记。 |
 | **Grefenstette & Baker 1989**（Proc. 3rd ICGA） | JSON `stronger_anchors` 自述「可选补充；本次未独立核验 DOI/页码」。本次未点名，不登记。 |
@@ -67,4 +67,4 @@
 ## 六、与上游文档的一致性
 
 - 本记录为**过程证据**（Tier 6），不构成契约；文献事实以 `research/notes/bibliography.md` 为唯一来源。
-- 未新增任何参数取值、公式或数值；`ga-selection-methods.json` 中的核验结论（含 sigma scaling 归属纠正）已按原文转写，未夸大。
+- 未新增任何参数取值、公式或数值；`bibliography-registration-ga.md` 中的核验结论（含 sigma scaling 归属纠正）已按原文转写，未夸大。

@@ -1853,7 +1853,7 @@
     {
       "name": "swim_speed_cruise",
       "value": "4.2 BL/s (mean), peak 6.5",
-      "source": "Fuiman & Webb 1988",
+      "source": "[bib#227] Fuiman & Webb 1988",
       "use": "对标 arena 游速"
     },
     {
@@ -1865,31 +1865,31 @@
     {
       "name": "swim_speed_Ucrit",
       "value": "13–18 BL/s",
-      "source": "Palstra 2010 / Plaut 2000",
+      "source": "Palstra 2010 [bib#45] / Plaut 2000 [bib#228]",
       "use": "对标 arena 游速"
     },
     {
       "name": "larval_burst_speed",
       "value": "50–66 BL/s",
-      "source": "Fuiman 1986",
+      "source": "Fuiman 1986（未登记，待核）",
       "use": "幼虫爆发"
     },
     {
       "name": "turn_rate_cbend",
       "value": "6,000–21,200 deg/s（体弯曲，非航向 yaw）",
-      "source": "Budick & O'Malley 2000",
+      "source": "[bib#229] Budick & O'Malley 2000",
       "use": "不可直接用作航向率"
     },
     {
       "name": "strike_distance_larval",
       "value": "0.5–0.6 mm ≈ 0.12–0.14 BL",
-      "source": "Patterson 2013",
+      "source": "[bib#230] Patterson 2013",
       "use": "捕获判定距离"
     },
     {
       "name": "looming_threshold_adult",
       "value": "10.3°–15.8°, latency 740–780 ms",
-      "source": "McKee & McHenry 2020",
+      "source": "McKee & McHenry 2020（未登记，待核）",
       "use": "looming 阈值"
     },
     {
