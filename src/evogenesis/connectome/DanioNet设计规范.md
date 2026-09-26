@@ -1,5 +1,7 @@
 # DanioNet 设计规范
 
+> **管辖范围**：六类功能语义、12 维输入**语义**、神经动力学、连续动作、lifetime learning 与遗传边界、baselines/ablations。产出：activation / 动作 `(ω,v)` / `ΔW`。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+
 ## 1. 六类神经元
 - Sensory
 - Prey

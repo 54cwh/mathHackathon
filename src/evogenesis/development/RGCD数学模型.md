@@ -1,5 +1,7 @@
 # RGCD 数学模型规范
 
+> **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+
 ## 1. 输入输出
 RGCD 输入：
 

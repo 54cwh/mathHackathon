@@ -1,5 +1,7 @@
 # 系统工程与接口规范
 
+> **管辖范围**：技术栈、稳定 ID、命名规范、WS/系统约定、Seed Manager、Offline 红线。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+
 ## 1. 技术栈
 ### Backend / Model
 - Python 3.12（uv 管理，`requires-python >=3.12`）

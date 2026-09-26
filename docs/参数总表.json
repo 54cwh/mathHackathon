@@ -29,7 +29,8 @@
       "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
       "missing_required 必须先补进文档与 config 才能实现 RGCD",
       "sensitivity_plan 中的参数须报敏感性"
-    ]
+    ],
+    "owns": "参数取值与依据/状态的单一来源：**取值以 configs/*.yaml 为准**，本表记录依据、状态与敏感性。"
   },
   "parameters": [
     {
