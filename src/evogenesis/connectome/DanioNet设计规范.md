@@ -64,6 +64,9 @@ m_iH_t
 
 默认 \(\phi=\tanh\)。其中 \(w_{ij}=w^{(0)}_{ij}+\Delta w_{ij}\) 为有效权重（\(\Delta W\) 见 §6）。\(\Delta W\) 遵守 Dale sign 约束：符号由突触前类型固定，只改幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)）`[bib#29][bib#30][bib#31]`。\(\Delta W\) **形状与 \(W^{(0)}\) 相同**（\(N\times N\)，batch 内 padding 到 48），**仅在既有连接支撑上非零**：有效权重 \(W=A\odot\big(\mathrm{sign}(W^{(0)})\odot \mathrm{softplus}(\Theta)\big)\)（逐元素），初值 \(\Theta=\mathrm{softplus}^{-1}(|W^{(0)}|)\)（`EvoGenesis项目总纲.md` §4），故 \(\Delta W=W-W^{(0)}\)。支撑 \(A\) 训练期**冻结**（不新增连接），padding 行列恒 0 并从 loss / 梯度 / 更新中排除；初始 \(\Delta W=0\) 在 `float32` round-trip 下容差 \(\lesssim 10^{-7}\)（`softplus∘softplus⁻¹` 舍入，非精确 0）；\(\tau\ge 1\)（RGCD §11 `tau_min`）为本模块前提，\(\tau<1\) 被拒（\(1/\tau>1\) 会放大）；被优化的是与 \(W^{(0)}\) 同形状、同 dtype 的 \(\Theta\)（支撑外梯度屏蔽），\(\mathrm{sign}(W^{(0)})\) 训练期不变。张量与梯度统一 `float32`（`core §7`）。
 
+> **数值保护（实现细节）**：`softplus⁻¹` 在 `|W⁰|` 较大时改用等价渐近式，切换阈值 `_SOFTPLUS_INVERSE_SWITCH = 40.0`（float32 下避免 `expm1` 溢出为 inf）；不改上式语义。
+> **构造参数 `priors`（实现扩展）**：`DanioNet(..., priors=NetworkPriors|None)` 允许注入全局先验表 `U/m/b`（缺省由 `master_seed` 派生），供测试与复现对照；不影响默认行为。
+
 依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 
 **`U_i,m_i,b_i` 来源（定稿）**：三者按 **cell type** 取固定先验、不学习——`U_i=U_{type_i}`、`m_i=m_{type_i}`、`b_i=b_{type_i}`，其中 `U∈R^{6×12}`、`m,b∈R^6` 由 seed 初始化（`U~N(0,(1/√12)²)`、`m~N(0,0.1²)`、`b~N(0,0.1²)`）。理由：RGCD 输出契约 `(A,Z,τ,W⁰,M)` 保持冻结，感官增益经 cell type 与基因型挂钩；`ΔW` 只改 `w`，与 §7 遗传边界自洽。属**设计选择**（登记 `docs/参数总表.json`）。
@@ -72,7 +75,7 @@ m_iH_t
 
 **符号约束消融开关（已实现，2026-09-26）**：为支撑 `learning §4` 的「有约束 vs 无约束」消融，`DanioNet` 提供 `sign_constrained: bool`（默认 `True`）——`False` 时参数**直接作为有效权重** `W = A ⊙ Θ`（不经 `sign(W⁰)·softplus(Θ)`，符号自由可翻转），两路径初值同为 `W⁰`（初始 `ΔW=0`）、支撑/非活跃屏蔽相同，供消融对照；**默认路径仍是约束版**。训练侧（`learning`）的 `sign_constrained` 须与网络构造一致（不一致即 `ValueError`）。
 
-**初始化与 padding（定稿）**：本模块接收的 \(M\) 亦用于屏蔽 \(W^{(0)}\) 的非活跃行列（使 \(\Delta W\) 在非活跃处恒 0）。初始激活 \(h_i^{0}=0\)（`float32`，形状 `(N,)`，batch 内 padding）。padding 宽度取 `development.max_neurons`（`configs/default_model.yaml`，现 48），不在此硬编码。`U/m/b` 为按 cell type 的**全局单表**（全体个体共享同一张表），在 `network_init` 命名空间（`core §3`，id=5，`index=0`）下由 master seed 初始化一次；其标准差取 `network.input_weight_std` / `network.hunger_gain_std` / `network.neuron_bias_std`（现 0.289 / 0.1 / 0.1；文档式 `U~N(0,(1/√12)²)` 的 σ=0.28868，config 取整为 0.289）。
+**初始化与 padding（定稿）**：本模块接收的 \(M\) 亦用于屏蔽 \(W^{(0)}\) 的非活跃行列（使 \(\Delta W\) 在非活跃处恒 0）。初始激活 \(h_i^{0}=0\)（`float32`，形状 `(N,)`，batch 内 padding）。padding 宽度取 `development.max_neurons`（`configs/default_model.yaml`，现 48），不在此硬编码。`U/m/b` 为按 cell type 的**全局单表**（全体个体取值相同），由 master seed 在 `network_init` 命名空间（`core §3`，id=5，`index=0`）**确定性派生**（构造时计算；因确定性，各实例等价，实现无跨实例缓存）；其标准差取 `network.input_weight_std` / `network.hunger_gain_std` / `network.neuron_bias_std`（现 0.289 / 0.1 / 0.1；文档式 `U~N(0,(1/√12)²)` 的 σ=0.28868，config 取整为 0.289）。
 
 所有网络 padding 到 `development.max_neurons` nodes，通过 neuron mask / adjacency mask batch：**neuron mask 即 RGCD 输出的 \(M\)（active neuron mask，padding 位为 0）**，adjacency mask 即支撑 \(A\)；二者共同界定参与动力学与动作池的神经元（非活跃神经元的行/列恒 0，\(h\) 保持 0，不进入 motor 池与 viability 复核）。
 

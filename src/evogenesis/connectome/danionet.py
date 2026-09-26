@@ -1,4 +1,4 @@
-"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.7 §1–§9）。
+"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.8 §1–§9）。
 
 产出：activation ``h`` / 连续动作 ``(ω, v)`` / 当代 ``ΔW``。消费 RGCD 的
 ``ConnectomePhenotype``（``A, Z, τ, W⁰, M``）；``ΔW`` 不遗传（§7）。

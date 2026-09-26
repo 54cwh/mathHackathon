@@ -1,7 +1,7 @@
 """DanioNet（Stage 4）测试：结构 / 权重约束 / 动力学 / 动作 / 梯度屏蔽 / viability。
 
 夹具用 RGCD ``develop`` 在固定 q 与 master seed 下产出 viable 个体（``DanioNet设计规范.md``
-v1.7）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
+v1.8）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
 """
 
 import numpy as np

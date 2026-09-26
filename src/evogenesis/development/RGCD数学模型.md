@@ -9,21 +9,27 @@
 
 | 记号 | 类型 / 形状 | 定义 | 来源 |
 |---|---|---|---|
-| \(G\) | 二倍体 genome：2×`ChromosomePair`，每链 128 bp ∈{A,C,G,T} | 个体基因组；RGCD 只消费其派生量 \(\mathbf q(G)\in[0,1]^8\)（genome §6），不直接读碱基。位点表达 \(E_A,E_B\)（genome §3）属**报告层**读出（penetrance 用），**不是本模块输入** | `genome` |
+| \(\mathbf q(G)\) | NumPy `float32`，形状 \((8,)\)，值域 \([0,1]\) | genome 派生量（genome §6；\(G\) 本身不进入本模块）。位点表达 \(E_A,E_B\)（genome §3）属**报告层**读出（penetrance 用），**不是本模块输入** | `genome` |
 | \(\Theta_D\) | §13 参数集合（各张量形状见表） | 发育参数（\(W_g,B,P,\mathbf b,U,\mathbf c_{domain},\mathbf w_d,b_d,C,\lambda,\gamma,b_A,\mathbf u,b_w,\mathbf a,b_\tau,\epsilon_p,\epsilon_g\)），由 seed 确定性初始化 | §13 / §2 |
 | \(\xi\) | RNG 流（命名空间 `development`） | 发育随机源（分裂 Bernoulli、\(\epsilon_p,\epsilon_g\)）；由 `core` seed manager 派生，**不另立随机源** | `core §3` |
 
-**跨框架转换（定稿）**：`genome` 侧的 \(\mathbf q(G)\) 为 NumPy `float32`；进入本模块前由**消费方**（development 入口）经 `core/tensors.py::to_float32_tensor` 转为 `torch.float32`，本模块不接收 NumPy 数组（`core §7`）。\(E_A,E_B\) 不在本模块边界内（报告层读出，见上）。
+**跨框架转换（定稿）**：`genome` 侧的 \(\mathbf q(G)\) 为 NumPy `float32`；本模块入口 `develop(q, ...)` 接受 NumPy 数组并在边界经 `core/tensors.py::to_float32_tensor` 转为 `torch.float32`，**模块内部只持有 torch 张量**（`core §7`）。\(E_A,E_B\) 不在本模块边界内（报告层读出，见上）。
 
-**输出**（active \(N\in[24,48]\)；dtype 统一 `float32`，`core §7`；batch 内 padding 到 48 的约定见 `DanioNet §3`）
+**输出**（active \(N\in[24,48]\)；batch 内 padding 到 48 的约定见 `DanioNet §3`）
 
-| 记号 | 形状 | 含义 |
-|---|---|---|
-| \(A\) | \(\{0,1\}^{N\times N}\) | 二值邻接；无 self-loop；density ∈ [0.10,0.20] |
-| \(Z\) | \([0,1]^{N\times6}\) | \(z_i=\mathrm{softmax}(l_i)\)（§6） |
-| \(\tau\) | \([1,10]^{N}\) | 时间常数（§11） |
-| \(W^{(0)}\) | \(\mathbb R^{N\times N}\) | 初始有效权重，符号由突触前类型定（§10） |
-| \(M\) | \(\{0,1\}^N\) | active neuron mask（padding 位为 0） |
+产出为运行期对象 `ConnectomePhenotype`（本节点为 **owner**；`connectome` / `pipeline` 只引用字段、不改名）。各字段的数学记号 / 运行期字段名 / 形状 / dtype / 值域如下：
+
+| 记号 | 运行期字段 | 形状 | dtype | 值域 / 含义 |
+|---|---|---|---|---|
+| \(A\) | `adjacency` | \((N,N)\) | `float32`（0/1） | 二值邻接；无 self-loop；density ∈ [0.10,0.20] |
+| \(Z\) | `z` | \((N,6)\) | `float32` | \([0,1]\)，\(z_i=\mathrm{softmax}(l_i)\)（§6） |
+| \(\tau\) | `tau` | \((N,)\) | `float32` | \([1,10]\)（§11） |
+| \(W^{(0)}\) | `weights0` | \((N,N)\) | `float32` | 初始有效权重，符号由突触前类型定（§10） |
+| \(M\) | `active_mask` | \((N,)\) | `bool` | active neuron mask（padding 位为 `False`） |
+| — | `cell_type` | \((N,)\) | `int64` | \(z_i\) 的 argmax（六类 fate，§6） |
+| — | `positions` | \((N,2)\) | `float32` | 神经元在发育空间的位置（`DanioNet §5` 取用） |
+| — | `viable` | 标量 | `bool` | 是否通过 §7 全部 viability 判据 |
+| — | `viability_reason` | `str` | — | 判因词表见 §7；viable 时为 `"ok"` |
 
 ## 2. Motif affinity
 对于 motif \(M_k\) 与窗口 \(s\)：
@@ -119,6 +125,8 @@ P\mathbf p_i+
 
 依据与限定："谱半径 \(<1\Rightarrow\) echo-state property"是**经验条件**（Yildiz et al. 2012 `[bib#127]` 给出反例），故按稳定性启发式使用、并记录 \(\rho_{\mathrm{spec}}(W_g)\)；未找到阻尼 sigmoid GRN 的专属初始化惯例，其余尺度为**设计选择**。
 
+> **实现注记（`W_g` 存储为转置）**：上式按 \(W_g\mathbf g\)；代码 `grn.py` 以列向量右乘存储等价形式（`einsum("...nd,ed->...ne")`，即 \(W_g^{\top}\mathbf g\)）。因 \(W_g\) 随机初始化且谱半径对转置不变，两者分布等价；\(W_g\) 仅在 §4 内部使用、不出现在输出契约中。
+
 ## 5. Proliferation
 \[
 p_i^{divide}
@@ -193,6 +201,19 @@ zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps
 
 (iii)(iv) 为**工程判据**（设计选择）；(ii) 是模型的数学性质，报告可直接引用。
 
+**判因词表（owner：本节点；运行期字段 `ConnectomePhenotype.viability_reason`）**：多因以 `;` 连接；通过全部判据时为 `"ok"`。
+
+| token | 触发判据 | 下游消费 |
+|---|---|---|
+| `missing_fate:<六类之一>`（多类逗号分隔） | Developmental viability：某基础 fate \(N_k<1\) | `evolution` 记 `failure_reason`；`make_fig_viability` |
+| `motor_side_empty` | Developmental viability：motor 无 left/right 关联输出神经元 | 同上 |
+| `no_sensory_to_motor_path` | Functional viability：无 \(Sensory\rightsquigarrow Motor\) 有向路径 | 同上 |
+| `nonfinite_activation` | Dynamical (i)：出现 NaN/Inf | 同上 |
+| `activation_bound_violated` | Dynamical (ii)：\(|h_i^t|>1\)（float32 舍入容差内） | 同上 |
+| `persistent_saturation` | Dynamical (iii)：尾 10 步平均饱和比例 ≥0.9 | 同上 |
+| `weight_spectral_radius_not_contractive` | Dynamical (iv)：\(\rho_{\mathrm{spec}}(W^{(0)})\ge1\) | 同上 |
+| `ok` | 全部通过 | viable=True |
+
 **实测工作点（2026-09-26，可复现）**：在**随机 \(q\sim U[0,1]^8\)** 下（\(q\) 直抽、非 \(q(G)\)，
 抽样口径见下文脚本），seed 1103 跑 1000 次发育：**通过率 71/1000 ≈ 7.1%**
 （Wilson 95% 区间 [5.7%, 8.9%]）。**判据 (iv) 是唯一的绑定约束**——
@@ -251,6 +272,8 @@ b_A\approx\mathrm{logit}(p_{target})-E[z_i^\top Cz_j]+\lambda E[d]-\gamma E[R].
 \]
 
 \(\gamma,\lambda,b_A\) 均为项目标定/设计选择（\(\lambda\) 的量纲由单位方域归一化定义）。出处：`research/reference/rgcd-wiring-and-placement.md`。
+
+> **实现注记（`b_A` 反解收敛口径）**：§8 的 `b_A` 由 `solve_bias_for_density` 二分反解，取容差 `tol=1e-8`、最大迭代 `200`、初始界 `±60`（`rgcd.py`）；这些是数值求解细节，不改 §8 的语义（目标密度区间 [0.10,0.20]）。
 
 ## 9. Fixed compatibility prior
 | pre \\ post | S | P | T | M | I | O |
@@ -356,6 +379,8 @@ x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
 \]
 
 分量各自报告 Hedges \(g_z=J(K-1)\,\Delta X_l/s_{d_X}\)（\(J(m)=1-\frac{3}{4m-1}\)）与配对 CI；**不合成标量**。出处 `research/reference/delta-B-and-penetrance.md`。
+
+> **参数分层（定稿）**：\(\Theta_D\) 中 \(b_A\) **不是** seed 初始化张量——它由 §8 的 `solve_bias_for_density` 按目标密度**确定性反解**（不消耗随机数）；\(\epsilon_p,\epsilon_g\) 是 §2/§4 的噪声**尺度**，取 `config` 的 `split_noise` / `gene_noise`，由 `development` 命名空间随机流产生实际噪声。其余张量按本表由 seed 初始化。
 
 ## 13. 参数形状与初始化总表（定稿）
 
