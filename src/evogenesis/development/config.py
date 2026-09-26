@@ -81,6 +81,8 @@ class RGCDConfig:
     distance_space: str = "unit_square"
     regulatory_gamma: float = 1.0
     w_bar_initial: float = 0.5
+    #: §7(iv) 的 ρ(W⁰) 重定目标（仿 §4 对 `W_g` 的 `grn_spectral_radius=0.9`）。
+    rho_w0_target: float = 0.9
     tau_min: float = 1.0
     tau_max: float = 10.0
     #: `connectome §9` 的 w/o GRN 消融开关与独立随机布线密度（默认关；见 RGCD §8 消融）
@@ -128,6 +130,7 @@ class RGCDConfig:
             distance_space=cfg.connectome.distance_space,
             regulatory_gamma=cfg.connectome.regulatory_gamma,
             w_bar_initial=cfg.connectome.w_bar_initial,
+            rho_w0_target=cfg.connectome.rho_w0_target,
             ablation_w_grn=cfg.connectome.ablation_w_grn,
             ablation_random_density=cfg.connectome.ablation_random_density,
             tau_min=cfg.connectome.tau_min,

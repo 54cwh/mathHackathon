@@ -39,6 +39,12 @@ NAMESPACES: dict[str, int] = {
     # 号段 15/16：11-14 已由 penetrance_* / baseline_support / robustness 占用。
     "arena_eval_spawn": 15,
     "arena_eval_dynamics": 16,
+    # 发育参数集 Θ_D（RGCD §1/§13 定稿：由 seed 确定性初始化、**每 seed 一套**）。
+    # 与 `development`=2 刻意分离：后者是 ξ（位置 / 分裂 Bernoulli / ε_p / ε_g）的
+    # **逐个体**随机流；把 Θ_D 也挂在它上面会让每个个体拿到一套不同的发育参数
+    # （实测把 N 的类内 sd 由纯二项 2.26 抬到 3.3–4.0，并令 penetrance 观测轴不可辨识）。
+    # `t` 恒 0（同 `network_init` 先例）：该命名空间下只有一个实体。
+    "development_params": 17,
 }
 
 

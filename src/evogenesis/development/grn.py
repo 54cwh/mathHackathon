@@ -6,7 +6,8 @@
 ``W_g ∈ R^{8×8}``、``B ∈ R^{8×8}``、``P ∈ R^{8×2}``、``b ∈ R^8``。默认 steps=12、rho=0.35、sigmoid。
 
 随机数纪律：本模块不派生随机数；参数由调用方（``rgcd.initialize_parameters``）用
-``SeedManager(master).torch_generator("development", index)`` 初始化（`core §3`）。
+``SeedManager(master).torch_generator("development_params", 0)`` 初始化（`core §3`；
+Θ_D 每 seed 一套，非逐个体）。
 dtype 统一 ``float32``（`core §7`）。
 """
 

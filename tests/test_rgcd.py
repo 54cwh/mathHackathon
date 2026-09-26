@@ -347,9 +347,107 @@ def test_motor_sides_tie_break_by_index():
     assert left.tolist() == [0, 1] and right.tolist() == [2, 3]
 
 
+def test_theta_d_is_per_seed_not_per_individual(monkeypatch):
+    """Θ_D 每 seed 一套（RGCD §1/§13）：参数取自 ``development_params``（``t`` 恒 0），
+    与 ξ 的逐个体流（``development``、``t = index``）**分离**。
+
+    这是 penetrance 观测轴可辨识的前提 —— Θ_D 若逐个体重抽，每个个体一套发育规则，
+    「基因型→表型」不具良定义（实测把 N 的类内 sd 由纯二项 2.26 抬到 3.3–4.0，
+    并使两观测轴的 AUC 落到 0.50 附近）。
+    """
+    calls: list[tuple[str, int]] = []
+    real = SeedManager.torch_generator
+
+    def spy(self, name, index=0, device="cpu"):
+        calls.append((name, index))
+        return real(self, name, index, device)
+
+    monkeypatch.setattr(SeedManager, "torch_generator", spy)
+    develop(Q, master_seed=42, index=7)
+
+    assert ("development_params", 0) in calls, "Θ_D 必须取自 development_params 的 t=0"
+    assert ("development", 7) in calls, "ξ 必须仍走逐个体流（t=index）"
+    assert [c for c in calls if c[0] == "development_params"] == [("development_params", 0)]
+
+
+def test_retarget_spectral_radius_hits_target_and_preserves_structure():
+    """§7(iv) 失配修复：重定后 ρ == target，且支撑与 Dale 符号不变（确定性、不耗随机数）。"""
+    from evogenesis.development.grn import spectral_radius
+    from evogenesis.development.rgcd import retarget_spectral_radius
+
+    g = torch.Generator().manual_seed(0)
+    adjacency = (torch.rand(10, 10, generator=g) < 0.3).to(torch.float32)
+    adjacency.fill_diagonal_(0.0)
+    w = adjacency * torch.randn(10, 10, generator=g)
+
+    out = retarget_spectral_radius(w, 0.9)
+    assert abs(spectral_radius(out) - 0.9) < 1e-5
+    assert torch.equal(out != 0, w != 0), "支撑必须不变（A 的零元仍为零）"
+    assert torch.equal(torch.sign(out), torch.sign(w)), "符号必须不变"
+
+    # 非有限输入原样返回（不在此处吞掉失因，交 §7 判据记因）
+    bad = w.clone()
+    bad[0, 0] = float("nan")
+    assert retarget_spectral_radius(bad, 0.9) is bad
+
+
 def test_viability_positive_with_nonzero_contractive_weights():
     n = 7
     weights0 = torch.eye(n, dtype=torch.float32) * 0.3  # rho_spec=0.3 < 1
     viable, reason = _synthetic([0, 1, 2, 3, 4, 5, 5], weights0=weights0)
     assert viable is True, reason
     assert reason == "ok"
+
+
+def test_domain_identity_spread_clamp_makes_missing_fate_unreachable():
+    """§7 ``missing_fate`` 抽签修复：``U`` 的跨域散布被确定性收紧到**解析上界**。
+
+    判据：域 k 的细胞被 §6 改判，需要 ``max_{j != k} g·(U_j - U_k) >= c_domain_bonus``。
+    又 ``g`` 是 sigmoid 输出的凸组合（``g^0 = 0``，§4），逐分量严格落在 ``(0, 1)``，
+    故 ``||g||_2 < sqrt(dim)`` 对一切可达 g 成立，于是
+
+        max_{j,k} ||U_j - U_k|| <= c_domain_bonus / sqrt(dim)
+
+    是该判据**永不触发**的解析充分条件（同 §7 判据 (ii) 的解析保证性质）。
+    """
+    dim, n_types = DEFAULT_CONFIG.grn_dim, len(DOMAINS)
+    bonus = DEFAULT_CONFIG.c_domain_bonus
+    assert dim > 1 and n_types > 1
+
+    for seed in (1103, 2207, 3301, 42, 999):
+        params = initialize_parameters(
+            SeedManager(seed).torch_generator("development_params", 0), DEFAULT_CONFIG
+        )
+        centred = params.U - params.U.mean(dim=0, keepdim=True)
+        spread = float((centred.unsqueeze(0) - centred.unsqueeze(1)).norm(dim=-1).max())
+        assert spread <= bonus / dim**0.5 + 1e-6, f"seed {seed} 散布 {spread} 超上界"
+
+        # 可达 g 集合内的最坏情形抽样：任一 g 都不应触发改判（gap 严格小于 bonus）
+        generator = torch.Generator().manual_seed(seed)
+        g = torch.rand((n_types * 40, dim), generator=generator)
+        logits = g @ params.U.T
+        worst = -float("inf")
+        for k in range(n_types):
+            other = logits.clone()
+            other[:, k] = -float("inf")
+            worst = max(worst, float((other.max(dim=1).values - logits[:, k]).max()))
+        assert worst < bonus, f"seed {seed}: gap {worst} 不应达到 bonus {bonus}"
+
+
+def test_domain_identity_spread_clamp_only_tightens_and_keeps_row_mean():
+    """收紧是**单向**的（已在界内原样返回，不放大幸运抽样），且逐行均值不变。"""
+    from evogenesis.development.rgcd import _clamp_domain_identity_spread
+
+    dim, n_types, bonus = DEFAULT_CONFIG.grn_dim, len(DOMAINS), DEFAULT_CONFIG.c_domain_bonus
+    target = bonus / dim**0.5
+
+    tight = torch.randn(n_types, dim, generator=torch.Generator().manual_seed(0)) * 0.01
+    assert _clamp_domain_identity_spread(tight, bonus, dim) is tight, "已在界内不得改动"
+
+    loose = torch.randn(n_types, dim, generator=torch.Generator().manual_seed(1))
+    before_mean = loose.mean(dim=0)
+    out = _clamp_domain_identity_spread(loose, bonus, dim)
+    centred = out - out.mean(dim=0, keepdim=True)
+    spread = float((centred.unsqueeze(0) - centred.unsqueeze(1)).norm(dim=-1).max())
+    assert abs(spread - target) < 1e-5, f"应恰好收到上界，实得 {spread} vs {target}"
+    assert torch.allclose(out.mean(dim=0), before_mean, atol=1e-6), "逐行均值必须不变"

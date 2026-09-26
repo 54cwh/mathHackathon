@@ -89,6 +89,7 @@ class ConnectomeConfig(_Section):
     distance_space: str
     regulatory_gamma: float
     w_bar_initial: float
+    rho_w0_target: float
     ablation_random_density: float
     ablation_w_grn: bool = False
     tau_min: float

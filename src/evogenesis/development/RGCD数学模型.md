@@ -171,6 +171,8 @@ domain bias 保证六个基础谱系有 developmental competence，DNA/GRN 决�
 
 **参数与初始化（定稿）**：\(U\in\mathbb R^{6\times8}\)、\(\mathbf c_{domain}\in\mathbb R^6\)（实现存为 \(6\times6\) 的 \(1.5\cdot I\)，按域取行）；\(U\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf c_{domain}\) 为 one-hot（本域位 \(+1.5\)，余为 0），给六个基础谱系 developmental competence。
 
+**跨域散布收口（定稿，2026-09-26）**：\(U\) 抽样后按**解析上界确定性收紧**其中心化部分的跨域散布——取 \(\tilde U=U-\bar U\)，若 \(\max_{j,k}\|\tilde U_j-\tilde U_k\|_2>c_{\mathrm{domain}}/\sqrt8\) 则按该比值线性缩小（逐行均值不变、**只收紧不放大**、不吃随机数）。理由：§7 的 \(missing_fate\) 要求「域 k 至少一个细胞」，而 §6 的 \(\argmax\) 允许改判；改判的充要条件是 \(\max_{j\ne k}\,g\cdot(U_j-U_k)\ge c_{domain}\)。又 \(g\) 是 sigmoid 输出的凸组合（§4）、逐分量严格落在 \((0,1)\)，故 \(\|g\|_2<\sqrt8\) 对一切可达 \(g\) 成立，于是上述上界是「改判永不发生」的**解析充分条件**（同 §7 判据 (ii) 的解析保证性质）。实测：收口前 20 个 seed 中 **5 个（25%）**使某域被整种子系统性改判（该 seed 下 33%–67% 个体 \(missing_fate\) 不可育）；收口后 **20/20 seed 全部 120/120 可育**。**代价（明示）**：默认配置下 \(\argmax\,z\) 恒等于谱系域，\(missing_fate\) 不再触发；该 token 仍保留在 §7 判因词表（非默认配置或更大的 \(U\) 仍需它上报）。
+
 **owner**：`type_i` 如何由 GRN **产出**（本式）归本文件；六类**功能语义**与 left/right motor 标记归 `connectome/DanioNet设计规范.md` §1/§5。`argmax` 为离散化理想化（真实 fate 为连续谱 `[bib#75]`），建议同时记录 `z_i` 分布/熵。
 
 ## 7. Viability
@@ -216,19 +218,36 @@ zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps
 | `weight_spectral_radius_not_contractive` | Dynamical (iv)：\(\rho_{\mathrm{spec}}(W^{(0)})\ge1\) | 同上 |
 | `ok` | 全部通过 | viable=True |
 
-**实测工作点（2026-09-26，可复现）**：在**随机 \(q\sim U[0,1]^8\)** 下（\(q\) 直抽、非 \(q(G)\)，
-抽样口径见下文脚本），seed 1103 跑 1000 次发育：**通过率 71/1000 ≈ 7.1%**
-（Wilson 95% 区间 [5.7%, 8.9%]）。**判据 (iv) 是唯一的绑定约束**——
-89.8% 的尝试因 \(\rho_{\mathrm{spec}}(W^{(0)})\ge1\) 失败，活跃子矩阵的 \(\rho\) 中位数 **1.63**、
-仅 **10.2%** 落在阈值之下；其余判据的失败率分别为
-`no_sensory_to_motor_path` 10.7%、`motor_side_empty` 8.0%、
-`missing_fate:<六类之一>` 4.3%–6.9%；(i)(ii)(iii) 在 1000 次中**一次也没触发**
-（与 (ii) 是解析保证、非阈值判据相符）。
+**实测工作点（2026-09-26 复核，可复现）**：在**随机 \(q\sim U[0,1]^8\) 下（\(q\) 直抽、非 \(q(G)\)），
+seed 1103 / 2207 / 42 各跑 1000 次发育：**通过率 1000/1000 = 100.000%**
+（Wilson 95% 区间 [99.6%, 100.0%]）—— **八条判据一条也没有触发**。
 
-该数字的**口径警告**（写报告时必须一并给出）：`paper/报告-骨架.md` §2.1 引用的 **2/14 ≈ 14%**
-是同一随机流**前 14 次**的读数，比系统率（7.1%）高约 2 倍；调和的正确方式是
-**n=14 自身的 Wilson 区间宽到 [4.0%, 39.9%]**（含 7.1%），而**不是**「全样本 CI 覆盖 14%」。
-三个 formal seed 各跑 n=14 依次得 2 / 2 / 1。
+> **⚠️ 本节旧版数字作废**（旧版：通过率 7.1%、判据 (iv) 占 89.8%、\(missing_fate\) 4.3%–6.9%）。成因是两处
+> Θ_D 校准失配，均已修复，见下。
+
+两处失配与修法：
+
+1. **判据 (iv) 的对象 \(W^{(0)}\) 未按项目自身惯例重定谱半径**。旧版 89.8% 的尝试因 \(\rho\ge1\) 被拒、
+   活跃子矩阵 \(\rho\) 中位数 1.63\)，而 §10 的 \(\bar w=0.5\) 在默认密度下天然给出 \(\rho\approx2.7\)——
+   即该判据从未按「设计工作点」校准。修法：仿 §4 对 \(W_g\) 的做法，把 \(W^{(0)}\) 的谱半径**确定性重定**
+   到 `connectome.rho_w0_target`（默认 0.9）。§7 自述 (iii)(iv) 为**工程判据（设计选择）**，故以确定性重定
+   取代自由抽样属口径内修法。
+2. **\(missing_fate\) 是「每-seed 抽签型门禁」**。Θ_D 改为每 seed 一套（§1/§13）后，\(U\) 的跨域散布变成
+   每 seed 一次的自由抽签：实测 20 个 seed 中 5 个（25%）使某域被整种子系统性改判。修法见 §6「跨域散布收口」。
+
+**⚠️ 由此产生的口径后果（写入报告时必须一并给出）**：默认配置下 (i)(ii)(iii)(iv) 与 \(missing_fate\) 全部成为
+**松弛判据**，§7 的发育期 viability 筛选在当前默认配置下**不再淘汰任何个体**。因此
+
+- `paper/报告-骨架.md` §2.1 的 **F6 / 「2/14」已失效**（现为 14/14）。报告面数字须由 paper lane 重算，
+  **不得**由本次修复自行改写；调和的正确方向仍是「小样本读法」（n=14 的 Wilson 区间 [78.5%, 100.0%]）。
+- \(n\_{\mathrm{danio}}\) 口径下 viable 数由约 10% 变为约 100%：`evolution` 的 `failure_reason` 分支
+  在当前默认配置下不再产生样本。
+- 此后 §7 的筛选功能只在下游 DanioNet 复核（\(b_{type_i}\)，见下）与非默认配置下生效。若需要保留一个
+  **有约束力**的发育期筛选，须重新标定默认配置（属 `configs/` owner 的取值决策 + `docs/参数总表.json`
+  的依据同步），**不在**本次修复范围内。
+
+复现：`python scripts/make_fig_viability.py`（图为 `paper/报告-骨架.md` 的 F6），
+底层数据见 `results/figs/dev_viability/data/fig_viability.xlsx` 的 `_manifest`。
 
 复现：`python scripts/make_fig_viability.py`（图为 `paper/报告-骨架.md` 的 F6），
 底层数据见 `results/figs/dev_viability/data/fig_viability.xlsx` 的 `_manifest`。
@@ -320,6 +339,10 @@ sign(w_{ij})=
 
 **参数与初始化（定稿）**：\(\mathbf u\in\mathbb R^{28}\)（\([\mathbf g_i;\mathbf g_j;\mathbf z_i;\mathbf z_j]\) 为 \(8+8+6+6\)）、\(b_w\in\mathbb R\)；\(\mathbf u\sim\mathcal N(0,(1/\sqrt{28})^2)\)，\(b_w=\mathrm{softplus}^{-1}(\bar w)\) 取稳态权重均值 \(\bar w=0.5\)。
 
+**谱半径重定（定稿，2026-09-26）**：\(W^{(0)}\) 按上式与 Dale 符号抽样后，再以其谱半径 \(\rho_{\mathrm{spec}}\) 确定性
+重定为 `connectome.rho_w0_target`（默认 0.9）：做法与 §4 对 \(W_g\) 的谱半径重定一致（正标量缩放，不改支撑、不改
+Dale 符号，不吃随机数）。修因与口径后果见 §7「实测工作点」。
+
 ## 11. Time constant
 \[
 \tau_i
@@ -400,7 +423,7 @@ x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
 | \(B\) | \(\mathbb R^{8\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | 设计选择 |
 | \(P\) | \(\mathbb R^{8\times2}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | \(\mathbf p_i\) 原样输入（不 embedding） |
 | \(\mathbf b\) | \(\mathbb R^8\) | \(\mathcal N(0,0.1^2)\) | 设计选择 |
-| \(U\) | \(\mathbb R^{6\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | 设计选择 |
+| \(U\) | \(\mathbb R^{6\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) 抽样后按 §6 收口：中心化跨域散布 \(\le c_{\mathrm{domain}}/\sqrt8\) | 设计选择；收口见 §6 |
 | \(\mathbf c_{domain}\) | \(\mathbb R^6\)（存为 \(6\times6\) 的 \(1.5\cdot I\)） | one-hot，本域 \(+1.5\) | 保证六谱系 competence |
 | \(\mathbf w_d,b_d\) | \(\mathbb R^8,\mathbb R\) | \(\mathcal N(0,(1/\sqrt8)^2),\,0\) | 分裂率约 0.5 |
 | \(C\) | \(\mathbb R^{6\times6}\) | §9 固定 prior | 人工 prior |

@@ -39,6 +39,9 @@ connectome:
   distance_space: unit_square
   regulatory_gamma: 1.0
   w_bar_initial: 0.5
+  # §7(iv) 失配修复：W⁰ 谱半径重定目标（仿 §4 对 W_g 的 0.9）；
+  # 依据 §7 实测工作点（(iv) 为唯一绑定约束、89.8% 因 ρ≥1 被拒）。
+  rho_w0_target: 0.9
   ablation_random_density: 0.15
   ablation_w_grn: false  # w/o GRN 消融开关（connectome §9；默认关）
   tau_min: 1.0

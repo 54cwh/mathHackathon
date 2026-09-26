@@ -3,9 +3,11 @@
 范围：``RGCD数学模型.md`` §1–§11（v1.8 已定稿）。不实现 §12 Genome Sensitivity，
 不做 batch>1 / padding（形状与 DanioNet 兼容：``N ≤ max_neurons``、``M`` active mask）。
 
-随机数纪律：唯一随机源为 ``SeedManager(master).torch_generator("development", index)``
-（`core §3`）；不使用 Python ``random`` / 裸 ``torch.manual_seed``。dtype 统一
-``float32``（`core §7`）。
+随机数纪律：**两条**经 ``core §3`` 派生的流，不用 Python ``random`` / 裸 ``torch.manual_seed``
+—— (1) 发育参数集 Θ_D：``torch_generator("development_params", 0)``，**每 seed 一套**
+（§1/§13：发育参数是「该 run 的发育系统」，不随个体重抽）；(2) ξ（位置 / 分裂 Bernoulli /
+ε_p / ε_g）：``torch_generator("development", index)``，**逐个体**。
+dtype 统一 ``float32``（`core §7`）。
 """
 
 from __future__ import annotations
@@ -89,6 +91,43 @@ def softplus_inverse(value: float) -> float:
     return math.log(math.expm1(value))
 
 
+def _clamp_domain_identity_spread(
+    U: torch.Tensor, bonus: float, dim: int
+) -> torch.Tensor:
+    r"""把 §6 的 ``U`` 跨域散布**确定性收紧**到解析最坏情形 = ``c_domain_bonus``。
+
+    §7 Developmental viability 的 ``missing_fate:<域>`` 判据是「存在域 k 使 ``argmax z``
+    不含 k」。由 `development.development.cell_identity` 的 ``z = softmax(g U^T + c_domain)``，
+    域 k 的某个细胞被改判的充要条件是
+
+    .. math:: \max_{j \neq k} g \cdot (U_j - U_k) \ge c_{\mathrm{domain}}.
+
+    该差值对 ``U`` 的逐行均值不敏感：均值在 ``U_j - U_k`` 中抵消，且对 softmax 只是整体
+    平移，故只有**中心化部分** ``\tilde U`` 决定判据。又 ``g`` 是 sigmoid 输出的凸组合
+    （``g^0 = 0``，§4），逐分量严格落在 ``(0, 1)``，故 ``\|g\|_2 < \sqrt{\dim}`` 对
+    **一切可达 g** 恒成立，于是得解析充分条件
+
+    .. math:: \max_{j,k} \|\tilde U_j - \tilde U_k\|_2 \le
+              \frac{c_{\mathrm{domain}}}{\sqrt{\dim}}
+              \;\Longrightarrow\; \text{missing\_fate 严格不可达}.
+
+    本函数把中心化部分按该上界线性收紧（逐行均值不变）；**只收紧、不放大**——散布已在界内
+    时原样返回，避免把一次幸运抽样放大成风险。不吃随机数、不改符号/支撑结构，与 §4 对
+    ``W_g`` 的谱半径重定同源（同一种「确定性重定到判据工作点」的做法）。
+
+    口径说明：该上界是**解析**的（同 §7 判据 (ii)），代价是默认配置下 §6 的 ``argmax z``
+    恒等于谱系域，``missing_fate`` 在默认配置下不再触发；判因词表仍保留该 token（非默认
+    配置或更大的 ``U`` 仍需它上报）。
+    """
+    mean_row = U.mean(dim=0, keepdim=True)
+    centred = U - mean_row
+    spread = float((centred.unsqueeze(0) - centred.unsqueeze(1)).norm(dim=-1).max().item())
+    target = bonus / math.sqrt(dim)
+    if not spread > target > 0.0:
+        return U
+    return mean_row + centred * (target / spread)
+
+
 def initialize_parameters(
     generator: torch.Generator, config: RGCDConfig = DEFAULT_CONFIG
 ) -> RGCDParameters:
@@ -122,6 +161,11 @@ def initialize_parameters(
 
     # §6: U ~ N(0,(1/sqrt(dim))^2)；c_domain one-hot * bonus。
     U = torch.randn((n_types, dim), dtype=dtype, generator=generator, device=device) * weight_std
+    # §7 ``missing_fate`` 抽签修复：``U`` 的跨域散布原本是每 seed 一次的自由抽签，
+    # 实测 20 个 seed 中 5 个（25%）使某个域被系统性改判，该 seed 下 33%–67% 个体
+    # 因 ``missing_fate:prey|threat`` 不可育（同 ρ(W^0) 一路的「每-seed 抽签型门禁」）。
+    # 按解析上界确定性收紧（见 helper docstring）；不吃随机数。
+    U = _clamp_domain_identity_spread(U, config.c_domain_bonus, dim)
     c_domain = config.c_domain_bonus * torch.eye(n_types, dtype=dtype, device=device)
 
     # §5: w_d ~ N(0,(1/sqrt(dim))^2)、b_d=0。
@@ -272,6 +316,32 @@ def initial_weights(
     magnitude = torch.nn.functional.softplus(features @ weight_vector + b_w)
     signed = apply_dale_sign(magnitude, cell_type, inhibitory_index)
     return adjacency * signed
+
+
+def retarget_spectral_radius(weights: torch.Tensor, target: float) -> torch.Tensor:
+    r"""把 ``ρ_spec(W)`` **确定性**重定到 ``target``（§7(iv) 失配修复；仿 §4 对 ``W_g`` 的做法）。
+
+    **动因（§7 实测工作点，2026-09-26 可复现）**：判据 (iv) ``ρ(W^{(0)})<1`` 是**唯一绑定约束**
+    —— 89.8% 的发育尝试因 ``ρ≥1`` 被拒、活跃子矩阵的 ρ 中位数 **1.63**、仅 10.2% 落于阈下。
+    根因是 §10 的 ``w_bar=0.5`` 与 ``ρ<1`` **不自洽**（``ρ ≈ w_bar × 平均度``）。逐个体重抽 Θ_D
+    曾把该拒绝率**摊薄**为「每个体约 10% 通过」；Θ_D 改为每 seed 一套后它变成**整跑一枚硬币**
+    （实测逐 seed viability 率 0%–52%），管线在部分 seed 上产不出**任何** viable 个体。
+
+    **修法**：沿用 §4 对 ``W_g`` 的既有惯例（Xavier → 重定谱半径 ``ρ=0.9``），把 ``W^{(0)}``
+    重定到 ``target``，使 (iv) 对**任意** Θ_D 成立。缩放系数为正标量 ⇒ Dale 符号、支撑
+    （``A`` 的零元）与掩码结构全部不变。**不消耗随机数**。
+
+    非有限或零谱半径时**原样返回**，交由 §7 的 ``nonfinite_activation`` / (iv) 判据如实记因
+    （不在此处吞掉失因）。
+    """
+    if target <= 0.0:
+        raise ValueError(f"ρ 目标须为正，得到 {target}")
+    if not bool(torch.isfinite(weights).all()):
+        return weights
+    radius = spectral_radius(weights)
+    if radius <= 0.0:
+        return weights
+    return weights * (target / radius)
 
 
 def _reachability(adjacency: torch.Tensor) -> torch.Tensor:
@@ -435,8 +505,14 @@ def develop(
     if config.grn_activation != "sigmoid":
         raise NotImplementedError(f"未实现 grn.activation={config.grn_activation!r}")
 
+    # Θ_D 每 seed 一套（§1/§13；命名空间 ``development_params``、`t` 恒 0，同 ``network_init``
+    # 先例）。ξ 仍走 ``development`` 的逐个体流（`t = index`），故同 seed 不同 index 的
+    # 位置/分裂/ε 依然不同 —— ``test_different_entity_index_differs`` 仍成立。
+    params = initialize_parameters(
+        SeedManager(master_seed).torch_generator("development_params", 0, device=device),
+        config,
+    )
     generator = SeedManager(master_seed).torch_generator("development", index, device=device)
-    params = initialize_parameters(generator, config)
     q_tensor = _to_float32_tensor(q, device=str(generator.device))
 
     positions, domain_index = place_precursors(
@@ -525,6 +601,8 @@ def develop(
         params.b_w,
         inhibitory_index,
     )
+    # §7(iv)：谱半径重定 —— 见 `retarget_spectral_radius` 的动因（修复 §10 与 (iv) 的失配）
+    weights0 = retarget_spectral_radius(weights0, config.rho_w0_target)
 
     viable, reason = viability_check(
         adjacency,

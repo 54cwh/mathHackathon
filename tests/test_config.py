@@ -60,6 +60,7 @@ def _minimal() -> dict:
             "distance_space": "unit_square",
             "regulatory_gamma": 1.0,
             "w_bar_initial": 0.5,
+            "rho_w0_target": 0.9,
             "ablation_random_density": 0.15,
             "tau_min": 1.0,
             "tau_max": 10.0,
