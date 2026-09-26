@@ -32,3 +32,15 @@ Arena 素材优先透明背景。实验图、统计图、network graph 不使用
 
   配套：生成前须先冻结主题色板（≤32 色）并重写 `frontend/src/index.css`，
   否则素材与既有 token 对不上（详见 `ui_reference_prompts.md` 第 3 条工程约束）。
+
+## 文件索引
+
+| 文件 | 内容 |
+|---|---|
+| 本文件 | 素材清单（10 项）+ 决策记录 + 两条边界 |
+| `ui_reference_prompts.md` | **3 张 UI 参考图**完整提示词（像素风）+ 自检清单 + 3 条工程约束 + 选定后落地四步 |
+| `image_prompt_template.md` | 三类早期模板（Fish sprite / Predator / DNA）—— 已被 `asset_prompts.md` 覆盖，保留作沿革 |
+| `asset_prompts.md` | **7 项补齐**的完整提示词：logo、环境瓦片、障碍/植物/岩石、water background、cell-type icons、neural glow、UI 特效、PPT 封面，另附「DNA 纹理（3D 新方案）」与通用规格/自检 |
+
+**使用顺序**：先跑 `ui_reference_prompts.md` 的 3 条 → 选定 1 张 → 取色板（≤32 色）→ 把它填进 `asset_prompts.md` 的 `{色板}` 占位 → 再批量生成其余素材。
+色板未冻结前批量生成 = 全部作废。
