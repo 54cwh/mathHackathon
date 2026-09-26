@@ -220,6 +220,8 @@ export interface DevelopmentTraceSample {
   positions: [number, number][] | null;
   /** 逐神经元 fate（六类序号）；仅 connectome 阶段确定，早期为 null。 */
   cell_type: number[] | null;
+  /** 真实邻接表（边对 `[i, j]`，指向 `positions` 下标）；仅 connectome 阶段。 */
+  edges: [number, number][] | null;
 }
 
 export interface DevelopmentResult {

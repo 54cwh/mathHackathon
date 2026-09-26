@@ -96,6 +96,8 @@ class DevelopmentTraceSample(BaseModel):
     positions: list[list[float]] | None = None
     #: 逐神经元 fate（六类序号）；仅 connectome 阶段确定，早期为 null。
     cell_type: list[int] | None = None
+    #: 真实邻接表（边对 `[i, j]`，指向 `positions` 的下标）；仅 connectome 阶段。
+    edges: list[list[int]] | None = None
 
 
 class DevelopmentRequest(BaseModel):

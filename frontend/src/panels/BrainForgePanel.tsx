@@ -40,6 +40,8 @@ export function BrainForgePanel() {
   const [genomeId, setGenomeId] = useState<string | null>(() => getLatestDevelopment().genomeId);
   const [cursor, setCursor] = useState(0);
   const [playing, setPlaying] = useState(false);
+  /** 真实连接图层（用户 2026-09-27 裁决允许"可溯源真图"；默认开，可关）。 */
+  const [showEdges, setShowEdges] = useState(true);
   const cursorRef = useRef(0);
   const playingRef = useRef(false);
 
@@ -110,12 +112,14 @@ export function BrainForgePanel() {
         <div className="min-h-32 flex-[2] overflow-hidden">
           <BrainForgeVisual
             activation={vector ?? undefined}
+            showEdges={showEdges}
             geometry={
               currentSample?.positions
                 ? {
                     stage: currentSample.stage,
                     positions: currentSample.positions,
                     cellType: currentSample.cell_type,
+                    edges: currentSample.edges,
                   }
                 : null
             }
@@ -125,6 +129,25 @@ export function BrainForgePanel() {
         {/* §4 发育管线（真实逐阶段轨迹；数据来自 DNA 实验室的 with_trace 发育）。
             shrink-0 = 按内容高，避免与下方 ACTIVATION 之间出现空档。 */}
         <div className="min-h-0 shrink-0">
+          <div className="flex items-center justify-between">
+            <span className="font-pixel text-[10px] leading-none">CONNECTOME LAYER</span>
+            <span className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-muted-foreground">
+                edges {currentSample?.edges ? currentSample.edges.length : "—"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowEdges((v) => !v)}
+                disabled={!currentSample?.edges}
+                className={`border border-border px-2 py-0.5 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground ${
+                  showEdges && currentSample?.edges ? "bg-brand-fish-navy text-brand-bone" : ""
+                }`}
+              >
+                {showEdges ? "ON" : "OFF"}
+              </button>
+            </span>
+          </div>
+
           <DevelopmentPipeline
             trace={trace}
             genomeId={genomeId}

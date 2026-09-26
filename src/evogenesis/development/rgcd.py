@@ -666,6 +666,12 @@ def develop(
                     "max_abs": float(state.grn.abs().max().item()),
                     "positions": [[float(v) for v in row] for row in state.positions.tolist()],
                     "cell_type": [int(v) for v in cell_type.tolist()],
+                    # 真实邻接表（边对 `[i, j]`）：只读 `adjacency`，不抽随机数。
+                    # `allow_self_loops=False` 时恒 i≠j；供前端画「可溯源的真连接图」。
+                    "edges": [
+                        [int(i), int(j)]
+                        for i, j in torch.nonzero(adjacency != 0, as_tuple=False).tolist()
+                    ],
                 }
             )
 

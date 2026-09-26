@@ -92,4 +92,6 @@ def _grn_sample(g: torch.Tensor, pos: torch.Tensor, *, step: int, stage: str) ->
             "positions": [[float(v) for v in row] for row in pos.tolist()],
             # fate 在连接组阶段才确定（`z = argmax`），故早期阶段记 None（缺失 ≠ 0）。
             "cell_type": None,
+            # 邻接表仅在连接组阶段存在；早期记 None（统一键集合，前端不必判键存在性）。
+            "edges": None,
         }

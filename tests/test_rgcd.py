@@ -369,6 +369,16 @@ def test_trace_carries_real_geometry_and_fates():
     # 坐标随阶段变化（分裂产生子代 -> 末阶段坐标与初态不同）
     assert trace[0]["positions"] != trace[-1]["positions"]
 
+    # 真实邻接表：仅终点有；下标合法、无自环、条数与 n_edges 一致
+    assert trace[0]["edges"] is None
+    edges = trace[-1]["edges"]
+    assert edges is not None
+    assert len(edges) == trace[-1]["n_edges"]
+    n = trace[-1]["n_neurons"]
+    assert all(0 <= i < n and 0 <= j < n for i, j in edges)
+    assert all(i != j for i, j in edges), "allow_self_loops=False 时不得出现自环"
+    assert len({(i, j) for i, j in edges}) == len(edges), "边不应重复"
+
 
 def test_different_seed_differs():
     first = develop(Q, master_seed=42, index=0)

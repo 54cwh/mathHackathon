@@ -132,6 +132,7 @@ def proliferate(
                     "max_abs": float(grn.abs().max().item()),
                     "positions": [[float(v) for v in row] for row in positions.tolist()],
                     "cell_type": None,  # fate 在连接组阶段才确定
+                    "edges": None,  # 邻接表仅在连接组阶段存在（统一键集合）
                 }
             )
     return DevelopmentState(

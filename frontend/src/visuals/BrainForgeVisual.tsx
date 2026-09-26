@@ -351,6 +351,8 @@ export interface DevelopmentGeometry {
   stage: "grn" | "proliferate" | "connectome";
   positions: [number, number][];
   cellType: number[] | null;
+  /** 真实邻接表；null = 该阶段无（或用户关闭图层）。 */
+  edges: [number, number][] | null;
 }
 
 /**
@@ -361,6 +363,7 @@ export interface DevelopmentGeometry {
 function drawDevelopmentGeometry(
   canvas: HTMLCanvasElement,
   geometry: DevelopmentGeometry,
+  showEdges: boolean,
 ): void {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -379,14 +382,37 @@ function drawDevelopmentGeometry(
   ctx.fillRect(ox - 1, oy - 1, 1, side + 2);
   ctx.fillRect(ox + side, oy - 1, 1, side + 2);
 
+  // 真实连接（可选图层）：1px 细线（Bresenham 式逐列取整），色取暗档，
+  // 让 fate 着色的节点仍是视觉主体。**只画真实存在的边**（`edges` 来自邻接矩阵）。
+  const px = (index: number): [number, number] => {
+    const [x, y] = geometry.positions[index] ?? [0, 0];
+    return [
+      ox + Math.round(Math.min(1, Math.max(0, x)) * (side - 1)),
+      oy + Math.round(Math.min(1, Math.max(0, y)) * (side - 1)),
+    ];
+  };
+  if (showEdges && geometry.edges && geometry.edges.length > 0) {
+    ctx.fillStyle = BRAIN.microSegment;
+    for (const [i, j] of geometry.edges) {
+      if (i >= geometry.positions.length || j >= geometry.positions.length) continue;
+      const [x0, y0] = px(i);
+      const [x1, y1] = px(j);
+      const dx = x1 - x0;
+      const dy = y1 - y0;
+      const steps = Math.max(Math.abs(dx), Math.abs(dy), 1);
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        ctx.fillRect(Math.round(x0 + dx * t), Math.round(y0 + dy * t), 1, 1);
+      }
+    }
+  }
+
   const fallback = STAGE_COLORS[geometry.stage] ?? BRAIN.particleA;
-  geometry.positions.forEach((position, index) => {
-    const [x, y] = position;
-    const px = ox + Math.round(Math.min(1, Math.max(0, x)) * (side - 1));
-    const py = oy + Math.round(Math.min(1, Math.max(0, y)) * (side - 1));
+  geometry.positions.forEach((_position, index) => {
+    const [nx, ny] = px(index);
     const fate = geometry.cellType?.[index];
     ctx.fillStyle = typeof fate === "number" ? FATE_COLORS[fate % FATE_COLORS.length] : fallback;
-    ctx.fillRect(px - 1, py - 1, 3, 3);
+    ctx.fillRect(nx - 1, ny - 1, 3, 3);
   });
 }
 
@@ -401,6 +427,8 @@ export interface BrainForgeVisualProps {
    * 有 `cellType` 则按 fate 上色；否则退回装饰纹理 + 激活驱动。
    */
   geometry?: DevelopmentGeometry | null;
+  /** 是否叠加真实连接图层（`edges`）；默认关，由面板开关控制。 */
+  showEdges?: boolean;
 }
 
 /**
@@ -408,7 +436,7 @@ export interface BrainForgeVisualProps {
  * 因此逻辑像素 = CSS 像素，1 px 的线段与 1-3 px 的粒子不会被缩放糊掉；
  * 设备像素比 > 1 时是整数倍放大，仍然锐利。
  */
-export function BrainForgeVisual({ activation, geometry }: BrainForgeVisualProps) {
+export function BrainForgeVisual({ activation, geometry, showEdges = false }: BrainForgeVisualProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // props 走 ref：帧循环只建一次，不因每次激活帧重建 RAF。
@@ -416,6 +444,8 @@ export function BrainForgeVisual({ activation, geometry }: BrainForgeVisualProps
   activationRef.current = activation;
   const geometryRef = useRef(geometry);
   geometryRef.current = geometry;
+  const showEdgesRef = useRef(showEdges);
+  showEdgesRef.current = showEdges;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -447,19 +477,17 @@ export function BrainForgeVisual({ activation, geometry }: BrainForgeVisualProps
       if (now - last < 1000 / FPS) return;
       last = now;
       resize();
-      const geometry = geometryRef.current;
-      if (geometry) {
-        drawDevelopmentGeometry(canvas, geometry);
-        return;
-      }
+      // 几何模式不逐帧重画（边图层可达 ~200 条线）；由下面的 effect 在 prop 变化时画一次。
+      if (geometryRef.current) return;
       if (!layout) return;
       drawBrainForge(canvas, layout, staticLayer, activationRef.current, Math.floor(now / (1000 / FPS)));
     };
 
     resize();
-    const initialGeometry = geometryRef.current;
-    if (initialGeometry) drawDevelopmentGeometry(canvas, initialGeometry);
-    else if (layout) drawBrainForge(canvas, layout, staticLayer, activationRef.current, 0);
+    // 几何模式的首帧由几何 effect 负责（此处只在装饰模式画首帧）。
+    if (!geometryRef.current && layout) {
+      drawBrainForge(canvas, layout, staticLayer, activationRef.current, 0);
+    }
     raf = requestAnimationFrame(frame);
 
     const ro = new ResizeObserver(() => resize());
@@ -469,6 +497,24 @@ export function BrainForgeVisual({ activation, geometry }: BrainForgeVisualProps
       ro.disconnect();
     };
   }, []);
+
+  // 几何模式：geometry / showEdges 变化时重画一次（含首帧与尺寸变化）
+  useEffect(() => {
+    const wrap = wrapRef.current;
+    const canvas = canvasRef.current;
+    if (!wrap || !canvas || !geometry) return;
+    const render = () => {
+      const w = Math.max(MIN_W, Math.round(wrap.clientWidth));
+      const h = Math.max(MIN_H, Math.round(wrap.clientHeight));
+      if (canvas.width !== w) canvas.width = w;
+      if (canvas.height !== h) canvas.height = h;
+      drawDevelopmentGeometry(canvas, geometry, showEdges);
+    };
+    render();
+    const ro = new ResizeObserver(render);
+    ro.observe(wrap);
+    return () => ro.disconnect();
+  }, [geometry, showEdges]);
 
   return (
     <div ref={wrapRef} className="h-full w-full overflow-hidden">
