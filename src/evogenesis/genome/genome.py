@@ -18,30 +18,33 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
-ALPHABET = "ACGT"
-BP_PER_HAPLOTYPE_CHROMOSOME = 128
-CHROMOSOME_PAIRS = 2
+from evogenesis.genome.config import DEFAULT_LAYOUT, GenomeLayout
+
+ALPHABET = "".join(DEFAULT_LAYOUT.alphabet)
+BP_PER_HAPLOTYPE_CHROMOSOME = DEFAULT_LAYOUT.bp_per_haplotype_chromosome
+CHROMOSOME_PAIRS = DEFAULT_LAYOUT.chromosome_pairs
 
 Haplotype = tuple[str, ...]
 Gamete = Haplotype
 
 
-def _validate_alphabet(seq: str, label: str) -> None:
+def _validate_alphabet(seq: str, label: str, layout: GenomeLayout = DEFAULT_LAYOUT) -> None:
     if not isinstance(seq, str):
         raise ValueError(f"{label} 必须是字符串")
-    invalid = set(seq) - set(ALPHABET)
+    invalid = set(seq) - set(layout.alphabet)
     if invalid:
-        raise ValueError(f"{label} 含非 ACGT 符号：{sorted(invalid)}")
+        raise ValueError(f"{label} 含非 {'/'.join(layout.alphabet)} 符号：{sorted(invalid)}")
 
 
-def _validate_sequence(seq: str, label: str) -> None:
-    _validate_alphabet(seq, label)
-    if len(seq) != BP_PER_HAPLOTYPE_CHROMOSOME:
-        raise ValueError(f"{label} 长度必须为 {BP_PER_HAPLOTYPE_CHROMOSOME} bp，实际 {len(seq)}")
+def _validate_sequence(seq: str, label: str, layout: GenomeLayout = DEFAULT_LAYOUT) -> None:
+    _validate_alphabet(seq, label, layout)
+    expected = layout.bp_per_haplotype_chromosome
+    if len(seq) != expected:
+        raise ValueError(f"{label} 长度必须为 {expected} bp，实际 {len(seq)}")
 
 
 @dataclass(frozen=True)
@@ -50,10 +53,11 @@ class ChromosomePair:
 
     maternal: str
     paternal: str
+    layout: GenomeLayout = field(default=DEFAULT_LAYOUT, compare=False, repr=False)
 
     def __post_init__(self) -> None:
-        _validate_sequence(self.maternal, "maternal")
-        _validate_sequence(self.paternal, "paternal")
+        _validate_sequence(self.maternal, "maternal", self.layout)
+        _validate_sequence(self.paternal, "paternal", self.layout)
 
 
 @dataclass(frozen=True)
@@ -62,10 +66,11 @@ class DiploidGenome:
 
     pairs: tuple[ChromosomePair, ChromosomePair]
     genome_id: str = ""
+    layout: GenomeLayout = field(default=DEFAULT_LAYOUT, compare=False, repr=False)
 
     def __post_init__(self) -> None:
-        if len(self.pairs) != CHROMOSOME_PAIRS:
-            raise ValueError(f"DiploidGenome 必须恰有 {CHROMOSOME_PAIRS} 对染色体")
+        if len(self.pairs) != self.layout.chromosome_pairs:
+            raise ValueError(f"DiploidGenome 必须恰有 {self.layout.chromosome_pairs} 对染色体")
         for pair in self.pairs:
             if not isinstance(pair, ChromosomePair):
                 raise ValueError("pairs 的元素必须是 ChromosomePair")
@@ -160,23 +165,36 @@ def window_affinities(sequence: str, motif: str, *, step: int = 1) -> np.ndarray
     )
 
 
-def chain_affinity(chain: str, motif: str, *, k: int = 3, step: int = 1) -> np.float32:
-    r"""单链读出 ``q_k(S) = TopKMean_{s \subset S} a(M_k, s)``（genome §6）。"""
-    return top_k_mean(window_affinities(chain, motif, step=step), k)
+def chain_affinity(
+    chain: str,
+    motif: str,
+    *,
+    k: int | None = None,
+    step: int = 1,
+    layout: GenomeLayout = DEFAULT_LAYOUT,
+) -> np.float32:
+    r"""单链读出 ``q_k(S) = TopKMean_{s \subset S} a(M_k, s)``（genome §6）。
+
+    ``k=None`` 时取 ``layout.motif_topk``。
+    """
+    kk = layout.motif_topk if k is None else k
+    return top_k_mean(window_affinities(chain, motif, step=step), kk)
 
 
 def haplotype_affinity(
     haplotype: Haplotype,
     motifs: Sequence[str],
     *,
-    k: int = 3,
+    k: int | None = None,
     step: int = 1,
+    layout: GenomeLayout = DEFAULT_LAYOUT,
 ) -> np.ndarray:
     r"""单倍型 ``q^{(h)}\in[0,1]^{8}``：窗口取本 haplotype 两条染色体窗口的并集（RGCD §2）。"""
+    kk = layout.motif_topk if k is None else k
     out = np.empty(len(motifs), dtype=np.float32)
     for index, motif in enumerate(motifs):
         values = np.concatenate([window_affinities(chain, motif, step=step) for chain in haplotype])
-        out[index] = top_k_mean(values, k)
+        out[index] = top_k_mean(values, kk)
     return out
 
 
@@ -200,13 +218,17 @@ def genome_affinity(
     genome: DiploidGenome,
     motifs: Sequence[str],
     *,
-    k: int = 3,
+    k: int | None = None,
     step: int = 1,
     mode: str = "additive",
 ) -> np.ndarray:
     r"""``q(G)\in[0,1]^{8}``（genome §6，即 RGCD §4 ``B q(G)`` 的输入）。"""
-    q_h1 = haplotype_affinity(genome.maternal_haplotype, motifs, k=k, step=step)
-    q_h2 = haplotype_affinity(genome.paternal_haplotype, motifs, k=k, step=step)
+    q_h1 = haplotype_affinity(
+        genome.maternal_haplotype, motifs, k=k, step=step, layout=genome.layout
+    )
+    q_h2 = haplotype_affinity(
+        genome.paternal_haplotype, motifs, k=k, step=step, layout=genome.layout
+    )
     return combine_haplotypes(q_h1, q_h2, mode=mode)
 
 
@@ -221,20 +243,21 @@ def locus_expression(
     motif_indices: Sequence[int],
     chromosome_pair_index: int,
     *,
-    k: int = 3,
+    k: int | None = None,
     step: int = 1,
 ) -> np.float32:
     r"""``E = (1/|K|) Σ_{k∈K} ½[q_k(C^{h1}) + q_k(C^{h2})]``（genome §3，位点限定）。"""
     if not motif_indices:
         raise ValueError("motif 子集 K 不能为空")
-    if not 0 <= chromosome_pair_index < CHROMOSOME_PAIRS:
-        raise ValueError(f"染色体对下标须在 [0, {CHROMOSOME_PAIRS})")
+    pair_count = genome.layout.chromosome_pairs
+    if not 0 <= chromosome_pair_index < pair_count:
+        raise ValueError(f"染色体对下标须在 [0, {pair_count})")
     pair = genome.pairs[chromosome_pair_index]
     total = np.float32(0.0)
     for index in motif_indices:
         motif = motifs[index]
-        q_maternal = chain_affinity(pair.maternal, motif, k=k, step=step)
-        q_paternal = chain_affinity(pair.paternal, motif, k=k, step=step)
+        q_maternal = chain_affinity(pair.maternal, motif, k=k, step=step, layout=genome.layout)
+        q_paternal = chain_affinity(pair.paternal, motif, k=k, step=step, layout=genome.layout)
         total = np.float32(total + (q_maternal + q_paternal) / np.float32(2.0))
     return np.float32(total / np.float32(len(motif_indices)))
 
@@ -244,7 +267,7 @@ def expression_A(
     motifs: Sequence[str],
     motif_indices: Sequence[int],
     *,
-    k: int = 3,
+    k: int | None = None,
     step: int = 1,
 ) -> np.float32:
     """A 位点表达量：只扫 ``pairs[0]``（1 号染色体对）。"""
@@ -256,7 +279,7 @@ def expression_B(
     motifs: Sequence[str],
     motif_indices: Sequence[int],
     *,
-    k: int = 3,
+    k: int | None = None,
     step: int = 1,
 ) -> np.float32:
     """B 位点表达量：只扫 ``pairs[1]``（2 号染色体对）。"""
