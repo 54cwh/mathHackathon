@@ -60,6 +60,25 @@ def test_delta_w_identity_error_is_zero():
     assert delta_w_identity_error(net) == pytest.approx(0.0)
 
 
+def test_delta_w_identity_error_detects_divergent_effective_weights(monkeypatch):
+    """把 effective_weights 换成偏离 §3 参数化的实现（丢掉支撑/符号），校验须报非零。"""
+    net = make_net()
+
+    def _wrong(_self):
+        return torch.nn.functional.softplus(_self.theta)
+
+    monkeypatch.setattr(type(net), "effective_weights", property(_wrong))
+    assert delta_w_identity_error(net) > 0.0
+
+
+def test_delta_w_identity_error_detects_nonzero_weights_change():
+    """未经训练时 Θ 初值使 ΔW=0；训练后 ΔW 非零，误差仍为 0（一致性）。"""
+    net = make_net()
+    with torch.no_grad():
+        assert float(net.delta_weights.abs().max()) == 0.0
+    assert delta_w_identity_error(net) == pytest.approx(0.0)
+
+
 def test_build_report_is_consistent_with_result():
     net, result = _trained()
     report = build_report(net, result)

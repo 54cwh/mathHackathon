@@ -48,7 +48,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="episode 条数；默认取 configs/default_model.yaml::learning.trajectories",
     )
-    parser.add_argument("--generation", type=int, default=0, help="演化代数（默认 0）")
+    parser.add_argument("--generation", type=int, required=True, help="演化代数（进入 header）")
     parser.add_argument(
         "--arena-config", default=DEFAULT_ARENA_CONFIG, help="Arena 配置路径（取 episode_steps 等）"
     )

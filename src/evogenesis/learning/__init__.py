@@ -1,4 +1,4 @@
-"""行为克隆学习（`learning/行为克隆学习.md` v1.3）。
+"""行为克隆学习（`learning/行为克隆学习.md` v1.4）。
 
 对外接口：轨迹加载（:mod:`~evogenesis.learning.data`）、损失权重（:mod:`~evogenesis.learning.stats`）、
 加权 MSE（:mod:`~evogenesis.learning.loss`）、训练循环（:mod:`~evogenesis.learning.train`）与

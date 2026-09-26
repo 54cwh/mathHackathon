@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import torch
+import torch.nn.functional as F
 
 from evogenesis.connectome.danionet import DanioNet
 from evogenesis.learning.stats import LossWeights
@@ -85,9 +86,15 @@ def spectral_radius(net: DanioNet) -> tuple[float, ...]:
 
 
 def delta_w_identity_error(net: DanioNet) -> float:
-    """``ΔW = W − W⁰`` 恒等式的最大绝对偏差（`DanioNet §3`）。"""
+    """``ΔW`` 与由冻结缓冲/参数**独立重建**值的一致性（`DanioNet §3`）。
+
+    重建路径不经 ``effective_weights`` property：``W = support_sign0 ⊙ softplus(Θ)``，
+    再比对 ``delta_weights`` 与 ``W − W⁰``。用于检出 ``delta_weights`` /
+    ``effective_weights`` 偏离底层参数化（如漏乘支撑、符号因子）的错误。
+    """
     with torch.no_grad():
-        error = net.delta_weights - (net.effective_weights - net.weights0)
+        rebuilt = net.support_sign0 * F.softplus(net.theta)
+        error = net.delta_weights - (rebuilt - net.weights0)
         return float(error.abs().max())
 
 

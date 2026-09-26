@@ -1,7 +1,7 @@
 """Stage-1 专家轨迹采集（`learning/行为克隆学习.md` §2；`core/核心机制与数据流.md` §4.2/§4.5）。
 
-owner 依据：`core §4.5` 定「产出方 = `experiment`/`scripts` 编排」，
-`experiment/实验与评价体系.md` §11 定义 run 目录布局与 `trajectories/`。本模块承载采集
+owner 依据：`core §4.5`（草案待确认）定「产出方 = `experiment`/`scripts` 编排」，
+`experiment/实验与评价体系.md` §5 定义 run 目录布局与 `trajectories/`。本模块承载采集
 业务逻辑——跑 Arena episode、按 `core §3` 派生 episode 子种子、组 header/step 记录并落盘；
 `scripts/collect_trajectories.py` 只是薄 CLI（AGENTS：`scripts/` 不放业务逻辑）。
 
@@ -71,6 +71,10 @@ def collect_episode(
     信号）、``truncated=StepResult.done``（跑满 `episode_steps` 即时限截断）。
     """
     n_fish = config.population.n_fish
+    if config.world.episode_steps < 1:
+        raise ValueError(
+            f"episode_steps 须 ≥1（schema minimum:1），得到 {config.world.episode_steps}"
+        )
     if not 0 <= controlled_index < n_fish:
         raise ValueError(f"controlled_index 须在 [0, {n_fish})，得到 {controlled_index}")
     fish_ids = [mint_id(experiment_id, "fish", generation, i) for i in range(n_fish)]
@@ -94,7 +98,9 @@ def collect_episode(
         controlled_obs = arena.observe(controlled_fish)
         controlled_action = expert(controlled_obs)
         actions = {
-            fid: expert(arena.observe(fid)) for fid, fish in arena.fish.items() if fish.alive
+            fid: expert(arena.observe(fid))
+            for fid, fish in arena.fish.items()
+            if fish.alive and fid != controlled_fish
         }
         actions[controlled_fish] = controlled_action
         done = arena.step(actions).done

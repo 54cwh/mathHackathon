@@ -146,6 +146,20 @@ def test_episode_id_rejects_negative_index(bad_index):
         collect.episode_id(bad_index)
 
 
+def test_collect_rejects_nonpositive_episode_steps(tmp_path):
+    with pytest.raises(ValueError, match="episode_steps"):
+        collect.collect_trajectories(
+            small_config(steps=0),
+            experiment_id=EXPERIMENT_ID,
+            environment_id=ENVIRONMENT_ID,
+            generation=0,
+            schema_version=SCHEMA_VERSION,
+            seed=SEED,
+            trajectories=1,
+            out_dir=tmp_path,
+        )
+
+
 def test_cli_smoke_writes_two_episodes(tmp_path):
     arena_yaml = yaml.safe_load((ROOT / "configs" / "default_arena.yaml").read_text("utf-8"))
     arena_yaml["world"]["episode_steps"] = CLI_EPISODE_STEPS
@@ -165,6 +179,8 @@ def test_cli_smoke_writes_two_episodes(tmp_path):
             ENVIRONMENT_ID,
             "--schema-version",
             SCHEMA_VERSION,
+            "--generation",
+            "0",
             "--trajectories",
             str(N_EPISODES),
             "--arena-config",
