@@ -15,17 +15,12 @@ from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
 from evogenesis.core.seed import SeedManager
+from evogenesis.experiment.run_artifacts import EVENT_KEYS
 
 SEEDS = (1, 7, 42, 1234, 250927)
 STEPS = 600
-KEYS = (
-    "arena.prey_captured",
-    "arena.fish_captured",
-    "arena.collision",
-    "arena.escape",
-    "arena.energy_depleted",
-    "arena.spawn",
-)
+#: 事件词表单一来源（`arena §18.4.2`）；本脚本只读计数，故直接引用。
+KEYS = EVENT_KEYS
 
 
 def run(seed: int) -> dict:

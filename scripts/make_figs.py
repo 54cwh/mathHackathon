@@ -37,6 +37,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from evogenesis.experiment.figdata import export_workbook  # noqa: E402
+from evogenesis.experiment.run_artifacts import EVENT_KEYS
 
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "results" / "runs"
@@ -253,21 +254,8 @@ def report_figs(
         provenance={"note": note},
     )
 
-    ev_cols = [
-        c
-        for c in eps.columns
-        if c
-        in (
-            "spawn",
-            "capture_attempt",
-            "prey_captured",
-            "collision",
-            "escape",
-            "energy_depleted",
-            "fish_captured",
-            "episode_end",
-        )
-    ]
+    event_cols = tuple(key.removeprefix("arena.") for key in EVENT_KEYS)
+    ev_cols = [c for c in eps.columns if c in event_cols]
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = range(len(eps))
     w = 0.8 / max(len(ev_cols), 1)

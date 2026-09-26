@@ -16,6 +16,7 @@ import numpy as np
 
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.core.ids import mint_id, parse_id
+from evogenesis.core.io import write_jsonl
 from evogenesis.core.seed import SeedManager
 from evogenesis.evolution.config import EvolutionConfig
 from evogenesis.evolution.fitness import composite_fitness
@@ -120,12 +121,11 @@ def assemble_individuals(
         components["prey_capture"][index] = np.float32(rec["captures"])
         components["escape_success"][index] = np.float32(rec["escape_successes"])
         energy_traj = rec.get("energy_trajectory") or []
-        # 边界（`代循环编排.md` §3）：`T_i == 0`（首步即死）或空轨迹时分母无定义 → 该分量记 0。
-        if steps > 0 and energy_traj:
-            value = energy_efficiency(float(energy_traj[-1]), e_max, steps)
-        else:
-            value = 0.0
-        components["energy_efficiency"][index] = np.float32(value)
+        energy_final = float(energy_traj[-1]) if energy_traj else e_max
+        # `T_i == 0` 的边界由 `metrics.energy_efficiency`（§2.1）统一处理（返回 0）。
+        components["energy_efficiency"][index] = np.float32(
+            energy_efficiency(energy_final, e_max, steps)
+        )
     fitness = composite_fitness(components, viable=mask, weights=weights)
     out: list[Individual] = []
     for index, chain_individual in enumerate(individuals):
@@ -193,9 +193,9 @@ def _write_generation_artifacts(
         )
         write_metrics_csv(gen_dir, rows)
         write_population(gen_dir, seed, episode.per_fish)
-        dump_json(
+        write_jsonl(
             gen_dir / "episodes.jsonl",
-            episode_row(seed, list(episode.events), episode.per_fish, steps, elapsed),
+            [episode_row(seed, list(episode.events), episode.per_fish, steps, elapsed)],
         )
     with (gen_dir / "fitness.jsonl").open("w", encoding="utf-8", newline="") as fh:
         for individual in individuals:

@@ -2,9 +2,9 @@
 
 ``create_run_dir`` 是 ``results/runs/<experiment_id>-s<seed>/`` 的**唯一生产者**：创建目录并
 写入 ``metadata.json`` / ``config_snapshot/`` / ``seed.txt`` / ``git_commit.txt``（Arena 型
-配置另写 ``arena_config_resolved.json``）。``scripts/`` 下三个入口脚本
-（``run_experiment.py`` / ``run_arena.py`` / ``run_chain.py``）一律经此建目录，故布局与
-唯一性语义只有一份实现。
+配置另写 ``arena_config_resolved.json``）。``scripts/`` 下四个入口脚本
+（``run_experiment.py`` / ``run_arena.py`` / ``run_chain.py`` / ``run_evolution.py``）
+一律经此建目录，故布局与唯一性语义只有一份实现。
 """
 
 from __future__ import annotations

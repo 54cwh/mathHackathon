@@ -48,6 +48,7 @@ from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
 from evogenesis.core.ids import mint_id
+from evogenesis.core.io import write_jsonl
 from evogenesis.core.seed import SeedManager
 from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
@@ -257,7 +258,9 @@ def main() -> None:
         ]
         write_metrics_csv(run_dir, rows)
         write_population(run_dir, seed, per_fish)
-        dump_json(run_dir / "episodes.jsonl", episode_row(seed, events, per_fish, steps, elapsed))
+        write_jsonl(
+            run_dir / "episodes.jsonl", [episode_row(seed, events, per_fish, steps, elapsed)]
+        )
         by_seed = aggregate_by_seed(rows)
         dump_json(run_dir / "seed_summary.json", by_seed, indent=2)
         all_rows.extend(rows)

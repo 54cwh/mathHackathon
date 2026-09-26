@@ -47,3 +47,21 @@ def test_looming_zero_when_no_predator_visible():
     values = np.array(_looming_series(_arena({"population": {"n_predators": 0}})))
     assert values.size > 0
     assert (values == 0.0).all()
+
+
+def test_looming_norm_scales_channel():
+    """`sensing.looming_norm`（R_loom）为分母：越大输出越小。"""
+    small = np.max(_looming_series(_arena({"sensing": {"looming_norm": 1.0}})))
+    large = np.max(_looming_series(_arena({"sensing": {"looming_norm": 7.0}})))
+    assert small > large > 0.0
+
+
+def test_looming_zero_when_predator_out_of_sight():
+    """天敌在感知半径外（不可见）→ looming 记 0。"""
+    arena = _arena()
+    far = np.array([arena.cfg.world.width, arena.cfg.world.height])
+    for predator in arena.predators.values():
+        predator.pos = far
+        predator.target_fish_id = None
+    values = np.array(_looming_series(arena))
+    assert (values == 0.0).all()

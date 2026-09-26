@@ -19,22 +19,7 @@ import numpy as np
 
 from evogenesis.arena.env import DanioArena
 from evogenesis.experiment.arena_rollout import RolloutStep
-
-#: 12 维 observation 分量名，顺序与 `DanioNet设计规范.md` §2 冻结表逐字一致。
-OBS_DIM_NAMES = (
-    "prey_left_signal",
-    "prey_right_signal",
-    "threat_left_signal",
-    "threat_right_signal",
-    "obstacle_left_signal",
-    "obstacle_right_signal",
-    "prey_relative_size",
-    "predator_relative_size",
-    "looming_rate",
-    "current_speed",
-    "energy",
-    "hunger",
-)
+from evogenesis.experiment.trajectories import OBS_DIM_NAMES
 
 SCHEMA_VERSION = "1.0.0"
 

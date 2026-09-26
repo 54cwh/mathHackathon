@@ -9,7 +9,7 @@
 
 | # | 事项 | 证据 | 影响 |
 |---|---|---|---|
-| B1 | **代循环未接** | `evolution/population.py::advance_generation` 无生产 caller；缺「评估回填 fitness → 下一代」 | Exp F 的 allele/phenotype frequency 无来源；多代演化跑不起来 |
+| B1 ✅ | **代循环未接** | 已闭合（2026-09-26）：`experiment/evolution_run.py::run_evolution` + `scripts/run_evolution.py`（评估→F→回填→`advance_generation`→下一代）；契约 `experiment/代循环编排.md` | ✅（allele/phenotype frequency 仍待 experiment 侧从种群快照派生） |
 | B2 | **BC 端到端未接** | `learning/` 已入库，但无「Stage-1 轨迹 → 训练 → ΔW 不遗传实证」编排 | 论文核心卖点（遗传边界）缺 Exp D 实证 |
 | B3 | **P0-8 Demo 服务层缺** | `api/API与系统工程.md §9` 承诺 `make demo`；`scripts/start_demo.sh`/`serve_api.py`/Makefile `demo` 目标已随 `b4170aa` 删除 | 路演「Live Demo」无载体；文档承诺↔现状冲突 |
 | B4 ✅ | **轨迹双产出链路** | 已闭合（2026-09-26）：BC `trajectories/` 唯一产出方=`experiment/collect.py`；整群 dump 正名为独立资产 `behavior_trace/`（`--emit-behavior-trace`，schema `schemas/behavior_trace.schema.json`）；共用 `experiment/arena_rollout.py`。`core §4.5` 恢复已定稿 | ✅ |
@@ -40,15 +40,15 @@
 | # | 事项 | 证据 |
 |---|---|---|
 | E1 | **`penetrance` 无 owner 定义** | `参数总表.missing_required` 第 1 项；`experiment` 0 处 |
-| E2 | **`trajectory_example.jsonl` 仍陈旧** | 8 行仅 4 键、无 header；`schemas/examples/README.md:17` 标待重生成（对照 `event_log` 已闭环） |
+| E2 ✅ | ~~`trajectory_example.jsonl` 陈旧~~ | 已闭合：schema 1.1.0（含 `dynamics_seed`），由 `collect.py` 重生成 |
 | E3 | **文献待登记** | `bibliography.md` `待登记-2`（Arena 生物学 5 组，一条未登记）、`-3`（`reference_magnitudes` 6 条）、`-4`（#217 License 复核）、`-5`（前端资源） |
 | E4 | **`docs/declaration/THIRD_PARTY.md` 空表** | 开来源码机制对照 `[bib#215]–[bib#220]` 未声明；`待登记-4` |
 | E5 | **参数总表 arena 组** | 1 `missing`（`body_length_mm`，属长度契约）、33 `no_basis`；`env_*` 三组状态「草案待确认」 |
 | E6 | ~~`episodes.jsonl` 只计 6/8 类事件~~ ✅ **已闭合（2026-09-26）**：`run_arena EVENT_KEYS` 补齐 8 类；`make_figs` 事件图同步 8 列 | — |
-| E7 | **run 产物 JSON schema 未建** | `metadata.json`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`（`experiment §5.2` 自述「待实现」）；`schemas/run_metadata.schema.json` 待建 |
+| E7 ✅ | **run 产物 JSON schema 未建** | 已闭合：`run_metadata`/`population`/`episodes`/`seed_summary`/`run_table_summary`/`fitness`/`evolution` 7 个 schema + `tests/test_run_artifacts_schema.py` |
 | E8 | **arena 实体快照无生产者** | `API接口.md:151` 需 `fish[].x/y/heading/speed/energy/size/alive`；api 移除后无代码产出（= B3） |
-| E9 | **`run_chain.py` 缺 `--environment`/overrides 与多代/BC 接口** | Exp F 三组环境无法用 DanioNet 驱动；B1/B2 前置 |
-| E10 | **`viable_pairs` 丢弃 non-viable** | evolution 回填 fitness 需「全部个体 + viability 掩码 + `F=0`」；B1 前置接口缺口 |
+| E9 ◐ | **`run_chain.py` 缺 `--environment`/overrides 与多代/BC 接口** | 多代+环境已由 `scripts/run_evolution.py --environment` 提供（Exp F 可用）；`run_chain.py` 单代入口仍未加 `--environment` |
+| E10 ✅ | **`viable_pairs` 丢弃 non-viable** | 已闭合：`pipeline.evaluate_population` 返回对齐全长的 `phenotypes`/`viable_indices`，`evolution_run.assemble_individuals` 构全量掩码 |
 | E11 | Tier6 副本 `delta-B-and-penetrance.*` 仍用旧分母 `capture_attempts` | 非契约（Tier6），暂不清 |
 
 ## 五、arena 实现完善（P2，勿混入基线改动）

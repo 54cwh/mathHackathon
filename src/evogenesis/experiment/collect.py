@@ -21,13 +21,13 @@ from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
 from evogenesis.core.config import read_yaml
 from evogenesis.core.ids import mint_id
-from evogenesis.core.io import write_jsonl
 from evogenesis.core.seed import SeedManager
 from evogenesis.experiment.arena_rollout import expert_rollout
 from evogenesis.experiment.trajectories import (
     SCHEMA_VERSION,
     episode_header,
     step_record,
+    write_episode,
 )
 
 #: `core §3` 定稿的 Arena 命名空间（出生 / 逐步动力学）
@@ -176,7 +176,7 @@ def collect_trajectories(
             controlled_index=controlled_index,
         )
         path = out / f"episode_{header['episode_id']}.jsonl"
-        write_jsonl(path, [header, *steps])
+        write_episode(path, header, steps)
         written.append(path)
     return written
 

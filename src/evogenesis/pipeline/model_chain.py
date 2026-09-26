@@ -4,8 +4,8 @@ owner：`pipeline/模型链装配.md`。上游：`core`（seed / ids）、`genom
 `connectome`。本模块**只做编排**：不新造数值、不定义算法、不复制各模块契约。
 
 本期范围：`configs/default_model.yaml` → DanioNet 动作 `(ω, v)`，以及**Arena 单 episode
-驱动**（`pipeline/arena_episode.py`，入口 `scripts/run_chain.py`）。逐代演化、BC 与 run 落盘
-未接（见 `pipeline/模型链装配.md` §4）。
+驱动**（`pipeline/arena_episode.py`，入口 `scripts/run_chain.py`）。**逐代演化**由
+`experiment/evolution_run.py` 消费本模块（见 `pipeline/模型链装配.md` §4）；BC 未接。
 """
 
 from __future__ import annotations
@@ -135,6 +135,17 @@ def danionet_of(
     master_seed: int,
     config: NetworkReadoutConfig = DEFAULT_NETWORK_CONFIG,
     device: str = "cpu",
+    sign_constrained: bool = True,
 ) -> DanioNet:
-    """由发育产物构造 `DanioNet`（batch = len(phenotypes)）。"""
-    return DanioNet(list(phenotypes), master_seed=master_seed, config=config, device=device)
+    """由发育产物构造 `DanioNet`（batch = len(phenotypes)）。
+
+    ``sign_constrained``：`connectome §3` 的符号约束开关；默认 ``True``（约束路径）。
+    ``False`` 仅用于 `learning §4` 的「有/无 Dale 符号约束」消融对照。
+    """
+    return DanioNet(
+        list(phenotypes),
+        master_seed=master_seed,
+        config=config,
+        device=device,
+        sign_constrained=sign_constrained,
+    )

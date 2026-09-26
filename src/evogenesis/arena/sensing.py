@@ -112,24 +112,30 @@ def nearest_predator_relative_size(
     return min(nearest[1] / fish.size / size_ref, 1.0) if nearest else 0.0
 
 
-def nearest_predator_angular_size(
+def max_predator_angular_size(
     fish: Fish,
     predators: list[Predator],
     radius: float,
     fov_degrees: float,
 ) -> float:
-    """Angular size θ (rad) of the nearest visible predator, or 0.0 if none.
+    """Max angular size θ (rad) over visible predators, or 0.0 if none.
 
-    编码口径（`arena §4.1` / `A1`）：\(\theta = 2\arctan(l/r)\)，其中 \(l\) 为该天敌
-    半线性尺寸（`size/2`）、\(r\) 为距离；只取「视野半径 + FOV 内最近」的天敌。
+    编码口径（`arena §4.1` / `A1` / `research/reference/looming-and-growth.md`）：
+    \\(\\theta = 2\\arctan((size/2)/r)\\)，对「视野半径 + FOV 内」的**所有**天敌取 **max**
+    （多头天敌以最具威胁者为准，与所引依据一致）。
     """
     half_fov = np.deg2rad(fov_degrees) / 2.0
-    cand = [(d.pos, d.size) for d in predators]
-    nearest = _nearest_visible(fish, cand, radius, half_fov)
-    if nearest is None or nearest[0] <= 0.0:
-        return 0.0
-    dist, size = nearest
-    return float(2.0 * np.arctan((size / 2.0) / dist))
+    best = 0.0
+    for predator in predators:
+        res = _bearing(predator.pos, fish)
+        if res is None:
+            continue
+        dist, rel = res
+        if dist > radius or abs(rel) > half_fov or dist <= 0.0:
+            continue
+        theta = float(2.0 * np.arctan((predator.size / 2.0) / dist))
+        best = max(best, theta)
+    return best
 
 
 def observe(

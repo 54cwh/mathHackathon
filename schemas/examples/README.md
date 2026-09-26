@@ -1,8 +1,8 @@
 # Schema Examples（契约示例）
 
 > 状态：示例数据。`genome/fish/experiment` 实例已通过各自 schema 校验；
-> `genome/fish/experiment` 实例已通过各自 schema 校验；`trajectory_example.jsonl` 与 `event_log_example.jsonl`
-> 已按各自冻结 schema 重生成（`trajectory.schema.json` / `event_log.schema.json`），可被代码依赖。
+> `trajectory_example.jsonl` 与 `event_log_example.jsonl` 已按各自冻结 schema 重生成
+> （`trajectory.schema.json` / `event_log.schema.json`），可被代码依赖。
 >
 > 本目录是**契约示例**，不是仿真运行产物——真实 run 数据属于
 > `results/runs/`（不入库）。
@@ -65,9 +65,9 @@
 | 4 | obstacle_left_signal | 10 | energy |
 | 5 | obstacle_right_signal | 11 | hunger |
 
-示例剧情（step 300–307）：鱼追踪并捕获 `prey_07`（能量 0.62 → 0.74，
-饥饿 0.41 → 0.28），随后 `predator_03` 出现在左侧（step 305 起 threat
-信号上升，速度按 ExpertPolicy 规则提升）。
+示例剧情：`exp-example` 的 `episode_steps=8` 一次采集，受控鱼 `exp-example:g0:fish0000`
+的 step 0–7（其余个体不入轨迹）。观测为编码器实际输出；本 8 步内无天敌进入该鱼视野，
+故第 8 维 `looming_rate` 为 0。
 
 ## 校验方式
 

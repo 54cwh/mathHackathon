@@ -113,9 +113,12 @@ def energy_efficiency(energy_final: float, e_max: float, survival_steps: int) ->
 
     **按文档原式实现，不做「修正」**：该量为**非正** —— 它是「终末能量相对容量的平均缺口」，
     `E_i(T_i) == E_max` 时为 0，能量越低越负（量纲：能量/步）。
+    边界（§2.1）：`T_i == 0`（首步即死，分母无定义）时返回 0.0；`T_i < 0` 非法抛错。
     """
-    if survival_steps <= 0:
-        raise ValueError("survival_steps 必须为正")
+    if survival_steps < 0:
+        raise ValueError("survival_steps 不得为负")
+    if survival_steps == 0:
+        return 0.0
     return (energy_final - e_max) / survival_steps
 
 

@@ -386,7 +386,7 @@ class SessionCreate(BaseModel):
 | selected-fish neural activation | 无。依赖 DanioNet 接入与"选中鱼"的服务端状态 | ❌ 双重缺口 |
 | energy | 无推送；只能随 snapshot 的 `fish[].energy` 被动取到 | ❌ 缺口 |
 | events | 无推送；只能随 snapshot（末 200 条）被动取到 | ❌ 缺口 |
-| generation progress | 无。`generation` 恒 `0`（演化未接入） | ❌ 缺口 |
+| generation progress | 无。`generation` 可由构造注入、代循环（`experiment/evolution_run.py`）逐代推进；API 层尚未暴露 | ❌ 缺口 |
 | 不每帧发送全部 48×48 matrix | ✅ 已满足（因为**什么都不发**，天然不违规） | ⚠️ 空集意义上的满足；`../core/核心机制与数据流.md` §5.2 的"矩阵只存在于发育产物与落盘记录"须在实现推送时保持 |
 | `type` 点分层命名 | ✅ `sys.hello` / `sys.echo` / `sys.error` 遵守 R11 | ✅ |
 | 信封 `{v,type,seq,ts,payload}` | ✅ 已实现并被 `test_ws_envelope_contract` 守护 | ✅ |

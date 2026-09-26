@@ -42,7 +42,7 @@
 
 **消费方式（定稿）**：DanioNet 按此契约直接消费，**不重复校验值域**（12 维落在 `[0,1]` 由 Arena 编码保证，§4.1）；§3 动力学的 \(H_t\) 即第 11 维 `hunger`（\(H_t=x_t[11]\)）。
 
-⚠️ **已知实现缺口**（跟踪于 `arena` 认领表 A1）：`looming_rate` 在当前调用序下除 `reset()` 首帧外恒为 0。值域契约不变，但该维暂不携带信息，须由 Arena 侧修复。
+✅ **已修复（2026-09-26）**：`looming_rate` 由 Arena 侧改为**角尺寸扩张率**（`θ=2·arctan((size/2)/r)`，步首/步尾采样、max 聚合、按 `sensing.looming_norm` 归一），不再恒 0（见 `arena §4.1` 与 `tests/test_sensing_looming.py`）。值域 `[0,1]` 契约不变。
 
 ## 3. 神经动力学
 \[

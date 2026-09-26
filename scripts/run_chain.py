@@ -15,7 +15,6 @@ run 目录布局见 `experiment/实验与评价体系.md` §5.1）。本脚本�
 from __future__ import annotations
 
 import argparse
-import json
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
@@ -24,7 +23,7 @@ from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
-from evogenesis.experiment.run_artifacts import write_metrics_csv
+from evogenesis.experiment.run_artifacts import dump_json, write_metrics_csv
 from evogenesis.pipeline import (
     arena_seeds_for,
     initial_population,
@@ -117,10 +116,7 @@ def main() -> None:
         for fish_id, rec in sorted(result.per_fish.items())
     ]
     write_metrics_csv(run_dir, rows)
-    (run_dir / "seed_summary.json").write_text(
-        json.dumps(aggregate_by_seed(rows), indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    dump_json(run_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
     print(
         f"chain run: {run_dir}｜viable {result.evaluated_individuals}/{n}"
         f"｜steps {result.steps}｜events {len(result.events)}"

@@ -64,8 +64,9 @@ def test_energy_efficiency_follows_documented_formula():
     assert energy_efficiency(1.0, 1.0, 600) == 0.0
     assert energy_efficiency(0.4, 1.0, 600) == pytest.approx(-0.001)
     assert energy_efficiency(0.4, 1.0, 600) <= 0.0  # 非正：这是「平均缺口」
+    assert energy_efficiency(0.4, 1.0, 0) == 0.0  # §2.1 边界：T_i=0（首步即死）记 0
     with pytest.raises(ValueError):
-        energy_efficiency(0.4, 1.0, 0)
+        energy_efficiency(0.4, 1.0, -1)
 
 
 def test_composite_weights_are_the_documented_ones_and_sum_to_one():

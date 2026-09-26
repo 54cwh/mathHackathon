@@ -14,7 +14,7 @@ import numpy as np
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.entities import Entity, Fish, Obstacle, Predator, Prey
 from evogenesis.arena.policies import PredatorPolicy, PreyPolicy
-from evogenesis.arena.sensing import nearest_predator_angular_size, observe
+from evogenesis.arena.sensing import max_predator_angular_size, observe
 
 # Collision margin already used by the pre-existing obstacle test
 # (o.contains(fish.pos, 0.1)); reused as the fish effective radius in the
@@ -245,27 +245,19 @@ class DanioArena:
         dt = self.cfg.world.dt
         new_events: list[Event] = []
 
-        # --- looming bookkeeping (arena §4.1 / A1)：在**实体移动前**用同一相位计算最近可见
-        #     天敌的角尺寸 θ=2·arctan((size/2)/r)，与上一步的 θ 差分得相对扩张率
-        #     `(Δθ/θ)/Δt`，再按 R_loom=sensing.looming_norm 归一到 [0,1] 缓存给 `observe()`。
-        #     不可见（θ=0）时置 0 并把 prev 清空，避免"看不见却仍在 loom"。
+        # --- looming (arena §4.1 / A1)：步首采样「可见天敌最大角尺寸」
+        #     步尾（全部实体移动后）再采样 θ_after，得本步相对扩张率
+        #     `(θ_after-θ_before)/(θ_after·Δt)`（分母 θ_t=θ_after，同所引依据），按
+        #     R_loom=sensing.looming_norm 归一到 [0,1] 缓存给 `observe()`。
+        #     任一端不可见（θ=0）即记 0，避免"看不见却仍在 loom"。
         predator_list = list(self.predators.values())
-        for fish in self.fish.values():
-            if not fish.alive:
-                continue
-            theta = nearest_predator_angular_size(
-                fish,
-                predator_list,
-                self.cfg.sensing.radius,
-                self.cfg.sensing.fov_degrees,
+        theta_before = {
+            fid: max_predator_angular_size(
+                fish, predator_list, self.cfg.sensing.radius, self.cfg.sensing.fov_degrees
             )
-            prev = fish._prev_predator_theta
-            if theta > 0.0 and prev is not None and prev > 0.0:
-                rate = ((theta - prev) / dt) / prev
-                fish._looming_rate = min(max(rate / self.cfg.sensing.looming_norm, 0.0), 1.0)
-            else:
-                fish._looming_rate = 0.0
-            fish._prev_predator_theta = theta if theta > 0.0 else None
+            for fid, fish in self.fish.items()
+            if fish.alive
+        }
 
         # --- fish: turn, move, eat, pay energy (Danio_Arena设计与实现说明.md sections 5-8)
         for fid, fish in self.fish.items():
@@ -516,6 +508,18 @@ class DanioArena:
                 fish.escape_successes += 1
                 fish._threat_step = None
                 fish._threat_source = None
+
+        # --- looming 结算（步尾）：用移动后的 θ_after 与步首 θ_before 作差（见步首注释）。
+        for fid, before in theta_before.items():
+            fish = self.fish[fid]
+            after = max_predator_angular_size(
+                fish, predator_list, self.cfg.sensing.radius, self.cfg.sensing.fov_degrees
+            )
+            if fish.alive and before > 0.0 and after > 0.0:
+                rate = ((after - before) / dt) / after
+                fish._looming_rate = min(max(rate / self.cfg.sensing.looming_norm, 0.0), 1.0)
+            else:
+                fish._looming_rate = 0.0
 
         self.step_idx += 1
         # A9: always run the full episode; individual death only freezes that fish

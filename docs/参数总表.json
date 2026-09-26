@@ -694,14 +694,14 @@
       "group": "evolution",
       "grade": "D",
       "status": "no_basis",
-      "basis": "E–F 环境选择的代循环上限（区间 10–20）。属**设计选择**（无文献实测依据）：预算允许（实测 Arena 吞吐 301 steps/s，12 鱼×600 步；20 代≈40 min = 4 episodes/代 × 4 条件 × 3 seed × 2.5 s），且种群 48 / seed 3 漂变强，需要足够代数让选择压与漂变分离。**强制 pilot 门**：正式跑满前先跑 10 代，用同环境 seed 间 spread 作噪声带判断区分力，落入带内不得当结论。",
+      "basis": "E–F 环境选择的代循环上限（区间 10–20）。属**设计选择**（无文献实测依据）：预算允许（代循环每代评估 1 个 Arena episode；按 ExpertPolicy 吞吐 12 鱼×600 步≈2 s，20 代 × 4 条件 × 3 seed ≈ 数十分钟），且种群 48 / seed 3 漂变强，需要足够代数让选择压与漂变分离。**强制 pilot 门**：正式跑满前先跑 10 代，用同环境 seed 间 spread 作噪声带判断区分力，落入带内不得当结论。",
       "source": "src/evogenesis/experiment/实验与评价体系.md §3.6",
       "config": "configs/experiment.yaml → generations",
       "sensitivity": [
         10,
         20
       ],
-      "suggest": "读取该键的执行编排尚未实现；pilot 无区分力时须延长代数或如实报无效应"
+      "suggest": "已接线：experiment/config.py + scripts/run_evolution.py；pilot 无区分力时须延长代数或如实报无效应"
     },
     {
       "name": "crossover_probability",
@@ -1640,8 +1640,8 @@
       "unit": "s^-1",
       "group": "arena",
       "grade": "D",
-      "status": "no_basis",
-      "basis": "looming_rate 归一尺度 R_loom：clip((Δθ/θ/Δt)/R_loom,0,1)，θ=2·arctan((size/2)/r)。报告区间 R_loom∈[2,5] s^-1（research/reference/looming-and-growth.md；arena 设计意见 §2），本仓库取中位 3.5 为**标定占位**，play-test 标定前不得冻结。",
+      "status": "in_range",
+      "basis": "looming_rate 归一尺度 R_loom：clip(((θ_after-θ_before)/(θ_after·Δt))/R_loom, 0, 1)，θ=2·arctan((size/2)/r)（取可见天敌 max）。报告区间 R_loom∈[2,5] s^-1（research/reference/looming-and-growth.md；arena 设计意见 §2 A1），本仓库取中位 3.5 为**标定占位**，play-test 标定前不得冻结。",
       "source": "research/reference/looming-and-growth.md; research/notes/arena-设计意见-给李辰钊.md §2 A1",
       "config": "configs/default_arena.yaml → sensing.looming_norm",
       "sensitivity": null,
@@ -1714,7 +1714,7 @@
       "name": "looming_threshold_larval",
       "value": "21.7°/35 ms 或 ≈72°/81 ms",
       "source": "Temizer 2015 / Dunn 2016",
-      "use": "looming 阈值（口径二选一）"
+      "use": "looming 阈值（生物学参考；本仓库 looming 通道为角扩张率，阈值不直接映射）"
     }
   ],
   "changes_pending": [],

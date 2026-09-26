@@ -18,6 +18,7 @@ import torch
 
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena, Event
+from evogenesis.connectome.danionet import DanioNet
 from evogenesis.core.seed import SeedManager
 from evogenesis.development.config import DEFAULT_CONFIG as DEFAULT_RGCD_CONFIG
 from evogenesis.development.config import RGCDConfig
@@ -123,21 +124,28 @@ def evaluate_population(
     return PopulationEvaluation(tuple(phenotypes), episode, viable_indices)
 
 
-def _drive_arena(
-    pairs: Sequence[tuple[ChainIndividual, ConnectomePhenotype]],
+def drive_arena_with_net(
+    individuals: Sequence[ChainIndividual],
+    net: DanioNet,
     *,
     master_seed: int,
     chain: ModelChainConfig,
     arena_config: ArenaConfig,
-    steps: int | None,
-    generation: int,
-    device: str,
+    steps: int | None = None,
+    generation: int = 0,
 ) -> ArenaEpisodeResult:
-    """用 DanioNet 驱动 Arena 跑一局（`pairs` 非空，全为 viable 个体）。"""
-    phenotypes = [phenotype for _, phenotype in pairs]
-    fish_ids = [individual.fish_id for individual, _ in pairs]
-    genome_ids = [individual.genome_id for individual, _ in pairs]
-    n_eval = len(phenotypes)
+    """用**给定的** `DanioNet` 驱动 Arena 跑一局（不重新发育/构造网络）。
+
+    供生命周期学习（`experiment/learning_run.py`）在**同一批 arena 子种子**下复用同一
+    网络对象做训练前后对照：``individuals`` 与 ``net`` 的 batch 必须同序等长。
+    """
+    if len(individuals) != len(net.n_neurons):
+        raise ValueError(
+            f"individuals 数 {len(individuals)} 与 net batch {len(net.n_neurons)} 不一致"
+        )
+    fish_ids = [individual.fish_id for individual in individuals]
+    genome_ids = [individual.genome_id for individual in individuals]
+    n_eval = len(individuals)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
     spawn_seed, dynamics_seed = arena_seeds_for(master_seed, generation)
@@ -150,7 +158,6 @@ def _drive_arena(
         generation=generation,
     )
     arena.reset()
-    net = danionet_of(phenotypes, master_seed=master_seed, config=chain.network, device=device)
 
     total = config.world.episode_steps if steps is None else steps
     for _ in range(total):
@@ -171,6 +178,31 @@ def _drive_arena(
         steps=arena.step_idx,
         per_fish=arena.per_fish_log(),
         events=tuple(arena.events),
+    )
+
+
+def _drive_arena(
+    pairs: Sequence[tuple[ChainIndividual, ConnectomePhenotype]],
+    *,
+    master_seed: int,
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    steps: int | None,
+    generation: int,
+    device: str,
+) -> ArenaEpisodeResult:
+    """用 DanioNet 驱动 Arena 跑一局（`pairs` 非空，全为 viable 个体）。"""
+    phenotypes = [phenotype for _, phenotype in pairs]
+    individuals = [individual for individual, _ in pairs]
+    net = danionet_of(phenotypes, master_seed=master_seed, config=chain.network, device=device)
+    return drive_arena_with_net(
+        individuals,
+        net,
+        master_seed=master_seed,
+        chain=chain,
+        arena_config=arena_config,
+        steps=steps,
+        generation=generation,
     )
 
 

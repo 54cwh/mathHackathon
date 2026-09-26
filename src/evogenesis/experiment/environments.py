@@ -40,7 +40,7 @@ def load_environment(name: str) -> dict:
 def environment_env_vars(overrides: dict | None) -> dict[str, str]:
     """展成 `EVOGENESIS_<SECTION>__<FIELD>`（`core §config` 分层）。
 
-    子进程 `run_experiment.py` 按同一分层加载，故其落盘的
+    `experiment/runlayout.py::create_run_dir(overrides=...)` 按同一分层加载，故其落盘的
     `arena_config_resolved.json` **如实反映**环境覆盖，而非一份假的默认快照。
     """
     out: dict[str, str] = {}
