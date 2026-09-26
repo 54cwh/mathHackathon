@@ -36,7 +36,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Sequence
+import csv
+from collections.abc import Callable, Iterator, Sequence
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -726,6 +727,197 @@ def table_path(experiment_id: str, root: str | Path) -> Path:
     return Path(root) / "tables" / f"{experiment_id}_baselines.json"
 
 
+# ---------------------------------------------------------------------------------------
+# 离线重建：中断 run 的已完成 seed → 同形对照表（`experiment §3.3`）
+# ---------------------------------------------------------------------------------------
+
+#: `write_metrics_csv` 写入的定位列 —— 不属于指标本身（`experiment §5.2`）。
+_CSV_LOCATOR_KEYS: tuple[str, ...] = ("seed", "fish_id", "agent", "episode", "model")
+
+
+def _parse_metric_value(raw: str | None) -> Any:
+    """CSV 单元 → 指标值。**空单元解析为 `None`**，不静默补 0（`experiment §2.1`）。"""
+    if raw is None:
+        return None
+    text = raw.strip()
+    if text == "":
+        return None
+    if text == "True":
+        return True
+    if text == "False":
+        return False
+    try:
+        return int(text)
+    except ValueError:
+        pass
+    try:
+        return float(text)
+    except ValueError:
+        return text
+
+
+def _rebuild_model_complexity(
+    model: str,
+    *,
+    slot: int,
+    seed: int,
+    experiment_id: str,
+    chain: ModelChainConfig,
+    n_agents: int,
+    n_danio: int,
+    device: str,
+) -> tuple[dict[str, float | int], str | None]:
+    """**不训练**地重建某 `(seed, model)` 的结构量（与在线路径同一读法）。
+
+    结构量取自已定型的构造期量：基线三模型的 `complexity()` 是构造期常量的纯算术
+    （`MLPPolicy` 由 `sensory_dim`/`hidden` 算出；`FixedSparseRNNPolicy` 由构造期 `support`
+    掩码算出）；DanioNet 的 `network_complexity` 读 `support` / `active_counts` / 配置维度。
+    三者都与训练后的 `θ` 无关 ⇒ 重建值与在线路径**逐位相同**（`latency` 除外）。
+    """
+    sensory_dim = chain.network.sensory_dim
+    if model == DANIONET_MODEL:
+        population = initial_population(
+            master_seed=seed, experiment_id=experiment_id, n=n_danio, layout=chain.layout
+        )
+        pairs = viable_pairs(
+            population,
+            motif_catalog(seed, chain.layout),
+            master_seed=seed,
+            config=chain.rgcd,
+            device=device,
+        )
+        pairs = pairs if len(pairs) < n_agents else pairs[:n_agents]
+        if not pairs:
+            raise ValueError(
+                f"DanioNet 无 viable 个体（seed={seed}，n_danio={n_danio}），无法重建"
+            )
+        eval_net = danionet_of(
+            [phenotype for _, phenotype in pairs],
+            master_seed=seed,
+            config=chain.network,
+            device=device,
+            sign_constrained=True,
+        )
+        return _complexity(eval_net, sensory_dim=sensory_dim, n_agents=len(pairs))
+    indices = [_baseline_t(slot, agent, n_agents=n_agents) for agent in range(n_agents)]
+    nets = [
+        BASELINES[model](master_seed=seed, index=t, sensory_dim=sensory_dim, device=device)
+        for t in indices
+    ]
+    return _complexity(BaselineAgentBatch(nets), sensory_dim=sensory_dim, n_agents=n_agents)
+
+
+def rebuild_from_metrics_csv(
+    *,
+    experiment_id: str,
+    seeds: Sequence[int],
+    metrics_csv_of: Callable[[int], str | Path],
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    n_agents: int,
+    n_episodes: int,
+    n_danio: int,
+    steps: int | None = None,
+    generation: int = 0,
+    device: str = "cpu",
+) -> BaselineComparisonResult:
+    """**离线重建**对照表：只读已落盘的 `metrics.csv`，**不训练、不跑 Arena**（`experiment §3.3`）。
+
+    用途：一次全规模 run 中途结束时，已完成 seed 的 `metrics.csv` 仍在盘上；本函数把这些
+    seed 恢复成与在线路径**同形**的对照表，而不必重训 —— 典型场景是「交付时限到了，先交
+    已完成的 seed」。
+
+    **忠实性（三点，逐条可核）**
+
+    1. 汇总复用在线路径的**同一**函数 —— `_summarise_models` / `comparison_payload` 不经
+       第二份实现，故两段式口径（`§1.2`）逐字一致。
+    2. 结构量**不依赖训练**（见 `_rebuild_model_complexity`）⇒ 6 个结构键逐位相同。
+    3. **唯一不可复现的是 `latency`** —— 它是 wall-clock 量（`§2.4`），在线路径自己两次跑也
+       不同（串/并行等价测试已如实放行该量）。重建写的是本次测量的值。
+
+    故本函数的产物**不是**在线路径的逐字节复制品，而是「已在盘的 seed 的合法汇总」。
+    落盘产物的权威 producer 仍是在线路径 `run_baseline_comparison`。
+
+    `n_agents` 传**配置的签字规模**（与在线路径一致）；逐模型的 `n_agents` 由
+    `_summarise_models` 从行数自派生（`allow_partial` 降级路径下可小于顶层值）。
+
+    完整性守卫（都**显式抛错**，不静默降级）：缺 `metrics.csv`、CSV 无数据行、出现未知
+    `model`、某模型缺席（说明 CSV 被截断而非「该 seed 已完成」）、episode 数与
+    `n_episodes` 不符。
+    """
+    if n_agents < 1 or n_episodes < 1:
+        raise ValueError(f"n_agents / n_episodes 必须 >= 1，实际 {n_agents} / {n_episodes}")
+    steps = arena_config.world.episode_steps if steps is None else steps
+
+    results: list[ModelResult] = []
+    for seed in seeds:
+        csv_path = Path(metrics_csv_of(seed))
+        if not csv_path.is_file():
+            raise FileNotFoundError(f"缺少 {csv_path}；该 seed 尚未完成或路径有误")
+        with csv_path.open(encoding="utf-8", newline="") as handle:
+            raw_rows = list(csv.DictReader(handle))
+        if not raw_rows:
+            raise ValueError(f"{csv_path} 无数据行（seed={seed}）")
+
+        by_model: dict[str, list[dict[str, Any]]] = {}
+        for raw in raw_rows:
+            row = {key: _parse_metric_value(value) for key, value in raw.items()}
+            by_model.setdefault(str(row["model"]), []).append(row)
+
+        unknown = sorted(set(by_model) - set(MODELS))
+        if unknown:
+            raise ValueError(f"{csv_path} 含未知 model={unknown}；合法值 {list(MODELS)}")
+        absent = [name for name in MODELS if name not in by_model]
+        if absent:
+            raise ValueError(
+                f"{csv_path} 缺模型 {absent}（已完成的 seed 应有全部 {list(MODELS)}）；"
+                "疑为被截断的 CSV，拒绝据此出表"
+            )
+        observed_eps = {int(row["episode"]) for rows in by_model.values() for row in rows}
+        if observed_eps != set(range(n_episodes)):
+            raise ValueError(
+                f"{csv_path} 的 episode 集合 {sorted(observed_eps)} != range({n_episodes})"
+            )
+
+        for name, rows in by_model.items():
+            complexity, cx_note = _rebuild_model_complexity(
+                name,
+                slot=MODELS.index(name),
+                seed=seed,
+                experiment_id=experiment_id,
+                chain=chain,
+                n_agents=n_agents,
+                n_danio=n_danio,
+                device=device,
+            )
+            for row in rows:
+                results.append(
+                    ModelResult(
+                        seed=seed,
+                        model=name,
+                        agent=int(row["agent"]),
+                        episode=int(row["episode"]),
+                        fish_id=str(row["fish_id"]),
+                        metrics={
+                            key: value
+                            for key, value in row.items()
+                            if key not in _CSV_LOCATOR_KEYS
+                        },
+                        complexity=complexity,
+                        complexity_note=cx_note,
+                    )
+                )
+
+    return BaselineComparisonResult(
+        experiment_id=experiment_id,
+        seeds=tuple(seeds),
+        steps=steps,
+        n_agents=n_agents,
+        n_episodes=n_episodes,
+        models=_summarise_models(results, n_agents=n_agents),
+    )
+
+
 __all__ = [
     "BASELINE_INDEX_BASE",
     "DANIONET_MODEL",
@@ -734,6 +926,7 @@ __all__ = [
     "BaselineComparisonResult",
     "ModelResult",
     "comparison_payload",
+    "rebuild_from_metrics_csv",
     "run_baseline_comparison",
     "table_path",
 ]

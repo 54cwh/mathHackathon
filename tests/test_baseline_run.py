@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 from pathlib import Path
 from statistics import fmean
 
@@ -44,6 +45,7 @@ from evogenesis.experiment.baseline_run import (
     _baseline_t,
     _complexity,
     comparison_payload,
+    rebuild_from_metrics_csv,
     run_baseline_comparison,
 )
 from evogenesis.experiment.collect import episode_dynamics_seed, episode_seed
@@ -461,3 +463,89 @@ def test_workers_gt_one_actually_uses_the_pool(tmp_path: Path, monkeypatch) -> N
         "并行路径下主进程不得加载数据集/持有训练上下文；"
         "若非空说明 executor 未真正传到 _evaluate_*（子进程池被绕过）"
     )
+
+
+def _same_scalar(left: object, right: object) -> bool:
+    """标量相等；`nan == nan` 视为相等（`energy_final` 无能量轨迹时为 `nan`）。"""
+    if isinstance(left, float) and isinstance(right, float):
+        if math.isnan(left) and math.isnan(right):
+            return True
+    return left == right
+
+
+#: `latency` 是 wall-clock 量（`experiment §2.4`），在线路径自己两次跑也不同 ⇒ 重建豁免。
+_LATENCY_KEYS = ("latency_p50_ms", "latency_p95_ms")
+
+
+def test_rebuild_from_metrics_csv_matches_producer(tmp_path: Path, monkeypatch) -> None:
+    """离线重建（不训练、不跑 Arena）必须与在线路径**同形**：同一 `metrics.csv` → 同一张表。
+
+    这是 `rebuild_from_metrics_csv` 忠实性声明的闸：汇总复用同一函数、结构量与训练无关 ⇒
+    除 `latency`（wall-clock，豁免）外，每个指标的 `mean/std/n` 与每个结构键**逐位相等**。
+    """
+    seeds = (1103, 2207)
+    n_agents, n_episodes = 2, 2
+    produced, run_dirs = _run_small(
+        tmp_path, monkeypatch, seeds=seeds, n_agents=n_agents, n_episodes=n_episodes
+    )
+    rebuilt = rebuild_from_metrics_csv(
+        experiment_id="expC",
+        seeds=seeds,
+        metrics_csv_of=lambda seed: run_dirs[seed] / "metrics.csv",
+        chain=load_model_chain_config(MODEL_CONFIG),
+        arena_config=ArenaConfig(),
+        n_agents=n_agents,
+        n_episodes=n_episodes,
+        n_danio=2,
+        steps=5,
+    )
+
+    left = comparison_payload(produced)
+    right = comparison_payload(rebuilt)
+    for key in ("seeds", "steps", "n_agents", "n_episodes"):
+        assert left[key] == right[key], key
+    assert [m["model"] for m in left["models"]] == [m["model"] for m in right["models"]]
+
+    for a, b in zip(left["models"], right["models"], strict=True):
+        assert a["n_agents"] == b["n_agents"], a["model"]
+        assert a["note"] == b["note"], a["model"]
+        assert a["metrics"] is not None and b["metrics"] is not None
+        for metric in SCALAR_METRICS:
+            for stat in ("mean", "std", "n"):
+                assert _same_scalar(
+                    a["metrics"][metric][stat], b["metrics"][metric][stat]
+                ), (a["model"], metric, stat)
+        assert set(a["complexity"]) == set(b["complexity"]), a["model"]
+        for key in a["complexity"]:
+            if key in _LATENCY_KEYS:
+                continue
+            assert a["complexity"][key] == b["complexity"][key], (a["model"], key)
+
+
+def test_rebuild_rejects_truncated_csv(tmp_path: Path, monkeypatch) -> None:
+    """CSV 缺某个模型 ⇒ **显式抛错**，不静默出表（防「截断的 CSV 被当成已完成的 seed」）。"""
+    produced, run_dirs = _run_small(
+        tmp_path, monkeypatch, seeds=(1103,), n_agents=1, n_episodes=1
+    )
+    assert produced.seeds == (1103,)
+    run_dir = run_dirs[1103]
+    rows = _read_metrics_csv(run_dir)
+    assert {row["model"] for row in rows} == {"mlp", "gru"}
+    kept = [row for row in rows if row["model"] == "mlp"]
+    with (run_dir / "metrics.csv").open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(kept)
+
+    with pytest.raises(ValueError, match="缺模型"):
+        rebuild_from_metrics_csv(
+            experiment_id="expC",
+            seeds=(1103,),
+            metrics_csv_of=lambda seed: run_dirs[seed] / "metrics.csv",
+            chain=load_model_chain_config(MODEL_CONFIG),
+            arena_config=ArenaConfig(),
+            n_agents=1,
+            n_episodes=1,
+            n_danio=2,
+            steps=5,
+        )
