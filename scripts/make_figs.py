@@ -36,6 +36,8 @@ matplotlib.use("Agg")  # 无显示环境
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from evogenesis.experiment.figdata import export_workbook  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[1]
 RUNS = ROOT / "results" / "runs"
 FIGS = ROOT / "results" / "figs"
@@ -91,6 +93,17 @@ def _stamp(fig, note: str) -> None:
     fig.text(0.995, 0.005, note, ha="right", va="bottom", fontsize=6, color="0.45")
 
 
+def _export(fig_path: Path, sheets, *, caption: str, sources=None, provenance=None) -> Path:
+    """导出该图的 Excel 底层数据（与图**同名**，放同级 `data/`）。
+
+    长期要求（用户 2026-09-26）：每张图必须有配套数据表，命名与图对应，供后续统一
+    美化时「改样式不改数据」。实现见 `experiment/figdata.py`。
+    """
+    out = export_workbook(fig_path, sheets, caption=caption, sources=sources, provenance=provenance)
+    print(f"  + data: {out.relative_to(ROOT)}")
+    return out
+
+
 def per_seed_figs(run_dir: Path, metrics: pd.DataFrame, pop: pd.DataFrame, note: str) -> list[Path]:
     """逐 seed 诊断图：个体条形 + 能量摘要。"""
     out_dir = run_dir / "plots"
@@ -113,6 +126,18 @@ def per_seed_figs(run_dir: Path, metrics: pd.DataFrame, pop: pd.DataFrame, note:
     plt.close(fig)
     made.append(p)
 
+    _export(
+        p,
+        {
+            "per_fish": metrics[
+                ["fish_id", "captures", "capture_attempts", "encounters", "survival"]
+            ],
+        },
+        caption="Per-fish captures / attempts / encounters / survival for one seed",
+        sources={"per_fish": "metrics.csv（run 目录）"},
+        provenance={"note": note},
+    )
+
     fig, ax = plt.subplots(figsize=(9, 4))
     ax.bar(pop["fish_id"], pop["energy_last"], label="final")
     ax.plot(pop["fish_id"], pop["energy_min"], "o", ms=3, color="tab:red", label="min")
@@ -127,6 +152,14 @@ def per_seed_figs(run_dir: Path, metrics: pd.DataFrame, pop: pd.DataFrame, note:
     fig.savefig(p, dpi=150)
     plt.close(fig)
     made.append(p)
+
+    _export(
+        p,
+        {"per_fish": pop[["fish_id", "energy_last", "energy_min"]]},
+        caption="Per-fish energy: final and minimum for one seed",
+        sources={"per_fish": "population.jsonl（run 目录）"},
+        provenance={"note": note},
+    )
     return made
 
 
@@ -164,6 +197,34 @@ def report_figs(
     plt.close(fig)
     made.append(p)
 
+    _export(
+        p,
+        {
+            "metrics_mean_std": pd.DataFrame(
+                [
+                    {
+                        "metric": n,
+                        "mean": per_metric[n]["mean"],
+                        "std": per_metric[n]["std"],
+                        "n_seeds": per_metric[n]["n"],
+                        "unit": unit,
+                    }
+                    for n, unit in REPORT_METRICS
+                ]
+            ),
+        },
+        caption=(
+            "Arena metrics: mean +/- std across seeds "
+            "(ratios on 0-1; energy_efficiency is a per-step rate)"
+        ),
+        sources={
+            "metrics_mean_std": (
+                "results/tables/<id>_summary.json；个体先 seed 内等权平均，再沿 seed 轴 mean/std"
+            )
+        },
+        provenance={"note": note},
+    )
+
     seed_fit = metrics.groupby("seed")["composite_fitness"].mean()
     fig, ax = plt.subplots(figsize=(6, 4.5))
     ax.bar([str(s) for s in seed_fit.index], seed_fit.to_numpy(), color="tab:green")
@@ -183,6 +244,14 @@ def report_figs(
     fig.savefig(p, dpi=150)
     plt.close(fig)
     made.append(p)
+
+    _export(
+        p,
+        {"fitness_by_seed": seed_fit.rename("composite_fitness").reset_index()},
+        caption="Composite fitness per seed (individual mean within seed)",
+        sources={"fitness_by_seed": "metrics.csv 按 seed 取 composite_fitness 均值"},
+        provenance={"note": note},
+    )
 
     ev_cols = [
         c
@@ -207,6 +276,14 @@ def report_figs(
     plt.close(fig)
     made.append(p)
 
+    _export(
+        p,
+        {"events_by_seed": eps[["seed", *ev_cols]]},
+        caption="Episode event counts per seed",
+        sources={"events_by_seed": "episodes.jsonl（run 目录）"},
+        provenance={"note": note},
+    )
+
     # §4 的关系图：分母 `encounters`（尺寸门之前）vs `captures`。
     # `capture_attempts` 自 2026-09-26 起只是**诊断列**，不进该指标，故只作参考线。
     fig, ax = plt.subplots(figsize=(6, 5))
@@ -225,6 +302,18 @@ def report_figs(
     fig.savefig(p, dpi=150)
     plt.close(fig)
     made.append(p)
+
+    _export(
+        p,
+        {
+            "per_fish": metrics[
+                ["seed", "fish_id", "encounters", "captures", "capture_attempts", "prey_capture"]
+            ],
+        },
+        caption="§4 denominator (encounters, pre-size-gate) vs captures, per fish",
+        sources={"per_fish": "metrics.csv；注意分母右偏（见 diagnostics.md）"},
+        provenance={"note": note},
+    )
     return made
 
 

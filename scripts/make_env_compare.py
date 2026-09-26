@@ -22,6 +22,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+
+from evogenesis.experiment.figdata import export_workbook  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 TABLES = ROOT / "results" / "tables"
@@ -95,6 +98,33 @@ def main() -> None:
     fig.savefig(p1, dpi=150)
     plt.close(fig)
     made.append(p1)
+    export_workbook(
+        p1,
+        {
+            "rates_by_condition": pd.DataFrame(
+                [
+                    {
+                        "condition": exp,
+                        "environment_id": exp.removeprefix("exp_env_"),
+                        "metric": m,
+                        "mean": summaries[exp]["per_metric"][m]["mean"],
+                        "std": summaries[exp]["per_metric"][m]["std"],
+                        "n_seeds": summaries[exp]["per_metric"][m]["n"],
+                    }
+                    for exp, _ in CONDITIONS
+                    for m in METRICS
+                ]
+            ),
+        },
+        caption="E-F env pre-check: §4 rate metrics per condition (mean +/- std across seeds)",
+        sources={
+            "rates_by_condition": (
+                "results/tables/exp_env_*_summary.json；"
+                "个体先 seed 内等权平均，再沿 seed 轴 mean/std（n=3）"
+            )
+        },
+        provenance={"note": note},
+    )
 
     # 图 2：绝对量（比值的分子/分母）
     tot = {e: absolute_totals(e) for e, _ in CONDITIONS}
@@ -125,6 +155,32 @@ def main() -> None:
     fig.savefig(p2, dpi=150)
     plt.close(fig)
     made.append(p2)
+    export_workbook(
+        p2,
+        {
+            "absolute_counts": pd.DataFrame(
+                [
+                    {
+                        "condition": exp,
+                        "environment_id": exp.removeprefix("exp_env_"),
+                        "captures_total": tot[exp][0],
+                        "encounters_total": tot[exp][1],
+                        "n_individuals": tot[exp][2],
+                        "pooled_ratio": (tot[exp][0] / max(tot[exp][1], 1)),
+                    }
+                    for exp, _ in CONDITIONS
+                ]
+            ),
+        },
+        caption=("Why ratios hide the prey-density effect: numerator AND denominator move"),
+        sources={
+            "absolute_counts": (
+                "各 run 的 metrics.csv 汇总；"
+                "pooled_ratio = Σcaptures / Σencounters（≠ 个体比值均值，见 §4）"
+            )
+        },
+        provenance={"note": note},
+    )
 
     print("环境对照图：")
     for p in made:
