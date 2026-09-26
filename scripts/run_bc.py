@@ -12,7 +12,6 @@ collect（专家轨迹）→ 逐个体 BC 训练 → 训练前后同一局 Danio
 from __future__ import annotations
 
 import argparse
-import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -23,7 +22,7 @@ from evogenesis.experiment import collect, learning_run, runlayout
 from evogenesis.experiment.environments import BASELINE, load_environment
 from evogenesis.experiment.metrics import aggregate_by_seed
 from evogenesis.experiment.overrides import parse_overrides
-from evogenesis.experiment.run_artifacts import write_metrics_csv
+from evogenesis.experiment.run_artifacts import dump_json, write_metrics_csv
 from evogenesis.pipeline import load_model_chain_config
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -134,16 +133,11 @@ def main(argv: list[str] | None = None) -> None:
     write_metrics_csv(run_dir, rows)
     write_jsonl(run_dir / "learning.jsonl", list(learning_run.learning_records(result)))
     post_rows = [row for row in rows if row["phase"] == "post"]
-    (run_dir / "seed_summary.json").write_text(
-        json.dumps(aggregate_by_seed(post_rows), indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
-    (run_dir / "learning_summary.json").write_text(
-        json.dumps(
-            learning_run.learning_summary(result, seed=args.seed), indent=2, ensure_ascii=False
-        )
-        + "\n",
-        encoding="utf-8",
+    dump_json(run_dir / "seed_summary.json", aggregate_by_seed(post_rows), indent=2)
+    dump_json(
+        run_dir / "learning_summary.json",
+        learning_run.learning_summary(result, seed=args.seed),
+        indent=2,
     )
     print(
         f"bc run: {run_dir}｜trajectories {n_trajectories}｜viable {result.n_viable}/{args.n}"

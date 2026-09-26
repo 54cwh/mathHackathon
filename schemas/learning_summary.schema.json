@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/learning_summary.schema.json",
+  "title": "EvoGenesis learning_summary.json",
+  "meta": {
+    "owns": "learning_summary.json（producer=experiment/learning_run.py）",
+    "status": "已定稿"
+  },
+  "description": "learning 汇总。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "seed",
+    "sign_constrained",
+    "n_individuals",
+    "n_viable",
+    "mean_final_loss",
+    "mean_epochs",
+    "mean_delta_w_norm",
+    "noninheritance"
+  ],
+  "properties": {
+    "seed": {
+      "type": "integer"
+    },
+    "sign_constrained": {
+      "type": "boolean"
+    },
+    "n_individuals": {
+      "type": "integer"
+    },
+    "n_viable": {
+      "type": "integer"
+    },
+    "mean_final_loss": {
+      "type": "number"
+    },
+    "mean_epochs": {
+      "type": "number"
+    },
+    "mean_delta_w_norm": {
+      "type": "number"
+    },
+    "noninheritance": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fresh_delta_w_max_abs",
+            "weights0_max_abs_diff"
+          ],
+          "properties": {
+            "fresh_delta_w_max_abs": {
+              "type": "number"
+            },
+            "weights0_max_abs_diff": {
+              "type": "number"
+            }
+          },
+          "description": "非遗传证据。"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

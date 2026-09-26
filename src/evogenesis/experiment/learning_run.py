@@ -163,9 +163,10 @@ def run_lifetime_learning(
             sign_constrained=sign_constrained,
         )
 
-    dataset = load_trajectories(sorted(Path(trajectories_dir).glob(TRAJECTORY_GLOB)))
-    if dataset.n_episodes == 0:
+    trajectory_paths = sorted(Path(trajectories_dir).glob(TRAJECTORY_GLOB))
+    if not trajectory_paths:
         raise ValueError(f"{trajectories_dir} 下无 {TRAJECTORY_GLOB} 轨迹，无法训练（§3）")
+    dataset = load_trajectories(trajectory_paths)
 
     # 训练前：同一批 arena 子种子（generation）下评估未训练网络
     eval_net = danionet_of(
@@ -203,14 +204,24 @@ def run_lifetime_learning(
         )
         thetas.append(theta)
         train_results.append(result)
+        # 报告按**逐个体单网络**生成（`learning §4`）：`flip_rate`/谱半径是该个体的量，
+        # 不能对批量网络池化后再分发给每个个体。
+        single = danionet_of(
+            [phenotype],
+            master_seed=master_seed,
+            config=chain.network,
+            device=device,
+            sign_constrained=sign_constrained,
+        )
+        with torch.no_grad():
+            single.theta.data[0].copy_(theta[0])
+        reports.append(build_report(single, result))
 
     # 训练后：把逐个体 Θ 注入批量网络（W⁰/支撑/先验与单个体构造一致，见 connectome §3），
     # 在同一批 arena 子种子与同一网络对象上复评，保证「训练前后」仅有 Θ 不同。
     with torch.no_grad():
         for slot, theta in enumerate(thetas):
             eval_net.theta.data[slot].copy_(theta[0])
-    for result in train_results:
-        reports.append(build_report(eval_net, result))
 
     post = drive_arena_with_net(
         viable_individuals,
@@ -306,7 +317,7 @@ def learning_records(result: LifetimeLearningResult) -> list[dict]:
                 "coverage_steps": report.coverage_steps,
                 "visible_steps": report.visible_steps,
                 "flip_rate": report.flip_rate,
-                "spectral_radius": list(report.spectral_radius),
+                "spectral_radius": report.spectral_radius[0],
                 "delta_w_norm": result.delta_w_norm[slot],
                 "loss_weight_omega": train.loss_weights.omega,
                 "loss_weight_v": train.loss_weights.v,

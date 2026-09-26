@@ -115,3 +115,33 @@ def test_fitness_and_evolution_line_pass_schema():
         },
         _schema("evolution.schema.json"),
     )
+
+
+def test_learning_artifacts_pass_schema():
+    record = {
+        "fish_id": "exp:g0:fish0000",
+        "genome_id": "exp:g0:genome0000",
+        "sign_constrained": True,
+        "final_loss": 0.25,
+        "n_updates": 20,
+        "epochs": 6.4,
+        "coverage_steps": 6.4,
+        "visible_steps": 768000,
+        "flip_rate": 0.1,
+        "spectral_radius": 0.9,
+        "delta_w_norm": 0.01,
+        "loss_weight_omega": 0.4,
+        "loss_weight_v": 1.6,
+    }
+    jsonschema.validate(record, _schema("learning.schema.json"))
+    summary = {
+        "seed": 1103,
+        "sign_constrained": True,
+        "n_individuals": 12,
+        "n_viable": 2,
+        "mean_final_loss": 0.25,
+        "mean_epochs": 6.4,
+        "mean_delta_w_norm": 0.015,
+        "noninheritance": {"fresh_delta_w_max_abs": 0.0, "weights0_max_abs_diff": 0.0},
+    }
+    jsonschema.validate(summary, _schema("learning_summary.schema.json"))

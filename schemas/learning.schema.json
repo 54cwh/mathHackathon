@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/learning.schema.json",
+  "title": "EvoGenesis learning.jsonl record (BC lifetime learning)",
+  "meta": {
+    "owns": "learning.jsonl 单行（producer=experiment/learning_run.py）",
+    "status": "已定稿"
+  },
+  "description": "learning 单行。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fish_id",
+    "genome_id",
+    "sign_constrained",
+    "final_loss",
+    "n_updates",
+    "epochs",
+    "coverage_steps",
+    "visible_steps",
+    "flip_rate",
+    "spectral_radius",
+    "delta_w_norm",
+    "loss_weight_omega",
+    "loss_weight_v"
+  ],
+  "properties": {
+    "fish_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "genome_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sign_constrained": {
+      "type": "boolean"
+    },
+    "final_loss": {
+      "type": "number"
+    },
+    "n_updates": {
+      "type": "integer"
+    },
+    "epochs": {
+      "type": "number"
+    },
+    "coverage_steps": {
+      "type": "number"
+    },
+    "visible_steps": {
+      "type": "integer"
+    },
+    "flip_rate": {
+      "type": "number"
+    },
+    "spectral_radius": {
+      "type": "number"
+    },
+    "delta_w_norm": {
+      "type": "number"
+    },
+    "loss_weight_omega": {
+      "type": "number"
+    },
+    "loss_weight_v": {
+      "type": "number"
+    }
+  }
+}
