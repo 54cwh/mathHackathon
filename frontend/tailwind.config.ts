@@ -2,10 +2,12 @@ import type { Config } from "tailwindcss";
 import animate from "tailwindcss-animate";
 
 import { BRAND } from "./src/design/palette";
+import { toTailwindColors } from "./src/design/tokens";
+import { FONT_MONO_STACK, FONT_TEXT_STACK } from "./src/design/typography";
 
 /**
  * camelCase -> kebab-case，让 Tailwind 类名是 `bg-slate-shadow` 而不是 `bg-slateShadow`。
- * 这样品牌色的**唯一来源仍是 `src/design/palette.ts`**，不为了类名好看而复制一份。
+ * 品牌色的唯一来源仍是 `src/design/palette.ts`，不为了类名好看而复制一份。
  */
 const kebab = (hexByName: Record<string, string>): Record<string, string> =>
   Object.fromEntries(
@@ -16,14 +18,51 @@ const kebab = (hexByName: Record<string, string>): Record<string, string> =>
   );
 
 export default {
-  /* 已移除 `darkMode: ["class"]`（Q2(c) 全暗、不做主题切换）。
-     它此前就是死配置：`src/index.css` 只有 `:root` 一个主题块、无 `.dark`，
-     且全库 `src/**` 无任何 `dark:` 变体（grep 实测 0 处）。 */
+  /* 全暗、不做主题切换（原 `darkMode: ["class"]` 是死配置，已移除）。 */
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
+  /**
+   * 永久禁生成的类名。**这不是洁癖，是修一类真实缺陷。**
+   *
+   * 机制：Tailwind 扫的是**原始文本**（不剥注释），所以任何与工具类同名的
+   * 小写单词都会被当成候选并生成「没人用」的 CSS：
+   *   - TS 对象键：`tokens.ts` 的 shell token `ring:` -> 产出 `.ring` 及其整套
+   *     `--tw-ring-*` 基座（实测 22 条声明）；
+   *   - 属性访问：`DNA.shadow` -> 产出 `.shadow` + `--tw-shadow*`；
+   *   - 英文注释：geometry.ts 的 "snapped…"（原 "rounded to…"）-> 产出 `.rounded`。
+   * 静态检查抓不到「注释/键名」这两类（它剥注释、且不把属性访问当类名），
+   * 所以真正的兜底只能放在这里：**让这些类名根本不可能被生成**。
+   *
+   * 与 §十一 一致：本项目不用阴影 / 模糊 / glass / 渐变 / 透明度淡出 / 动画，
+   * 圆角刻度也已整段归零，故禁用它们不损失任何表达力。
+   */
+  blocklist: [
+    /* 根因：6 个「基类」——只要被切出来就会带出整套 --tw-* 基座。 */
+    "ring",
+    "shadow",
+    "rounded",
+    "blur",
+    "transition",
+    "animate",
+    /* 圆角整套刻度（值已全为 0，禁掉不损失表达力）。 */
+    "rounded-none", "rounded-sm", "rounded-md", "rounded-lg",
+    "rounded-xl", "rounded-2xl", "rounded-3xl", "rounded-full",
+    /* 阴影 / 投影刻度。 */
+    "shadow-sm", "shadow-md", "shadow-lg", "shadow-xl", "shadow-2xl",
+    "shadow-inner", "shadow-none",
+    "drop-shadow", "drop-shadow-sm", "drop-shadow-md",
+    "drop-shadow-lg", "drop-shadow-xl", "drop-shadow-2xl",
+    /* 模糊 / glass。 */
+    "blur-sm", "blur-md", "blur-lg", "blur-xl", "blur-2xl", "blur-3xl",
+    "backdrop-blur", "backdrop-blur-sm", "backdrop-blur-md",
+    "backdrop-blur-lg", "backdrop-blur-xl",
+    /* 过渡 / 动画。 */
+    "transition-colors", "transition-all", "transition-opacity",
+    "transition-shadow", "transition-transform", "transition-none",
+    "animate-spin", "animate-ping", "animate-pulse", "animate-bounce",
+    "animate-in", "animate-out",
+  ],
   theme: {
-    /* R2-4 无圆角：**整段替换**默认圆角刻度（不是 extend），
-       连默认的 `rounded` 与 `rounded-full` 一并归零。
-       数值基准：`src/design/palette.ts` 的 `RADIUS`。 */
+    /* R2-4 无圆角：整段替换默认圆角刻度（连 `rounded` 与 `rounded-full` 一并归零）。 */
     borderRadius: {
       none: "0",
       sm: "0",
@@ -37,52 +76,15 @@ export default {
     },
     extend: {
       colors: {
-        /* ---- 外壳 token（owner：`src/index.css` 的 `:root`）---- */
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        success: "hsl(var(--success))",
-        warning: "hsl(var(--warning))",
-        /* 注：此处原有的 `violet: "hsl(var(--violet))"` 覆盖了 Tailwind 自带的
-           violet 色阶 —— 属审计 §3 记的「死 token」，品牌紫已由 `brand.mutation-violet` 承担，
-           故不再在本层重定义 `violet`。 */
-        /* ---- 品牌 24 色（owner：`src/design/palette.ts`）----
+        /* 外壳 token（值 owner：`src/index.css`；本层由 `src/design/tokens.ts` 生成）。 */
+        ...toTailwindColors(),
+        /* 品牌 24 色（owner：`src/design/palette.ts`）——
            用法：`bg-brand-ink` / `text-brand-foam` / `border-brand-stone-shadow` … */
         brand: kebab(BRAND),
       },
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "ui-monospace", "monospace"],
+        sans: FONT_TEXT_STACK,
+        mono: FONT_MONO_STACK,
       },
     },
   },

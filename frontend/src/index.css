@@ -5,44 +5,34 @@
 @tailwind utilities;
 
 @layer base {
-  /* 外壳 token 的唯一 owner（owner：李辰钊）。
-     品牌 24 色在 src/design/palette.ts —— 两边互不重叠，勿互相复制。 */
+  /* 外壳 token 的唯一 owner（owner：李辰钊）；生成块的值由 src/design/tokens.ts 生成
+     （npm run gen:design），勿手改。品牌 24 色在 src/design/palette.ts，两边互不复制。 */
   :root {
+/* @generated:design */
     --background: 213 29% 6%;
     --foreground: 208 35% 93%;
-
     --card: 217 9% 10%;
     --card-foreground: 208 35% 93%;
-
     --popover: 217 9% 10%;
     --popover-foreground: 208 35% 93%;
-
     --primary: 188 86% 53%;
     --primary-foreground: 213 29% 6%;
-
     --secondary: 217 9% 16%;
     --secondary-foreground: 208 35% 93%;
-
     --muted: 217 9% 16%;
     --muted-foreground: 214 15% 60%;
-
     --accent: 217 9% 18%;
     --accent-foreground: 208 35% 93%;
-
     --destructive: 0 91% 71%;
     --destructive-foreground: 213 29% 6%;
-
     --border: 213 28% 17%;
     --input: 213 28% 17%;
     --ring: 188 86% 53%;
-
     --success: 158 64% 52%;
     --warning: 43 96% 56%;
     --violet: 255 92% 76%;
-
-    /* R2-4 无圆角：原 0.625rem(=10px) 已废止。
-       本条覆盖 frontend/README.md 的『圆角 10px』那一行。 */
-    --radius: 0rem;
+    --radius: 0;
+/* @end:design */
   }
 
   * {
@@ -61,60 +51,18 @@
 }
 
 @layer utilities {
-  /* 像素字体作用域（Q4(b)）。**唯一 owner = 本文件**：
-     .font-pixel 除 font-family 外还带 -webkit-font-smoothing: none，
-     Tailwind config 的 fontFamily 表达不了这个副作用，故不拆两处。
-     用法：只加在**英文**标签/标题上；数值走 font-mono，中文走默认 font-sans。 */
+  /* 像素字体作用域（Q4(b)）。唯一 owner = 本文件：.font-pixel 除 font-family 外还带
+     -webkit-font-smoothing: none，Tailwind fontFamily 表达不了，故不拆两处。
+     用法：只加在英文标签/标题上；数值走 font-mono，中文走默认 font-sans。 */
   .font-pixel {
     font-family: "Press Start 2P", ui-monospace, monospace;
     -webkit-font-smoothing: none;
     font-smooth: never;
   }
-}
 
-@layer components {
-  /* ============================================================
-     几何契约（审计 §A.8 条款 3：每个几何约束一个 CSS owner）
-     owner = 本文件。组件**不得**用 Tailwind 类去复刻这些约束。
-     改动这里等于改规范，须同步 frontend/交互与可视化.md §13/§14。
-     ============================================================ */
-
-  /* 3:2 应用外框。
-     viewport 比它宽 -> 左右 pillarbox（margin-inline: auto 居中）；
-     viewport 比它窄 -> 整体等比变小（不会破三栏）。
-     两次声明是渐进增强：老浏览器取 vh，新浏览器取 dvh。
-     **刻意不用 transform: scale()** —— 非整数缩放的 transform 会产生半像素
-     （§十一 明令禁止），且会把正文糊掉。 */
-  .eg-frame {
-    aspect-ratio: 3 / 2;
-    width: min(100%, calc(100vh * 3 / 2));
-    width: min(100%, calc(100dvh * 3 / 2));
-    max-height: 100vh;
-    max-height: 100dvh;
-    margin-inline: auto;
-    overflow: hidden;
-  }
-
-  /* 三栏**恒为 3 列**：不在任何断点回退成单列。
-     栏间竖线由本元素的 `divide-x divide-border`（写在 App.tsx 的 <main> 上）唯一拥有，
-     子面板不得再画左/右边框去模拟分割线。 */
-  .eg-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    min-height: 0;
-    flex: 1 1 0%;
-  }
-
-  /* Arena 视口**恒为 5:3**。位图本身 640x384 也是 5:3，故不会变形；
-     命中测试走 getBoundingClientRect 线性映射，只有等比才不会系统性偏移。 */
-  .eg-arena {
-    aspect-ratio: 5 / 3;
-    width: 100%;
-  }
-}
-
-@layer utilities {
-  /* 像素素材放大必须最近邻，否则浏览器双线性插值会把硬边糊掉。 */
+  /* 像素素材放大必须最近邻，否则浏览器双线性插值会把硬边糊掉。
+     注意：**几何契约不在本文件** —— 唯一 owner 是 src/design/geometry.ts
+     （3:2 外框 / 5:3 视口 / 整数坐标映射）。此处不再保留第二份几何定义。 */
   .pixelated {
     image-rendering: pixelated;
   }

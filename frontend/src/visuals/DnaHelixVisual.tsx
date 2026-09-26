@@ -86,7 +86,7 @@ function buildHelix(w: number, h: number): Helix {
 
 /**
  * 绘制顺序 = 真实的遮挡顺序，共四遍：
- *   1) 交织暗部  shadow  —— 只在两链靠近的行铺一块比链稍大的暗底，
+ *   1) 交织暗部  shade   —— 只在两链靠近的行铺一块比链稍大的暗底，
  *                          链随后压在它上面，露出的一圈就是"交织点"的暗部。
  *   2) 后链      strandA / strandB（按每行的 s 决定谁在后面）
  *   3) 横档      rung    —— 画在后链之上、前链之下，于是横档"从后面穿过去"。
@@ -111,7 +111,7 @@ function drawHelix(canvas: HTMLCanvasElement, w: number, h: number) {
   const prevRow = (i: number) => (i > 0 ? rows[i - 1] : rows[0]);
 
   // 1) 交织暗部：只在 |ca - cb| <= BLOCK 的行（两链重叠处）
-  ctx.fillStyle = DNA.shadow;
+  ctx.fillStyle = DNA.shade;
   for (const r of rows) {
     if (Math.abs(r.ca - r.cb) > BLOCK) continue;
     const lo = Math.min(r.ca, r.cb) - 1;
@@ -190,7 +190,9 @@ export function DnaHelixVisual() {
 
   return (
     <div ref={wrapRef} className="h-full w-full overflow-hidden">
-      <canvas ref={canvasRef} aria-hidden className="block h-full w-full" />
+      {/* 也加 .pixelated：位图 = 容器 CSS 像素，在 DPR>1（本机 1.5）时是 1.5 倍
+          上采样，不加则被双线性插值糊掉硬边；1px 横档会消失。 */}
+      <canvas ref={canvasRef} aria-hidden className="pixelated block h-full w-full" />
     </div>
   );
 }

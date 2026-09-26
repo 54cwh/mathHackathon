@@ -1,160 +1,116 @@
-/**
- * 视觉规范静态检查（`npm run lint:design`）。**只读**，不改任何文件。
- *
- * 存在的理由：规范写在文档里会漂，写成检查才不会漂。审计查出的事实是
- * `panels/DanioArenaPanel.tsx` 里散落 11 个硬编码 hex（其中 3 个是手打的 Tailwind 灰），
- * 而「改一处颜色要满仓库找」正是两人并行时最容易互相踩的地方。
- *
- * 检查项（任一失败即 exit 1）：
- *  R1  `#RRGGBB` 只允许出现在 `src/design/palette.ts`（品牌色唯一 owner）。
- *  R2  禁止 `rounded` / `rounded-*`（除 `rounded-none`）——`R2-4 无圆角`。
- *  R3  `index.css` 的 `--radius` 必须是 `0rem`（R2-4 的代码落点）。
- *  R4  `palette.ts` 的 `BRAND` 必须恰好 24 项（防误删/误加）。
- *  R5  `palette.ts` 不得含 `#FF00FF`（洋红是抠图键控色，进了色板会挖掉素材本身）。
- *  R6  禁止破坏像素硬度 / 引入调色板外混合色的手段（§十一）：
- *      阴影 / 模糊 / glass / 渐变 / opacity 淡出 / transition 颜色插值 / 动画 / 颜色透明后缀。
- *
- * 已知局限（诚实声明）：注释剥离是**逐行状态机**，只处理 `/* … *​/` 块注释与
- * `//` 行注释（且 `//` 前是 `:` 时不视为注释，避开 `https://`）。
- * 若将来出现模板字符串里拼 hex 之类的写法，本检查抓不到 —— 那种情况请直接不要写。
- */
-import { readFile, readdir } from "node:fs/promises";
+// Design-spec enforcement (`frontend/交互与可视化.md` §14 / 附录 A §A.2)。
+// Scans src/** and exits non-zero on any hardcoded colour, radius, shadow,
+// blur, gradient or colour transition. Also verifies the generated index.css
+// token block matches src/design/tokens.ts (drift guard) and that the palette
+// still holds exactly 24 brand colours. Palette / token / CSS files are exempt
+// from the class scan (they are the definition sites) but are checked directly.
+
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
-import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CSS_TOKENS_BEGIN, CSS_TOKENS_END, toCssRootBlock } from "../src/design/tokens.ts";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = join(HERE, "..");
-const SRC = join(ROOT, "src");
+const SRC = fileURLToPath(new URL("../src", import.meta.url));
+const EXEMPT = new Set(["design/palette.ts", "design/tokens.ts", "index.css"]);
+const EXTENSIONS = [".ts", ".tsx", ".css"];
 
-const PALETTE_REL = "src/design/palette.ts"; // 正斜杠：与 relative(...) 归一化后的形式比对
-const ALLOW_HEX = new Set([PALETTE_REL]);
-
-/* ---- R6：禁止破坏像素硬度 / 引入调色板外混合色的手段（§十一）----
-   `shadow` 必须带「前面是空白/引号/行首」的边界：品牌色名 `stone-shadow` 里的
-   `-shadow` 前面是 `-`，不会被误判 —— 这是 R6 唯一的假阳性陷阱。 */
-const TS_BAN = [
-  { re: /(?:^|[\s"'`])(?:drop-)?shadow(?:-[a-z0-9]+)?(?=[\s"'`]|$)/, why: "阴影" },
-  { re: /(?:^|[\s"'`])blur(?:-[a-z0-9]+)?(?=[\s"'`]|$)/, why: "模糊" },
-  { re: /(?:^|[\s"'`])backdrop-[a-z0-9-]+/, why: "backdrop（glass）" },
-  { re: /(?:^|[\s"'`])bg-gradient(?:-[a-z0-9-]+)?/, why: "渐变" },
-  { re: /(?:^|[\s"'`])(?:from|via|to)-[a-z]+-[0-9]{2,3}(?=[\s"'`]|$)/, why: "渐变端点" },
-  { re: /(?:^|[\s"'`])opacity-[0-9]+/, why: "opacity 淡出" },
-  { re: /(?:^|[\s"'`])transition(?:-[a-z0-9]+)?(?=[\s"'`]|$)/, why: "颜色插值" },
-  { re: /(?:^|[\s"'`])animate-[a-z0-9-]+/, why: "动画" },
-  { re: /(?:bg|text|border|ring|divide|outline|fill|stroke)-[a-z-]+\/[0-9]{1,3}(?=[\s"'`]|$)/, why: "颜色透明后缀" },
+// 边界断言用 (?<![\w.-]) / (?![\w-])，**不要**用 \b。
+// 理由（真实踩过的陷阱）：品牌色名 `stone-shadow` 里 `-shadow` 前面是 `-`，
+// 而 `-` 是非词字符 => \b 成立 => 第一个写 `bg-brand-stone-shadow` 的人会被
+// 误报成「阴影」。带 lookbehind 后，`-` 与词字符都排除在外，误报消失。
+// 还要排除 `.`：TS 里的**属性访问**（`DNA.shadow` / `obj.blur`）不是 class 字符串，
+// 但补集里恰好含 `shadow` 这类词 —— 本规则第一次运行就抓到了自己的源码。
+const RULES = [
+  { name: "literal hex colour", re: /#[0-9A-Fa-f]{3,8}\b/g },
+  { name: "rgb()/hsl() colour", re: /\b(?:rgb|rgba|hsl|hsla)\(/g },
+  {
+    name: "tailwind named colour scale",
+    re: /\b(?:bg|text|border|from|to|via|ring|fill|stroke|divide|outline|accent|caret|decoration|shadow)-(?:gray|slate|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g,
+  },
+  { name: "rounded*", re: /(?<![\w.-])rounded(?:-[a-z0-9]+)?(?![\w-])/g },
+  { name: "shadow*", re: /(?<![\w.-])(?:drop-)?shadow(?:-[a-z0-9]+)?(?![\w-])/g },
+  { name: "blur*", re: /(?<![\w.-])blur(?:-[a-z0-9]+)?(?![\w-])/g },
+  { name: "backdrop-* (glass)", re: /(?<![\w.-])backdrop-[a-z0-9-]+/g },
+  { name: "gradient", re: /\b(?:bg-gradient|linear-gradient|radial-gradient|conic-gradient)\b/g },
+  { name: "gradient endpoint", re: /(?<![\w.-])(?:from|via|to)-[a-z-]+-[0-9]{2,3}(?![\w-])/g },
+  { name: "transition* (colour interpolation)", re: /(?<![\w.-])transition(?:-[a-z0-9]+)?(?![\w-])/g },
+  { name: "animate-*", re: /(?<![\w.-])animate-[a-z0-9-]+/g },
+  { name: "opacity-*", re: /(?<![\w.-])opacity-[0-9]+/g },
+  { name: "colour alpha suffix", re: /(?<![\w.-])(?:bg|text|border|ring|divide|outline|fill|stroke|accent|caret|decoration)-[a-z-]+\/[0-9]{1,3}(?![\w-])/g },
 ];
-const CSS_BAN = [
-  { re: /box-shadow\s*:/, why: "box-shadow" },
-  { re: /text-shadow\s*:/, why: "text-shadow" },
-  { re: /(?:^|[;\s])filter\s*:/, why: "filter（模糊）" },
-  { re: /backdrop-filter\s*:/, why: "backdrop-filter（glass）" },
-  { re: /(?:linear|radial|conic)-gradient\(/, why: "gradient()" },
-  { re: /(?:^|[;\s])transition\s*:/, why: "transition" },
+
+/** 仅对 .css 生效：裸 CSS 声明。类名形态的规则抓不到它们。 */
+const CSS_RULES = [
+  { name: "box-shadow:", re: /box-shadow\s*:/g },
+  { name: "text-shadow:", re: /text-shadow\s*:/g },
+  { name: "filter:", re: /(?<![-\w])filter\s*:/g },
+  { name: "backdrop-filter:", re: /backdrop-filter\s*:/g },
+  { name: "*-gradient()", re: /(?:linear|radial|conic)-gradient\(/g },
+  { name: "transition:", re: /(?<![-\w])transition\s*:/g },
 ];
 
-const violations = [];
-const bad = (rule, file, line, msg) =>
-  violations.push({ rule, file: relative(ROOT, file).split(sep).join("/"), line, msg });
-
-/** 递归收集 src 下的 .ts/.tsx/.css */
-async function walk(dir, out = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) await walk(full, out);
-    else if (/\.(ts|tsx|css)$/.test(entry.name)) out.push(full);
+function* walk(dir) {
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) yield* walk(full);
+    else if (EXTENSIONS.some((ext) => entry.endsWith(ext))) yield full;
   }
-  return out;
 }
 
-/** 逐行剥注释，返回 {text, line} 数组。 */
-function stripComments(source) {
-  const lines = source.split(/\r?\n/);
-  const out = [];
-  let inBlock = false;
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    let res = "";
-    let idx = 0;
-    while (idx < line.length) {
-      if (inBlock) {
-        const end = line.indexOf("*/", idx);
-        if (end === -1) { idx = line.length; break; }
-        inBlock = false;
-        idx = end + 2;
-        continue;
+const findings = [];
+for (const file of walk(SRC)) {
+  const rel = relative(SRC, file).split(sep).join("/");
+  if (EXEMPT.has(rel)) continue;
+  // 块注释替换成等量换行（而不是空串），否则报出的行号会在第一个多行注释后整体错位。
+  const stripped = readFileSync(file, "utf8").replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""));
+  const rules = rel.endsWith(".css") ? RULES.concat(CSS_RULES) : RULES;
+  stripped.split("\n").forEach((line, index) => {
+    const code = line.replace(/(^|\s)\/\/.*$/, "$1");
+    for (const rule of rules) {
+      rule.re.lastIndex = 0;
+      if (rule.re.test(code)) {
+        findings.push(`${rel}:${index + 1}  ${rule.name}  →  ${line.trim()}`);
       }
-      const open = line.indexOf("/*", idx);
-      const slash = line.indexOf("//", idx);
-      const isUrl = slash > 0 && line[slash - 1] === ":";
-      const lineComment = slash !== -1 && !isUrl;
-      if (open !== -1 && (lineComment ? open < slash : true)) {
-        res += line.slice(idx, open);
-        const end = line.indexOf("*/", open + 2);
-        if (end === -1) { inBlock = true; idx = line.length; break; }
-        idx = end + 2;
-        continue;
-      }
-      if (lineComment) { res += line.slice(idx, slash); idx = line.length; break; }
-      res += line.slice(idx);
-      break;
     }
-    out.push({ text: res, line: i + 1 });
-  }
-  return out;
+  });
 }
 
-const HEX = /#[0-9A-Fa-f]{6}\b/;
-const ROUNDED = /(^|[\s"'`])rounded(?!-none)(-[a-z0-9]+)?\b/;
-
-const files = await walk(SRC);
-for (const file of files) {
-  const rel = relative(ROOT, file).split(sep).join("/");
-  const stripped = stripComments(await readFile(file, "utf8"));
-
-  if (!ALLOW_HEX.has(rel)) {
-    for (const { text, line } of stripped) {
-      const m = text.match(HEX);
-      if (m) bad("R1", file, line, `出现 hex 字面量 ${m[0]}；品牌色只在 ${PALETTE_REL} 定义`);
-    }
-  }
-  for (const { text, line } of stripped) {
-    if (ROUNDED.test(text)) bad("R2", file, line, "出现 rounded 类（R2-4 无圆角）");
-  }
-  const rules = rel.endsWith(".css") ? CSS_BAN : TS_BAN;
-  for (const { text, line } of stripped) {
-    for (const { re, why } of rules) {
-      if (re.test(text)) bad("R6", file, line, "出现" + why + "（§十一）");
-    }
+// ---- palette invariants（palette.ts 在扫描里 EXEMPT，故在此直接校验）--------
+const paletteSrc = readFileSync(join(SRC, "design/palette.ts"), "utf8");
+const brandStart = paletteSrc.indexOf("export const BRAND");
+const brandEnd = paletteSrc.indexOf("export type BrandColor");
+if (brandStart === -1 || brandEnd === -1 || brandEnd < brandStart) {
+  findings.push("design/palette.ts  找不到 BRAND 块或 BrandColor 类型（结构被改，请同步本检查）");
+} else {
+  const brandBlock = paletteSrc.slice(brandStart, brandEnd);
+  const brandCount = (brandBlock.match(/^ {2}[a-zA-Z]+:/gm) ?? []).length;
+  if (brandCount !== 24) {
+    findings.push(`design/palette.ts  BRAND 应恰好 24 色，实际 ${brandCount}（防误删 / 误加）`);
   }
 }
-
-/* R3：--radius 必须为 0rem */
-const cssLines = stripComments(await readFile(join(SRC, "index.css"), "utf8"));
-const radiusLine = cssLines.find(({ text }) => /--radius\s*:/.test(text));
-if (!radiusLine) bad("R3", join(SRC, "index.css"), 0, "未找到 --radius 声明");
-else if (!/--radius\s*:\s*0(rem|px|)\s*;/.test(radiusLine.text))
-  bad("R3", join(SRC, "index.css"), radiusLine.line, "--radius 必须为 0（R2-4 无圆角）");
-
-/* R4 / R5：色板本身 */
-const paletteSrc = await readFile(join(ROOT, PALETTE_REL), "utf8");
-const brandBlock = paletteSrc.match(/export const BRAND = \{([\s\S]*?)\n\} as const;/);
-if (!brandBlock) bad("R4", join(ROOT, PALETTE_REL), 0, "未找到 BRAND 定义");
-else {
-  const count = (brandBlock[1].match(/^\s*[a-zA-Z][a-zA-Z0-9]*\s*:\s*"#/gm) || []).length;
-  if (count !== 24) bad("R4", join(ROOT, PALETTE_REL), 0, `BRAND 有 ${count} 项，应为 24`);
+if (/#FF00FF/i.test(paletteSrc)) {
+  findings.push("design/palette.ts  含 #FF00FF（洋红是抠图键控色，进色板会挖掉素材本身）");
 }
-if (/#FF00FF/i.test(paletteSrc))
-  bad("R5", join(ROOT, PALETTE_REL), 0, "色板含 #FF00FF（抠图键控色）");
 
-/* 输出 */
-if (violations.length === 0) {
-  console.log(`lint:design OK（扫描 ${files.length} 个文件，R1–R6 全过）`);
-  process.exit(0);
+// ---- CSS 声明表：唯一 owner 是 index.css ----------------------------------
+const css = readFileSync(join(SRC, "index.css"), "utf8");
+const radius = /--radius:\s*([^;]+);/.exec(css);
+if (!radius || !/^0(?:rem|px|em|%)?$/.test(radius[1].trim())) {
+  findings.push(`index.css  --radius 必须为 0（R2-4 无圆角），实际 ${radius ? radius[1].trim() : "缺失"}`);
 }
-console.error(`lint:design 失败：${violations.length} 处\n`);
-for (const v of violations) {
-  console.error(`  [${v.rule}] ${v.file}:${v.line}  ${v.msg}`);
+
+// ---- Drift guard: index.css token block must equal what tokens.ts generates ----
+const start = css.indexOf(CSS_TOKENS_BEGIN);
+const stop = css.indexOf(CSS_TOKENS_END);
+if (start === -1 || stop === -1) {
+  findings.push("index.css  缺少 token 生成标记（/* @generated:design */ … /* @end:design */）");
+} else if (css.slice(start, stop + CSS_TOKENS_END.length) !== toCssRootBlock()) {
+  findings.push("index.css  token 块与 src/design/tokens.ts 不一致 → 运行 `npm run gen:design`");
 }
-console.error("\n规则说明见 scripts/lint-design.mjs 顶部；R2-4 / Q4 / §十一 等决策见 frontend/交互与可视化.md §14；审计证据见其 §A。");
-process.exit(1);
+
+if (findings.length > 0) {
+  console.error(`lint:design 失败（${findings.length} 项）：`);
+  for (const finding of findings) console.error(`  ${finding}`);
+  process.exit(1);
+}
+console.log("lint:design 通过：无硬编码样式；palette 24 色 / --radius 0 / index.css token 块均达标。");

@@ -112,7 +112,8 @@ export function NucleotideStrip({
               backgroundColor: known ? BASE_FILL[ch] : STRIP.band,
               color: known ? STRIP.band : STRIP.idle,
               // 选中态用 outline 而不是 border：outline 不参与布局，不会让格子尺寸跳动。
-              // 也不用 box-shadow（本项目禁用）。内缩 2px 让描边落在格子内侧。
+              // 也不用投影类（本项目禁用；注释里同样别写那个词 —— 见 palette.ts 的扫描陷阱说明）。
+              // 内缩 2px 让描边落在格子内侧。
               outline: selected ? "2px solid" : "none",
               outlineColor: selected ? STRIP.selected : undefined,
               outlineOffset: -2,

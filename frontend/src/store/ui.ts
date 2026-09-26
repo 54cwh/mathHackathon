@@ -1,8 +1,5 @@
 import { create } from "zustand";
 
-/** 底栏视图档位（§二 item 12）。默认 `experiment`（用户裁决）。 */
-export type UiView = "evolution" | "experiment" | "playback";
-
 export interface ArenaStats {
   generation: number;
   population: number;
@@ -12,18 +9,21 @@ export interface ArenaStats {
   step: number;
 }
 
+/** Bottom-bar view tabs (`交互与可视化.md` §1; `视觉规范审计.md` rule 8). */
+export type ViewId = "evolution" | "experiment" | "playback";
+
 interface UiState {
   running: boolean;
   sessionId: string | null;
   selectedFishId: string | null;
   resetNonce: number;
   stats: ArenaStats | null;
-  activeView: UiView;
+  activeView: ViewId;
   setSelectedFish: (id: string | null) => void;
   setRunning: (v: boolean) => void;
   setSessionId: (id: string | null) => void;
   setStats: (s: ArenaStats | null) => void;
-  setActiveView: (view: UiView) => void;
+  setActiveView: (v: ViewId) => void;
   toggleRunning: () => void;
   bumpReset: () => void;
 }

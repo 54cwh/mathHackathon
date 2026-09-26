@@ -92,7 +92,7 @@ export const ARENA = {
  *  - `frontend/src/index.css:39`（原写 `--radius: 0.625rem`）
  *
  * `0` 是**唯一合法值**；`tailwind.config.ts` 的 `borderRadius` 整段被硬零化，
- * 因此即便有人写 `rounded-lg` / `rounded-full` 也拿不到圆角（lint 另有类名检查）。
+ * 因此即便有人写圆角类也拿不到圆角（lint 另有类名检查）。
  */
 export const RADIUS = "0" as const;
 
@@ -134,13 +134,22 @@ export const STRIP = {
   band: BRAND.fishNavy,
 } as const;
 
-/** DNA 双螺旋（像素风，非 PBR 3D）配色 */
+/**
+ * DNA 双螺旋（像素风，非 PBR 3D）配色。
+ *
+ * ⚠️ **键名不得使用与 Tailwind 工具类同名的小写单词**（阴影 / 模糊 /
+ * 过渡 / 透明度 / 动画这几类；完整名单见 `scripts/lint-design.mjs` 的 RULES）。
+ * 理由：Tailwind 扫的是**原始文本**，属性访问 `DNA.<该类名>` 会被切出裸 token，
+ * 于是 CSS 产物里多出一个没人用的工具类（并连带整套 `--tw-ring-*` 基座）；
+ * 本文件 EXEMPT 于类名静态检查，故静态检查抓不到，只能靠这条注释防住。
+ * 因此本组用 `shade` 而非那类词 —— 别再改回来。
+ */
 export const DNA = {
   strandA: BRAND.fishBlue,
   strandB: BRAND.shallowWater,
   rung: BRAND.sandWarm,
   /** 螺旋的暗部/交织点 */
-  shadow: BRAND.slateShadow,
+  shade: BRAND.slateShadow,
   /** 选定区段的高亮 */
   highlight: BRAND.bone,
 } as const;

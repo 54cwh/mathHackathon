@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "lint:design": "node scripts/lint-design.mjs",
     "typecheck": "tsc -b",
+    "gen:design": "node scripts/gen-design.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

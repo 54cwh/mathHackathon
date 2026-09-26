@@ -56,10 +56,18 @@
 3. **20Hz 热路径不走 React**：Arena 用 `requestAnimationFrame` + Canvas2D，状态放 `useRef`；zustand 只存低频摘要（选中鱼、代、指标），避免每帧 setState。
 4. **配置只由官方模板生成**：`vite`/`tsconfig`/`tailwind`/`postcss` 配置不手写，用 `npm create vite@5` + shadcn CLI 产出后再改。
 5. **契约同源**：TS 类型对齐 `schemas/`（JSON 字段一律 `snake_case`）。
-6. **颜色与圆角走检查**：`npm run lint:design`（`scripts/lint-design.mjs`）。
-   硬规则：hex 只允许出现在 `src/design/palette.ts`；禁止 `rounded*`（除 `rounded-none`）；
-   `--radius` 必须为 `0`；色板必须 24 项且不含洋红 `#FF00FF`（抠图键控色）。
-   **R6** 禁 `shadow*` / `blur*` / `bg-gradient*` / `opacity-*` / `transition*` / `animate-*` / 颜色透明后缀（`bg-x/50`）。
+6. **颜色与圆角走检查**：`npm run lint:design`（`scripts/lint-design.mjs`，**只读**，不改任何文件）。
+   硬规则：hex 只允许出现在 `src/design/palette.ts`；禁止 `rounded*`；`--radius` 必须为 `0`；
+   色板 `BRAND` 必须恰好 24 项且不含洋红 `#FF00FF`（抠图键控色）；禁阴影 / 模糊 / glass /
+   渐变 / opacity 淡出 / `transition` 颜色插值 / 动画 / 颜色透明后缀（`bg-x/50`）。
+   另含 **token 漂移守卫**：`index.css` 的生成块必须等于 `src/design/tokens.ts` 的输出
+   （不一致就跑 `npm run gen:design`）。
+   **⚠️ 注释与键名同样会泄漏（实测过三类）**：Tailwind 扫的是**原始文本**（不剥注释），
+   凡与工具类同名的**小写单词**都会被切成候选并生成「没人用」的死 CSS —— 命中过
+   `DNA.shadow`（属性访问）、`tokens.ts` 的 shell token 键 `ring:`（对象键）、以及英文注释里的
+   `rounded to…`。静态检查抓不到这类（它剥注释、也不把属性访问当类名），兜底是
+   `tailwind.config.ts` 的 **`blocklist`**。**起键名 / 写注释时别用** shadow、blur、rounded、
+   ring、transition、animate 这几个词。
    **两人并行时这是唯一能自动兜住「各改一版颜色」的闸门** —— 提交前必跑。
 
 ## 目录规划
@@ -155,7 +163,8 @@ frontend/
 > - **品牌 24 色** = `src/design/palette.ts`（唯一数据源）。
 >
 > 本表与代码不一致时**以代码为准**，并把本表改回来 —— `npm run lint:design` 会抓
-> hex 越界、圆角残留、以及破坏像素硬度的手段（规则 R1–R6，见 `scripts/lint-design.mjs`）。
+> hex 越界、圆角残留、破坏像素硬度的手段、色板项数，以及 `index.css` 与
+> `src/design/tokens.ts` 的 token 漂移（规则见 `scripts/lint-design.mjs` 的 `RULES` / `CSS_RULES`）。
 > 品牌色的 Tailwind 用法是 **`brand` 命名空间**：`bg-brand-ink` / `text-brand-foam` /
 > `border-brand-stone-shadow`（不是 `bg-ink` —— 那是**错的**，Tailwind 会静默不生成）。
 

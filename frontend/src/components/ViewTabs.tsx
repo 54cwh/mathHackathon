@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useUiStore, type UiView } from "@/store/ui";
+import { useUiStore, type ViewId } from "@/store/ui";
 
 /**
  * 底栏视图切换（§二 item 12）。
@@ -9,19 +9,21 @@ import { useUiStore, type UiView } from "@/store/ui";
  *
  * 三条硬规则：
  *  - **真 `<button>` + `role="tab"`**，active 由 `store.activeView` 驱动；
- *  - 栏间分隔用 `divide-x`（父级唯一拥有），**不加 gap**，与三栏同源；
+ *  - 栏间分隔由**本容器自己**拥有（`divide-x`），与三栏网格同源，**不加 gap**；
  *  - 无圆角、无过渡、无投影 —— 底色切换是**瞬变**，不做插值（§十一）。
- *    （谨慎：注释里也**不要写裸的 Tailwind 类名** —— Tailwind 扫的是原始文本、
- *     不剥注释，写了就会被当成用过的类打进 CSS 产物。R6 剥注释，故不报。）
+ *
+ * 踩过的坑（写给后来改它的人）：**注释里不要写裸的 Tailwind 类名**。
+ * Tailwind 扫的是原始文本、不剥注释，写了就会被当成「用过的类」打进 CSS 产物；
+ * 而静态检查剥注释，抓不到 —— 两边口径不一致，是真实发生过的泄漏。
  */
 
-const VIEWS: ReadonlyArray<{ id: UiView; label: string }> = [
+const VIEWS: ReadonlyArray<{ id: ViewId; label: string }> = [
   { id: "evolution", label: "Evolution" },
   { id: "experiment", label: "Experiment" },
   { id: "playback", label: "Playback" },
 ];
 
-export function ViewTabs({ className }: { className?: string }) {
+export function ViewTabs() {
   const activeView = useUiStore((s) => s.activeView);
   const setActiveView = useUiStore((s) => s.setActiveView);
 
@@ -29,7 +31,7 @@ export function ViewTabs({ className }: { className?: string }) {
     <div
       role="tablist"
       aria-label="View"
-      className={cn("flex items-stretch divide-x divide-border border border-border", className)}
+      className="flex items-stretch divide-x divide-border border border-border"
     >
       {VIEWS.map((view) => {
         const active = view.id === activeView;
