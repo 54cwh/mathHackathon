@@ -64,6 +64,7 @@ Fast Evolution 使用 48 个 Danio 个体，不渲染所有轨迹。【已定稿
 FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已定稿】
 
 ### 4.1 12 维 observation 编码（本文件为编码 owner）
+> **值域契约**：12 维的语义 / 顺序 / **值域 `[0,1]`** / dtype（`float32`）由 `../connectome/DanioNet设计规范.md` §2（v1.2，2026-09-26 冻结）own；本节职责是**编码规则**，其结果须映射到该区间。
 本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。【草案待确认】（公式由实现先行落地，待认领表 A1）
 
 现状（代码）：
@@ -228,7 +229,7 @@ Complex Scene 可设置：【草案待确认】
 | predator：cruise / chase / detect / release / turn | 0.40 / 0.65 / 15 / 22 / 5.0 | — / — / wu / wu / rad/s | 草案待确认（A5/A10） |
 | obstacle 半径 | [1.5, 3.5] | world unit | 已定稿 |
 
-> ⚠️ `configs/default_arena.yaml` **当前无任何代码读取**（§18 参数映射 / M8 / 认领表 B7）：改 config 不影响仿真，与"参数 owner 是 `configs/`"冲突。**此项为冻结阻断项。**
+> ⚠️ `configs/default_arena.yaml` **当前无任何调用方读取**（§18 参数映射 / M8 / 认领表 B7）：改 config 不影响仿真，与"参数 owner 是 `configs/`"冲突。**状态更新（2026-09-26）**：通用 loader 已落地（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`，含 `tests/test_config.py`），**但 Arena 未接线**——`DanioArena.__init__` 仍为 `config or ArenaConfig()`。故本条由「整体冻结阻断」缩窄为「**仅余 Arena 侧键名映射与接线**」。
 
 ## 17. 待裁决条款（认领清单）
 以下条款为 `【草案待确认】`，须在 `research/notes/arena-api-决策认领表.md` 认领后转已定稿，方可冻结本文件：
@@ -238,7 +239,7 @@ Complex Scene 可设置：【草案待确认】
 | 行为语义 | A6 边界策略；A7 碰撞后果（现状默认不触发，需重评指标）；A8 逃脱判定；A9 团灭提前结束；捕食双向/被吃后果（§8 已建议固定为双向，待确认）；prey 重生/守恒；survival 定义（§15） |
 | 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；looming 恒 0 的修法 |
 | 参数 | A2 \(r_{capture}\)（**已裁决并定稿**：`r_capture=4.61`、判据含边界 `≥` 从而锁定 `predator_size=3.125`；余**前向锥 120°** 待实现）；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
-| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8，**阻断**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
+| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8：loader 已落地，**仅余 Arena 侧映射与接线**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 
 ---
@@ -338,7 +339,7 @@ Complex Scene 可设置：【草案待确认】
 
 1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 在 `configs/default_arena.yaml` 中不存在。** 即共 **13 项**未进 YAML。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
 2. **`../../../docs/参数总表.json` 现收录 Arena 侧 **15 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `capture_radius` / `predator_size` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
-3. **`configs/default_arena.yaml` 目前没有任何代码读取它。** 全仓库对 `default_arena` 的引用只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，即**用 Python 硬编码默认值跑仿真**，YAML 是并行的、可能漂移的副本。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
+3. **`configs/default_arena.yaml` 目前没有任何调用方读取它。** 通用 loader 已存在（`core/config.py`，2026-09-26），但它按 `configs/*.yaml` **通用**读取，Arena 侧无调用方，故结论不变：`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，即**用 Python 硬编码默认值跑仿真**，YAML 是并行的、可能漂移的副本。**代码内**对 `default_arena` 的引用仍只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
 
 ---
 
@@ -626,7 +627,7 @@ Complex Scene 可设置：【草案待确认】
 
 ### P0：冻结前必须闭合
 
-1. **配置单一事实源（B7/M8）**：`configs/default_arena.yaml` 仍未被代码读取，`SessionCreate.arena_config_path` 仍被静默忽略。必须定义 YAML 键名到 `ArenaConfig` 的映射、类型校验、默认值和覆盖优先级，并新增加载器测试；否则参数表和实验配置不能复现。
+1. **配置单一事实源（B7/M8）**：`configs/default_arena.yaml` 仍未被**调用方**读取，`SessionCreate.arena_config_path` 仍被静默忽略。**已解决（2026-09-26）**：通用 loader（`core/config.py`，PyYAML+Pydantic v2）、覆盖优先级 `CLI > env > file > default`、加载器测试 `tests/test_config.py`。**余**：YAML 键名 → `ArenaConfig` 的映射（含缺失的 `actors` 段与 `live_demo.*` 键名对齐）与 `DanioArena` / `Session` 接线；否则参数表和实验配置仍不能复现。
 2. **12 维 observation（A1）**：必须逐维写出值域、归一化公式、截断/聚合规则及设计选择状态。`looming_rate` 不能继续使用当前会退化为常数的 `10·Δrelative_size`；建议按 `research/notes/arena-设计意见-给李辰钊.md` 的意见采用角尺寸扩张率，并明确 `R_loom`、离散时间口径、不可见天敌的 prev 重置和多天敌聚合规则。该改动会影响已冻结 DanioNet v1.0 的输入分布，必须补输入统计与回归基线。
 3. **世界尺度与捕食几何**：**已闭合**（2026-09-26，方案 B）——wu 不与 BL 固定换算（§2 尺度声明），`capture_radius = 4.61`、`sensing.radius = 18`、`κ = 1.25`（判据含边界 `≥`、耦合约束 `predator_size ≥ κ·max_size`）均已定稿。**余**：前向锥 120° 实现、捕获成功率是否引入随机失败。
 
