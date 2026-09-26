@@ -58,7 +58,7 @@ Genome \xrightarrow{Development} Connectome
 W = W^{(0)}(Development) + \Delta W(Lifetime\ Learning)
 \]
 
-后天学习产生的 \(\Delta W\) 不遗传。
+DanioNet 动力学（`connectome/DanioNet设计规范.md` §3）中的 \(w_{ij}\) 即此有效权重 \(w^{(0)}_{ij}+\Delta w_{ij}\)。\(\Delta W\) 是否受 Dale sign 约束待定（见文末阅读问题）。后天学习产生的 \(\Delta W\) 不遗传。
 
 后代继承的是 DNA：
 
@@ -71,7 +71,7 @@ DNA_{parents}
 \]
 
 ## 5. 生物学层次
-遗传层：二倍体、allele、segregation、independent assortment、crossover、SNP mutation、dominance-like phenotype、optional epistasis。
+遗传层：二倍体、allele、segregation、independent assortment、crossover、SNP mutation、dominance-like phenotype、epistasis（P1，MVP 不实现）。
 
 发育层：precursor domains、regulatory motif、GRN、proliferation、cell differentiation、spatial wiring cost、cell-type compatibility。
 
@@ -96,7 +96,7 @@ DNA_{parents}
 - max one division / precursor
 - max 48 neurons
 - 6 neural fates
-- target connectivity density 10%–20%
+- target connectivity density [10%, 20%]（默认校准到 15%；`docs/参数总表.json` `target_density=0.15`，见 G1）
 - no self loops
 - \(\tau_i \in [1,10]\)
 - 12-d sensory input
@@ -142,8 +142,6 @@ EvoGenesis 不是把遗传算法套在一个现成神经网络外面，而是把
 
 > 逐份阅读本文时发现的未定义点，需与 04 / 05 / 07 / 16 对齐后确认。
 
-1. **W 的合成方式与 connectome/DanioNet设计规范.md 动力学未对齐**：§4 写 `W = W^(0) + ΔW`（加性），但 connectome/DanioNet设计规范.md §3 动力学使用 `A_ij w_ij`，未说明 ΔW 以加性还是其他方式进入、是否受 Dale sign 约束。
+1. **`ΔW` 是否受 Dale sign 约束未定**：§4 已统一 `W=W⁰+ΔW` 与 DanioNet §3 的有效权重 `w_ij`；但 `ΔW` 是否允许改变突触符号（即约束 `sign(w_ij)=sign(w⁰_ij)`）未写，属设计决定。
 2. **“四类 neural phenotype”未定义**：§7 Mendel Mode 输出“四类 neural phenotype”，但四类指什么、如何由 genotype 判定未写（G12）。
-3. **epistasis 的实现状态需明确**：§5 将 epistasis 列为“optional”，而 connectome/DanioNet设计规范.md §9 已有 `w/o epistasis` 消融项；需确认 MVP 是否实现该机制，否则该消融无对象。
-4. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
-5. **connectivity density 目标值未定**：§6 给范围 10%–20%，docs/参数总表.json / config 为单值 0.15，`b_A` 校准对齐到哪个目标未写（关联 G1）。
+3. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
