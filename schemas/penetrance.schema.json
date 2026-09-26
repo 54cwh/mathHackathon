@@ -10,6 +10,7 @@
     "experiment_id",
     "generated_by",
     "status",
+    "sampling",
     "theta_N",
     "theta_H",
     "tau_statistic",
@@ -25,6 +26,7 @@
     "experiment_id": { "type": "string", "minLength": 1 },
     "generated_by": { "type": "string" },
     "status": { "type": "string" },
+    "sampling": { "const": "stratified_balanced" },
     "theta_N": { "type": "number" },
     "theta_H": { "type": "number" },
     "tau_statistic": { "const": "cv_tau" },
@@ -42,16 +44,19 @@
       "additionalProperties": false,
       "required": [
         "master_seeds",
-        "offspring_per_seed",
+        "per_class",
+        "sampled_per_class",
         "per_seed",
         "pooled",
         "cross_seed",
         "continuous",
-        "observed_9331"
+        "separation",
+        "demo_9331"
       ],
       "properties": {
         "master_seeds": { "type": "array", "items": { "type": "integer" } },
-        "offspring_per_seed": { "type": "integer", "minimum": 1 },
+        "per_class": { "type": "integer", "minimum": 1 },
+        "sampled_per_class": { "$ref": "#/$defs/counts" },
         "per_seed": {
           "type": "object",
           "patternProperties": { "^[0-9]+$": { "$ref": "#/$defs/stats" } },
@@ -80,7 +85,25 @@
             "aabb": { "$ref": "#/$defs/continuous" }
           }
         },
-        "observed_9331": { "$ref": "#/$defs/counts" }
+        "separation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["N", "H"],
+          "properties": {
+            "N": { "$ref": "#/$defs/separation" },
+            "H": { "$ref": "#/$defs/separation" }
+          }
+        },
+        "demo_9331": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["offspring_per_seed", "pooled_expected_counts", "observed_counts"],
+          "properties": {
+            "offspring_per_seed": { "type": "integer", "minimum": 0 },
+            "pooled_expected_counts": { "$ref": "#/$defs/counts" },
+            "observed_counts": { "$ref": "#/$defs/counts" }
+          }
+        }
       }
     },
     "expected_9331": {
@@ -119,6 +142,26 @@
         "highN_lowH": { "type": "integer", "minimum": 0 },
         "lowN_highH": { "type": "integer", "minimum": 0 },
         "lowN_lowH": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "separation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "theta_min_misclass",
+        "min_misclassification_error",
+        "majority_baseline_error",
+        "separable",
+        "auc",
+        "mannwhitney_p"
+      ],
+      "properties": {
+        "theta_min_misclass": { "type": "number" },
+        "min_misclassification_error": { "type": "number", "minimum": 0, "maximum": 1 },
+        "majority_baseline_error": { "type": "number", "minimum": 0, "maximum": 1 },
+        "separable": { "type": "boolean" },
+        "auc": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "mannwhitney_p": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
       }
     },
     "classStat": {

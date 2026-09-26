@@ -1,8 +1,8 @@
 """penetrance 报告层测试（契约：`genome §3`；实验：`experiment §3.9`）。
 
-覆盖：Mendel 装置构造（q 值）、`CV_τ`、Wilson CI、两种校准口径、观测档、逐类 pen 的
-端到端 payload 与 schema。端到端用小样本（校准 120 / 报告 40），真实规模见
-`configs/penetrance.yaml`（草案待确认）。
+覆盖：Mendel 装置构造（q 值）、`CV_τ`、Wilson CI、两种校准口径、**分离度诊断**、**分层平衡
+抽样**、端到端 payload 与 schema。端到端用小样本，真实规模见 `configs/penetrance.yaml`
+（草案待确认）。
 """
 
 from __future__ import annotations
@@ -23,6 +23,7 @@ from evogenesis.pipeline.model_chain import load_model_chain_config, motif_catal
 
 ROOT = Path(__file__).resolve().parents[1]
 MODEL_CONFIG = ROOT / "configs" / "default_model.yaml"
+PER_CLASS = 16
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +105,48 @@ def test_median_midpoint_threshold():
         P.median_midpoint_threshold([1.0, 2.0], [True, True])
 
 
+def test_axis_separation_detects_signal_and_noise():
+    separable = P.axis_separation([1.0, 2.0, 9.0, 10.0], [False, False, True, True])
+    assert separable["separable"] is True
+    assert separable["auc"] == pytest.approx(1.0)
+    assert separable["mannwhitney_p"] is not None and separable["mannwhitney_p"] < 0.5
+
+    # 两组完全重叠 ⇒ 不可分离：错分 = 多数类基线
+    noise = P.axis_separation([1.0, 2.0, 1.0, 2.0], [False, False, True, True])
+    assert noise["separable"] is False
+    assert noise["min_misclassification_error"] == pytest.approx(noise["majority_baseline_error"])
+
+
+# ---------------------------------------------------------------------------
+# 分层抽样
+# ---------------------------------------------------------------------------
+
+
+def test_stratified_offspring_is_class_balanced():
+    chain = load_model_chain_config(MODEL_CONFIG)
+    motifs = motif_catalog(1103, chain.layout)
+    founder = P._founder_for(motifs, chain.layout)
+    individuals, counts = P.stratified_offspring(
+        founder,
+        motifs,
+        theta_N=0.25,
+        theta_H=0.25,
+        per_class=8,
+        master_seed=1103,
+        namespace="penetrance_calibration",
+        experiment_id="pen-test",
+        layout=chain.layout,
+    )
+    assert counts == {label: 8 for label in P.CLASS_ORDER}
+    assert len(individuals) == 32
+    # genome_id 紧凑重编号（供 phenotypes_of 反解 index）
+    assert [ind.genome_id.split(":")[-1] for ind in individuals[:3]] == [
+        "genome0000",
+        "genome0001",
+        "genome0002",
+    ]
+
+
 # ---------------------------------------------------------------------------
 # 端到端（小样本）
 # ---------------------------------------------------------------------------
@@ -114,26 +157,32 @@ def _small_config() -> P.PenetranceConfig:
     return dataclasses.replace(
         base,
         calibration_master_seeds=(1103,),
-        calibration_offspring=120,
+        calibration_per_class=PER_CLASS,
+        calibration_max_offspring=None,
         report_master_seeds=(1103, 2207),
-        report_offspring=40,
+        report_per_class=PER_CLASS,
+        report_max_offspring=None,
+        report_demo_offspring=32,
     )
 
 
-def test_calibration_payload_is_deterministic_and_reports_both_rules():
+def test_calibration_payload_is_deterministic_and_reports_separation():
     cfg = _small_config()
     first = P.run_calibration("pen-test", penetrance_config=cfg)
     second = P.run_calibration("pen-test", penetrance_config=cfg)
     assert first["digest"] == second["digest"]
     cal = first["calibration"]
-    assert cal["n_rows"] == 120
-    assert sum(first["genotype_counts"].values()) == 120
+    assert cal["n_rows"] == len(P.CLASS_ORDER) * PER_CLASS
+    assert first["sampled_per_class"] == {label: PER_CLASS for label in P.CLASS_ORDER}
     for key in ("theta_N_obs_min_misclass", "theta_N_obs_median_midpoint"):
         assert cal[key] > 0
-    for key in ("theta_H_obs_min_misclass", "theta_H_obs_median_midpoint"):
-        assert cal[key] > 0
-    # AaBb×AaBb 四类都应出现（120 例下 aabb 期望 7.5，允许极端种子缺失但此处固定种子恒有）
-    assert set(first["genotype_counts"]) == set(P.CLASS_ORDER)
+    for axis in ("separation_N", "separation_H"):
+        assert set(cal[axis]) >= {
+            "separable",
+            "auc",
+            "mannwhitney_p",
+            "min_misclassification_error",
+        }
 
 
 def test_report_requires_frozen_thresholds():
@@ -153,12 +202,18 @@ def test_report_payload_matches_schema():
     schema = json.loads((ROOT / "schemas" / "penetrance.schema.json").read_text("utf-8"))
     jsonschema.validate(payload, schema)
 
-    pooled = payload["report"]["pooled"]
-    assert sum(pooled["observed_architecture_counts"].values()) == 2 * 40
+    report = payload["report"]
+    # 分层平衡：每类每 seed 恰 PER_CLASS，跨 2 seed
+    assert sum(report["sampled_per_class"].values()) == len(P.CLASS_ORDER) * PER_CLASS * 2
+    pooled = report["pooled"]
+    assert (
+        sum(pooled["observed_architecture_counts"].values()) == len(P.CLASS_ORDER) * PER_CLASS * 2
+    )
     for label in P.CLASS_ORDER:
         stat = pooled["per_class"][label]
-        if stat["n"] > 0:
-            assert stat["penetrance"] is not None
-            assert 0.0 <= stat["wilson_low"] <= stat["penetrance"] <= stat["wilson_high"] <= 1.0
-        else:
-            assert stat["penetrance"] is None
+        assert stat["n"] == PER_CLASS * 2
+        assert 0.0 <= stat["wilson_low"] <= stat["penetrance"] <= stat["wilson_high"] <= 1.0
+    # 未分层演示样本仅用于计数（与 pen 估计分开）
+    demo = report["demo_9331"]
+    assert sum(demo["pooled_expected_counts"].values()) == 32 * 2
+    assert sum(demo["observed_counts"].values()) == 32 * 2

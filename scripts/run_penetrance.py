@@ -50,8 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--seeds", default=None, help="逗号分隔 master seed（覆盖 config，校准/报告同用）"
     )
-    parser.add_argument("--calibration-offspring", type=int, default=None)
-    parser.add_argument("--report-offspring", type=int, default=None)
+    parser.add_argument("--per-class", type=int, default=None, help="每类样本数（覆盖 config）")
+    parser.add_argument("--demo-offspring", type=int, default=None, help="9:3:3:1 演示样本数")
     parser.add_argument("--json", default=None, help="产物路径（缺省 results/tables/<id>_*.json）")
     args = parser.parse_args(argv)
 
@@ -61,10 +61,11 @@ def main(argv: list[str] | None = None) -> int:
     if seeds is not None:
         updates["calibration_master_seeds"] = seeds
         updates["report_master_seeds"] = seeds
-    if args.calibration_offspring is not None:
-        updates["calibration_offspring"] = args.calibration_offspring
-    if args.report_offspring is not None:
-        updates["report_offspring"] = args.report_offspring
+    if args.per_class is not None:
+        updates["calibration_per_class"] = args.per_class
+        updates["report_per_class"] = args.per_class
+    if args.demo_offspring is not None:
+        updates["report_demo_offspring"] = args.demo_offspring
     if updates:
         config = dataclasses.replace(config, **updates)
 
@@ -78,7 +79,10 @@ def main(argv: list[str] | None = None) -> int:
         out = Path(args.json) if args.json else P.table_path(args.experiment_id, kind="calibration")
         cal = payload["calibration"]
         print("penetrance 校准（AaBb×AaBb 独立校准集；草案待确认）")
-        print(f"  n_rows={cal['n_rows']}  genotype_counts={payload['genotype_counts']}")
+        print(f"  n_rows={cal['n_rows']}  sampled_per_class={payload['sampled_per_class']}")
+        print(
+            f"  可分离: N={cal['separation_N']['separable']}  H={cal['separation_H']['separable']}"
+        )
         print(
             f"  θ_N^obs: min-misclass={cal['theta_N_obs_min_misclass']:.4g}"
             f"  median-midpoint={cal['theta_N_obs_median_midpoint']:.4g}"
@@ -101,7 +105,11 @@ def main(argv: list[str] | None = None) -> int:
         for label, stat in payload["report"]["pooled"]["per_class"].items():
             pen = "None" if stat["penetrance"] is None else f"{stat['penetrance']:.3f}"
             print(f"  {label:5s} n={stat['n']:<4d} pen={pen}")
-        print(f"  observed_9331={payload['report']['observed_9331']}")
+        print(
+            f"  separation: N={payload['report']['separation']['N']['separable']}"
+            f"  H={payload['report']['separation']['H']['separable']}"
+        )
+        print(f"  demo observed_9331={payload['report']['demo_9331']['observed_counts']}")
 
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

@@ -1,16 +1,21 @@
 # penetrance 校准与报告配置（实验登记 `experiment/实验与评价体系.md` §3.9；契约 `genome §3`）
 #
-# 状态：**草案待确认（2026-09-26）**——`θ^obs` 数值、校准集规模与口径未经用户签署前，
-# 不得作为结论引用（`AGENTS.md`「禁止 AI 填空」）。
+# 状态：**草案待确认（2026-09-26）**——`θ^obs` 数值与规模未经用户签署前，不得作为结论引用
+# （`AGENTS.md`「禁止 AI 填空」）。
 #
-# 校准/报告分离：两者用**不同命名空间**从同一 motif 目录抽独立样本，报告集不得调阈值。
+# 抽样设计：校准与报告都用**分层平衡**抽样（每类 `per_class` 个）——`pen(g)` 以基因型类为条件，
+# 分层对它是无偏估计，且能让最小类 `aabb`（9:3:3:1 下 1/16）的 Wilson CI 可控。
+# 「9:3:3:1 计数演示」另用**未分层**样本 `demo_offspring`（与 pen 估计分开，delta-B §2.4）。
+# 校准/报告用不同命名空间（core §3），报告集不得调阈值。
 theta_N_obs: null  # 观测量阈值（作用于 N=|M|）；由 run_calibration 产出后人工签署写入
 theta_H_obs: null  # 观测量阈值（作用于 CV_τ）；同上
 calibration:
-  # 独立校准集：`AaBb × AaBb` 自交（genome §3）
-  master_seeds: [20260926]
-  offspring: 4000
+  # 独立校准集：`AaBb × AaBb` 自交（genome §3）；种子与报告集不同（独立性）
+  master_seeds: [20260926, 424242]
+  per_class: 400
+  max_offspring: 12000
 report:
-  # 报告集：genome §3 的 160 例演示口径 × 3 seed
   master_seeds: [1103, 2207, 3301]
-  offspring: 160
+  per_class: 400
+  max_offspring: 12000
+  demo_offspring: 160  # 未分层、专供 9:3:3:1 计数演示
