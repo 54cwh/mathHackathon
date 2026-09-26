@@ -40,7 +40,7 @@ Arena 素材优先透明背景。实验图、统计图、network graph 不使用
 | 本文件 | 素材清单（10 项）+ 决策记录 + 两条边界 |
 | `ui_reference_prompts.md` | **3 张 UI 参考图**完整提示词（像素风）+ 自检清单 + 3 条工程约束 + 选定后落地四步 |
 | `image_prompt_template.md` | 三类早期模板（Fish sprite / Predator / DNA）—— 已被 `asset_prompts.md` 覆盖，保留作沿革 |
-| `asset_prompts.md` | **7 项补齐**的完整提示词：logo、环境瓦片、障碍/植物/岩石、water background、cell-type icons、neural glow、UI 特效、PPT 封面，另附「DNA 纹理（3D 新方案）」与通用规格/自检 |
+| `asset_prompts.md` | **一图一素材的逐张提示词（14 条）**：A1–A8 Arena 内素材（成鱼摆尾 4 帧、幼鱼、猎物、捕食者、水草、岩石/沉木、地表瓦片、海洋背景）、B1–B4 面板视觉（DNA 纹理+碱基条、细胞图标、神经辉光、UI 特效）、C1–C2（logo、PPT 封面）；另含 §0 占位、§1 通用规格、**§2 三条现实约束**（透明背景/伪像素/鱼大小）、§6 后处理与尺寸表、§7 自检 |
 
-**使用顺序**：先跑 `ui_reference_prompts.md` 的 3 条 → 选定 1 张 → 取色板（≤32 色）→ 把它填进 `asset_prompts.md` 的 `{色板}` 占位 → 再批量生成其余素材。
+**使用顺序**：先跑 `ui_reference_prompts.md` 的 3 条 → 选定 1 张 → 取色板（不超过 32 色）→ 把它填进 `asset_prompts.md` 的 `{色板}` 占位（并确认 `{色板}` **不含** `{键控色}` 洋红）→ **先只生成 1 张验证抠图链路** → 再按 A→B→C 逐张生成。
 色板未冻结前批量生成 = 全部作废。
