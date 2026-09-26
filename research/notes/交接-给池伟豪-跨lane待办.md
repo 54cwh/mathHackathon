@@ -9,7 +9,9 @@
 
 **已闭合（本轮落地）**：B1 代循环；**B3 Demo 服务层**（`api/{app,session,schemas,environments…}` + `scripts/serve_api.py` + `start_demo.sh` + `Makefile demo`）；B4 轨迹双产出；**D2 H3 探针**（`arena §14` 实现 + `configs/default_arena.yaml::probe`，数值已定稿）；**E8 arena 实体快照生产者**（`GET /v1/sessions/{id}/snapshot`）；**artificial selection**（`f7ee56f`，`evolution §5` 定稿）；**Experiment D 三臂对照表 producer**（`2c8c2d5`）、**Experiment E（robustness）定稿**、**Experiment BC 生命周期学习**；C1–C4、D4、D6、D5′、E2、E6、E7、E10、A14 种子拆分；api lane 端点全实现（仅 `story-mutations` 501）、`brain.activation`（模型驱动会话）、WS 信道、基因组实验室、Experiment F。
 
-**仍开放**：B2（BC「ΔW 不遗传」**正式实证表待跑**，即 Experiment D 正式表）；D3 `encounters` 去重口径；D4 `capture_success_prob` 定值；D5 环境 M4 场景；D1 残留（改障碍数量/半径/clearance 平移 spawn 流）；E1 penetrance `θ^obs`；E3/E4 文献与第三方声明；E5 参数总表 arena 组；E9 `run_chain --environment`；E11 Tier6 旧分母；**Experiment C 基线表重跑中（2026-09-27）**。
+**仍开放**：B2（BC「ΔW 不遗传」**正式实证表待跑**，即 Experiment D 正式表）；E1 penetrance `θ^obs`（校准不可分离）；E9 `run_chain --environment`；E11 Tier6 旧分母；D1 残留（障碍数/半径/clearance 平移 spawn 流，**接受为已知限制**）；E3/E4 文献与第三方声明；E5 参数总表 arena 组（`no_basis` 90，多属设计选择）；**Experiment C/D 正式表进行中（2026-09-27）**。
+
+**2026-09-27 裁决结案**（`research/notes/契约决策记录.md`「裁决（2026-09-27）」）：M4 空间布置（**不做**）、`capture_success_prob`（**保持 1.0**）、标定占位（**冻结为设计选择 D + 未 play-test 标定标记**）、story-mutations（**方案 D，保持 501**）、`encounters` 口径（**维持事件计数**）、H3 `homogeneous τ`（`τ*`=5.5、网格 `{1,5.5,10}` 已定）、认领表 A/B **全闭合**、`body_length_mm` **退役**。
 
 > 下列 §一～§六 等为**历史追加（保留）**；其中 §六「Demo 服务层」、§二 D2、§四 E8、§三 C1–C4 已过时，状态以上表为准。
 
