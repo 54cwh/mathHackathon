@@ -11,7 +11,7 @@
  * `trace`（过程）与 `result`（终态）。
  */
 
-import type { DevelopmentResult, DevelopmentTraceSample } from "@/api/types";
+import type { DevelopmentResult, DevelopmentTraceSample, SpawnedIndividual } from "@/api/types";
 
 export interface LabDevelopment {
   genomeId: string | null;
@@ -44,6 +44,27 @@ export function subscribeDevelopment(listener: (payload: LabDevelopment) => void
 }
 
 // --- 焦点：Arena 点鱼 -> Lab 载入该个体（`交互与可视化.md` §15.6 三栏联动） --------
+
+/** 已送进 Arena 的个体（Arena 面板据此列成可点的 chip —— 不必在画布上瞎点）。 */
+const individuals = new Map<string, SpawnedIndividual>();
+type IndividualListener = (individuals: SpawnedIndividual[]) => void;
+const individualListeners = new Set<IndividualListener>();
+
+export function publishIndividual(individual: SpawnedIndividual): void {
+  individuals.set(individual.fish_id, individual);
+  const list = [...individuals.values()];
+  for (const listener of individualListeners) listener(list);
+}
+
+export function getIndividuals(): SpawnedIndividual[] {
+  return [...individuals.values()];
+}
+
+export function subscribeIndividuals(listener: IndividualListener): () => void {
+  listener(getIndividuals());
+  individualListeners.add(listener);
+  return () => individualListeners.delete(listener);
+}
 
 type FocusListener = (genomeId: string) => void;
 const focusListeners = new Set<FocusListener>();

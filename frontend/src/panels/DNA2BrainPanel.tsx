@@ -7,7 +7,7 @@ import { NucleotideStrip } from "@/visuals/NucleotideStrip";
 import { createGenome, develop, getGenome, mutateGenome } from "@/api/lab";
 import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResult } from "@/api/types";
 import { DevCompare } from "@/panels/DevCompare";
-import { publishDevelopment, subscribeFocus } from "@/store/labBus";
+import { publishDevelopment, publishIndividual, subscribeFocus } from "@/store/labBus";
 import { spawnIndividual, type SpawnedIndividual } from "@/api/arena";
 import { BreedingLab } from "@/panels/BreedingLab";
 
@@ -145,6 +145,7 @@ export function DNA2BrainPanel() {
       try {
         const individual = await spawnIndividual(sessionId, genomeId);
         setSpawned((current) => ({ ...current, [genomeId]: individual }));
+        publishIndividual(individual); // → Arena 面板的可点 chip
       } catch (e) {
         // 已存在（409）/ 非 viable（422）等：不打断开发流程，只在提示区显示
         setError(String(e));
@@ -199,6 +200,7 @@ export function DNA2BrainPanel() {
       setDevelopment(result);
       // → Brain Forge 的 §4 分阶段动画（真实过程，见 API接口.md §2.3）
       publishDevelopment(genome.genome_id, result, result.trace ?? null);
+      void sendToArena(genome.genome_id); // → Arena 追加该个体（§1.11）
     } catch (e) {
       setError(String(e));
     } finally {

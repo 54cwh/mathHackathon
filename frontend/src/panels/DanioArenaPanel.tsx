@@ -5,7 +5,7 @@ import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
-import { focusGenome } from "@/store/labBus";
+import { focusGenome, subscribeIndividuals } from "@/store/labBus";
 import {
   MASTER_SEED,
   createSession,
@@ -62,6 +62,8 @@ export function DanioArenaPanel() {
   const [card, setCard] = useState<FishCard | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 已在 Arena 的实验室个体（chip 列表；点选比在画布上瞎点可靠）。 */
+  const [individuals, setIndividuals] = useState<import("@/api/types").SpawnedIndividual[]>([]);
   const tickRef = useRef(0);
   /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
@@ -113,6 +115,8 @@ export function DanioArenaPanel() {
       if (created) void deleteSession(created).catch(() => undefined);
     };
   }, [resetNonce, modelDriven, setSessionId, setRunning]);
+
+  useEffect(() => subscribeIndividuals(setIndividuals), []);
 
   // ---- WS: 鱼层 + 事件 ----------------------------------------------------
   useEffect(() => {
@@ -200,26 +204,28 @@ export function DanioArenaPanel() {
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
   const shortSessionId = sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : null;
 
+  /** 选中某条鱼（画布点选与 chip 点选共用）：取卡片；若为实验室个体则把焦点交给 Lab。 */
+  function selectFish(fishId: string | null) {
+    setSelectedFish(fishId);
+    if (!fishId) {
+      setCard(null);
+      return;
+    }
+    void getFishCard(sessionId ?? "", fishId)
+      .then((next) => {
+        setCard(next);
+        if (next.genome_id && next.genome_id !== "unknown") focusGenome(next.genome_id);
+      })
+      .catch(() => setCard(null));
+  }
+
   function handleClick(e: React.MouseEvent<HTMLCanvasElement>) {
     if (!scene) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
     const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
     const hit = hitTestFish(scene, mx, my, fishHitRadius(rect.width));
-    if (hit) {
-      setSelectedFish(hit);
-      void getFishCard(sessionId ?? "", hit)
-        .then((next) => {
-          setCard(next);
-          // 实验室个体（`genome_id` 非 "unknown"）→ 把焦点对齐到它：
-          // DNA2Brain Lab 载入该基因组并发育，Brain Forge 随 labBus 自动跟上（§15.6 三栏联动）。
-          if (next.genome_id && next.genome_id !== "unknown") focusGenome(next.genome_id);
-        })
-        .catch(() => setCard(null));
-    } else {
-      setSelectedFish(null);
-      setCard(null);
-    }
+    selectFish(hit);
   }
 
   return (
@@ -238,6 +244,30 @@ export function DanioArenaPanel() {
             className="pixelated h-full w-full cursor-crosshair"
           />
         </div>
+
+        {individuals.length > 0 && (
+          <div className="shrink-0">
+            <div className="mb-0.5 font-pixel text-[10px] leading-none">LAB INDIVIDUALS</div>
+            <div className="flex flex-wrap gap-1">
+              {individuals.map((individual) => (
+                <button
+                  key={individual.fish_id}
+                  type="button"
+                  title={`选中 ${individual.fish_id}（N${individual.n_neurons} · E${individual.n_edges}）并把焦点交给 DNA2Brain Lab`}
+                  onClick={() => selectFish(individual.fish_id)}
+                  className={`border border-border px-2 py-0.5 font-mono text-[10px] ${
+                    selectedFishId === individual.fish_id
+                      ? "bg-brand-fish-navy text-brand-bone"
+                      : ""
+                  }`}
+                >
+                  {individual.fish_id.replace(/^lab:g0:/, "")} N{individual.n_neurons}/E
+                  {individual.n_edges}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
           {/* Fish Card（§1.5）：点选后的真实读数 */}
