@@ -1,6 +1,7 @@
 """世代推进测试（``evolution §5/§7``）：出生数、世代不重叠、ID、复现、瓶颈。"""
 
 import numpy as np
+import pytest
 
 from evogenesis.core.ids import mint_id
 from evogenesis.core.seed import SeedManager
@@ -10,6 +11,7 @@ from evogenesis.evolution.population import (
     Individual,
     advance_generation,
 )
+from evogenesis.evolution.reproduction import gamete_seed_index, offspring_genome
 from evogenesis.evolution.selection import random_pairs
 from evogenesis.genome.config import DEFAULT_LAYOUT
 from evogenesis.genome.genome import ChromosomePair, DiploidGenome
@@ -292,3 +294,161 @@ def test_tournament_size_exceeding_viable_count_raises_in_advance():
             seed_manager=SeedManager(1),
             config=config,
         )
+
+
+# ---------------------------------------------------------------------------
+# Artificial Selection（evolution §5，定稿 2026-09-27）
+# ---------------------------------------------------------------------------
+
+
+def _forced_config(population_size: int = 4):
+    return load_evolution_config(overrides={"population_size": population_size})
+
+
+def test_forced_pair_is_artificial_and_matches_direct_reproduction():
+    config = _forced_config(4)
+    parents = _parents(3)
+    id_a, id_b = parents[0].genome_id, parents[1].genome_id
+    result = advance_generation(
+        parents,
+        experiment_id="exp-0001",
+        generation=1,
+        seed_manager=SeedManager(7),
+        config=config,
+        forced_pair=(id_a, id_b),
+    )
+    assert result.success is True
+    assert result.selection_mode == "artificial"
+    assert result.forced_parent_ids == (id_a, id_b)
+    assert len(result.offspring) == 4
+    assert result.selected_parent_ids == (id_a, id_b) * 4  # 槽位摊平
+
+    manager = SeedManager(7)
+    for index, child in enumerate(result.offspring):
+        child_id = mint_id("exp-0001", "genome", 1, index)
+        t = gamete_seed_index(child_id, population_size=4)
+        expected = offspring_genome(
+            parents[0].genome,
+            parents[1].genome,
+            mu=config.mutation_rate_per_base_per_gamete,
+            crossover_probability=config.crossover_probability_per_chromosome,
+            crossover_rng=manager.spawn_rng("crossover", t),
+            mutation_rng=manager.spawn_rng("mutation", t),
+            layout=DEFAULT_LAYOUT,
+        )
+        assert child.genome_id == child_id
+        assert child.genome.pairs == expected.pairs
+
+
+def test_forced_pair_allows_selfing():
+    config = _forced_config(3)
+    parents = _parents(3)
+    id_a = parents[0].genome_id
+    result = advance_generation(
+        parents,
+        experiment_id="exp-0001",
+        generation=1,
+        seed_manager=SeedManager(8),
+        config=config,
+        forced_pair=(id_a, id_a),
+    )
+    assert result.selection_mode == "artificial"
+    assert result.forced_parent_ids == (id_a,)
+    assert len(result.offspring) == 3
+
+
+def test_forced_pairs_per_slot_and_dedup():
+    config = _forced_config(3)
+    parents = _parents(3)
+    id_a, id_b, id_c = (p.genome_id for p in parents)
+    result = advance_generation(
+        parents,
+        experiment_id="exp-0001",
+        generation=1,
+        seed_manager=SeedManager(9),
+        config=config,
+        forced_pairs=((id_a, id_b), (id_a, id_c), (id_b, id_c)),
+    )
+    assert result.selection_mode == "artificial"
+    assert result.forced_parent_ids == (id_a, id_b, id_c)
+    assert result.selected_parent_ids == (id_a, id_b, id_a, id_c, id_b, id_c)
+
+
+def test_forced_rejections():
+    config = _forced_config(4)
+    parents = _parents(3)
+    id_a, id_b = parents[0].genome_id, parents[1].genome_id
+
+    with pytest.raises(ValueError, match="不在当代"):
+        advance_generation(
+            parents,
+            experiment_id="e",
+            generation=1,
+            seed_manager=SeedManager(1),
+            config=config,
+            forced_pair=(id_a, "exp-0001:g0:genome9999"),
+        )
+    with pytest.raises(ValueError, match="互斥"):
+        advance_generation(
+            parents,
+            experiment_id="e",
+            generation=1,
+            seed_manager=SeedManager(1),
+            config=config,
+            forced_pair=(id_a, id_b),
+            forced_pairs=((id_a, id_b),),
+        )
+    with pytest.raises(ValueError, match="population_size"):
+        advance_generation(
+            parents,
+            experiment_id="e",
+            generation=1,
+            seed_manager=SeedManager(1),
+            config=config,
+            forced_pairs=((id_a, id_b),),
+        )
+    parents_with_nonviable = parents + [_individual("exp-0001:g0:genome9999", viable=False)]
+    with pytest.raises(ValueError, match="非 viable"):
+        advance_generation(
+            parents_with_nonviable,
+            experiment_id="e",
+            generation=1,
+            seed_manager=SeedManager(1),
+            config=config,
+            forced_pair=(id_a, "exp-0001:g0:genome9999"),
+        )
+
+
+def test_forced_skips_bottleneck():
+    config = _forced_config(2)
+    parents = [
+        _individual("exp-0001:g0:genome0000", viable=True),
+        _individual("exp-0001:g0:genome0001", viable=False),
+    ]
+    natural = advance_generation(
+        parents, experiment_id="e", generation=1, seed_manager=SeedManager(1), config=config
+    )
+    assert natural.success is False and natural.event == EVENT_POPULATION_BOTTLENECK
+    id_a = parents[0].genome_id
+    artificial = advance_generation(
+        parents,
+        experiment_id="e",
+        generation=1,
+        seed_manager=SeedManager(1),
+        config=config,
+        forced_pair=(id_a, id_a),
+    )
+    assert artificial.success is True
+    assert artificial.selection_mode == "artificial"
+
+
+def test_natural_mode_defaults_recorded():
+    result = advance_generation(
+        _parents(3),
+        experiment_id="exp-0001",
+        generation=1,
+        seed_manager=SeedManager(10),
+        config=_forced_config(3),
+    )
+    assert result.selection_mode == "natural"
+    assert result.forced_parent_ids == ()

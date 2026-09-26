@@ -56,12 +56,71 @@ class GenerationResult:
     """一次繁殖的结果（``evolution §5.1``）。
 
     失败时 ``success=False``、``event="evolution.population_bottleneck"``、无 offspring。
+    ``selection_mode`` 为 ``"natural"``（锦标赛）或 ``"artificial"``（用户强制亲本，
+    ``evolution §5``）。``forced_parent_ids`` 仅在人工选择时非空（去重、首次出现顺序）。
     """
 
     success: bool
     event: str | None
     offspring: tuple[Individual, ...]
     selected_parent_ids: tuple[str, ...]
+    selection_mode: str = "natural"
+    forced_parent_ids: tuple[str, ...] = ()
+
+
+def _dedup(ids: Sequence[str]) -> tuple[str, ...]:
+    """按首次出现顺序去重。"""
+    seen: dict[str, None] = {}
+    for gid in ids:
+        seen.setdefault(gid, None)
+    return tuple(seen)
+
+
+def _forced_pairs(
+    parents: Sequence[Individual],
+    *,
+    count: int,
+    forced_pair: tuple[str, str] | None,
+    forced_pairs: Sequence[tuple[str, str]] | None,
+) -> tuple[np.ndarray, np.ndarray, tuple[str, ...]]:
+    """解析强制亲本 → ``(pairs (count,2) intp, selected (2*count,) intp, forced_ids)``。
+
+    亲本以稳定 ``genome_id`` 指定；不在当代、非 viable、对数不符即抛 ``ValueError``
+    （``evolution §5`` 回退规则）。``id_a == id_b`` 允许（自交）。
+    """
+    index_of: dict[str, int] = {}
+    for i, parent in enumerate(parents):
+        if parent.genome_id in index_of:
+            raise ValueError(f"parents 的 genome_id 必须互异，重复 {parent.genome_id!r}")
+        index_of[parent.genome_id] = i
+
+    if forced_pair is not None:
+        specs: list[tuple[str, str]] = [forced_pair] * count
+    else:
+        if forced_pairs is None:
+            raise ValueError("forced 解析错误：既无 forced_pair 也无 forced_pairs")
+        if len(forced_pairs) != count:
+            raise ValueError(
+                f"forced_pairs 长度 {len(forced_pairs)} 须等于 population_size {count}"
+            )
+        specs = []
+        for pair in forced_pairs:
+            if len(pair) != 2:
+                raise ValueError(f"forced_pairs 每项须为 (id_a, id_b)，实际 {pair!r}")
+            specs.append((pair[0], pair[1]))
+
+    pairs = np.empty((count, 2), dtype=np.intp)
+    flat: list[str] = []
+    for slot, (id_a, id_b) in enumerate(specs):
+        for pid in (id_a, id_b):
+            if pid not in index_of:
+                raise ValueError(f"forced 亲本 {pid!r} 不在当代 parents")
+            if not parents[index_of[pid]].viable:
+                raise ValueError(f"forced 亲本 {pid!r} 非 viable，人工选择要求可育")
+        pairs[slot, 0] = index_of[id_a]
+        pairs[slot, 1] = index_of[id_b]
+        flat.extend((id_a, id_b))
+    return pairs, pairs.reshape(-1).astype(np.intp), _dedup(flat)
 
 
 def advance_generation(
@@ -72,32 +131,48 @@ def advance_generation(
     seed_manager: SeedManager,
     config: EvolutionConfig,
     layout: GenomeLayout = DEFAULT_LAYOUT,
+    forced_pair: tuple[str, str] | None = None,
+    forced_pairs: Sequence[tuple[str, str]] | None = None,
 ) -> GenerationResult:
     """由当代 ``parents`` 产出下一代 ``config.population_size`` 个个体。
 
     ``generation`` 为**子代**世代号（子代 ``genome_id`` 用之铸造）；``parents`` 中
     ``viable=False`` 者不进候选池。``F`` 由调用方先行用 ``fitness.composite_fitness`` 算好并写入。
-    """
-    eligible = np.array([i for i, parent in enumerate(parents) if parent.viable], dtype=np.intp)
-    if is_population_bottleneck(eligible):
-        return GenerationResult(
-            success=False,
-            event=EVENT_POPULATION_BOTTLENECK,
-            offspring=(),
-            selected_parent_ids=(),
-        )
 
+    ``forced_pair`` / ``forced_pairs``（``evolution §5`` Artificial Selection，互斥）以稳定
+    ``genome_id`` 强制指定亲本、替换锦标赛；非空时不消费 ``selection`` 命名空间、不判 bottleneck。
+    """
+    if forced_pair is not None and forced_pairs is not None:
+        raise ValueError("forced_pair 与 forced_pairs 互斥，只给其一")
     count = int(config.population_size)
-    fitness = np.array([parent.fitness for parent in parents], dtype=np.float32)
-    selection_rng = seed_manager.spawn_rng("selection", generation)
-    selected = binary_tournament(
-        fitness,
-        eligible,
-        tournament_size=config.tournament_size,
-        rng=selection_rng,
-        n_selections=2 * count,
-    )
-    pairs = random_pairs(selected, selection_rng)
+    if forced_pair is not None or forced_pairs is not None:
+        pairs, selected, forced_ids = _forced_pairs(
+            parents, count=count, forced_pair=forced_pair, forced_pairs=forced_pairs
+        )
+        selection_mode = "artificial"
+    else:
+        eligible = np.array([i for i, parent in enumerate(parents) if parent.viable], dtype=np.intp)
+        if is_population_bottleneck(eligible):
+            return GenerationResult(
+                success=False,
+                event=EVENT_POPULATION_BOTTLENECK,
+                offspring=(),
+                selected_parent_ids=(),
+                selection_mode="natural",
+                forced_parent_ids=(),
+            )
+        fitness = np.array([parent.fitness for parent in parents], dtype=np.float32)
+        selection_rng = seed_manager.spawn_rng("selection", generation)
+        selected = binary_tournament(
+            fitness,
+            eligible,
+            tournament_size=config.tournament_size,
+            rng=selection_rng,
+            n_selections=2 * count,
+        )
+        pairs = random_pairs(selected, selection_rng)
+        selection_mode = "natural"
+        forced_ids = ()
 
     offspring: list[Individual] = []
     for index in range(count):
@@ -125,4 +200,6 @@ def advance_generation(
         event=None,
         offspring=tuple(offspring),
         selected_parent_ids=selected_parent_ids,
+        selection_mode=selection_mode,
+        forced_parent_ids=forced_ids,
     )
