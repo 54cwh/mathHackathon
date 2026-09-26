@@ -30,6 +30,9 @@ Danio Arena 是 DanioNet 的行为测量环境，同时承担现场 Demo。目�
 
 【已定稿】单位为世界单位（world unit）。`episode_seconds` 与步数的关系由 `hz` 派生（\(\text{steps}=\text{seconds}\times hz\)）。
 
+> **尺度声明【已定稿】**：本项目的 world unit（wu）是抽象仿真长度单位，不与真实斑马鱼体长（BL）建立固定换算；与距离有关的参数仅按无量纲比率进行生物学校准。`size` 表示相对体型状态，不代表真实 BL。幼虫实验数据仅作为无量纲行为关系的生物学先验，不视为成鱼尺度的直接测量。
+> 依据：方案 B 裁决（2026-09-26，见 `research/notes/契约决策记录.md`）；`research/reference/zebrafish-escape-capture.{json,md}` T2。本声明同时闭合 §8 旧记的尺度冲突。
+
 ### 2.1 边界策略
 【草案待确认】现状（代码）：位置裁剪（clamp）到 \([0,W]\times[0,H]\)，贴墙卡住并持续耗能，**不反弹、不出界即死**。备选：反弹 / 出界即死 / 边界惩罚。
 - 影响：运动轨迹、边界处视觉截断、可复现性。
@@ -131,7 +134,7 @@ d<r_{capture}\quad\text{且}\quad size_{hunter}>\kappa\, size_{target}
 
 **【草案待确认】** \(r_{capture}=1.2\)（现状；待认领表 A2——是否采用、是否加朝向/口部角度）。
 
-> ⚠️ 与生物量级冲突：真实斑马鱼为 gape-limited（探测 <1 BL、口裂 4–5% SL），而本项目 \(r_{capture}=1.2\)、\(\kappa=1.25\) 与之一致性差。属已知范围外偏差，见 `docs/参数总表.json` `citation_risks`。
+> ⚠️ 原记「与生物量级冲突」。**根因＝`world unit ↔ BL` 换算缺失，已由 §2 尺度声明闭合**（方案 B：不建立固定换算，只按无量纲比率校准）。故本节参数不再与成鱼 BL 直接比对；校准口径是 `r_capture / sensing.radius` 与 \(\kappa\) 的无量纲关系（见 §17 A2 余下子项）。
 
 ## 9. PredatorPolicy
 predator 不用神经网络：【已定稿】
@@ -234,7 +237,7 @@ Complex Scene 可设置：【草案待确认】
 |---|---|
 | 行为语义 | A6 边界策略；A7 碰撞后果（现状默认不触发，需重评指标）；A8 逃脱判定；A9 团灭提前结束；捕食双向/被吃后果（§8 已建议固定为双向，待确认）；prey 重生/守恒；survival 定义（§15） |
 | 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；looming 恒 0 的修法 |
-| 参数 | A2 \(r_{capture}\)；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
+| 参数 | A2 \(r_{capture}\)（**方案 B 已裁决**：按 `r_capture/sensing` 无量纲比率校准；余一子项——判据边界 `<` vs `≤` 与 `predator_size` 最小值联动，见 §8）；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
 | 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8，**阻断**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 
