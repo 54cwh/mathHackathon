@@ -84,7 +84,7 @@ frontend/
 
 ## Live Demo 种子与 Arena 面板实时行为
 
-> 本节记录 `cfb3869`（Arena 面板接入实时会话）的实际行为，作为前端唯一的种子与轮询说明；与 `src/evogenesis/arena/Danio_Arena设计规范.md` 的机制定义配合阅读。
+> 本节记录 `cfb3869`（Arena 面板接入实时会话）的实际行为，作为前端唯一的种子与轮询说明；与 `src/evogenesis/arena/Danio_Arena设计与实现说明.md` 的机制定义配合阅读。
 
 ### 种子来源（单一入口）
 
