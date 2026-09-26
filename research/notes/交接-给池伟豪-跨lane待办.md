@@ -237,3 +237,46 @@ Topologies*, Evol. Comput. 10(2):99–127 (2002) | peer-reviewed |
 **我的处理**（不入你的 lane）：论文中把这三点写成「主口径实现已就位，但**本文所依据的全部落盘 run
 均早于该口径变更**，故所报之比值为诊断口径」，并明确「重建基线后方可补报主口径」——
 即不引用任何未落盘的数字。**待你确认后**，若需要重跑四环境基线并重出图/表，我可以执行。
+
+## 六、【请你处理】Demo 服务层（P0-8 / B3）—— 用户已指定由你实现
+
+**为什么现在单列一条**：用户 2026-09-26 明确「**先等你确认；你的 api 写好之后我接着做前端**」。
+因此这一条是**当前 Demo 的唯一闸门**，其余前端工作都已就绪并在等它。
+
+### 事实基线（无需重新侦察）
+
+- `src/evogenesis/api/{app,schemas,session,stubs,ws}.py` 与 `tests/test_api_contract.py` 已由 `d894cbb` 删除；
+  `scripts/serve_api.py`、`scripts/start_demo.sh`、`Makefile` 的 `api`/`demo` 目标已由 `b4170aa` 删除；
+  `pyproject.toml` 已移除 `fastapi`/`uvicorn`/`websockets`。`api/` 目录现仅存 `__init__.py`（0 字节）与两份文档。
+- **前端完好**：29 个文件入库、`npm run build` 可出 `dist/`、`DanioArenaPanel.tsx`（224 行）已接实时会话。
+- 本机 `.venv` **仍装有** `fastapi 0.141.1` / `starlette 1.7.0` / `uvicorn 0.54.0`（清单 G15）⇒ 零安装成本。
+
+### 契约在哪 —— 请直接读，不要重新侦察
+
+`research/notes/前端对接需求清单.md` 已把前端**实际调用面**逐行测全（含文件行号证据）：
+
+- **实调用 4 个端点**：`POST /v1/sessions`、`DELETE /v1/sessions/{id}`（须返回 **204 无体**）、
+  `POST /v1/sessions/{id}/release?steps=&use_expert=`（**query 参数，非 body**）、`GET /v1/sessions/{id}/snapshot`。
+- **已定义但未被调用 2 个**（**仍属契约**，缺了会留 404 死代码）：`GET /v1/sessions/{id}`、`POST /v1/sessions/{id}/reset`。
+- `snapshot` 的**渲染硬依赖字段**：`obstacles[].{x,y,radius}`、`prey.{x,y,size,alive}`、
+  `predators.{x,y,size}`、`fish.{x,y,heading,energy,size,alive}`、`step`。
+  （`session_id` / `events[]` / `fish[].speed` 是**声明未用**，可不阻塞。）
+- **坐标系**：世界 `100×60` ↔ 位图 `640×384` 同比例映射（`sx/sy/sr`）。
+- **前端已实现的降级语义**（服务层不必再管）：自调度轮询 `POLL_MS=100`（非 setInterval）；
+  任一请求抛错即停循环、须用户手点 Release 才恢复；Reset 走 **delete + create**（不是 `POST /reset`）；
+  Pause 只停前端轮询、**不调后端** `/pause`。
+- **落地改动清单**在该文件第 179 行：新建 `api/{app,session,schemas}.py` + `scripts/serve_api.py` + `scripts/start_demo.sh`；
+  `pyproject.toml` 加回三依赖；`Makefile` 加回 `demo` 目标。
+
+### 两条必须满足的约束
+
+1. **唯一硬约束：兼容 `frontend/src/api/arena.ts` 的既有调用面 ⇒ `frontend/**` 0 改动。**
+   前端即契约；若服务层与它不一致，请改服务层而不是改前端（改前端会同时作废上述清单）。
+2. **文档承诺必须与实现一致**：`api/API与系统工程.md:133` 承诺 `make demo` 等价 `./scripts/start_demo.sh`、
+   浏览器开 `http://127.0.0.1:8000`；现 `Makefile` **无** `demo` 目标。两者必须收敛到同一事实。
+   （`api/API与系统工程.md:154` 自认「生产由 FastAPI 托管 `frontend/dist` 免 CORS」尚未写进文档，建议一并补。）
+
+### 交付后
+
+告诉我一声即可 —— 我接着做前端接线与 Demo 流程（选参考图 → 冻色板 → 面板填充）。
+**在你说开始之前，我不会动 `src/evogenesis/api/`**，避免与你撞 lane。

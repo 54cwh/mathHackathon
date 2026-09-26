@@ -24,11 +24,25 @@
 | 状态 | zustand | 4.5.7 |
 | 图表 | echarts | 5.6.0 |
 | 脑图 | cytoscape | 3.34.3 |
+| 3D | three | 0.186.1 |
+| 3D | @react-three/fiber | 8.18.0 |
+| 3D | @react-three/drei | 9.122.0 |
 
 - **组件层**：shadcn/ui。它不是 npm 包，组件源码落在 `src/components/ui/`，用 CLI 添加（`npx shadcn@latest add <name>`）。
 - **Arena 渲染**：原生 **Canvas 2D**（不用 WebGL/PixiJS）。
 - **实时传输**：原生 `WebSocket` + `fetch`，不引 HTTP 客户端库。
-- **3D DNA**：CSS/SVG 动画（three.js 不做，移至 P1）。
+- **3D DNA**：**改由 three.js / @react-three/fiber（r3f）渲染**。
+  > **2026-09-26 反转记录（辰钊决定）**：本条原写「CSS/SVG 动画（three.js 不做，移至 P1）」，
+  > 现改为采用 three.js。**理由**：3D 双螺旋承担 `交互与可视化.md` §2 的视觉冲击，
+  > CSS/SVG 难以做出可信的立体与光照；像素风的质感可通过「程序化几何 + 生成的贴图」调和。
+  > **约束（一处必须先知道的兼容性）**：本项目锁 **React 18.3.1**，而 **r3f v9 要求 React 19**，
+  > 故只能上 **r3f v8.x**（与 React 18 配套）；three 本体版本随 r3f v8 的 peer 约束选。
+  > **本反转须按本文件顶部「升级须显式改版本并重测」的规则执行**：
+  > 新依赖写入 `package.json`（精确版本）+ 更新 `package-lock.json` + 重测构建与 lint。
+  > **不冲突**：下方「Arena 渲染：原生 Canvas 2D（不用 WebGL/PixiJS）」仍然有效 ——
+  > 那条约束**只针对 Arena 面板**；WebGL 仅出现在 DNA2Brain 面板。
+  > **配套**：ChatGPT 生成的 DNA 素材在本方案下作为**贴图/背景**使用（不是直接当螺旋位图），
+  > 因此素材要求为「可平铺的 DNA 纹理 / 碱基符号」而非「螺旋成品图」。
 
 ## 防坑约定（AI 协作）
 
