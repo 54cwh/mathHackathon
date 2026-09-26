@@ -72,6 +72,13 @@ def _parse_args() -> argparse.Namespace:
         "缺省取 configs/experiment.yaml",
     )
     parser.add_argument(
+        "--workers",
+        type=int,
+        default=1,
+        help="BC 训练的进程并行度（只提速、不改语义；种子与调用顺序无关）。"
+        "并发上限由内存决定 —— 单作业峰值约 2-3 GB（64x600 步计算图），缺省 1（串行）",
+    )
+    parser.add_argument(
         "--allow-partial",
         action="store_true",
         help="DanioNet viable 数 < n_agents 时按 available 评估（缺省为抛错，见 §3.3 降级语义）",
@@ -121,6 +128,7 @@ def main() -> None:
         run_dir_of=lambda seed: run_dirs[seed],
         steps=args.steps,
         allow_partial=args.allow_partial,
+        workers=args.workers,
     )
     for run_dir in run_dirs.values():
         runlayout.update_run_status(run_dir, "completed")

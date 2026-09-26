@@ -36,7 +36,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from concurrent.futures import ProcessPoolExecutor
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from statistics import fmean
@@ -90,6 +92,108 @@ _STRUCTURE_KEYS: tuple[str, ...] = (
     "flops_implemented",
     "flops_theoretical",
 )
+
+
+#: 子进程（或串行路径下的主进程）训练上下文。由 `_worker_init` 填充一次。
+#: **同一套 task 函数同时服务串行与并行两条路径** —— 故 `workers=1` 与 `workers>1` 的结果
+#: 在构造上逐位一致（同一 RNG 流、同一数学、无归约顺序差异）。
+_WORKER_CTX: dict[str, Any] = {}
+
+
+def _worker_init(
+    trajectories_dir: str,
+    chain: ModelChainConfig,
+    learning_config: LearningConfig,
+    device: str,
+) -> None:
+    """每个工作进程各加载一次数据集（避免逐任务 pickle 数据集）。"""
+    _WORKER_CTX["dataset"] = load_trajectory_dir(trajectories_dir)
+    _WORKER_CTX["chain"] = chain
+    _WORKER_CTX["learning_config"] = learning_config
+    _WORKER_CTX["device"] = device
+
+
+def _train_baseline_task(payload: tuple[str, int, int, int]) -> torch.Tensor:
+    """训练一个基线个体，返回其训练后的 `theta`（`payload = (name, seed, t, sensory_dim)`）。
+
+    只回传 `theta`：它由 `(master_seed, index, dataset, config)` 确定，故主进程把同一
+    构造的未训练网络的 `theta` 覆盖为它，等价于在该进程内原地训练（`core §3` 无调用顺序依赖）。
+    """
+    name, seed, index, sensory_dim = payload
+    ctx = _WORKER_CTX
+    net = BASELINES[name](
+        master_seed=seed, index=index, sensory_dim=sensory_dim, device=ctx["device"]
+    )
+    train_bc(
+        net,
+        ctx["dataset"],
+        ctx["learning_config"],
+        seed_manager=SeedManager(seed),
+        seed_index=index,
+        device=ctx["device"],
+        sign_constrained=False,
+    )
+    return net.theta.detach().cpu().clone()
+
+
+def _train_danionet_task(payload: tuple[Any, int, int]) -> torch.Tensor:
+    """训练一个 DanioNet 个体，返回 `theta` 副本（`payload = (phenotype, seed, seed_index)`）。
+
+    `train_bc` 硬性要求 batch=1（`learning §3`），故逐个体训练；`seed_index` 为配子级
+    `gamete_seed_index(genome_id, population_size=n_danio)`。
+    """
+    phenotype, seed, seed_index = payload
+    ctx = _WORKER_CTX
+    single = danionet_of(
+        [phenotype], master_seed=seed, config=ctx["chain"].network,
+        device=ctx["device"], sign_constrained=True,
+    )
+    train_bc(
+        single,
+        ctx["dataset"],
+        ctx["learning_config"],
+        seed_manager=SeedManager(seed),
+        seed_index=seed_index,
+        device=ctx["device"],
+        sign_constrained=True,
+    )
+    return single.theta.detach().cpu().clone()
+
+
+@contextmanager
+def _training_pool(
+    workers: int,
+    *,
+    trajectories_dir: str | Path,
+    chain: ModelChainConfig,
+    learning_config: LearningConfig,
+    device: str,
+) -> Iterator[ProcessPoolExecutor | None]:
+    """训练用进程池；`workers <= 1` 时 yield `None`（串行路径）。
+
+    并行只提速、不改语义：48 个训练作业彼此独立，种子由 `(master_seed, t)` 派生、与调用
+    顺序无关（`core §3` 正是为此设计）。**子进程各自持有自己那份 64×600 步计算图 ⇒ 主进程
+    内存不随 `workers` 增长**；总内存 ≈ `workers × 单作业峰值`。
+    """
+    if workers <= 1:
+        _worker_init(str(trajectories_dir), chain, learning_config, device)
+        yield None
+        return
+    with ProcessPoolExecutor(
+        max_workers=workers,
+        initializer=_worker_init,
+        initargs=(str(trajectories_dir), chain, learning_config, device),
+    ) as executor:
+        yield executor
+
+
+def _map_training(
+    executor: ProcessPoolExecutor | None, task: Any, payloads: Sequence[Any]
+) -> list[torch.Tensor]:
+    """串行（`executor is None`）与并行共用的映射；两条路径调用**同一** `task`。"""
+    if executor is None:
+        return [task(payload) for payload in payloads]
+    return list(executor.map(task, payloads))
 
 
 class BaselineAgentBatch:
@@ -235,6 +339,7 @@ def _evaluate_baseline(
     steps: int,
     generation: int,
     device: str,
+    executor: ProcessPoolExecutor | None = None,
 ) -> list[ModelResult]:
     """建 `n_agents` 个基线对象、逐个 BC 训练，再让它们**同场**跑 `n_episodes` 局。
 
@@ -247,16 +352,12 @@ def _evaluate_baseline(
         BASELINES[name](master_seed=seed, index=t, sensory_dim=sensory_dim, device=device)
         for t in indices
     ]
-    for net, t in zip(nets, indices, strict=True):
-        train_bc(
-            net,
-            dataset,
-            learning_config,
-            seed_manager=SeedManager(seed),
-            seed_index=t,
-            device=device,
-            sign_constrained=False,
-        )
+    thetas = _map_training(
+        executor, _train_baseline_task, [(name, seed, t, sensory_dim) for t in indices]
+    )
+    with torch.no_grad():
+        for net, theta in zip(nets, thetas, strict=True):
+            net.theta.data.copy_(theta)
     batch = BaselineAgentBatch(nets)
     fish_ids = [mint_id(experiment_id, "fish", generation, t) for t in indices]
     genome_ids = [mint_id(experiment_id, "genome", generation, t) for t in indices]
@@ -310,6 +411,7 @@ def _evaluate_danionet(
     generation: int,
     device: str,
     allow_partial: bool,
+    executor: ProcessPoolExecutor | None = None,
 ) -> list[ModelResult]:
     """发育 `n_danio` 候选、取**最低 index 的 `n_agents` 个 viable**，逐个体训练后注入批量网。
 
@@ -340,25 +442,14 @@ def _evaluate_danionet(
         raise ValueError(f"DanioNet 无 viable 个体（seed={seed}，n_danio={n_danio}），无法评估")
 
     sensory_dim = chain.network.sensory_dim
-    thetas: list[torch.Tensor] = []
-    for individual, phenotype in pairs:
-        single = danionet_of(
-            [phenotype],
-            master_seed=seed,
-            config=chain.network,
-            device=device,
-            sign_constrained=True,
-        )
-        train_bc(
-            single,
-            dataset,
-            learning_config,
-            seed_manager=SeedManager(seed),
-            seed_index=gamete_seed_index(individual.genome_id, population_size=n_danio),
-            device=device,
-            sign_constrained=True,
-        )
-        thetas.append(single.theta.detach().clone())
+    thetas = _map_training(
+        executor,
+        _train_danionet_task,
+        [
+            (phenotype, seed, gamete_seed_index(individual.genome_id, population_size=n_danio))
+            for individual, phenotype in pairs
+        ],
+    )
 
     eval_net = danionet_of(
         [phenotype for _, phenotype in pairs],
@@ -455,40 +546,30 @@ def _summarise_models(results: list[ModelResult], *, n_agents: int) -> tuple[dic
     return tuple(out)
 
 
-def run_baseline_comparison(
+def _evaluate_all_seeds(
     *,
     experiment_id: str,
     seeds: tuple[int, ...],
     chain: ModelChainConfig,
     arena_config: ArenaConfig,
     learning_config: LearningConfig,
-    evolution_config: EvolutionConfig,
-    trajectories_dir: str | Path,
+    weights: dict[str, float],
+    dataset: TrajectoryDataset,
     n_agents: int,
     n_episodes: int,
     n_danio: int,
-    run_dir_of: Any = None,
-    steps: int | None = None,
-    generation: int = 0,
-    device: str = "cpu",
-    allow_partial: bool = False,
-) -> BaselineComparisonResult:
-    """跑 Experiment C：每模型每 seed **`n_agents` agent × `n_episodes` episode**。
+    steps: int,
+    generation: int,
+    device: str,
+    allow_partial: bool,
+    run_dir_of: Any,
+    executor: ProcessPoolExecutor | None,
+) -> list[ModelResult]:
+    """逐 seed × 逐模型评估，返回全部 `ModelResult`（`metrics.csv` 亦在此写入）。
 
-    `n_agents` / `n_episodes` / `n_danio` 为**必填**（值归 `configs/experiment.yaml`，本函数不
-    设默认值以免与配置漂移）。``run_dir_of(seed) -> Path`` 为可选的 run 目录提供者（由 CLI 用
-    `runlayout` 建）；给出时每 seed 写 ``<run>/metrics.csv``（`seed`/`fish_id` + 指标 +
-    `agent`/`episode`/`model`）。跨 seed 汇总由本函数返回，落盘由 CLI 写
-    `results/tables/<experiment_id>_baselines.json`。
-
-    `steps=None` 取 `world.episode_steps`。`allow_partial` 见模块 docstring 的降级语义。
+    训练一律经 `_map_training(executor, ...)` —— **串行（`executor is None`）与并行调用同一批
+    task**，故两条路径结果逐位一致；`executor` 只影响算得有多快。
     """
-    if n_agents < 1 or n_episodes < 1:
-        raise ValueError(f"n_agents / n_episodes 必须 >= 1，实际 {n_agents} / {n_episodes}")
-    steps = arena_config.world.episode_steps if steps is None else steps
-    weights = evolution_config.fitness_weights.model_dump()
-    dataset = load_trajectory_dir(trajectories_dir)
-
     results: list[ModelResult] = []
     for seed in seeds:
         rows_by_model: dict[str, list[ModelResult]] = {}
@@ -544,6 +625,72 @@ def run_baseline_comparison(
                 for r in rows_by_model.get(name, [])
             ]
             write_metrics_csv(run_dir_of(seed), csv_rows)
+    return results
+
+
+def run_baseline_comparison(
+    *,
+    experiment_id: str,
+    seeds: tuple[int, ...],
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    learning_config: LearningConfig,
+    evolution_config: EvolutionConfig,
+    trajectories_dir: str | Path,
+    n_agents: int,
+    n_episodes: int,
+    n_danio: int,
+    run_dir_of: Any = None,
+    steps: int | None = None,
+    generation: int = 0,
+    device: str = "cpu",
+    allow_partial: bool = False,
+    workers: int = 1,
+) -> BaselineComparisonResult:
+    """跑 Experiment C：每模型每 seed **`n_agents` agent × `n_episodes` episode**。
+
+    `n_agents` / `n_episodes` / `n_danio` 为**必填**（值归 `configs/experiment.yaml`，本函数不
+    设默认值以免与配置漂移）。``run_dir_of(seed) -> Path`` 为可选的 run 目录提供者（由 CLI 用
+    `runlayout` 建）；给出时每 seed 写 ``<run>/metrics.csv``（`seed`/`fish_id` + 指标 +
+    `agent`/`episode`/`model`）。跨 seed 汇总由本函数返回，落盘由 CLI 写
+    `results/tables/<experiment_id>_baselines.json`。
+
+    `steps=None` 取 `world.episode_steps`。`allow_partial` 见模块 docstring 的降级语义。
+    `workers > 1` 时把每模型 `n_agents` 个**彼此独立**的 BC 训练交给进程池（只提速、不改
+    语义：种子由 `(master_seed, t)` 派生、与调用顺序无关）；`workers=1` 为串行，与并行路径
+    构造上逐位一致。并发上限由**内存**决定 —— 单作业峰值 ≈ 2–3 GB（64×600 步计算图）。
+    """
+    if n_agents < 1 or n_episodes < 1:
+        raise ValueError(f"n_agents / n_episodes 必须 >= 1，实际 {n_agents} / {n_episodes}")
+    steps = arena_config.world.episode_steps if steps is None else steps
+    weights = evolution_config.fitness_weights.model_dump()
+    dataset = load_trajectory_dir(trajectories_dir)
+
+    with _training_pool(
+        workers,
+        trajectories_dir=trajectories_dir,
+        chain=chain,
+        learning_config=learning_config,
+        device=device,
+    ) as executor:
+        results = _evaluate_all_seeds(
+            experiment_id=experiment_id,
+            seeds=seeds,
+            chain=chain,
+            arena_config=arena_config,
+            learning_config=learning_config,
+            weights=weights,
+            dataset=dataset,
+            n_agents=n_agents,
+            n_episodes=n_episodes,
+            n_danio=n_danio,
+            steps=steps,
+            generation=generation,
+            device=device,
+            allow_partial=allow_partial,
+            run_dir_of=run_dir_of,
+            executor=executor,
+        )
 
     models = _summarise_models(results, n_agents=n_agents)
     return BaselineComparisonResult(

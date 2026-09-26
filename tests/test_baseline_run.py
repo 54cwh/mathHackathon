@@ -116,14 +116,20 @@ def _write_trajectory(
 
 def _prepare(tmp_path: Path) -> tuple[Path, ModelChainConfig, LearningConfig]:
     trajectories = tmp_path / "trajectories"
-    trajectories.mkdir()
+    trajectories.mkdir(parents=True, exist_ok=True)
     _write_trajectory(trajectories, "episode_ep0001.jsonl", steps=3)
     _write_trajectory(trajectories, "episode_ep0002.jsonl", steps=3)
     return trajectories, load_model_chain_config(MODEL_CONFIG), load_learning_config(MODEL_CONFIG)
 
 
 def _run_small(
-    tmp_path: Path, monkeypatch, *, seeds: tuple[int, ...], n_agents: int, n_episodes: int
+    tmp_path: Path,
+    monkeypatch,
+    *,
+    seeds: tuple[int, ...],
+    n_agents: int,
+    n_episodes: int,
+    workers: int = 1,
 ):
     """小规模跑通 Experiment C（MODELS 收窄为两个基线），返回 (result, run_dirs)。"""
     trajectories, chain, learning_config = _prepare(tmp_path)
@@ -144,6 +150,7 @@ def _run_small(
         n_danio=2,
         steps=5,
         run_dir_of=lambda seed: run_dirs[seed],
+        workers=workers,
     )
     return result, run_dirs
 
@@ -402,3 +409,36 @@ def test_param_configs_loadable_for_experiment_c() -> None:
     assert config.n_agents >= 1
     assert config.n_episodes >= 1
     assert config.n_danio >= config.n_agents, "候选池须不小于目标 agent 数（否则必然降级）"
+
+
+def test_workers_parallel_matches_serial_bit_for_bit(tmp_path: Path, monkeypatch) -> None:
+    """`workers > 1` **只提速、不改语义**：与串行结果逐位一致。
+
+    48 个训练作业彼此独立，种子由 `(master_seed, t)` 派生、与调用顺序无关（`core §3` 正是为此
+    设计）。故进程并行不改变任何 `theta`、任何指标。**唯一允许不同的是 latency**（wall-clock
+    测量，属环境量而非计算结果），故比较时排除 `latency_*`。
+    """
+    kwargs = {"seeds": (1103,), "n_agents": 2, "n_episodes": 2}
+    serial, _ = _run_small(tmp_path / "serial", monkeypatch, workers=1, **kwargs)
+    parallel, _ = _run_small(tmp_path / "parallel", monkeypatch, workers=2, **kwargs)
+
+    assert [m["model"] for m in serial.models] == [m["model"] for m in parallel.models]
+    structure_keys = (
+        "parameter_count",
+        "active_edges",
+        "macs_implemented",
+        "macs_theoretical",
+        "flops_implemented",
+        "flops_theoretical",
+    )
+    for a, b in zip(serial.models, parallel.models, strict=True):
+        assert a["n_agents"] == b["n_agents"]
+        assert a["note"] == b["note"]
+        # 指标必须逐位一致（含 mean / std / n）
+        assert a["metrics"] == b["metrics"], f"{a['model']} 的指标随并行度变化了"
+        for key in structure_keys:
+            assert a["complexity"][key] == b["complexity"][key], f"{key} 随并行度变化了"
+        # latency 是 wall-clock 量，允许不同，但必须仍是数值
+        for key in ("latency_p50_ms", "latency_p95_ms"):
+            assert isinstance(a["complexity"][key], float)
+            assert isinstance(b["complexity"][key], float)
