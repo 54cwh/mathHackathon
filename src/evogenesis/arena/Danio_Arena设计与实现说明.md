@@ -127,7 +127,7 @@ energy `=0` 时死亡。【已定稿】公式。**四系数取值**（`E_max=1.0
 size\leftarrow\min\big(size_{max},\ sqrt{size^2+g\cdot size_{prey}^2}\big)
 \]
 
-- `g`（`growth.prey_area_gain`，**标定占位**）：开源机制对照报告区间 0.1–0.35（[bib#215] 实取 0.35），本仓库占位 **0.2**；须 play-test 标定后才可冻结。
+- `g`（`growth.prey_area_gain`，**标定占位**）：开源机制对照报告区间 0.1–0.35（[bib#215] 实取 0.35），本仓库占位 **0.2**；须 play-test 标定后才可冻结。**依据性质【已定稿·声明】**：该区间来自开源游戏实现（[bib#215]，**非同行评审**），本仓库只**借鉴机制、自行重写**，未复制代码或素材；论文引用时必须声明其为工程对照而非学术依据。
 - **边际递减内生**：自身越大，同一 prey 带来的**相对**增幅越小，无需额外调参；`size_max` 退化为**硬上限**（不再依赖公式自然收敛）。
 - `Fish.biomass` **字段删除**：面积式下 `size` 已完整编码生长，该字段无角色，同时消除原「只写不读」缺陷。原线性系数 `biomass_to_size_gain` 由 `prey_area_gain` 取代。
 - 【已定稿·声明】**与真实斑马鱼时间尺度不符**：30 s 内真实鱼质量变化仅 ~1e−5 量级，故**局内可见生长属游戏化抽象**（`问题定义与研究假设.md` §4 建模假设 7「growth 是生态游戏化抽象」）。论文中须显式声明，**不得**表述为生物学实测；生物学校准的生长应放到跨 episode / 世代尺度讨论。
@@ -141,7 +141,7 @@ size\leftarrow\min\big(size_{max},\ sqrt{size^2+g\cdot size_{prey}^2}\big)
 d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}\quad\text{且}\quad \lvert\Delta\theta\rvert\le\frac{\theta_{cone}}{2}
 \]
 
-**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。$\kappa=1.25$ 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
+**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。$\kappa=1.25$ 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**该来源的登记状态【已定稿·声明】**：Mihalitsis & Bellwood 2017（DOI `10.1371/journal.pone.0184679`）目前**只出现在证据文件** `research/reference/zebrafish-escape-capture.md:71,94,101`，**尚未登记进 `research/notes/bibliography.md` 正式序列**（已挂该文件「待登记-1」，待 OpenAlex 核验）；**论文引用前必须完成登记**，且限定语（替代物种 / 猎物体高 / 不可倒数）须随引。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
 
 **【前向锥·已定稿（2026-09-26 实现）】** 目标要纳入捕食判定，还须位于**猎人朝向的前向锥**内：$\lvert\Delta\theta\rvert$ 为猎物相对**猎人**朝向的方位角，$\theta_{cone}$（`growth.capture_cone_degrees`）$=120\,^{\circ}$ 为**总锥角**（半锥 $60\,^{\circ}$）。锥角属**设计选择**（dossier T2 `add_directionality`；[bib#217]/[bib#218] 对照），非实测值；默认值 120° 由用户 2026-09-26 裁决。
 **双向同一**：判据对两个方向对称——predator 吃鱼与鱼吃 prey，均按**各自作为猎人**的朝向锥判定。
@@ -171,6 +171,8 @@ predator 不用神经网络：【已定稿】
 
 ## 11. ExpertPolicy
 用于 imitation learning，不参与最终 DanioNet scoring：【已定稿】结构
+
+> **Provenance【已定稿·声明】**：本节为本仓库自写的简单加权规则。曾评估借鉴 `[bib#217]`（`tghbrk/fish-eat-fish`，**未声明许可证**）的三态状态机 + 计时器滞后，**经核实未被采用**（`arena/policies.py` 无状态机），故**无代码或素材复制**；该评估项仍须补进 `docs/declaration/THIRD_PARTY.md`。
 
 \[
 u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
@@ -233,7 +235,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 仅「换目标」而未通过存活窗口者**不计**；旧目标已死亡（饿死 / 被吃）**不计**。
 > 理由：原「换目标即算逃脱」会把「捕食者只是看到更近的鱼」这一**捕食者侧重决策**记成猎物功劳，上偏最大（dossier T1 `avoid` / `do_not_add`）。
 
-【已定稿】**限时追击**：捕食者新增 `actors.predator_max_chase_steps`（默认 80 步，**标定占位**；@20 Hz 对应开源对照报告 3–5 s @60 fps，[bib#218] `fish.py:124,205-208`）。连续追击超过该步数即放弃当前目标、恢复巡游——使「放弃」有明确因果，而非仅由换目标触发。
+【已定稿】**限时追击**：捕食者新增 `actors.predator_max_chase_steps`（默认 80 步，**标定占位**；@20 Hz 对应开源对照报告 3–5 s @60 fps，[bib#218] `fish.py:124,205-208`）。**依据性质**：开源游戏实现（[bib#218] `MonkWarrior08/Interactive_Fish_Eating_Game`，MIT，**非同行评审**；仅借鉴机制、自行重写）。连续追击超过该步数即放弃当前目标、恢复巡游——使「放弃」有明确因果，而非仅由换目标触发。
 
 【已定稿】**survival 定义与归一化**：`S = survival_steps / 600`（固定分母、线性；满局存活 `S=1.0`，饿死 / 被捕食按实际存活步数取值）。加权合成 fitness 前，各分量须**显式尺度归一化**，并诊断分量间相关。
 
