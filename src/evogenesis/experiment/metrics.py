@@ -25,6 +25,10 @@ from statistics import fmean, stdev
 from typing import Any
 
 #: composite fitness 权重：§2.1 的四个原始分量 → 一个标量。
+#:
+#: ⚠️ 键名 `prey_capture` 为**历史名**：其分量按 `experiment §2.3` **条件式口径**供给——
+#: 捕获确定性（`P_capture_success = 1.0`，现状）取**主口径 `capture_rate`**（绝对速率）；
+#: 若启用捕获随机化（`growth.capture_success_prob < 1`），比值 `prey_capture`（真成功率）更合适。
 COMPOSITE_WEIGHTS: dict[str, float] = {
     "survival": 0.35,
     "prey_capture": 0.25,
@@ -40,14 +44,18 @@ BLOCKED_METRICS: dict[str, str] = {}
 
 def composite_fitness(
     survival: float,
-    prey_capture: float,
+    prey_component: float,
     escape_success: float,
     energy_efficiency: float,
 ) -> float:
-    """§2.3 的加权合成（权重见 `COMPOSITE_WEIGHTS`）。"""
+    """§2.3 的加权合成（权重见 `COMPOSITE_WEIGHTS`）。
+
+    `prey_component` 由调用方按 §2.3 **条件式口径**供给：默认（`P_capture_success = 1.0`）
+    取主口径 `capture_rate`；启用捕获随机化后取 `prey_capture`（真成功率）。本函数只做加权。
+    """
     return (
         COMPOSITE_WEIGHTS["survival"] * survival
-        + COMPOSITE_WEIGHTS["prey_capture"] * prey_capture
+        + COMPOSITE_WEIGHTS["prey_capture"] * prey_component
         + COMPOSITE_WEIGHTS["escape_success"] * escape_success
         + COMPOSITE_WEIGHTS["energy_efficiency"] * energy_efficiency
     )
@@ -141,7 +149,7 @@ def episode_metrics(
         "energy_efficiency": energy_efficiency(energy_final, e_max, survival_steps),
         "composite_fitness": composite_fitness(
             survival_rate(survival_steps, episode_steps),
-            prey_capture_rate(int(record["captures"]), int(record["encounters"])),
+            capture_rate(int(record["captures"]), episode_steps),
             escape_success_rate(
                 int(record["escape_successes"]), int(record["predator_encounters"])
             ),

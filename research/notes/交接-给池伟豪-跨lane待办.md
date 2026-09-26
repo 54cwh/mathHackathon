@@ -18,11 +18,12 @@
 
 | # | 事项 | 证据 | 待定 |
 |---|---|---|---|
-| D1 | **A14 arena 随机源** | `env.py` 单条 `default_rng(master)` 同时驱动 spawn 与逐步游走 | 拆 `arena_spawn`/`arena_dynamics`（id 9 已可用）会改 RNG 流、**作废 §18.11 基线** → 暂缓 |
+| ~~D1~~ | ~~A14 arena 随机源~~ ✅ **已闭合（2026-09-26）**：已拆 `arena_spawn`/`arena_dynamics`（id 9），`DanioArena(spawn_seed, dynamics_seed)`；全基线已重跑（v3） | — |
 | D2 | **H3 探针实现** | `arena §14` 任务定义已定稿、实现未做；`§19 P1 #8` | 用 `integrator_memory` 激活替代（零代码）or 实现探针（会加字段/可能加事件） |
 | D3 | **`encounters` 去重口径** | `prey_capture=captures/max(encounters,1)`；实测中位 2/最大 225/前 3 占 65.7% | 是否改去重口径（`experiment §7 #1` 已由 arena S6 明确粒度，剩口径抉择） |
-| D4 | **捕获成功率随机化** | `arena §19 P0.3` 余项；当前 `P_capture_success=1.0` | 是否引入随机失败（影响指标方差与基线） |
-| D6 | **`composite_fitness` 捕食分量口径** | `experiment §2.3` 目标=`capture_rate`，实现=`prey_capture`（诊断）；`experiment §7` 已登记 | 切换会改 composite 数值（**作废基线**）→ 待裁决后改并重跑基线 |
+| D4 | ~~捕获成功率随机化~~ ✅ **已闭合（2026-09-26）**：新增 `growth.capture_success_prob`（默认 1.0=确定性，零行为）；<1 时失败记 `capture_attempt('missed')`。**待正式实验前定值**（play-test） | — |
+| ~~D6~~ | ~~`composite_fitness` 捕食分量口径~~ ✅ **已闭合（2026-09-26）**：`experiment §2.3` 改为**条件式**（默认 `capture_rate`，随机化后用 `prey_capture`），`metrics.py` 已对齐并重跑 | — |
+| D5′ | **死参/死分支** | ✅ 已清（2026-09-26）：删 `PreyPolicy.avoid_gain` 与 `Predator.alive` 死分支 | — |
 | D5 | **环境三组 M4** | `arena §12`/`M4`：`environment` 字段不改变任何参数，「环境选择」尚无实际因果 | 是否做高价值 prey 靠近 predator 等**场景布置** |
 
 ## 三、下游文档待纠正（零行为，需对方 lane）
@@ -56,7 +57,7 @@
 2. **可用的驱动/评价入口**（均在 `main`，已被测试守护）：
    - `scripts/run_arena.py --experiment-id <id>`（`--emit-trajectories` 可落 Stage-1 轨迹）：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`（`metrics.csv`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`）。
    - `scripts/make_figs.py` / `scripts/make_tables.py`：只读 run 目录，出图/出表（含 `diagnostics.md` 口径诊断）。
-   - 基线（对照用，**不入库、可重生成**，`exp_arena_expert_ref_v2`）：`survival 0.9472 ± 0.0459`、`prey_capture 0.5407 ± 0.1180`、`escape_success 0.2292 ± 0.0625`、`energy_efficiency −1.031e−3 ± 4.64e−5`、`composite_fitness 0.5123 ± 0.0428`。
+   - 基线（对照用，**不入库、可重生成**，`exp_arena_expert_ref_v3`，A14 后重跑）：`survival 0.9188 ± 0.1362`、`capture_rate 0.0030 ± 0.0014`、`prey_capture 0.5148 ± 0.2972`、`escape_success 0.3032 ± 0.1354`、`energy_efficiency −9.25e−4 ± 1.62e−4`、`composite_fitness 0.3828 ± 0.0725`。
 
 - `selected neural activity snapshots` 未实现（`arena §13` / `M3`）。
 - `PreyPolicy.avoid_gain` 死参数（S12/F2/M6）。
@@ -80,7 +81,7 @@
 
 - **评价入口**：`scripts/run_arena.py`（落 `metrics.csv`/`population.jsonl`/`episodes.jsonl`/**`events.jsonl`**/`seed_summary.json`）；`--emit-trajectories` 落 Stage-1 轨迹（`genome_id` 已为稳定 ID）。
 - **event log**：`schemas/event_log.schema.json`；`experiment/events.py`（header + 8 类事件）。
-- **基线（可重生成、不入库）** `exp_arena_expert_ref_v2`：`survival 0.9472`、`prey_capture 0.5407`、`escape_success 0.2292`、`energy_efficiency −1.031e−3`、`composite_fitness 0.5123`。
+- **基线（可重生成、不入库）** `exp_arena_expert_ref_v3`（A14 后重跑）：`survival 0.9188`、`capture_rate 0.0030`、`prey_capture 0.5148`、`escape_success 0.3032`、`energy_efficiency −9.25e−4`、`composite_fitness 0.3828`。
 - **稳定 ID / 世代**：`DanioArena(..., fish_ids, genome_ids, generation)`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均注入。
 
 `scripts/run_arena.py --emit-trajectories` → 每 run 落 `trajectories/episode_ep0001.jsonl`（首行 header + 逐 step），字段/格式严格照 `schemas/trajectory.schema.json`（jsonschema 逐条校验）。实跑 `exp_traj_smoke`（1 seed）6601 step，obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全通过。当日唯一缺口 = P0-9（`genome_id` 全为 `"unknown"`）。

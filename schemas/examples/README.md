@@ -33,16 +33,19 @@
 
 ### event_log_example.jsonl 重生成（2026-09-26）
 
-- **来源一（6 类，真实 episode 摘录）**：默认 `ArenaConfig()`、示例种子 `20260925`、600 步、`ExpertPolicy` 驱动；取各类**首次出现**的一条：`arena.spawn` / `arena.prey_captured` / `arena.collision` / `arena.escape` / `arena.fish_captured` / `arena.episode_end`。
-- **来源二（2 类，受控场景）**：`arena.capture_attempt` 与 `arena.energy_depleted` 在默认配置下**不可自然观测**（能量不会耗尽；前向锥内出现"过大猎物"罕见），故由受控场景触发（均为 arena 真实代码路径产出）：
-  - `capture_attempt`：鱼正前方 2.0 处放置 `size=5.0` 的猎物（`size_ratio=0.2 < κ=1.25` → `too_small_to_eat`）。
-  - `energy_depleted`：将某鱼能量置 0 后结算一步。
+- **来源一（4 类，真实 episode 摘录）**：默认 `ArenaConfig()`、示例种子 `20260925`（`arena_spawn`/`arena_dynamics` 子种子派生）、600 步、`ExpertPolicy` 驱动；取**首次出现**的一条：`arena.spawn` / `arena.prey_captured` / `arena.escape` / `arena.episode_end`。
+- **来源二（4 类，受控场景）**：`arena.capture_attempt` / `arena.energy_depleted` / `arena.collision` / `arena.fish_captured` 在默认配置下**不可稳定自然观测**，由受控场景触发（均为 arena 真实代码路径产出）：
+  - `capture_attempt`：鱼正前方 2.0 处放置 `size=5.0` 的猎物（`size_ratio=0.2 < κ=1.25` → `too_small_to_eat`）；
+  - `energy_depleted`：某鱼能量置 0 后结算一步；
+  - `collision`：把某鱼放到障碍上后推进一步；
+  - `fish_captured`：把捕食者贴近并朝向前向锥内的最大体型鱼。
 - 摘录行保留原始 `seq` / `step`；受控场景行的 `seq` 为示例内编号。文件首行为 **header**（run 级上下文示意，`n_events=8`），其后 8 条事件；形状由 `schemas/event_log.schema.json` 冻结。**本文件是契约示例，不是仿真运行产物。**
 
 ### trajectory_example.jsonl 重生成（2026-09-26）
 
-- 由 **`experiment/collect.py::collect_episode`**（业务逻辑 owner）生成，示例种子 `20260925`、
-  `episode_steps=8`、`environment_id=example`；受控鱼 = index 0，稳定 ID `exp-example:g0:fish0000`。
+- 由 **`experiment/collect.py::collect_episode`**（业务逻辑 owner）生成，示例 `master_seed=20260925`、
+  `episode_steps=8`、`environment_id=example`；`episode_seed` 为 `arena_spawn` 子种子
+  （`SeedManager.seed("arena_spawn", 0)`，`core §3`）。受控鱼 = index 0，稳定 ID `exp-example:g0:fish0000`。
 - 形态：首行 header + 8 条 step（`is_first`/`is_last` 选填字段未落盘，见 `learning §2`）；
   `truncated=True`（跑满该 episode 的 8 步）。**契约示例，非正式 run 产物。**
 

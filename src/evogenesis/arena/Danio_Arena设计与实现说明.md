@@ -152,15 +152,14 @@ $encounters$ 语义**不变**（仍为 $d<r_{capture}$ 的近距接触计数，�
 
 **【已定稿】捕食尝试计数（2026-09-26，用户裁定）**：`capture_attempts` 每鱼每步至多 +1，条件为「猎物进入 `d < r_capture` **且在猎人前向锥内**」并**判定了尺寸口径**；吃到（`size_hunter ≥ κ·size_target`）与判定为太小（`arena.capture_attempt`）**都计**。锥外的猎物不计（§17 S5：命中第一个半径内猎物即 `break`，故每步至多一次判定）；`encounters` 仍是**纯距离**口径（S6），两者不可互替。**【2026-09-26 同日改判】** 该量**不再充当 `实验与评价体系.md` §2.1 `prey_capture` 的分母**，降为**诊断列**：`§2.1 分母 = encounters`（尺寸门之前的纯距离口径，S6）；`capture_attempts − captures` = 「进过口但吃不下」的次数。理由：当前 `P_capture_success = 1.0`（本 § 待裁决项 a）使 `capture_attempts == captures` 恒成立，以之为分母的指标只能取 1.0/0.0，均值退化为「有过机会的个体占比」。
 
-> **本 § 待裁决项**（状态 `【草案待确认】`；认领前不得作为契约依赖）：
-> 
-> **a. 捕食是否引入随机失败。** 代码当前**恒判定成功**——命中半径与尺寸门之后直接捕获，
-> 没有任何概率抽样。`P_capture_success = 1.0` 只是对该行为的**命名**：实测 grep 全仓，
-> 该名**不存在于 `src/` 的任何一行代码、`configs/` 与 `docs/参数总表.json` 的任何一条**
-> （见 `research/notes/参数一致性审计.md` B5 记为「占位根本未登记」）。
-> 是否引入随机失败（会改变指标方差，并使既有基线不可比）待裁决；
-> **未裁决期间**，任何以「首次接触」为单位的去重口径都恒等于 1、零方差
-> （论证见 `../experiment/实验与评价体系.md` §2.1）。
+> **a. 捕食是否引入随机失败——【已定稿】（2026-09-26）**：新增 config 旋钮
+> `growth.capture_success_prob ∈ [0,1]`（`configs/default_arena.yaml`、`docs/参数总表.json` 已登记）。
+> **默认 `1.0` = 确定性捕获**（历史行为，尺寸门通过即捕获，**不消费随机数**）；
+> `prob < 1` 时，尺寸门通过后按 `prob` 判定，**扑击失败**记 `arena.capture_attempt`
+> （`result="missed"`）且猎物存活。失败判定消费 `arena_dynamics` 流。
+> 语义：该量是**鱼的捕食成功率**（predator 吃鱼仍为脚本化、确定性）。
+> `prob=1.0` 时，任何以「首次接触」为单位的去重口径仍恒等于 1、零方差（论证见 `../experiment/实验与评价体系.md` §2.1），
+> 故 `composite_fitness` 捕食分量按条件式取 `capture_rate`。
 
 > **已知局限（未采纳项）**：开源机制对照报告建议距离口径改为「半径和」（$d<r_1+r_2$，使捕食圈随体型缩放）。**未采纳**——$r_{capture}=4.61$ 是同日刚裁决冻结的方案 B 值，改口径会使该标定与耦合约束 $size_{predator}\ge\kappa\,size_{max}$ 整体作废。记为后续项（§19 P2）。
 
@@ -181,7 +180,7 @@ predator 不用神经网络：【已定稿】
 - obstacle avoidance
 - ~~proximity avoidance~~ → 见下
 
-【草案待确认】（待认领表 A5、M5/M6）现状：\(\omega\sim\mathcal N(0,0.8)\) 且截断到 \(\pm3.0\)（单位 rad/s），速度恒为 \(0.35\)；避障由 env 的前视点转向处理（gain \(=2.0\)）。**无主动逃跑**（prey 不感知鱼）。`PreyPolicy.avoid_gain`（\(=2.5\)）为**死参数**（env 从不传入触发量），应删除或接线。
+【草案待确认】（待认领表 A5、M5/M6）现状：\(\omega\sim\mathcal N(0,0.8)\) 且截断到 \(\pm3.0\)（单位 rad/s），速度恒为 \(0.35\)；避障由 env 的前视点转向处理（gain \(=2.0\)）。**无主动逃跑**（prey 不感知鱼）。~~`PreyPolicy.avoid_gain`（\(=2.5\)）死参数~~ ✅ **2026-09-26 已删除**（连同未用的 `obstacle_rel_bearing` 形参）；避障统一由 env `_steer_away_from_obstacles(prey, gain=2.0)` 处理。
 
 ## 11. ExpertPolicy
 用于 imitation learning，不参与最终 DanioNet scoring：【已定稿】结构
@@ -275,6 +274,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | energy 四系数 | 1.0 / 0.0008 / 0.0015 / 0.12 | — | 已定稿（A3 已签；依据 D，已进参数总表） |
 | C_pen（collision_penalty） | 见 config | — | **标定占位** |
 | growth | 1.0 / 2.5 / g=0.2（prey_area_gain） | — | **标定占位**（A4 面积式） |
+| `capture_success_prob`（鱼捕食成功率） | 1.0（默认=确定性） | — | 已定稿（2026-09-26；§8 a） |
 | prey 再生间隔（prey_regrowth_steps） | 25 | step | **标定占位**（派生 600/24） |
 | 逃脱存活窗口（escape_hold_steps） | 20 | step | **标定占位** |
 | 限时追击（predator_max_chase_steps） | 80 | step | **标定占位** |
@@ -434,13 +434,13 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | ⚠️ S9 | **出生顺序与随机消耗** | `reset()` 顺序为 障碍 → 鱼 → 猎物 → 捕食者。**障碍就地逐个生成**：`reset()` 先 `self.obstacles = []`，再由 `_spawn_obstacles()` 逐个 `append`，因此**同一 reset 内的障碍互不重叠**，且第二次 `reset()` 与第一次完全一致。每个实体的随机消耗为"若干次拒绝采样 + 1 次航向/尺寸 uniform"，**采样次数本身进入 RNG 消费路径**（见 §5 D5） |
 | S10 | **猎物初始尺寸** | $U(0.30, 0.60)$ |
 | S11 | **障碍尺寸** | 半径 $U(1.5, 3.5)$ |
-| S12 | **猎物游走** | `PreyPolicy.act()`：$\omega \sim N(0, 0.8)$，裁剪到 $\pm 3.0$；速度恒为 `prey_speed = 0.35`。`PreyPolicy.avoid_gain = 2.5` **字段未被 env 使用**（env 不传 `obstacle_rel_bearing`，改由 `_steer_away_from_obstacles(prey, gain=2.0)` 处理避障）——该字段是死参数（见 §7 F2、§8 M6） |
+| S12 | **猎物游走** | `PreyPolicy.act(rng)`：$\omega \sim N(0, 0.8)$，裁剪到 $\pm 3.0$；速度恒为 `prey_speed = 0.35`。避障由 env `_steer_away_from_obstacles(prey, gain=2.0)` 处理。~~`avoid_gain` 死参数~~ 已于 2026-09-26 删除（见 §7 F2、§8 M6） |
 | S13 | **捕食者滞回** | `plan()`：旧目标仍在 `fish_pos`（存活）且距离 $\le$ 22 → 保持锁定并全速追击；否则在 15 半径内取**最近**存活鱼；无候选则返回 `(None, 当前航向, 0.40)` |
 | ⚠️ S14 | **捕食者转向速率限制** | env 侧对期望航向差做 $\mathrm{clip}(diff, -max\_turn, +max\_turn)$，其中 $max\_turn = \texttt{predator\_turn\_rate} \cdot dt = 5.0 \times 0.05 = 0.25$ rad/step。这是"转向速率限制在 env 而非 policy"的具体含义，由配置项 `predator_turn_rate`（rad/s）给出，与 0.25 rad/step 等价（认领表 A10） |
 | S15 | **捕食者命中后行为** | 击杀后立刻 `pred.target_fish_id = None`；**同一捕食者因此不会**为自己的击杀发射 `arena.escape`（旧目标已死，见 S17 的条件），但**其他**也锁定该鱼的捕食者会（此时那条鱼仍存活） |
 | S16 | **捕食者不参与能量/成长** | `Predator` 无 `energy` 字段；捕食者不饿、不长、不参与 leaderboard |
 | ⚠️ S17 | **`arena.escape` 的真实触发条件** | `plan()` 返回的目标与 `pred.target_fish_id` 不同**且旧目标仍存活**时，才发射事件并对该鱼 `escape_successes += 1`。**旧目标已死亡（饿死，或被另一只捕食者吃掉）时既不发事件也不计数**，由 `test_dead_fish_not_credited_escape` 守护。指标口径须按此理解 |
-| S18 | **`Predator.alive` 恒为真** | 全仓库没有任何 `pred.alive = False`（`.alive = False` 只出现在 prey 与 fish 上）；`step()` 捕食者段的 `if not pred.alive: continue`、以及 `sensing.nearest_predator_relative_size()` 里的 `if d.alive` 过滤都是**死分支**（保留不影响行为，改它也不改变结果）。见 §8 M7 |
+| S18 | **`Predator.alive` 恒为真** | 全仓库没有任何 `pred.alive = False`（`.alive = False` 只出现在 prey 与 fish 上）。~~捕食者段 `if not pred.alive` 死分支与 `sensing` 的 `if d.alive` 过滤~~ 已于 2026-09-26 清理。见 §8 M7 |
 | S19 | **`arena.energy_depleted` 的步数语义** | payload 的 `survival_steps` 取**自增之前**的值，即"死前已存活步数"；`Fish.survival_steps` 每步末对存活鱼自增 |
 | ⚠️ S20 | **looming 记账口径** | `_prev_predator_rel` 在所有实体移动**之后**统一刷新，取值调用**编码器同一个函数** `sensing.nearest_predator_relative_size(fish, predators, radius, fov_degrees)`（＝"视野与半径内**最近**可见天敌"的 $rel$ 尺寸 $\min(pred.size / fish.size / 2.5, 1.0)$）；env 与编码器共用这一口径，`looming = clamp(10 \cdot \Delta rel, 0, 1)` 的差分才是真正的变化率。**实测（重要）**：在现有调用序下（`observe()` 总在步界被调用，而 `_prev_predator_rel` 在**上一步末尾**用同一函数刷新），$pred\_rel$ 与 $prev$ 由构造必然相等 ⇒ **`looming_rate` 通道除 `reset()` 后的第一次观测外恒为 0**（`reset()` 把 `Fish._prev_predator_rel` 重建为 0.0，故首帧可能出现 1 个饱和值 1.0）。实测 seed 250927：首帧 12 条鱼中 2 条为 1.0，其后 40 步全 0。⇒ 该通道目前**不携带信息**，属待认领（§7 A1）与待修的实现缺口（§8 M13） |
 | ⚠️ S21 | **`step()` 的 done 守卫** | `__init__` / `reset()` 置 `self._episode_ended = False`；episode 结束后 `step()` **立即返回** `StepResult(self.step_idx, True, [])`（不再推进、不再发事件）。因此 ① `step_idx` 不会越过 600；② `arena.episode_end` 每次 episode **只发一次**；③ 结束后重复 `step()` 是幂等空转。由 `test_step_after_episode_end_is_inert` 守护 |
@@ -484,7 +484,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 **字段口径速记**
 
 - `distance` / `size_ratio` 在发射前 `round(..., 3)`；`threshold` 与 `capture_radius` 直接取 config 原值（1.25 / 4.61），便于离线核对判据。
-- `arena.capture_attempt.result` 在**当前实现下只会是字符串 `"too_small_to_eat"`**：距离不足的猎物在判据前就被 `continue` 跳过，不产生任何事件；尺寸达标的猎物直接走 `arena.prey_captured`。**因此草案里的 `"too_far"` 是永远不会出现的值**（见 §4.4）。
+- `arena.capture_attempt.result` 取值为 `"too_small_to_eat"`（尺寸门没过）或 `"missed"`（尺寸门过了但扑击失败，仅 `growth.capture_success_prob < 1` 时可能出现）；距离不足的猎物在判据前即被 `continue` 跳过、不产生事件。**草案里的 `"too_far"` 是永远不会出现的值**（见 §4.4）。
 - `arena.escape.threat_source` 是**捕食者实体 id**（`predator_NN`），不是类型名。
 - `arena.fish_captured.survival_steps` 与 `arena.energy_depleted.survival_steps` 同口径：发射时的 `Fish.survival_steps`（未自增）。
 - **障碍不发射 spawn**：只有 fish / prey / predator 三类活动实体入事件。障碍的位置与半径、以及所有实体的实时位置/尺寸，走 snapshot（`GET /v1/sessions/{session_id}/snapshot`）而非事件流。
@@ -500,7 +500,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 #### 18.4.4 与草案实例 `schemas/examples/event_log_example.jsonl` 的差异
 
-**现状核对（2026-09-26：已重生成并闭环）**：`schemas/examples/event_log_example.jsonl` 已按 v1 词表重生成，覆盖 **8 类事件各一条**，payload 与实现逐字段一致（信封 `{seq, type, step, payload}` 与 §18.4.1 同源）。原第 2 行判据矛盾已消除（现为 `size_ratio=0.2 < κ=1.25` 的 `too_small_to_eat`）。
+**现状核对（2026-09-26：已重生成并闭环）**：`schemas/examples/event_log_example.jsonl` 已按 v1 词表重生成，覆盖 **8 类事件各一条**，payload 与实现逐字段一致（信封 `{seq, type, step, payload}` 与 §18.4.1 同源）。原第 2 行判据矛盾已消除（现为 `size_ratio=0.2 < κ=1.25` 的 `too_small_to_eat`；另新增 `"missed"` 取值，仅 `capture_success_prob<1` 时出现）。
 
 - 6 类取自默认 `ArenaConfig()`、示例种子 `20260925` 的真实 600 步 episode（首次出现）；
 - `arena.capture_attempt` 与 `arena.energy_depleted` 在默认配置下不可自然观测，由受控场景触发（arena 真实代码路径产出）。
@@ -575,7 +575,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | # | 发现 | 证据 |
 |---|---|---|
 | F1 | **`looming_rate` 通道在现状下恒 0**（除 `reset()` 后首帧） | §3.2 S20 的实测；根因是"prev 在上一步末尾刷新"与"observe 在步界调用"使两者同源同值 |
-| F2 | **`PreyPolicy.avoid_gain` 是死参数** | S12：`act()` 的 `obstacle_rel_bearing` 形参从未被 env 传入 |
+| F2 | ~~`PreyPolicy.avoid_gain` 是死参数~~ ✅ **已删除（2026-09-26）** | S12 |
 
 ---
 
@@ -588,7 +588,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M3 | selected neural activity snapshots | 规范 §13 最后一项未实现；**owner = `connectome`/`DanioNet`（+ api 推送）**，arena 不缓存网络激活（见 §6） |
 | M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；但「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**场景布置仍未做**，`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
-| M6 | `PreyPolicy.avoid_gain` | 死参数（S12、F2） |
+| M6 | ~~`PreyPolicy.avoid_gain`~~ | ✅ **已删除（2026-09-26）**（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
 | M8 | ~~配置加载~~ | ✅ **已闭合**（2026-09-26）：loader 落地（严格构造 + 分层）；YAML↔dataclass 键名对齐；**调用方已接线** —— `scripts/run_experiment.py`（落盘 `arena_config_resolved.json`）、`scripts/run_arena.py`、`scripts/collect_trajectories.py`、`experiment/environments.py`、`pipeline/arena_episode.py` 均读取 arena 配置（原 `api/` 服务层已按用户决定移除） |
 | M9 | 障碍物为非凸形状 | 障碍只用圆 `contains`，无多边形/复杂几何 |
@@ -669,28 +669,29 @@ uv run python scripts/smoke_arena.py
 
 | 项 | 值 |
 |---|---|
-| 猎物捕获 | 19 / 24 初始（`arena.prey_captured` = 19） |
+| 猎物捕获 | 17 / 24 初始（`arena.prey_captured` = 17） |
 | 存活 | 11 / 12（`arena.fish_captured` = 1） |
-| `arena.spawn` | 57（24 初始猎物 + 12 鱼 + 3 捕食者 = 39，另加 18 条再生猎物） |
-| 逃生 `arena.escape` | 9 |
-| 吞吐 | 约 154 steps/s（单进程、CPU） |
+| `arena.spawn` | 52（24 初始猎物 + 12 鱼 + 3 捕食者 = 39，另加 13 条再生猎物） |
+| 逃生 `arena.escape` | 1 |
+| 吞吐 | 约 311 steps/s（单进程、CPU） |
 
 **多 seed 实测（600 步，默认配置）**：
 
 | seed | `arena.prey_captured` | `arena.fish_captured` | `arena.collision` | `arena.escape` | `arena.energy_depleted` | 存活 |
 |---|---|---|---|---|---|---|
-| 1 | 20 | 1 | 0 | 6 | 0 | 11 |
-| 7 | 25 | 0 | 0 | 3 | 0 | 12 |
-| 42 | 12 | 2 | 0 | 12 | 0 | 10 |
-| 1234 | 24 | 1 | 0 | 2 | 0 | 11 |
-| 250927 | 19 | 1 | 0 | 9 | 0 | 11 |
+| 1 | 15 | 1 | 0 | 16 | 0 | 11 |
+| 7 | 14 | 2 | 0 | 6 | 0 | 10 |
+| 42 | 25 | 2 | **208** | 4 | 0 | 10 |
+| 1234 | 17 | 2 | 0 | 6 | 0 | 10 |
+| 250927 | 17 | 1 | 0 | 1 | 0 | 11 |
 
-⚠️ **本基线为 2026-09-26 语义改动后的新基线，与更早基线不可直接对比**。本版改动：前向锥 120°、面积守恒生长、回报随体型缩放、prey 再生（R2）、碰撞硬不穿透 + 软惩罚、边界 `reflect`、逃脱改威胁结局制、episode 一律跑满 600。
-上一版（seed 250927：12 捕获 / 3 被捕食 / escape 0 / spawn 39 / 约 327 steps/s）与更早历史基线（9 / 24、约 236 steps/s）**均已作废**。另注：障碍生成方式一旦变动，同一 seed 下的初始世界即不同（§18.5 D5）。
+⚠️ **本基线为 2026-09-26 A14 拆分随机流（`arena_spawn`/`arena_dynamics`）后的新基线，与更早基线不可直接对比**。
+同日本版还含：D2 composite 捕食分量口径（`capture_rate`）、`growth.capture_success_prob`（默认 1.0）、删除 `avoid_gain`/死分支。
+**上一版**（seed 250927：19 捕获 / 1 被捕食 / escape 9 / spawn 57 / 约 154 steps/s）、更早版（12 / 3 / 0 / 39 / 约 327）与最初（9 / 24 / 约 236）**均已作废**。另注：出生流改动会改变同一 seed 的初始世界（§18.5 D5）。
 
 **三条给指标口径的提醒（2026-09-26 更新）**：
-① **`arena.escape` 不再是零方差**：威胁结局制（A8）使其在默认场景下**自发触发**（本表 2–12 次/局），这解除了旧版「escape 恒 0、指标无信息」的缺陷。
-② `arena.collision` **仍为 0**：障碍互不重叠且 `_steer_away_from_obstacles` 生效，故它仍**不宜作 headline 指标**，需专门设计「密集障碍」对照场景（见 §18.7 A7 行）。
+① **`arena.escape` 不再零方差**：威胁结局制（A8）使其自发触发（本表 1–16 次/局）。
+② **`arena.collision` 多数 seed 为 0，但并非结构不可达**：本表 `seed 42 = 208`（同一步簇发）；仍**不宜作 headline**，需专门「密集障碍」对照场景（§18.7 A7）。
 ③ **饥饿仍不会发生**（`C_base × 600 = 0.48 < E_max = 1.0`，且有食物补回），默认配置下 `arena.energy_depleted` 观测不到；**死亡全部来自捕食者**。
 
 ## 19. 合并后细化与明确清单
@@ -701,7 +702,7 @@ uv run python scripts/smoke_arena.py
 
 1. ~~**配置单一事实源（B7/M8）**~~ ✅ **已闭合（2026-09-26）**：通用 loader（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`）；Arena 侧键名对齐（`live_demo.*` → `population.*`，补 `actors:` 段，由 `tests/test_arena_config.py` 漂移守护）；**调用方接线** —— `scripts/run_experiment.py` 加载 Arena 配置并落盘 `arena_config_resolved.json`。参数表与实验配置现已可复现。
 2. **12 维 observation（A1）**：必须逐维写出值域、归一化公式、截断/聚合规则及设计选择状态。`looming_rate` 不能继续使用当前会退化为常数的 `10·Δrelative_size`；建议按 `research/notes/arena-设计意见-给李辰钊.md` 的意见采用角尺寸扩张率，并明确 `R_loom`、离散时间口径、不可见天敌的 prev 重置和多天敌聚合规则。该改动会影响已冻结 DanioNet v1.8 的输入分布，必须补输入统计与回归基线。
-3. **世界尺度与捕食几何**：**已闭合**（2026-09-26，方案 B）——wu 不与 BL 固定换算（§2 尺度声明），`capture_radius = 4.61`、`sensing.radius = 18`、`κ = 1.25`（判据含边界 `≥`、耦合约束 `predator_size ≥ κ·max_size`）均已定稿。**余**：捕获成功率是否引入随机失败（前向锥 120° 已于 2026-09-26 实现，见 §8）。
+3. **世界尺度与捕食几何**：**已闭合**（2026-09-26，方案 B）——wu 不与 BL 固定换算（§2 尺度声明），`capture_radius = 4.61`、`sensing.radius = 18`、`κ = 1.25`（判据含边界 `≥`、耦合约束 `predator_size ≥ κ·max_size`）均已定稿。**余**：~~捕获成功率是否引入随机失败~~ ✅ 已闭合（2026-09-26，见 §8 a：新增 `growth.capture_success_prob`，默认 1.0）。
 
 ### P1：正式实验前必须明确
 
@@ -715,5 +716,5 @@ uv run python scripts/smoke_arena.py
 ### P2：实现完善
 
 9. 接入 `selected neural activity snapshots`，或从规范 §13 删除该字段并在 DanioNet/API 文档同步降级。
-10. 删除或接线 `PreyPolicy.avoid_gain`，补 `arena.collision`、活鱼 escape、空种群终止和 `_free_spot` 回退分支的专项测试。
+10. ~~删除或接线 `PreyPolicy.avoid_gain`~~ ✅ 已删除（2026-09-26）；余：补 `arena.collision`、活鱼 escape、空种群终止和 `_free_spot` 回退分支的专项测试。
 11. 将合并稿中的所有旧文件名引用改为本文件；两个旧路径仅保留兼容入口，不再承载独立契约。

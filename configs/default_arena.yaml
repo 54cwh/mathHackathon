@@ -28,6 +28,7 @@ growth:
   capture_cone_degrees: 120.0
   turn_inertia_scale: 0.35
   prey_area_gain: 0.2
+  capture_success_prob: 1.0  # 鱼的捕食成功率（§8）；1.0=确定性
 actors:
   prey_speed: 0.35
   prey_size_min: 0.30

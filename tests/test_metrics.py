@@ -101,7 +101,7 @@ def test_episode_metrics_computes_four_metrics_plus_fitness():
     # 四项齐备后 composite fitness 真的算出来，且等于文档权重的加权和
     expected = (
         COMPOSITE_WEIGHTS["survival"] * row["survival"]
-        + COMPOSITE_WEIGHTS["prey_capture"] * row["prey_capture"]
+        + COMPOSITE_WEIGHTS["prey_capture"] * row["capture_rate"]  # §2.3 条件式：P=1 → 主口径
         + COMPOSITE_WEIGHTS["escape_success"] * row["escape_success"]
         + COMPOSITE_WEIGHTS["energy_efficiency"] * row["energy_efficiency"]
     )

@@ -463,3 +463,41 @@ def test_capture_attempts_counts_eaten_prey_as_well():
     assert fish.captures == 1
     assert fish.capture_attempts == 1
     assert fish.capture_attempts >= fish.captures
+
+
+def test_capture_success_prob_zero_makes_strikes_miss():
+    """§8：prob=0 → 尺寸门通过但扑击失败，记 `capture_attempt('missed')`、猎物存活。"""
+    cfg = ArenaConfig(growth=dataclasses.replace(ArenaConfig().growth, capture_success_prob=0.0))
+    arena = DanioArena(cfg, spawn_seed=7, dynamics_seed=7)
+    arena.reset()
+    fish = arena.fish["fish_00"]
+    prey = arena.prey["prey_00"]
+    fish.pos = np.array([50.0, 30.0])
+    fish.heading = 0.0
+    fish.size = 1.0
+    prey.pos = np.array([52.0, 30.0])
+    prey.size = 0.5
+    arena.step({fid: (0.0, 0.0) for fid in arena.fish})
+    assert fish.captures == 0
+    assert fish.capture_attempts >= 1
+    assert prey.alive
+    assert any(
+        e.type == "arena.capture_attempt" and e.payload.get("result") == "missed"
+        for e in arena.events
+    )
+
+
+def test_capture_success_prob_default_is_deterministic():
+    """默认 prob=1.0：尺寸门通过即捕获（不消费随机数）。"""
+    arena = make_arena()
+    arena.reset()
+    fish = arena.fish["fish_00"]
+    prey = arena.prey["prey_00"]
+    fish.pos = np.array([50.0, 30.0])
+    fish.heading = 0.0
+    fish.size = 1.0
+    prey.pos = np.array([52.0, 30.0])
+    prey.size = 0.5
+    arena.step({fid: (0.0, 0.0) for fid in arena.fish})
+    assert fish.captures == 1
+    assert not prey.alive

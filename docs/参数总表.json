@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.10",
+    "version": "v0.11",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -1280,6 +1280,19 @@
       "config": "configs/default_arena.yaml → growth.prey_area_gain",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "capture_success_prob",
+      "value": 1.0,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "鱼的捕食成功率（arena §8 a）：1.0=确定性捕获（尺寸门通过即吃到，不消费随机数）；<1 时按概率判定，扑击失败记 capture_attempt(result='missed')。属**设计选择/标定占位**；predator 吃鱼仍为确定性。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §8",
+      "config": "configs/default_arena.yaml → growth.capture_success_prob",
+      "sensitivity": null,
+      "suggest": "正式实验前做 play-test 标定；<1 会改变指标方差与 composite 口径（§2.3 条件式）"
     },
     {
       "name": "collision_penalty",

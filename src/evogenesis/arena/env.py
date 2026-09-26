@@ -292,6 +292,25 @@ class DanioArena:
                     break  # in-radius prey is behind us: no attempt this step
                 size_ratio = fish.size / prey.size
                 if size_ratio >= self.cfg.growth.capture_size_ratio:
+                    prob = self.cfg.growth.capture_success_prob
+                    if prob < 1.0 and self._dynamics_rng.random() >= prob:
+                        # 尺寸门通过但扑击失败：猎物存活，记「missed」（arena §8 新版）
+                        fish.capture_attempts += 1
+                        new_events.append(
+                            self._emit(
+                                "arena.capture_attempt",
+                                {
+                                    "fish_id": fid,
+                                    "prey_id": prey.entity_id,
+                                    "distance": round(d, 3),
+                                    "size_ratio": round(size_ratio, 3),
+                                    "threshold": self.cfg.growth.capture_size_ratio,
+                                    "capture_radius": self.cfg.growth.capture_radius,
+                                    "result": "missed",
+                                },
+                            )
+                        )
+                        break
                     prey.alive = False
                     fish.capture_attempts += 1
                     fish.captures += 1
@@ -360,8 +379,6 @@ class DanioArena:
 
         # --- predator capture of fish (Danio_Arena设计与实现说明.md section 8 applies both ways)
         for pred in self.predators.values():
-            if not pred.alive:
-                continue
             fish_pos = {fid: f.pos for fid, f in self.fish.items() if f.alive}
             prev_target = pred.target_fish_id
             # a limited-chase ban expires once the fish is dead or out of detect range

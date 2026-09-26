@@ -105,7 +105,7 @@ def nearest_predator_relative_size(
     and the env's looming bookkeeping, so the two can never drift apart.
     """
     half_fov = np.deg2rad(fov_degrees) / 2.0
-    cand = [(d.pos, d.size) for d in predators if d.alive]
+    cand = [(d.pos, d.size) for d in predators]
     nearest = _nearest_visible(fish, cand, radius, half_fov)
     return min(nearest[1] / fish.size / 2.5, 1.0) if nearest else 0.0
 
@@ -125,7 +125,7 @@ def observe(
     half_fov = np.deg2rad(fov_degrees) / 2.0
 
     prey_c = [(p.pos, p.size) for p in prey if p.alive]
-    pred_c = [(d.pos, d.size) for d in predators if d.alive]
+    pred_c = [(d.pos, d.size) for d in predators]
     obst_c = [(o.pos, o.radius) for o in obstacles]
 
     prey_l, prey_r = _split_channels(fish, prey_c, radius, half_fov)

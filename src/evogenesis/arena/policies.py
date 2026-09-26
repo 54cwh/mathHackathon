@@ -33,21 +33,17 @@ class ExpertPolicy:
 
 @dataclass
 class PreyPolicy:
-    """Danio_Arena设计与实现说明.md section 10: stochastic wander + obstacle avoidance +
-    proximity avoidance. Prey do not see fish (no active fleeing in MVP);
-    proximity avoidance is handled by the env separation pass."""
+    """Danio_Arena设计与实现说明.md section 10: stochastic wander（无主动逃跑；MVP）。
+
+    避障由 env 的 `_steer_away_from_obstacles(prey, gain=2.0)` 统一处理，故本策略不含
+    避障/`obstacle_rel_bearing` 逻辑。
+    """
 
     speed: float = 0.35
     turn_std: float = 0.8
-    avoid_gain: float = 2.5
 
-    def act(
-        self, rng: np.random.Generator, obstacle_rel_bearing: float | None = None
-    ) -> tuple[float, float]:
+    def act(self, rng: np.random.Generator) -> tuple[float, float]:
         omega = float(rng.normal(0.0, self.turn_std))
-        if obstacle_rel_bearing is not None:
-            # steer away: obstacle on the right (rel > 0) -> turn left (omega < 0)
-            omega -= float(np.sign(obstacle_rel_bearing)) * self.avoid_gain
         return float(np.clip(omega, -3.0, 3.0)), self.speed
 
 

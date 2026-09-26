@@ -69,6 +69,13 @@ class GrowthConfig:
     capture_cone_degrees: float = 120.0  # total cone, hunter-forward (section 8)
     turn_inertia_scale: float = 0.35  # k_turn (Danio_Arena设计与实现说明.md section 5)
     prey_area_gain: float = 0.2  # g in size = sqrt(size^2 + g*prey_size^2); placeholder
+    # 鱼的捕食成功率（arena §8）：1.0=确定性（默认，历史行为）；<1 时尺寸门通过后按概率判定，
+    # 失败记 arena.capture_attempt(result="missed") 且猎物存活。
+    capture_success_prob: float = 1.0
+
+    def __post_init__(self) -> None:
+        if not 0.0 <= self.capture_success_prob <= 1.0:
+            raise ValueError(f"capture_success_prob 须在 [0, 1]，得到 {self.capture_success_prob}")
 
 
 @dataclass(frozen=True)
