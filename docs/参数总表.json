@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.7",
+    "version": "v0.8",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -270,14 +270,34 @@
     },
     {
       "name": "developmental_domains",
-      "value": 6,
+      "value": [
+        "sensory",
+        "prey",
+        "threat",
+        "integrator_memory",
+        "inhibitory",
+        "motor"
+      ],
       "unit": null,
       "group": "development",
       "grade": "A",
       "status": "confirmed",
-      "basis": "六类神经元谱系（sensory/prey/threat/integrator_memory/inhibitory/motor）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md:3-11",
+      "basis": "六类神经元谱系名称列表（顺序即 domain 索引，与 development.domains 一致）",
+      "source": "src/evogenesis/development/RGCD数学模型.md §3",
       "config": "configs/default_model.yaml → development.domains",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "developmental_domain_count",
+      "value": 6,
+      "unit": null,
+      "group": "development",
+      "grade": "C",
+      "status": "derived",
+      "basis": "= len(developmental_domains)",
+      "source": null,
+      "config": null,
       "sensitivity": null,
       "suggest": null
     },
@@ -676,9 +696,9 @@
       "status": "in_range",
       "basis": "区间来自 experiment/实验与评价体系.md §7 Experiment F；无外部依据",
       "source": "src/evogenesis/experiment/实验与评价体系.md §7",
-      "config": "configs/evolution.yaml（待补 generations 键；现有 generation_buttons: [1,5,10,20]）",
+      "config": null,
       "sensitivity": null,
-      "suggest": null
+      "suggest": "属 experiment §7 协议参数（无 config 键）；configs/evolution.yaml 仅有 generation_buttons: [1,5,10,20]（推进档位，非实验总代数）；待代循环编排落地后再定是否入 config"
     },
     {
       "name": "crossover_probability",
