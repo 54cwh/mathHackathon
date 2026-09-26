@@ -3,6 +3,11 @@ import json
 import subprocess
 from pathlib import Path
 
+from evogenesis.arena.config import (
+    ARENA_SECTIONS,
+    arena_config_snapshot,
+    load_arena_config,
+)
 from evogenesis.core.config import read_yaml
 from evogenesis.core.io import now_iso
 
@@ -37,7 +42,13 @@ def main() -> None:
         parser.error(f"配置不存在: {config_path}")
 
     # 各 configs/*.yaml 的节 schema 不同，这里只做 YAML 解析校验，不套用单一模型。
-    read_yaml(config_path)
+    raw = read_yaml(config_path)
+
+    # run 必须固定到「实际生效的取值」，而不只是固定文件：原始副本会与解析值漂移
+    # （默认值 / env / overrides）。Arena 型配置（顶层键 ⊆ ARENA_SECTIONS）额外落盘解析快照。
+    arena_resolved = None
+    if raw and set(raw) <= set(ARENA_SECTIONS):
+        arena_resolved = arena_config_snapshot(load_arena_config(config_path))
 
     run_dir = ROOT / "results" / "runs" / args.experiment_id
     if run_dir.exists():
@@ -47,12 +58,18 @@ def main() -> None:
         config_path.read_text(encoding="utf-8"), encoding="utf-8"
     )
     (run_dir / "seed.txt").write_text(f"{args.seed}\n", encoding="utf-8")
+    if arena_resolved is not None:
+        (run_dir / "arena_config_resolved.json").write_text(
+            json.dumps(arena_resolved, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
     (run_dir / "git_commit.txt").write_text(git_commit() + "\n", encoding="utf-8")
     metadata = {
         "experiment_id": args.experiment_id,
         "config": str(config_path.relative_to(ROOT)),
         "seed": args.seed,
         "status": "created",
+        "arena_config_resolved": arena_resolved is not None,
         "created_at": now_iso(),
     }
     (run_dir / "metadata.json").write_text(

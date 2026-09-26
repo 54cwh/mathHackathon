@@ -271,7 +271,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）。**余**：M4 环境三组仍不改变任何参数 |
 | 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；**looming 恒 0 的修法（M13）——仍开放** |
 | 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，待补参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors 12 项（已签，待补参数总表）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（待落 config） |
-| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（loader + Arena 映射均已落地，**仅余调用方接线**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
+| 契约/工程 | §18 实例事件（重生成 vs 降级）；~~config 接线~~ ✅ 已闭合（loader + Arena 映射 + 调用方接线，2026-09-26）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 ## 18. 实现映射（原 Danio Arena 实现说明）
 
@@ -303,7 +303,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
 | `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 109 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
 | `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 475 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events` |
-| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方接线待补**（§18.2.3） | 45 | — |
+| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方已接线**（`scripts/run_experiment.py`，见 §18.2.3） | 45 | — |
 | `tests/test_arena.py` | 28 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 436 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
@@ -372,7 +372,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 已全部进 `configs/default_arena.yaml`**（2026-09-26 补入 `actors:` 段；此前共 13 项无 YAML 归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`（与 `core/config.py::ModelConfig` 的「section 名 = dataclass 名、键名 = 字段名」约定一致）。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
 2. **`../../../docs/参数总表.json` 现收录 Arena 侧 **15 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `capture_radius` / `predator_size` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
-3. **`configs/default_arena.yaml` 目前没有任何调用方读取它。** **Arena 侧加载已落地（2026-09-26）**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**但调用方仍未接线**：`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，`scripts/run_experiment.py` 未调用 loader（`api/` 服务层已移除，待重写），故仿真目前仍走 **Python 硬编码默认值**，YAML 是并行的、可能漂移的副本（漂移已被上述测试挡住）。**代码内**对 `default_arena` 的引用仅剩 `arena/config.py` docstring 的注释（原 `api/schemas.py::SessionCreate.arena_config_path` 默认值随 `api/` 服务层移除）。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
+3. **`configs/default_arena.yaml` 已有调用方读取它 —— 该实现债 2026-09-26 闭合。** **Arena 侧加载已落地**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**调用方接线已完成**：`scripts/run_experiment.py` 对 Arena 型配置（顶层键 ⊆ `ARENA_SECTIONS`）调用 loader，并落盘 **`arena_config_resolved.json`（已解析值快照）** —— 因为「原始 YAML 副本」与实际生效值可能漂移（默认值 / env / overrides）。**原对外服务层 `api/session.py` 已按用户决定移除**，故 arena 配置当前唯一调用方是 `scripts/run_experiment.py`。与「所有数值必须由 config 读取」（`../../../docs/参数总表.json` 末行）的要求**已闭环**（见 §8 M8、认领表 B7）。
 
 ---
 
@@ -509,10 +509,10 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | D3 | **reset 内消费顺序** | 障碍 → 鱼 → 猎物 → 捕食者。每障碍：1 次半径 uniform + `_free_spot`（≥1 次）；每鱼：`_free_spot(2.0)` + 1 次航向 uniform；每猎物：`_free_spot(1.0)` + 1 次航向 uniform + 1 次尺寸 uniform；每捕食者：`_free_spot(3.0)` + 1 次航向 uniform |
 | D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `rng.normal(0.0, 0.8)`（`PreyPolicy.act`）。鱼、捕食者、障碍、looming 记账**均不消费 RNG** |
 | D5 | **拒绝采样进入消费路径** | `_free_spot` 的采样**次数**取决于当前（本局）障碍布局，因此它是 RNG 消费路径的一部分 —— 一旦改动障碍数量/半径范围/clearance，后续所有实体的随机流都会平移。**这是复现性最脆弱的一环**：改动障碍数量/半径范围/clearance 会使后续所有实体的随机流整体平移，同一 seed 下的初始世界随之改变，历史基线不可直接对比 |
-| D6 | **推进粒度的无关性** | `Session.advance(steps=k)` 就是 `k` 次 `step()`；每一步内的 RNG 消费只由**该步的状态**决定（D4：存活猎物数 × 1 次 normal）。因此"同一 seed 下推进到第 $k$ 步的状态"与"分几次调用推进到第 $k$ 步"无关（在 600 步上限内）。**注意**：这条只说粒度无关，不代表 `step()` 不消费 RNG |
+| D6 | **推进粒度的无关性** | 「推进 k 步」（原 `api/session.py::Session.advance(steps=k)`，该服务层已按用户决定移除）就是 `k` 次 `step()`；每一步内的 RNG 消费只由**该步的状态**决定（D4：存活猎物数 × 1 次 normal）。因此「同一 seed 下推进到第 $k$ 步的状态」与「分几次调用推进到第 $k$ 步」无关（在 600 步上限内）。**注意**：这条只说粒度无关，不代表 `step()` 不消费 RNG |
 | D7 | **测试守护** | `test_reset_deterministic_same_seed`（同 seed 实体一致）、`test_reset_different_seed_differs`（异 seed 不同）、`test_reset_idempotent_on_same_instance`（**同一实例二次 reset 一致**） |
 
-**注意**：`DanioArena.__init__` 只接受 `master_seed`，`ArenaConfig` 通过构造参数传入；`SessionCreate.arena_config_path` 目前**未被读取**（见 `../api/API接口.md` §7.2）。要复现一局，必须记录 `ArenaConfig` 的**实际取值**（而非 YAML 路径）。
+**注意**：`DanioArena.__init__(config, master_seed)` 接受**已解析**的 `ArenaConfig`；要复现一局，必须记录 `ArenaConfig` 的**实际取值**而非 YAML 路径 —— `scripts/run_experiment.py` 落盘的 `arena_config_resolved.json` 即为此用。（原 `SessionCreate.arena_config_path` 随 `api/` 服务层一并移除。）
 
 ---
 
@@ -577,11 +577,11 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | `PreyPolicy.avoid_gain` | 死参数（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
-| M8 | 配置加载 | **部分闭合**（2026-09-26）：`arena/config.py::load_arena_config()` 已落地（严格构造 + 分层），YAML↔dataclass 键名已对齐；**但调用方仍未接线**（`DanioArena.__init__` 走 `config or ArenaConfig()`，`scripts/run_experiment.py` 未调用 loader（`api/` 服务层已移除）），故仿真仍走 Python 硬编码默认值 |
+| M8 | ~~配置加载~~ | ✅ **已闭合**（2026-09-26）：loader 落地（严格构造 + 分层）；YAML↔dataclass 键名对齐；**调用方已接线** —— `scripts/run_experiment.py` 对 Arena 配置调用 loader 并落盘 `arena_config_resolved.json`（原 `api/` 服务层已按用户决定移除，不再是调用方） |
 | M9 | 障碍物为非凸形状 | 障碍只用圆 `contains`，无多边形/复杂几何 |
 | M10 | 流体动力学 | 规范 §1 已明确排除，非遗漏 |
 | M11 | ~~episode 内重生成猎物~~ | ✅ **已实现**（2026-09-26，§12 R2）：每 `prey_regrowth_steps`（占位 25）补 1 只至 `n_prey`；新个体以 `arena.spawn` 事件落盘 |
-| M12 | 手动控制通路 | `Session.advance(use_expert=False)` 存在但**无端点暴露手动 action**（`release` 只给 `steps`/`use_expert`） |
+| M12 | 手动控制通路 | 原 `api/session.py` 的 `advance(use_expert=False)` 未暴露手动 action 端点；**该服务层已按用户决定移除**，手动 action 通路待随 `api/` 重写落地 |
 | M13 | looming 通道无信息 | 见 S20 / F1：口径已统一，但整条通道在现状调用序下恒 0，等于 12 维里的第 9 维目前是常数 0；修法（在 `step()` 内、实体移动前后各取一次，或把 prev 改在步首读取）会改变 RNG 无关但会改变观测分布，需与 A1 一并认领 |
 | M14 | `world.episode_seconds` 未进代码 | YAML 有 `world.episode_seconds: 30`，`WorldConfig` 无对应字段（§2.1 的 ⚠️ 行），故 `dt`/步数与它无关 |
 
@@ -685,7 +685,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 ### P0：冻结前必须闭合
 
-1. **配置单一事实源（B7/M8）**：`configs/default_arena.yaml` 仍未被**调用方**读取，`SessionCreate.arena_config_path` 仍被静默忽略。**已解决（2026-09-26）**：通用 loader（`core/config.py`，PyYAML+Pydantic v2）、覆盖优先级 `CLI > env > file > default`、加载器测试 `tests/test_config.py`。**余**：YAML 键名 → `ArenaConfig` 的映射（含缺失的 `actors` 段与 `live_demo.*` 键名对齐）与 `DanioArena` / `Session` 接线；否则参数表和实验配置仍不能复现。
+1. ~~**配置单一事实源（B7/M8）**~~ ✅ **已闭合（2026-09-26）**：通用 loader（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`）；Arena 侧键名对齐（`live_demo.*` → `population.*`，补 `actors:` 段，由 `tests/test_arena_config.py` 漂移守护）；**调用方接线** —— `scripts/run_experiment.py` 加载 Arena 配置并落盘 `arena_config_resolved.json`。参数表与实验配置现已可复现。
 2. **12 维 observation（A1）**：必须逐维写出值域、归一化公式、截断/聚合规则及设计选择状态。`looming_rate` 不能继续使用当前会退化为常数的 `10·Δrelative_size`；建议按 `research/notes/arena-设计意见-给李辰钊.md` 的意见采用角尺寸扩张率，并明确 `R_loom`、离散时间口径、不可见天敌的 prev 重置和多天敌聚合规则。该改动会影响已冻结 DanioNet v1.0 的输入分布，必须补输入统计与回归基线。
 3. **世界尺度与捕食几何**：**已闭合**（2026-09-26，方案 B）——wu 不与 BL 固定换算（§2 尺度声明），`capture_radius = 4.61`、`sensing.radius = 18`、`κ = 1.25`（判据含边界 `≥`、耦合约束 `predator_size ≥ κ·max_size`）均已定稿。**余**：前向锥 120° 实现、捕获成功率是否引入随机失败。
 
