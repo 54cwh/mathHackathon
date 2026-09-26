@@ -45,7 +45,7 @@ Arena 素材优先透明背景。实验图、统计图、network graph 不使用
 | 文件 | 内容 |
 |---|---|
 | 本文件 | 素材清单（10 项）+ 决策记录 + 两条边界 |
-| `ui_reference_prompts.md` | **3 张 UI 参考图**完整提示词（英文/标签化结构/hex/AS-IS）+ **候选色板唯一定义处**（24 色起步候选）+ 自检清单 + 两条操作纪律 + 3 条工程约束 + 选定后落地四步 + DNA 观感口径 |
+| `ui_reference_prompts.md` | §快速开始 + §选型对照表 + **3 张 UI 参考图**完整提示词 + **§步骤 2 取色板提示词（交给 ChatGPT）** + §步骤 3 追问表（英文/标签化结构/hex/AS-IS）+ **候选色板唯一定义处**（24 色起步候选）+ 自检清单 + 两条操作纪律 + 3 条工程约束 + 选定后落地四步 + DNA 观感口径 |
 | `asset_prompts.md` | **一图一素材的逐张提示词（15 条 / 约 20 张图）**：§0 三条铁律、§1 占位、§2 通用规格（含**四条现实约束**）、A1–A8 Arena 内素材、B1a/B1b/B2–B4 面板视觉、C1–C2 品牌与演示、§6 后处理与尺寸表、§7 自检、**§8 症状→修正表**、§9 清单自查 |
 | `image_prompt_template.md` | 三类早期模板（Fish sprite / Predator / DNA）—— 已被 `asset_prompts.md` 覆盖，保留作沿革 |
 
@@ -55,8 +55,9 @@ Arena 素材优先透明背景。实验图、统计图、network graph 不使用
 **使用顺序**：
 
 1. 跑 `ui_reference_prompts.md` 的 3 条提示词（**每条新开一次对话**）→ 选定 1 张；
-2. 从选定图取色板（不超过 32 色），回写 `ui_reference_prompts.md` §候选色板，并填进
-   `asset_prompts.md` 的 `{色板}` 占位（写成「色名 + hex」；并确认 `{色板}` **不含** `{键控色}` 洋红）；
+2. **把选定图交给 ChatGPT 取色板**（它是视觉模型，看图判断归它）：用 `ui_reference_prompts.md`
+   §步骤 2 的提示词，拿回 ≤32 色的「色名 + hex」→ 回写该文件的 §候选色板 → 填进
+   `asset_prompts.md` 的 `{色板}` 占位（并确认**不含** `{键控色}` 洋红）；
 3. **先只生成 A1 一张**，验证「洋红底 → 抠图 → 最近邻缩小 → 贴到 `#0B1220` 上」这条链路；
 4. A1 合格后它就是**风格锚**：之后每条提示词**新开对话 + 附上 A1 + 加那句
    `Image 1 is a style reference only: copy its exact pixel size, outline weight, palette and shading technique exactly. Do NOT copy its subject.`**

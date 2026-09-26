@@ -6,6 +6,21 @@
 > 该 skill 的硬规则已逐条落到本文件：**提示词用英文**（图像模型对英文更可靠）、**固定标签化结构**、
 > **比例只用网页版认的三种**、**颜色写 hex 不写色名**、**AS-IS 行阻止 ChatGPT 自行加戏**。
 
+## 快速开始（4 步 —— 这 3 条提示词是全流程最高优先）
+
+```text
+1. 跑下面 3 条提示词（每条新开一次对话），得到 3 张参考图
+2. 挑 1 张 —— 怎么挑见 §选型对照表；取色板以「提示词 3」为准
+3. 把选定的图交给 ChatGPT，用 §步骤 2 的「取色板提示词」让它吐 hex
+4. 把 hex 回填 §候选色板，并填进 asset_prompts.md 的 {色板}
+```
+
+**这 3 条为什么最重要**：它们冻结的是**整套视觉系统的上游**——配色、密度、层级、质感。
+色板从它们身上取，之后 20 张素材全部依赖这个色板。**这 3 条没定，后面全是白做。**
+
+粘贴注意：每条是一个完整的 `text` 代码块，**整块复制**，不要只挑几句；
+**首行 `Use this prompt AS-IS.` 不要删**。
+
 ## 变更记录
 
 - **2026-09-26（第二次修订）**：按 `gpt-image-prompt` skill 重写三条提示词，改动逐条列在
@@ -75,6 +90,21 @@ Danio Arena 是**水下俯视**，自然偏暗——它沿用画布底色 `#0B12
 素材只需「在 `#0B1220` 上可辨」。**不要**为了统一把 Arena 也提亮：水下场景提亮会失去纵深。
 
 ---
+
+## 选型对照表（3 条里挑哪张）
+
+| 你若最看重 | 选 | 理由 |
+|---|---|---|
+| 路演 / 答辩第一眼的冲击力 | **提示词 1** | 整屏像素游戏感最强、最好看；代价是数据区不实用（9 项指标、13 字段塞不进这种密度） |
+| 工程上真能落地 | **提示词 3** | 竞技场像素 + 数据区精密，是唯一不牺牲数据可读性的折中 |
+| 先看全套素材风格是否统一 | **提示词 2** | 用途已降级为**风格对照图**（见下方「但有一条 skill 警告」） |
+
+**建议至少跑 1 和 3**：1 帮你定「极限观感」，3 帮你定「可交付的折中」。
+
+**色板以提示词 3 的取色结果为准**（不是 1）——因为 3 才是要真正搭出来的界面，
+它的表面才是 `index.css` 要承载的。1 的色板更艳，直接拿去配 UI 会压不住小字号文本。
+
+Arena 面板的水下暗调**不参与取色**：它沿用画布底色 `#0B1220` 系，见 §候选色板 末段。
 
 ## 提示词 1 —— 整台界面像素质感（主诉求 · 风格定调图）
 
@@ -199,6 +229,70 @@ Avoid: a dark moody background for the whole app, antialiased fake-pixel edges, 
 ```
 
 ---
+
+## 步骤 2 —— 取色板提示词（在**同一对话**里追问，交给 ChatGPT）
+
+**为什么要 ChatGPT 做而不是我做**：取色板本质是**看图**判断——哪些色是主色群、哪些是同一色的明暗档、
+哪些该合并。视觉模型看得到图，我看不到，所以**这一步归 ChatGPT**，我只负责把你拿回来的 hex 记下来。
+
+**在生成那张图的同一个对话里**接着贴这段（同对话它才看得见那张图）：
+
+**要点**：要的是「能复现这张图观感的一套调色板」，**不是像素直方图**——后者会吐出几百种近似色。
+另外顺手要回「像素刻度 + 描边粗细 + 分割线粗细」，这是重写 `index.css` 时要用的规格（见 §选定后的下一步）。
+
+```text
+I want the exact colour palette from the image you just generated, to use as a fixed asset palette.
+
+Analyse that image and return a palette of at most 32 colours that would be sufficient to REPRODUCE its look. This is a deliberate palette, not a histogram: choose the minimum set that covers every distinct hue and value step actually used, and merge near-duplicates.
+
+Rules:
+- Give every colour as a 6-digit uppercase hex code with no leading # and no other punctuation, in the form "name HEX".
+- Group them by role, in this order: outlines and darkest values; shadow tones; main material families (water, vegetation, wood and earth); accents; neutrals and highlights.
+- Order each group from darkest to lightest.
+- Do NOT include pure magenta FF00FF - it is reserved as a key colour for cutouts and must never appear in the palette.
+- If the image uses fewer than 32 colours, return exactly the colours it uses. If it uses more, merge the closest ones so the total is 32 or under.
+
+After the grouped list, output one final line containing only the comma-separated "name HEX" pairs on a single line, so I can paste it directly.
+
+Then report, in three short lines:
+1. Pixel scale: how many device pixels wide one logical pixel block is, measured on the largest flat square block.
+2. Outline weight: the typical outline thickness in logical pixels.
+3. Divider weight: the typical thickness of a panel divider or border, in logical pixels.
+
+Be approximate and honest. If you cannot determine a value, say so instead of giving a precise-looking wrong number.
+```
+
+**拿到什么算合格**：
+
+- [ ] 总数 **≤ 32**，且**不含 `FF00FF`**
+- [ ] 最后那一行**单行逗号列表**存在（直接可粘进 `{色板}`）
+- [ ] 分组顺序是「描边/暗部 → 影调 → 主材 → 点缀 → 中性/高光」
+- [ ] 它**没**声称能精确到像素级——若它给了「精确」的刻度数字，追问一句「你实际是怎么测的」
+
+## 步骤 3 —— 不满意时怎么追问（贴着同一张图迭代）
+
+skill 的 `Failure-mode troubleshooting`，按本项目的实际症状改写。
+**每次只改一处**，并在追问里重复**不变量**（skill：改图必须声明「只改 X，其它不动」）。
+
+```text
+Change only what I describe below. Keep everything else exactly unchanged - layout, framing, lighting, palette, and all text you already rendered correctly.
+```
+
+按症状挑对应的一句接在上面后面：
+
+| 你会看到 | 接这一句 |
+|---|---|
+| 三栏宽度不均 / 布局歪 | `Make the three columns exactly equal in width and keep every element on a strict grid.` |
+| 像素边缘发虚、像假像素 | `Make every edge hard-edged square pixels. No antialiasing, no blur, no smoothing. Redraw the whole image on a coarser pixel grid.` |
+| 出现了具体数值 / 曲线 / 图表（红线） | `Remove all numbers, axes, curves and charts. Replace every data area with an abstract placeholder of the same size.` |
+| 某个英文标签乱码 / 拼错 | `Replace any label that is not perfectly legible with a clean uniform pixel block of the same size. Do not invent letters and do not add characters.` |
+| 颜色跑出候选色板 | `Restrict every colour to the palette I gave. Do not introduce any colour outside that list.` |
+| 多出了没要的元素（水波、光晕、道具） | `The image contains only the elements I listed. Remove everything else. No added decoration, no watermark.` |
+| 比例被忽略（不是 3:2） | **不要在同一对话里继续改**——skill：网页版只认它认的比例，连续忽略就**新开对话**重新粘贴完整提示词，并重申 `Landscape 3:2 composition` |
+| 改了 3 次越改越歪 | skill：多轮迭代会漂移 → 把最终所有要求**汇总成一份完整 prompt，新开对话**重生成 |
+
+**一个调试法**（skill 直接给的）：结果一直不对，就直接问它
+`show the exact prompt you used for the last image` —— 能看到它擅自改了什么，改完**换新对话**重来。
 
 ## 生成后自检清单
 
