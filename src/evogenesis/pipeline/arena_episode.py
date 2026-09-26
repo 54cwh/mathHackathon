@@ -72,7 +72,8 @@ def arena_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
 
 
 def arena_eval_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
-    """**评估**用 Arena 的两个整数子种子（`core §4.2`）：``(arena_eval_spawn, arena_eval_dynamics)``。
+    """**评估**用 Arena 的两个整数子种子（`core §4.2`）：
+    ``(arena_eval_spawn, arena_eval_dynamics)``。
 
     与 `arena_seeds_for` **刻意解耦**：后者的整数轴由 `collect` 的 episode 序号与代循环的
     `generation` 共占，且 `arena_seeds_for(master, t)` 与 `collect.episode_seed(master, t)`

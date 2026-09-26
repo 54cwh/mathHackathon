@@ -177,7 +177,8 @@ def episode_metrics(
         if _prey_capture is None:
             raise ValueError(
                 "capture_success_prob < 1 时 composite_fitness 的捕食分量取 prey_capture，"
-                f"但该个体 encounters == 0 ⇒ 未定义（captures={captures}, encounters={encounters}）。"
+                f"但该个体 encounters == 0 ⇒ 未定义（captures={captures}, "
+                f"encounters={encounters}）。"
                 "不静默取 0；该口径待裁决（契约决策记录「遗留」）。"
             )
         prey_component = _prey_capture
