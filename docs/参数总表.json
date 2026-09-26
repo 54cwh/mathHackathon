@@ -467,7 +467,7 @@
       "status": "no_basis",
       "basis": "无同类惯例，且取决于世界尺寸与计算预算",
       "source": null,
-      "config": "configs/default_arena.yaml → live_demo.fish",
+      "config": "configs/default_arena.yaml → population.n_fish",
       "sensitivity": null,
       "suggest": null
     },
@@ -480,7 +480,7 @@
       "status": "no_basis",
       "basis": "无同类惯例；prey 是否重生/数量守恒未定义",
       "source": null,
-      "config": "configs/default_arena.yaml → live_demo.prey",
+      "config": "configs/default_arena.yaml → population.n_prey",
       "sensitivity": null,
       "suggest": "先补 ecology 规则（重生/守恒）"
     },
@@ -493,7 +493,7 @@
       "status": "no_basis",
       "basis": "无同类惯例",
       "source": null,
-      "config": "configs/default_arena.yaml → live_demo.predators",
+      "config": "configs/default_arena.yaml → population.n_predators",
       "sensitivity": null,
       "suggest": null
     },
@@ -506,7 +506,7 @@
       "status": "no_basis",
       "basis": "无同类惯例",
       "source": null,
-      "config": "configs/default_arena.yaml → live_demo.obstacles",
+      "config": "configs/default_arena.yaml → population.n_obstacles",
       "sensitivity": null,
       "suggest": null
     },

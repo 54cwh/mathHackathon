@@ -5,7 +5,16 @@ All numbers MUST stay in sync with that file; the config object exists so
 experiments can override knobs without touching the frozen defaults.
 """
 
-from dataclasses import dataclass, field
+import os
+from collections.abc import Mapping
+from dataclasses import asdict, dataclass, field, fields
+from pathlib import Path
+from typing import Any
+
+# 分层语义（CLI > env > file > default）的 owner 是 ``core §config``。此处**直接复用**
+# `core.config` 的 helper，不在本模块另写一版（AGENTS「不得在两处各写一版」）。
+# 若 core 把分层上提为公开 API，这里应改为公开导入。
+from evogenesis.core.config import _deep_update, _env_overrides, _read_yaml
 
 
 @dataclass(frozen=True)
@@ -78,3 +87,67 @@ class ArenaConfig:
     energy: EnergyConfig = field(default_factory=EnergyConfig)
     growth: GrowthConfig = field(default_factory=GrowthConfig)
     actors: ActorDefaults = field(default_factory=ActorDefaults)
+
+
+# --- 装配与分层加载 ---------------------------------------------------------
+
+ARENA_DEFAULT_CONFIG = Path("configs/default_arena.yaml")
+
+# section 名 → dataclass（同 ``core/config.py`` 的「section 名 = dataclass 名」约定）
+ARENA_SECTIONS: dict[str, type] = {
+    "world": WorldConfig,
+    "population": PopulationConfig,
+    "sensing": SensingConfig,
+    "energy": EnergyConfig,
+    "growth": GrowthConfig,
+    "actors": ActorDefaults,
+}
+
+# 允许出现在 YAML、但不参与构造的**派生只读键**（§18.2.1：episode_seconds = episode_steps / hz）
+DERIVED_READONLY_KEYS: frozenset[tuple[str, str]] = frozenset({("world", "episode_seconds")})
+
+
+def _build_arena_config(data: Mapping[str, Any]) -> ArenaConfig:
+    """把已分层的嵌套 dict 严格构造成 ``ArenaConfig``（未知 section/键即报错）。"""
+    unknown_sections = set(data) - set(ARENA_SECTIONS)
+    if unknown_sections:
+        raise ValueError(f"default_arena.yaml 出现未知 section：{sorted(unknown_sections)}")
+    kwargs: dict[str, Any] = {}
+    for name, section_type in ARENA_SECTIONS.items():
+        section = dict(data.get(name) or {})
+        allowed = {f.name for f in fields(section_type)}
+        for key in list(section):
+            if (name, key) in DERIVED_READONLY_KEYS:
+                del section[key]
+                continue
+            if key not in allowed:
+                raise ValueError(
+                    f"default_arena.yaml 的 {name}.{key} 不是 {section_type.__name__} 的字段"
+                )
+        kwargs[name] = section_type(**section)
+    return ArenaConfig(**kwargs)
+
+
+def load_arena_config(
+    path: str | os.PathLike[str] | None = None,
+    *,
+    overrides: Mapping[str, Any] | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> ArenaConfig:
+    """按 ``CLI > env > file > default`` 合成 Arena 配置。
+
+    ``path=None`` 时只取 env / overrides（纯默认值 + 覆盖）。
+    ``overrides`` 为**嵌套**映射（形状同 YAML），优先级最高。
+    """
+    data: dict[str, Any] = {}
+    if path is not None:
+        _deep_update(data, _read_yaml(Path(path)))
+    _deep_update(data, _env_overrides(os.environ if environ is None else environ))
+    if overrides:
+        _deep_update(data, overrides)
+    return _build_arena_config(data)
+
+
+def arena_config_snapshot(config: ArenaConfig) -> dict[str, Any]:
+    """供 run 目录落盘的已解析配置快照（同 ``core.config::config_snapshot`` 用法）。"""
+    return asdict(config)

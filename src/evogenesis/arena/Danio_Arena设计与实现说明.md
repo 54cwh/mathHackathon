@@ -229,7 +229,7 @@ Complex Scene 可设置：【草案待确认】
 | predator：cruise / chase / detect / release / turn | 0.40 / 0.65 / 15 / 22 / 5.0 | — / — / wu / wu / rad/s | 草案待确认（A5/A10） |
 | obstacle 半径 | [1.5, 3.5] | world unit | 已定稿 |
 
-> ⚠️ `configs/default_arena.yaml` **当前无任何调用方读取**（§18 参数映射 / M8 / 认领表 B7）：改 config 不影响仿真，与"参数 owner 是 `configs/`"冲突。**状态更新（2026-09-26）**：通用 loader 已落地（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`，含 `tests/test_config.py`），**但 Arena 未接线**——`DanioArena.__init__` 仍为 `config or ArenaConfig()`。故本条由「整体冻结阻断」缩窄为「**仅余 Arena 侧键名映射与接线**」。
+> ⚠️ `configs/default_arena.yaml` **当前无任何调用方读取**（§18 参数映射 / M8 / 认领表 B7）：改 config 不影响仿真，与"参数 owner 是 `configs/`"冲突。**状态更新（2026-09-26）**：通用 loader 已落地（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`）；**Arena 侧映射与加载亦已落地**——`arena/config.py::load_arena_config()` / `arena_config_snapshot()`，键名已对齐 dataclass，见 `tests/test_arena_config.py`（含「YAML ↔ dataclass 逐字段一致」漂移守护）。**本条余项**：调用方接线——`DanioArena.__init__` 仍为 `config or ArenaConfig()`，`scripts/run_experiment.py` 与 `api/session.py` 尚未调用 loader。
 
 ## 17. 待裁决条款（认领清单）
 以下条款为 `【草案待确认】`，须在 `research/notes/arena-api-决策认领表.md` 认领后转已定稿，方可冻结本文件：
@@ -239,7 +239,7 @@ Complex Scene 可设置：【草案待确认】
 | 行为语义 | A6 边界策略；A7 碰撞后果（现状默认不触发，需重评指标）；A8 逃脱判定；A9 团灭提前结束；捕食双向/被吃后果（§8 已建议固定为双向，待确认）；prey 重生/守恒；survival 定义（§15） |
 | 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；looming 恒 0 的修法 |
 | 参数 | A2 \(r_{capture}\)（**已裁决并定稿**：`r_capture=4.61`、判据含边界 `≥` 从而锁定 `predator_size=3.125`；余**前向锥 120°** 待实现）；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
-| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8：loader 已落地，**仅余 Arena 侧映射与接线**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
+| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8：loader 与 Arena 侧映射均已落地，**仅余调用方接线**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 
 ---
@@ -284,6 +284,9 @@ Complex Scene 可设置：【草案待确认】
 
 ### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 
+> 加载入口：`arena/config.py::load_arena_config()`（分层 `CLI > env > file > default`，优先级语义 owner 为 `core §config`）；键名约定与 `core/config.py::ModelConfig` 一致
+> （section 名 = dataclass 名、键名 = 字段名），由 `tests/test_arena_config.py` 守护。
+
 `config.py` 的 docstring 声明：
 
 > Defaults mirror `configs/default_arena.yaml` (frozen values, docs/参数总表.json). All numbers MUST stay in sync with that file; the config object exists so experiments can override knobs without touching the frozen defaults.
@@ -299,10 +302,10 @@ Complex Scene 可设置：【草案待确认】
 | `world.hz` | 20 | `world.hz` | 20 | ✅ | ✅ `sim_hz` |
 | `world.episode_steps` | 600 | `world.episode_steps` | 600 | ✅ | ✅ `episode_steps` |
 | （无对应字段） | — | `world.episode_seconds` | 30 | ⚠️ YAML 独有 | ✅ `episode_seconds` |
-| `population.n_fish` | 12 | `live_demo.fish` | 12 | ✅（键名不同） | ✅ `live_fish` |
-| `population.n_prey` | 24 | `live_demo.prey` | 24 | ✅（键名不同） | ✅ `live_prey` |
-| `population.n_predators` | 3 | `live_demo.predators` | 3 | ✅（键名不同） | ✅ `live_predators` |
-| `population.n_obstacles` | 6 | `live_demo.obstacles` | 6 | ✅（键名不同） | ✅ `live_obstacles` |
+| `population.n_fish` | 12 | `population.n_fish` | 12 | ✅ | ✅ `live_fish` |
+| `population.n_prey` | 24 | `population.n_prey` | 24 | ✅ | ✅ `live_prey` |
+| `population.n_predators` | 3 | `population.n_predators` | 3 | ✅ | ✅ `live_predators` |
+| `population.n_obstacles` | 6 | `population.n_obstacles` | 6 | ✅ | ✅ `live_obstacles` |
 | `sensing.radius` | 18.0 | `sensing.radius` | 18.0 | ✅ | ✅ `sensing_radius` |
 | `sensing.fov_degrees` | 220.0 | `sensing.fov_degrees` | 220.0 | ✅ | ✅ `sensing_fov_degrees` |
 | `energy.e_max` | 1.0 | `energy.e_max` | 1.0 | ✅ | ❌ |
@@ -321,25 +324,25 @@ Complex Scene 可设置：【草案待确认】
 | `growth.capture_size_ratio` | 1.25 | `growth.capture_size_ratio` | 1.25 | ✅ | ✅ `capture_size_ratio` | 已进表，`status=proposed_change`（规范 §8 当前取值 $\kappa = 1.25$，待 play-test 标定） |
 | `growth.capture_radius` | 4.61 | `growth.capture_radius` | 4.61 | ✅ | ❌ | **已定稿**（方案 B：$r_{capture}/sensing.radius=0.256$，见 §8） |
 | `growth.turn_inertia_scale` | 0.35 | `growth.turn_inertia_scale` | 0.35 | ✅ | ❌ | 实现值（$k_{turn}$） |
-| `growth.biomass_to_size_gain` | 0.02 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮**（规范只说"缓慢增长并设上限"，未给数值） |
-| `actors.prey_speed` | 0.35 | **缺失**（无 `actors:` 块） | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.prey_size_min` | 0.30 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.prey_size_max` | 0.60 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_size` | 3.125 | **缺失** | — | ❌ | ❌ | **已定稿**（$=\kappa\cdot size_{max}=1.25\times2.5$，耦合约束见 §8；仍未进 YAML，见 §18.2.3） |
-| `actors.predator_cruise_speed` | 0.40 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_chase_speed` | 0.65 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_detection_radius` | 15.0 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_release_radius` | 22.0 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮**（滞回：超出此半径即丢失目标） |
-| `actors.predator_turn_rate` | 5.0 | **缺失** | — | ❌ | ✅ `predator_turn_rate` | 单位 **rad/s**，见 §3.2 S14 / 认领表 A10。**已进 `../../../docs/参数总表.json`，是 `actors.*` 中唯一进表的项** |
-| `actors.obstacle_radius_min` | 1.5 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.obstacle_radius_max` | 3.5 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
-| `actors.wander_turn_std` | 0.8 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮**（单位 **rad/s**） |
+| `growth.biomass_to_size_gain` | 0.02 | `growth.biomass_to_size_gain` | 0.02 | ✅ | ❌ | **MVP 标定旋钮**（规范只说"缓慢增长并设上限"，未给数值） |
+| `actors.prey_speed` | 0.35 | `actors.prey_speed` | 0.35 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.prey_size_min` | 0.30 | `actors.prey_size_min` | 0.30 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.prey_size_max` | 0.60 | `actors.prey_size_max` | 0.60 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.predator_size` | 3.125 | `actors.predator_size` | 3.125 | ✅ | ❌ | **已定稿**（$=\kappa\cdot size_{max}=1.25\times2.5$，耦合约束见 §8） |
+| `actors.predator_cruise_speed` | 0.40 | `actors.predator_cruise_speed` | 0.40 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.predator_chase_speed` | 0.65 | `actors.predator_chase_speed` | 0.65 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.predator_detection_radius` | 15.0 | `actors.predator_detection_radius` | 15.0 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.predator_release_radius` | 22.0 | `actors.predator_release_radius` | 22.0 | ✅ | ❌ | **MVP 标定旋钮**（滞回：超出此半径即丢失目标） |
+| `actors.predator_turn_rate` | 5.0 | `actors.predator_turn_rate` | 5.0 | ✅ |✅ `predator_turn_rate` | 单位 **rad/s**，见 §3.2 S14 / 认领表 A10。**已进 `../../../docs/参数总表.json`，是 `actors.*` 中最早进表的项（`predator_size` 亦已进表）** |
+| `actors.obstacle_radius_min` | 1.5 | `actors.obstacle_radius_min` | 1.5 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.obstacle_radius_max` | 3.5 | `actors.obstacle_radius_max` | 3.5 | ✅ | ❌ | **MVP 标定旋钮** |
+| `actors.wander_turn_std` | 0.8 | `actors.wander_turn_std` | 0.8 | ✅ | ❌ | **MVP 标定旋钮**（单位 **rad/s**） |
 
 #### 18.2.3 三条必须写明的结论
 
-1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 在 `configs/default_arena.yaml` 中不存在。** 即共 **13 项**未进 YAML。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
+1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 已全部进 `configs/default_arena.yaml`**（2026-09-26 补入 `actors:` 段；此前共 13 项无 YAML 归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`（与 `core/config.py::ModelConfig` 的「section 名 = dataclass 名、键名 = 字段名」约定一致）。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
 2. **`../../../docs/参数总表.json` 现收录 Arena 侧 **15 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `capture_radius` / `predator_size` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
-3. **`configs/default_arena.yaml` 目前没有任何调用方读取它。** 通用 loader 已存在（`core/config.py`，2026-09-26），但它按 `configs/*.yaml` **通用**读取，Arena 侧无调用方，故结论不变：`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，即**用 Python 硬编码默认值跑仿真**，YAML 是并行的、可能漂移的副本。**代码内**对 `default_arena` 的引用仍只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
+3. **`configs/default_arena.yaml` 目前没有任何调用方读取它。** **Arena 侧加载已落地（2026-09-26）**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**但调用方仍未接线**：`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，`scripts/run_experiment.py` 与 `api/session.py` 均未调用 loader，故仿真目前仍走 **Python 硬编码默认值**，YAML 是并行的、可能漂移的副本（漂移已被上述测试挡住）。**代码内**对 `default_arena` 的引用仍只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
 
 ---
 
@@ -586,7 +589,7 @@ Complex Scene 可设置：【草案待确认】
 |---|---|
 | **事件词表**（增删 `type`、改 payload 字段名/含义） | ① `src/evogenesis/arena/env.py` 的发射点；② `tests/test_arena.py::KNOWN_EVENTS`；③ 本文档 §4.2；④ `../core/核心机制与数据流.md` §5.1 摘要表；⑤ `schemas/examples/event_log_example.jsonl`（重生成，见 §4.4）；⑥ 若涉及前端消费：`frontend/src/api/arena.ts` 的 `ArenaEvent`；⑦ 若涉及 WS 推送：`../api/API与系统工程.md` §4.1 R11 |
 | **冻结参数值**（`capture_size_ratio` / 世界尺寸 / Hz / 步数 / 种群数） | ① `configs/default_arena.yaml`（**唯一事实来源**）；② `src/evogenesis/arena/config.py` 默认值；③ `../../../docs/参数总表.json`；④ `tests/test_arena.py::test_population_counts_match_frozen_defaults`（种群数）；⑤ 本文档 §2；⑥ 报告中的参数表快照 |
-| **MVP 标定旋钮**（`biomass_to_size_gain`、`actors` 中 `../../../docs/参数总表.json` 未收录的 11 项——`predator_turn_rate` 已进表故不在内、以及任何 `../../../docs/参数总表.json` 未收录的感知/能量/成长值） | ① `configs/default_arena.yaml`（**需先补上当前缺失的 `actors:` 块与 `biomass_to_size_gain`**）；② `config.py` 默认值；③ 本文档 §2.2；④ 建议同步把新值补进 `../../../docs/参数总表.json`，否则"冻结"一词不成立 |
+| **MVP 标定旋钮**（`biomass_to_size_gain`、`actors` 中 `../../../docs/参数总表.json` 未收录的 10 项——`predator_turn_rate` 与 `predator_size` 已进表故不在内、以及任何 `../../../docs/参数总表.json` 未收录的感知/能量/成长值） | ① `configs/default_arena.yaml`（**需先补上当前缺失的 `actors:` 块与 `biomass_to_size_gain`**）；② `config.py` 默认值；③ 本文档 §2.2；④ 建议同步把新值补进 `../../../docs/参数总表.json`，否则"冻结"一词不成立 |
 | ⚠️ **障碍生成方式 / `n_obstacles` / 半径范围 / clearance** | ① `env.py::_spawn_obstacles()` 与 `reset()`（必须保持"先清空、再就地逐个生成"）；② 本文档 §3.2 S9、§5 D2/D5；③ `test_reset_idempotent_on_same_instance`；④ **一切历史冒烟基线作废**（RNG 流全局平移） |
 | **12 维感知顺序**（`sensing.DIM_NAMES` / `observe()` 返回顺序） | ① `src/evogenesis/arena/sensing.py`（docstring 与 `DIM_NAMES`）；② `schemas/examples/README.md` 的 12 维语义表；③ `schemas/examples/trajectory_example.jsonl`（观测向量列序）；④ `../core/核心机制与数据流.md` §4.2 的 `observation` 行；⑤ `../connectome/DanioNet设计规范.md` §2；⑥ `../../../docs/参数总表.json` `sensory_dim`；⑦ **顺序冻结是验收清单硬性要求，改动需双方同步** |
 | ⚠️ **looming 口径**（`nearest_predator_relative_size` / `_prev_predator_rel` 刷新位置） | ① `sensing.py` 与 `env.py`（**两者必须继续共用同一函数**，否则差分重新变成聚合口径差）；② 本文档 S20 / §7 F1 / §8 M13；③ 认领表 A1 |
