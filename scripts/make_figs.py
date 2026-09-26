@@ -1,6 +1,6 @@
 """图表生成：把 run 目录的数据画成报告用图。
 
-对应 `实验与评价体系.md` §10「所有图可回溯到 run directory」。
+对应 `实验与评价体系.md` §1.4「正式结果原则」中的「所有图可回溯到 run directory」。
 
 输入（只读）：
 
@@ -293,7 +293,7 @@ def report_figs(
         provenance={"note": note},
     )
 
-    # §4 的关系图：分母 `encounters`（尺寸门之前）vs `captures`。
+    # §2.1 的关系图：分母 `encounters`（尺寸门之前）vs `captures`。
     # `capture_attempts` 自 2026-09-26 起只是**诊断列**，不进该指标，故只作参考线。
     fig, ax = plt.subplots(figsize=(6, 5))
     for s in seeds:
@@ -301,7 +301,7 @@ def report_figs(
         ax.scatter(sub["encounters"], sub["captures"], s=28, label=f"seed {s}")
     lim = float(max(metrics["encounters"].max(), metrics["captures"].max())) + 1
     ax.plot([0, lim], [0, lim], ls=":", color="0.5", label="captures = encounters (upper bound)")
-    ax.set_xlabel("encounters (pre-size-gate, §4 denominator)")
+    ax.set_xlabel("encounters (pre-size-gate, §2.1 denominator)")
     ax.set_ylabel("captures")
     ax.set_title("Prey-capture denominator vs successful captures (per fish)")
     ax.legend(fontsize=8)
@@ -319,7 +319,7 @@ def report_figs(
                 ["seed", "fish_id", "encounters", "captures", "capture_attempts", "prey_capture"]
             ],
         },
-        caption="§4 denominator (encounters, pre-size-gate) vs captures, per fish",
+        caption="§2.1 denominator (encounters, pre-size-gate) vs captures, per fish",
         sources={"per_fish": "metrics.csv；注意分母右偏（见 diagnostics.md）"},
         provenance={"note": note},
     )

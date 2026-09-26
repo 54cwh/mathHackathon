@@ -14,7 +14,7 @@
   \centering
   \includegraphics[width=0.95\linewidth]{fig_metrics_mean_std}
   \caption{Arena 主指标（ExpertPolicy 驱动，3 seed \ $\times$ 12 鱼 $\times$ 600 步）。
-  左：0--1 比值类；右：\texttt{energy\_efficiency} 为**每步速率**（$\sim10^{-3}$），
+  左：0--1 比值类；右：\texttt{energy\_efficiency} 为\textbf{每步速率}（$\sim10^{-3}$），
   因量纲不同单列一轴。误差棒为跨 seed 的 mean $\pm$ std。}
   \label{fig:metrics}
 \end{figure}
@@ -32,7 +32,10 @@
 \todo{food\_rich 绝对捕获 55$\to$100 但比值反降（分母 722$\to$2325）。}
 
 \subsection{学习前后对照}
-\todo{\textbf{阻塞}：BC 未实现，此节暂无内容。不得用其他数字顶替。}
+\todo{\textbf{阻塞}：BC \emph{模块与契约}已就绪（\texttt{src/evogenesis/learning/}），
+但\textbf{未接入流水线}（\texttt{pipeline/模型链装配.md} \S4「未接」），
+且当前评估仍由 \texttt{ExpertPolicy} 驱动 $\Rightarrow$ 「学习前 / 学习后」对照暂无数据。
+\textbf{不得用其他数字顶替}。}
 
 \subsection{典型案例}
 \todo{补充说明四要求「能直接看见」：选一条成功、一条失败的行为轨迹做可视化。}

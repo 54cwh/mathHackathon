@@ -1,6 +1,199 @@
 \section{可复现性}\label{sec:repro}
 
-\todo{uv sync --frozen $\to$ scripts/run\_arena.py $\to$ make\_figs/make\_tables 全流程；}
-\todo{seed $\to$ 产物映射；每张图带 experiment\_id @ git\_commit 脚注。}
-\todo{\textbf{已知缺口}：Arena 的随机数未走 SeedManager，目前只能整体重跑复现，}
-\todo{不能按模块重放（arena 认领表 A14）。这一条应主动写明。}
+本章给出「从干净环境到本文每一个数字」的完整路径，
+并\textbf{显式写出当前尚不具备的复现能力}：按仓库硬约束，能一条命令重跑的写清命令，
+不能重放的写清边界，不以「结果可复现」一句带过。
+
+\textbf{复现判据}沿用 \texttt{core/核心机制与数据流.md} \S3：
+\emph{同一 \texttt{(config 文件, master seed)} 在\textbf{同设备、同线程数}下结果一致；
+跨设备只要求统计等价}。后半句不是免责，而是浮点归约本身的性质：浮点加法不满足结合律，
+PyTorch 不保证数学等价的计算得到逐位一致的结果 \citep{bib163_unknownn.d.}，
+逐位一致亦不跨设备 / 后端 / 版本保证 \citep{bib164_unknownn.d.}。
+故本平台承诺的是\textbf{受控可重放}，而非\textbf{跨机器逐位相同}。
+
+\subsection{环境与依赖}
+
+\emph{选择}：以 \texttt{uv} 管理环境，并以\textbf{锁文件}安装，即 \texttt{uv sync --frozen}。
+项目声明 \texttt{requires-python = ">=3.12"}（\texttt{pyproject.toml}），
+版本闸门另记于 \texttt{.python-version}（\texttt{3.12}）。
+
+\emph{理由}：两个问题都是实测撞出来的，不是预设的美德。
+(i)~\textbf{Python 版本不可退}：仓库中已有只有 3.12 才能解析的语法
+（\texttt{core/config.py} 的 PEP 695 泛型），3.11 下连测试收集都会失败。
+(ii)~\textbf{裸 \texttt{uv sync} 会污染锁}：在\emph{未配置镜像源}的 shell 里直接
+\texttt{uv sync}，uv 会按默认源重新解析并\textbf{整份改写} \texttt{uv.lock}——
+实测 2750 增 / 2750 删，版本与哈希全同，只是 registry 由清华源换成
+\texttt{pypi.org}，同时从 \texttt{pypi.org} 拉取约 1.9\,GB 的 \texttt{torch}。
+根因是清华源\textbf{不在仓库内}（\texttt{pyproject.toml} 只登记
+\texttt{[[tool.uv.index]] pytorch} 的 \texttt{cu130} 索引与 \texttt{[tool.uv.sources]}
+的 \texttt{torch} 映射，镜像 URL 来自生成锁时的本地环境变量），其他机器复现不到；
+\texttt{--frozen} 的作用正是\textbf{按锁原样安装、不重解析、不改写锁}，
+并自动走锁里记录的源。
+
+\emph{代价}：新增 / 升级依赖必须显式执行一次\emph{不带} \texttt{--frozen} 的同步并提交
+\texttt{uv.lock}，否则新依赖不会进入环境；协作者若本地已用默认源改写过锁，
+须先还原（\texttt{git checkout -- uv.lock}）再 \texttt{--frozen}——
+该改写不含任何真实依赖变更，不应提交。
+
+\subsection{从 master seed 到 run 目录}
+
+\textbf{派生式（唯一实现 \texttt{core/seed.py}）。}子种子一律由 master seed 经
+NumPy \texttt{SeedSequence} 派生：命名空间序号 $ns$（注册表
+\texttt{mutation=0}、\texttt{crossover=1}、\texttt{development=2}、\texttt{arena\_spawn=3}、
+\texttt{motif\_catalog=4}、\texttt{network\_init=5}、\texttt{selection=6}、
+\texttt{initial\_population=7}、\texttt{bc=8}；全局唯一、不回收）取列表熵
+$S_{ns}=\texttt{SeedSequence}([ns,\ master\_seed])$，
+实体序号 $t$ 取 $C(ns,t)=S_{ns}.\texttt{spawn}(k)[t]$，
+整数子种子 $g=C.\texttt{generate\_state}(1,\texttt{uint32})[0]$。
+两条设计约束直接决定「换台机器能不能对上」：
+变化 ID \textbf{前置}（$[ns, master\_seed]$ 而非反序），
+且实体序号 $t$ 必须由\textbf{稳定 ID}（\texttt{fish\_id} / \texttt{genome\_id} /
+\texttt{generation} / episode 序号）确定性映射，\textbf{不得使用调用顺序}。
+
+\textbf{正式种子与 run 目录}：正式实验固定 $\text{seeds}=[1103,\,2207,\,3301]$，
+\texttt{minimum\_formal\_replicates}=3，即 $n=3$；Demo seed 单独固定在
+\texttt{configs/demo\_seed.yaml}，与实验种子隔离。\textbf{每个 seed 对应一个独立 run 目录}
+\texttt{results/runs/<experiment\_id>-s<seed>/}，逐个体原值全部留在该目录的
+\texttt{metrics.csv} 里，任何人都可据此重算，不必信任本文报出的汇总数。
+
+\textbf{目录布局的唯一 owner 是 \texttt{scripts/run\_experiment.py}}：
+它建目录并落四件「固定下来才能重放」的东西——\texttt{config\_snapshot/<配置文件名>.yaml}
+（原始副本）、\texttt{arena\_config\_resolved.json}（\emph{解析后}实际生效的
+\texttt{ArenaConfig} 快照）、\texttt{seed.txt}、\texttt{git\_commit.txt}，外加
+\texttt{metadata.json}。
+\emph{理由}：原始 YAML 副本会与解析值漂移（默认值 / 环境变量 / overrides 都会改变实际取值），
+而仿真只认\textbf{已解析}的配置对象；只固定文件路径不足以复现一局。
+\emph{代价}：同一份配置要在盘上存两遍（原件 + 解析快照），且解析快照的字段名随后者演进。
+
+\textbf{汇总口径（契约，\texttt{experiment/实验与评价体系.md} \S1.2）}：
+个体指标先在 \textbf{seed 内对个体取等权均值} $\to$ 该 seed 的一行；
+再沿 \textbf{seed 轴}报告 $\text{mean}\pm\text{std}$（样本标准差，$n-1$；
+$n<2$ 时 \texttt{std} 记 \texttt{null}）。这一「先内后外」的顺序保证每个 seed 权重相等，
+不会被某个 seed 中个体偏多而放大（口径的后果与阅读警示见 \S\ref{sec:exp-metrics}）。
+
+\subsection{全流程命令链}
+
+四个脚本按顺序跑完即得本文全部数字；除第一个外都只读上游产物，
+可任意重复执行而不改变语义。
+
+\begin{itemize}
+  \item \texttt{scripts/run\_experiment.py --config <cfg> --seed <s> --experiment-id <id>}\\
+        建 \texttt{results/runs/<id>-s<s>/} 及其固定件（\S\ref{sec:repro} 上一小节）。
+        它是 run 目录布局的\textbf{唯一 owner}；\texttt{<id>} 由调用方给定，
+        同一 \texttt{(id, seed)} 只能建一次，已存在即报错退出（防静默覆盖）。
+  \item \texttt{scripts/run\_arena.py --experiment-id <id> [--seeds 1103,2207,3301]}\\
+        跑 \textbf{20\,Hz $\times$ 600 步 / episode}，对每个 seed 内部先委托
+        \texttt{run\_experiment.py} 建目录（不自己造布局），再落 Arena 侧产物：
+        \texttt{metrics.csv}（逐个体一行）、\texttt{population.jsonl}（逐个体轨迹幅度，供作图）、
+        \texttt{episodes.jsonl}（逐 episode 事件计数 + 吞吐）、\texttt{events.jsonl}
+        （事件日志：首行 header + 逐条事件）、\texttt{seed\_summary.json}（该 seed 的个体等权均值）；
+        跨 seed 的 $\text{mean}\pm\text{std}$ 写到
+        \texttt{results/tables/<id>\_summary.json}。
+        加 \texttt{--emit-trajectories} 时另落 Stage-1 专家轨迹到
+        \texttt{<run>/trajectories/}（字段与格式 owner 为
+        \texttt{schemas/trajectory.schema.json}）；
+        专门的采集入口是 \texttt{scripts/collect\_trajectories.py}
+        （按 \texttt{experiment/实验与评价体系.md} \S5.1，\texttt{trajectories/} 的写者）。
+  \item \texttt{scripts/make\_figs.py --experiment-id <id>}\\
+        只读 run 目录与 \texttt{<id>\_summary.json}，出逐 seed 诊断图到
+        \texttt{results/runs/<id>-s<seed>/plots/}、跨 seed 报告图到
+        \texttt{results/figs/<id>/}，并为每张图导出同名 Excel（见下小节）。
+  \item \texttt{scripts/make\_tables.py --experiment-id <id>}\\
+        出表到 \texttt{results/tables/<id>/}：\texttt{summary.md}（跨 seed 的
+        $\text{mean}\pm\text{std}$，含逐 seed 值）、\texttt{diagnostics.md}（\textbf{口径诊断}：
+        分母健康度、不变式核对、比值与偏态）、\texttt{by\_fish.csv}（全部个体行，可直接进附录）、
+        \texttt{episodes.csv}。
+\end{itemize}
+
+环境对照图另有 \texttt{scripts/make\_env\_compare.py}（读
+\texttt{results/tables/exp\_env\_*\_summary.json}，出比值与绝对量双面板）。
+
+\subsection{图的可回溯性与「图 $\to$ 数据表」对应}
+
+\textbf{每张跨 seed 报告图都带脚注 \texttt{experiment\_id @ git\_commit}}：
+\emph{git} 短哈希取自任一 run 目录的 \texttt{git\_commit.txt}，
+故拿到一张图即可回到产生它的那次 run 与那个提交。
+图的文字\textbf{一律用英文}——matplotlib 默认字体不含 CJK，中文会渲染成方框；
+中文叙述放表格（表与图注的数字口径警示另见 \S\ref{sec:exp-metrics}）。
+
+\textbf{每张图都有同名数据表}：约定为
+\texttt{<fig\_dir>/<fig\_name>.png} 配 \texttt{<fig\_dir>/data/<fig\_name>.xlsx}
+——\textbf{同名即对应}，只多一层 \texttt{data/}，
+不需要人工维护映射表。每个工作簿的\textbf{第一个 sheet 固定为 \texttt{\_manifest}}，
+逐 sheet 写明「这张 sheet 是什么、来自哪个脚本、什么口径」，
+并附 \texttt{experiment\_id} / \texttt{git\_commit} 等溯源项；其余 sheet 一律\textbf{原始数据}
+（列名保持英文原名）。
+\emph{理由}：把图与其底层数据解耦，后续统一美化时\textbf{改样式不改数据}，
+也便于第三方直接取数复算，而不必从 PNG 里读数。
+\emph{代价}：每个实验目录多一层 \texttt{data/} 与一份 Excel（体积远大于图本身），
+且历史图集需重跑一次出图脚本才补齐该文件——例如本轮的
+\texttt{exp\_arena\_expert\_ref\_v2} 图集在引入本条约定之前生成，尚无配套
+\texttt{.xlsx}；重跑 \texttt{make\_figs.py} 即同时重出图与表。
+
+\subsection{入库与不入库的边界}
+
+\texttt{results/**} 被 \texttt{.gitignore} 忽略（仅保留空目录占位），
+\textbf{体积原因不入库}——其上所有图与表\textbf{按需重新生成}，而不是随仓库分发。
+由此产生一条编译纪律：论文用图必须\textbf{复制}进 \texttt{paper/latex/figs/}
+（该目录自包含、可提交），\textbf{不得}让 \texttt{\textbackslash includegraphics}
+指向 \texttt{results/}，否则他机编译失败。
+
+\textbf{入库的是 \texttt{artifacts/}}：按 \texttt{core/核心机制与数据流.md} \S2 的流水线契约，
+它承载\textbf{固定 seed、Demo 种群与小 checkpoint}，用于现场离线复现；
+\texttt{.gitignore} 对 \texttt{*.pt} / \texttt{*.pth} / \texttt{*.ckpt} / \texttt{*.safetensors}
+默认忽略、但对 \texttt{artifacts/**} 开白名单，正是为这条边界服务。
+\textbf{须如实声明}：该目录目前只有占位资产，
+冻结的 Demo 种群与 checkpoint 尚未提交（\texttt{core} \S2 执行清单中该项仍未勾选），
+故「现场离线可复现」目前只在\emph{代码与种子}层面成立，不在\emph{权重资产}层面成立。
+
+\subsection{一局仿真的确定性与最脆弱处}
+
+Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}随机源，
+故同一 arena 反复 \texttt{reset()} 得到逐字段一致的初始局面；
+且每步的随机数消费只由\emph{该步状态}决定（存活猎物数 $\times$ 一次正态抽样），
+因此「推进到第 $k$ 步」与「分几次调用推进到第 $k$ 步」无关（600 步上限内）。
+两者均有测试守护。
+
+\textbf{最脆弱的一环是拒绝采样 \texttt{\_free\_spot}}：它的\emph{采样次数}
+取决于当前障碍布局，因此它是随机数消费路径的一部分——
+一旦改动障碍数量 / 半径范围 / clearance，后续所有实体的随机流会\textbf{整体平移}，
+同一 seed 下的初始世界随之改变，\textbf{历史基线不可直接对比}。
+这条不是实现缺陷，而是「固定 seed」这一承诺的边界：\emph{种子固定的是流，
+不是语义}；语义一改，同种子的两局就不再是同一实验。
+因此本文的环境对照遵守\textbf{单因子对照}：每个环境相对基线只改一个驱动，
+未被列出的段一律取默认值，\textbf{不得暗改契约值}（\S\ref{sec:exp-env-groups}）。
+
+\subsection{已知缺口：哪些能重跑，哪些不能}
+
+以下三条是仓库自己登记、且直接限制「复现到什么粒度」的缺口，
+与 \S\ref{sec:exp-gaps} 同源，此处只写它们对\emph{复现方式}的后果：
+
+\begin{itemize}
+  \item \textbf{A14——Arena 的随机数未走 \texttt{SeedManager}。}
+        \texttt{arena/env.py} 用一条 \texttt{np.random.default\_rng(master\_seed)}
+        同时驱动出生与每步游走，未拆成 \texttt{arena\_spawn} 与 \texttt{arena\_dynamics}
+        两个命名空间。
+        \emph{后果}：目前\textbf{只能靠 master seed 整体重跑复现}，
+        \textbf{无法按模块重放}（例如「只重放逐 step 游走、复用同一初始局面」做不到）。
+        \emph{为何不现在修}：拆分命名空间会改动随机流，
+        从而作废既有冒烟基线（\texttt{arena} \S18.11），故本轮明确\textbf{暂不实施}，
+        待 \texttt{bc} 命名空间（id 8）落地后再一并处理 \texttt{arena\_dynamics}（id 9）。
+        这是一条\emph{知情接受的限制}，不是遗漏。
+  \item \textbf{P0-9——落盘轨迹尚没有真实基因型标识。}
+        \texttt{Fish.genome\_id} 的\textbf{缺省值仍是占位} \texttt{"unknown"}；
+        实验路径虽已可由构造注入 \texttt{genome\_ids}，
+        但\textbf{演化 $\to$ Arena 的接线（代循环）尚未完成}，
+        故轨迹里的 \texttt{genome\_id} 目前还\textbf{不对应真实演化出的基因型}，
+        BC 数据无法按基因型分组。
+  \item \textbf{BC 侧与观测编码。} 演化与学习的\textbf{联合}效果尚未验证
+        （行为克隆未实现），12 维观测的\textbf{编码规则}仍为「草案待确认」，
+        故本文无法给出「学习前 / 学习后」的可复现对照——
+        该对照所需的数据链路本身还不存在（详见 \S\ref{sec:exp-gaps} 与
+        \S\ref{sec:limitations}）。
+\end{itemize}
+
+\textbf{小结}：本文的数字可以\emph{整体重跑}复现（固定 \texttt{uv.lock}、
+固定 \texttt{(config, master seed)}、逐个体原值落盘、图表可回溯到
+\texttt{experiment\_id @ git\_commit}），但在上述三条闭合之前，
+\textbf{不能}声称具备\emph{按模块重放}或\emph{按基因型分组重放}的能力。
+把这三条写进正文，是因为它们决定了读者复现本文时\emph{实际能做到什么}。

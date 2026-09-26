@@ -52,6 +52,12 @@
 
 ## 五、arena 实现完善（P2，勿混入基线改动）
 
+1. **`prey_capture` 口径（§4）**：`prey_capture = captures / max(encounters, 1)`，分母 = **尺寸门之前**的纯距离接触数（`arena` S6），**不是** `capture_attempts`。`capture_attempts` 降为诊断列（`capture_attempts − captures` = 「进过口但吃不下」）。实现 `experiment/metrics.py::prey_capture_rate`；每鱼记录 16 列。依据 `experiment/实验与评价体系.md` §2.1（指标契约）。
+2. **可用的驱动/评价入口**（均在 `main`，已被测试守护）：
+   - `scripts/run_arena.py --experiment-id <id>`（`--emit-trajectories` 可落 Stage-1 轨迹）：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`（`metrics.csv`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`）。
+   - `scripts/make_figs.py` / `scripts/make_tables.py`：只读 run 目录，出图/出表（含 `diagnostics.md` 口径诊断）。
+   - 基线（对照用，**不入库、可重生成**，`exp_arena_expert_ref_v2`）：`survival 0.9472 ± 0.0459`、`prey_capture 0.5407 ± 0.1180`、`escape_success 0.2292 ± 0.0625`、`energy_efficiency −1.031e−3 ± 4.64e−5`、`composite_fitness 0.5123 ± 0.0428`。
+
 - `selected neural activity snapshots` 未实现（`arena §13` / `M3`）。
 - `PreyPolicy.avoid_gain` 死参数（S12/F2/M6）。
 - `arena.collision` 默认场景仍多为 0（`§18.9`/A7）→ 需专门「密集障碍」对照场景；活鱼 escape、空种群终止、`_free_spot` 回退分支缺专项测试。
@@ -76,3 +82,11 @@
 - **event log**：`schemas/event_log.schema.json`；`experiment/events.py`（header + 8 类事件）。
 - **基线（可重生成、不入库）** `exp_arena_expert_ref_v2`：`survival 0.9472`、`prey_capture 0.5407`、`escape_success 0.2292`、`energy_efficiency −1.031e−3`、`composite_fitness 0.5123`。
 - **稳定 ID / 世代**：`DanioArena(..., fish_ids, genome_ids, generation)`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均注入。
+
+`scripts/run_arena.py --emit-trajectories` → 每 run 落 `trajectories/episode_ep0001.jsonl`（首行 header + 逐 step），字段/格式严格照 `schemas/trajectory.schema.json`（jsonschema 逐条校验）。实跑 `exp_traj_smoke`（1 seed）6601 step，obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全通过。当日唯一缺口 = P0-9（`genome_id` 全为 `"unknown"`）。
+> **【2026-09-26 稍后就地更正】** 该缺口此后已在**代码层**闭合：`scripts/run_arena.py`
+> 经 `core/ids.py::mint_id`（纯函数、确定性）铸造并注入 `genome_id`，
+> `tests/test_collect_trajectories.py` 有断言。**仍存的是**：
+> (a) `evolution/population.py::advance_generation` 无生产调用方 ⇒ id 只是确定性标签，
+> 不对应真实演化出的基因型；(b) 本条记录的 `exp_traj_smoke` 产物采于接线之前，
+> 仍是 `"unknown"`，须重采。详见 `paper/latex/sections/07-reproducibility.tex` §已知缺口。

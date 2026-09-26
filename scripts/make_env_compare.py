@@ -1,10 +1,10 @@
-"""环境对照图（E-F 前置检查）：`实验与评价体系.md` §7.1 的证据图。
+"""环境对照图（E-F 前置检查）：`实验与评价体系.md` §4 的证据图。
 
 读 `results/tables/exp_env_*_summary.json`（由 `run_arena.py` 产出），
 出两张图到 `results/figs/env_compare/`：
-1. `fig_env_ratios.png`   —— §4 的四项 rate（mean ± std，跨 seed）
+1. `fig_env_ratios.png`   —— §2.1 的四项 rate（mean ± std，跨 seed）
 2. `fig_env_absolute.png` —— **绝对量**（captures / encounters 每 episode）；
-   这是关键：比值指标会把猎物密度效应掩盖掉（见 §7.1 结论 2）。
+   这是关键：比值指标会把猎物密度效应掩盖掉（见 §4 结论 2）。
 
 用法：.venv/Scripts/python.exe scripts/make_env_compare.py
 """
@@ -91,7 +91,7 @@ def main() -> None:
         ax.set_xticklabels(labels, fontsize=7)
         ax.set_title(m, fontsize=9)
         ax.grid(axis="y", alpha=0.3)
-    fig.suptitle("Env pre-check: §4 rate metrics (mean +/- std across 3 seeds)", fontsize=11)
+    fig.suptitle("Env pre-check: §2.1 rate metrics (mean +/- std across 3 seeds)", fontsize=11)
     stamp(fig, note)
     p1 = OUT / "fig_env_ratios.png"
     fig.tight_layout()
@@ -116,7 +116,7 @@ def main() -> None:
                 ]
             ),
         },
-        caption="E-F env pre-check: §4 rate metrics per condition (mean +/- std across seeds)",
+        caption="E-F env pre-check: §2.1 rate metrics per condition (mean +/- std across seeds)",
         sources={
             "rates_by_condition": (
                 "results/tables/exp_env_*_summary.json；"
@@ -176,7 +176,7 @@ def main() -> None:
         sources={
             "absolute_counts": (
                 "各 run 的 metrics.csv 汇总；"
-                "pooled_ratio = Σcaptures / Σencounters（≠ 个体比值均值，见 §4）"
+                "pooled_ratio = Σcaptures / Σencounters（≠ 个体比值均值，见 §2.1）"
             )
         },
         provenance={"note": note},

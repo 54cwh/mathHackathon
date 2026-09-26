@@ -17,6 +17,9 @@ results/runs/<experiment_id>-s<seed>/
   metrics.csv                 逐个体一行：指标 + 原始计数
   population.jsonl            逐个体一行：轨迹幅度等，供作图
   episodes.jsonl              逐 episode 一行：事件计数 + 吞吐
+  events.jsonl                arena 事件日志：首行 header + 逐条事件
+                              (由 scripts/run_arena.py 写；落盘业务逻辑 owner =
+                               experiment/events.py；格式 owner = core §5.1 / arena §18.4)
   seed_summary.json           逐 seed 的个体等权均值
 ```
 
@@ -79,7 +82,7 @@ EVENT_KEYS = (
 METRIC_COLUMNS = (
     "survival_steps",
     "captures",
-    "capture_attempts",  # 诊断列（§4 分母为 encounters）
+    "capture_attempts",  # 诊断列（§2.1 分母为 encounters）
     "encounters",
     "predator_encounters",
     "escape_successes",

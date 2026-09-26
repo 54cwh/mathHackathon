@@ -1,7 +1,7 @@
 """Stage-1 专家轨迹采集（`learning/行为克隆学习.md` §2；`core/核心机制与数据流.md` §4.2/§4.5）。
 
 owner 依据：`core §4.5`（草案待确认）定「产出方 = `experiment`/`scripts` 编排」，
-`experiment/实验与评价体系.md` §5 定义 run 目录布局与 `trajectories/`。本模块承载采集
+`experiment/实验与评价体系.md` §5.1 定义 run 目录布局与 `trajectories/`。本模块承载采集
 业务逻辑——跑 Arena episode、按 `core §3` 派生 episode 子种子、组 header/step 记录并落盘；
 `scripts/collect_trajectories.py` 只是薄 CLI（AGENTS：`scripts/` 不放业务逻辑）。
 

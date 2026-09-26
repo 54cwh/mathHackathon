@@ -146,11 +146,11 @@ d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}\quad\te
 
 **【前向锥·已定稿（2026-09-26 实现）】** 目标要纳入捕食判定，还须位于**猎人朝向的前向锥**内：$\lvert\Delta\theta\rvert$ 为猎物相对**猎人**朝向的方位角，$\theta_{cone}$（`growth.capture_cone_degrees`）$=120\,^{\circ}$ 为**总锥角**（半锥 $60\,^{\circ}$）。锥角属**设计选择**（dossier T2 `add_directionality`；[bib#217]/[bib#218] 对照），非实测值；默认值 120° 由用户 2026-09-26 裁决。
 **双向同一**：判据对两个方向对称——predator 吃鱼与鱼吃 prey，均按**各自作为猎人**的朝向锥判定。
-$encounters$ 语义**不变**（仍为 $d<r_{capture}$ 的近距接触计数，见 §18.3.2 S6）：锥只作用于**捕获判定**，不改变接触计数。**【2026-09-26 同日追加】** 该量自即日起同时是 `实验与评价体系.md` §4 `prey_capture` 的**分母**（原以 `capture_attempts` 为分母，因确定性捕获导致口径退化而改判，见 §13 字段表与 S6 行）。
+$encounters$ 语义**不变**（仍为 $d<r_{capture}$ 的近距接触计数，见 §18.3.2 S6）：锥只作用于**捕获判定**，不改变接触计数。**【2026-09-26 同日追加】** 该量自即日起同时是 `实验与评价体系.md` §2.1 `prey_capture` 的**分母**（原以 `capture_attempts` 为分母，因确定性捕获导致口径退化而改判，见 §13 字段表与 S6 行）。
 
 **【已定稿】** $r_{capture}=4.61$（方案 B：按 $r_{capture}/sensing.radius=\sqrt{0.16\times0.41}=0.256$ 校准，可接受域 2.88–7.38；见 `research/notes/契约决策记录.md`）。**前向锥（总锥角 120°）已于 2026-09-26 实现**（§17 A2 该项闭合）。
 
-**【已定稿】捕食尝试计数（2026-09-26，用户裁定）**：`capture_attempts` 每鱼每步至多 +1，条件为「猎物进入 `d < r_capture` **且在猎人前向锥内**」并**判定了尺寸口径**；吃到（`size_hunter ≥ κ·size_target`）与判定为太小（`arena.capture_attempt`）**都计**。锥外的猎物不计（§17 S5：命中第一个半径内猎物即 `break`，故每步至多一次判定）；`encounters` 仍是**纯距离**口径（S6），两者不可互替。**【2026-09-26 同日改判】** 该量**不再充当 `实验与评价体系.md` §4 `prey_capture` 的分母**，降为**诊断列**：`§4 分母 = encounters`（尺寸门之前的纯距离口径，S6）；`capture_attempts − captures` = 「进过口但吃不下」的次数。理由：当前 `P_capture_success = 1.0`（本 § 待裁决项 a）使 `capture_attempts == captures` 恒成立，以之为分母的指标只能取 1.0/0.0，均值退化为「有过机会的个体占比」。
+**【已定稿】捕食尝试计数（2026-09-26，用户裁定）**：`capture_attempts` 每鱼每步至多 +1，条件为「猎物进入 `d < r_capture` **且在猎人前向锥内**」并**判定了尺寸口径**；吃到（`size_hunter ≥ κ·size_target`）与判定为太小（`arena.capture_attempt`）**都计**。锥外的猎物不计（§17 S5：命中第一个半径内猎物即 `break`，故每步至多一次判定）；`encounters` 仍是**纯距离**口径（S6），两者不可互替。**【2026-09-26 同日改判】** 该量**不再充当 `实验与评价体系.md` §2.1 `prey_capture` 的分母**，降为**诊断列**：`§2.1 分母 = encounters`（尺寸门之前的纯距离口径，S6）；`capture_attempts − captures` = 「进过口但吃不下」的次数。理由：当前 `P_capture_success = 1.0`（本 § 待裁决项 a）使 `capture_attempts == captures` 恒成立，以之为分母的指标只能取 1.0/0.0，均值退化为「有过机会的个体占比」。
 > **已知局限（未采纳项）**：开源机制对照报告建议距离口径改为「半径和」（$d<r_1+r_2$，使捕食圈随体型缩放）。**未采纳**——$r_{capture}=4.61$ 是同日刚裁决冻结的方案 B 值，改口径会使该标定与耦合约束 $size_{predator}\ge\kappa\,size_{max}$ 整体作废。记为后续项（§19 P2）。
 
 > ⚠️ 原记「与生物量级冲突」。**根因＝`world unit ↔ BL` 换算缺失，已由 §2 尺度声明闭合**（方案 B：不建立固定换算，只按无量纲比率校准）。故本节参数不再与成鱼 BL 直接比对；校准口径是 `r_capture / sensing.radius` 与 $\kappa$ 的无量纲关系。
@@ -207,7 +207,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 |---|---|
 | generation | ✅（缺省 0；可由构造 `generation` 注入，见 §18.1；多代演化接入后为真实代数） |
 | genome_id | ⚠️ 不在 `per_fish_log()`；`Fish.genome_id` 由构造注入（`genome_ids`，P0-9），供轨迹落盘读取 |
-| encounters | ✅（\(d<r_{capture}\) 的近距接触计数；**＝`实验与评价体系.md` §4 `prey_capture` 分母**） |
+| encounters | ✅（\(d<r_{capture}\) 的近距接触计数；**＝`实验与评价体系.md` §2.1 `prey_capture` 分母**） |
 | captures | ✅ |
 | predator encounters | ✅（口径＝捕食者**获得新目标**（被锁定）计数，非近距接触；S7 已定稿） |
 | escape successes | ✅（口径见 §15 逃脱判定） |
@@ -417,7 +417,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | S3 | **避障探测** | `_steer_away_from_obstacles()` 在 $pos + speed \cdot \hat{e}(\theta) \cdot 3.0$ 处做**前视点**探测；命中第一个障碍即转向并 `return`（不累加多障碍）；转角为 $\mathrm{sign}(diff) \cdot gain$（开关式，不按夹角比例），`gain` 默认 0.5（鱼 / 捕食者），猎物显式传 2.0 |
 | S4 | **碰撞判定** | `obstacle.contains(fish.pos, 0.1)`：把鱼的碰撞半径视作常数 0.1，**与 `fish.size` 无关**；每个鱼每步**最多一条**碰撞事件（命中即 `break`），`collisions += 1` 同步自增 |
 | S5 | **捕食尝试唯一性** | 鱼每步遍历猎物时，命中第一个 $d < r_{capture}$ 的猎物即处理并 `break` —— 每鱼每步**最多一条** `capture_attempt` 或 `prey_captured` |
-| S6 | **`encounters` 语义** | 每鱼每步**至多 1 次**：遍历猎物遇到**首个** $d < r_{capture}$ 即自增并 `break`（纯距离，尺寸门之前），不是"看见"的计数。**同时是 `实验与评价体系.md` §4 `prey_capture` 的分母**（2026-09-26 改判；原分母 `capture_attempts` 降为诊断列） |
+| S6 | **`encounters` 语义** | 每鱼每步**至多 1 次**：遍历猎物遇到**首个** $d < r_{capture}$ 即自增并 `break`（纯距离，尺寸门之前），不是"看见"的计数。**同时是 `实验与评价体系.md` §2.1 `prey_capture` 的分母**（2026-09-26 改判；原分母 `capture_attempts` 降为诊断列） |
 | ⚠️ S7 | **`predator_encounters` 语义** | **目标获取计数**，不是接触计数：捕食者 `plan()` 得到的目标与上一帧不同（含 `None → X` 与 `X → Y`）时对**新目标** `+= 1`。实现于 `env.py` 捕食者段：`if target is not None and target != prev_target: self.fish[target].predator_encounters += 1`。候选集只含存活鱼，故死鱼不会被计入 |
 | S8 | **出生空地采样** | `_free_spot(clearance)`：拒绝采样至多 200 次，位置为 $U(0,W) \times U(0,H)$，要求对 `self.obstacles` 中所有障碍 `not contains(pos, clearance)`；200 次仍失败则回退世界中心 $(W/2, H/2)$。各类实体 clearance：fish 2.0、prey 1.0、predator 3.0、obstacle $r + 1.0$ |
 | ⚠️ S9 | **出生顺序与随机消耗** | `reset()` 顺序为 障碍 → 鱼 → 猎物 → 捕食者。**障碍就地逐个生成**：`reset()` 先 `self.obstacles = []`，再由 `_spawn_obstacles()` 逐个 `append`，因此**同一 reset 内的障碍互不重叠**，且第二次 `reset()` 与第一次完全一致。每个实体的随机消耗为"若干次拒绝采样 + 1 次航向/尺寸 uniform"，**采样次数本身进入 RNG 消费路径**（见 §5 D5） |
@@ -522,7 +522,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | 规范 §13 声明 | `per_fish_log()` 键 | 来源字段 | 状态 |
 |---|---|---|---|
 | generation | `generation` | `Fish.generation`（恒 0，未接演化） | ✅ |
-| encounters | `encounters` | `Fish.encounters` | ✅ 语义为"$d < r_{capture}$ 的近距接触数"（S6）。**自 2026-09-26 起同时是 `实验与评价体系.md` §4 `prey_capture` 的分母** |
+| encounters | `encounters` | `Fish.encounters` | ✅ 语义为"$d < r_{capture}$ 的近距接触数"（S6）。**自 2026-09-26 起同时是 `实验与评价体系.md` §2.1 `prey_capture` 的分母** |
 | captures | `captures` | `Fish.captures` | ✅ |
 | capture attempts | `capture_attempts` | `Fish.capture_attempts` | ✅ **2026-09-26 新增**（用户裁定「进过口」口径）：每鱼每步**至多 1 次** —— 猎物 $d < r_{capture}$ **且**在猎人前向锥内**且**判定了尺寸口径，**不论吃到与否**（吃到走 `arena.prey_captured`，太小走 `arena.capture_attempt`）。因此**逐事件对齐**于既有事件，且恒有 `capture_attempts ≥ captures`。**曾**是 `实验与评价体系.md` §4 `prey_capture` 的分母，**2026-09-26 同日降为诊断列**（`capture_attempts − captures` = 「进过口但吃不下」的次数；§4 分母改指 `encounters`，见上两行）。由 `test_capture_attempts_counts_eaten_prey_as_well` 与 `test_too_small_to_eat_attempt_logged` 守护 |
 | predator encounters | `predator_encounters` | `Fish.predator_encounters` | ✅ **已实现且已定稿**：捕食者**获得新目标**（被锁定）时 +1（S7）。由 `test_predator_encounter_recorded_on_acquisition` 守护。下游 `experiment §2.1/§2.2` 以此为 `escape success` 分母 |

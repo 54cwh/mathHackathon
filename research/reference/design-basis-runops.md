@@ -9,7 +9,7 @@
 ## 0. 项目现状（只读核对）
 
 - `artifacts/` 入库（固定 seed、Demo 种群、小 checkpoint），冻结以保证现场复现；现场完全离线（`api/API与系统工程.md` §7 离线红线）。
-- `results/runs/<experiment_id>/` 布局见 `experiment/实验与评价体系.md` §11：`metadata.json / config_snapshot/ / metrics.csv / population.jsonl / seed.txt / git_commit.txt / plots/`。
+- `results/runs/<experiment_id>/` 布局见 `experiment/实验与评价体系.md` §5.1：`metadata.json / config_snapshot/ / metrics.csv / population.jsonl / seed.txt / git_commit.txt / plots/`。
 - `.gitignore` 第 51-55 行整体忽略 `results/**`；第 63-66 行默认忽略 `*.pt/*.pth/*.ckpt/*.safetensors`，仅 `artifacts/**` 显式白名单入库。既有意图是：**artifacts/ 只放冻结演示资产，不放实验中间产物**。
 - `core §10 #6`（seed 派生函数形式）仍待定——它决定续跑是「可确定性重放」还是「必须序列化 RNG state」。
 
@@ -124,4 +124,4 @@
 1. `#10`：先写体积守卫（脚本 + CI），定稿单文件/总量阈值，写入 core §7 与 `.gitignore` 注释。
 2. `#11`：先定 `§10 #6` seed 派生契约 → 再判 RNG state 是否需要序列化 → 写 core「run 状态机 + 续跑判据 + GC 规则」。
 3. 把「单次运行时长 / 环境」补进 run metadata（对齐 NeurIPS/Pineau 清单）。
-4. 在 `experiment/实验与评价体系.md` §11 补齐 `metadata.json` 的 `status`/`last_generation` 字段契约（该文阅读问题 #10 已记为未对齐）。
+4. 在 `experiment/实验与评价体系.md` §5.2（产物字段与 schema 归属）补齐 `metadata.json` 的 `status`/`last_generation` 字段契约（该文阅读问题 #10 已记为未对齐）。

@@ -3,7 +3,7 @@
 \subsection{基线（同参数量级）}
 \todo{\textbf{当前最大缺口}：MLP / GRU / Fixed Sparse RNN 均未实现。}
 \todo{判据：trainable parameter count 同一数量级（按连接数，$|\Delta\log_{10}|\le 1$）。}
-\todo{实测可训练连接数约 163--190（$\Theta$ 张量 $48^2$，有效支撑内 190）。}
+\todo{实测可训练连接数中位 186（$\Theta$ 张量 $48\times48=2304$，有效支撑内 186；个体间 94--287）。}
 
 \subsection{消融}
 \todo{w/o GRN；allele 聚合（mean vs max）；homogeneous $\tau$；}

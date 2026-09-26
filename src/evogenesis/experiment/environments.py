@@ -1,6 +1,6 @@
-"""环境对照三组（E-F）的加载（`实验与评价体系.md` §7 的取值实现）。
+"""环境对照三组（E-F）的加载（`实验与评价体系.md` §4 的取值实现）。
 
-owner：`experiment/实验与评价体系.md` §7 定义**设计**（单因子对照）与 `environment_id`；
+owner：`experiment/实验与评价体系.md` §4 定义**设计**（单因子对照）与 `environment_id`；
 取值落 `configs/experiment_environments.yaml`（Tier-5）；依据与状态落 `docs/参数总表.json`。
 本模块只做**读取与展开**，不定义任何数值，也不改变 Arena 契约。
 """

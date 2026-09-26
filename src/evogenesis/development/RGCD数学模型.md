@@ -193,6 +193,23 @@ zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps
 
 (iii)(iv) 为**工程判据**（设计选择）；(ii) 是模型的数学性质，报告可直接引用。
 
+**实测工作点（2026-09-26，可复现）**：在**随机 \(q\sim U[0,1]^8\)** 下（\(q\) 直抽、非 \(q(G)\)，
+抽样口径见下文脚本），seed 1103 跑 1000 次发育：**通过率 71/1000 ≈ 7.1%**
+（Wilson 95% 区间 [5.7%, 8.9%]）。**判据 (iv) 是唯一的绑定约束**——
+89.8% 的尝试因 \(\rho_{\mathrm{spec}}(W^{(0)})\ge1\) 失败，活跃子矩阵的 \(\rho\) 中位数 **1.63**、
+仅 **10.2%** 落在阈值之下；其余判据的失败率分别为
+`no_sensory_to_motor_path` 10.7%、`motor_side_empty` 8.0%、
+`missing_fate:<六类之一>` 4.3%–6.9%；(i)(ii)(iii) 在 1000 次中**一次也没触发**
+（与 (ii) 是解析保证、非阈值判据相符）。
+
+该数字的**口径警告**（写报告时必须一并给出）：`paper/报告-骨架.md` §2.1 引用的 **2/14 ≈ 14%**
+是同一随机流**前 14 次**的读数，比系统率（7.1%）高约 2 倍；调和的正确方式是
+**n=14 自身的 Wilson 区间宽到 [4.0%, 39.9%]**（含 7.1%），而**不是**「全样本 CI 覆盖 14%」。
+三个 formal seed 各跑 n=14 依次得 2 / 2 / 1。
+
+复现：`python scripts/make_fig_viability.py`（图为 `paper/报告-骨架.md` 的 F6），
+底层数据见 `results/figs/dev_viability/data/fig_viability.xlsx` 的 `_manifest`。
+
 **\(b_i\) 的处理（定稿）**：零输入更新式含 per-neuron bias \(b_i\)，其 owner 为 `connectome/DanioNet设计规范.md` §3（\(b_i=b_{type_i}\)，seed 初始化；RGCD 输出契约 \((A,Z,\tau,W^{(0)},M)\) 不含它）。故本节动力学检查**接受调用方传入的 \(b_i\)**；发育阶段默认 \(b_i=0\)（**无偏置近似**），最终 viability 由 DanioNet 用其 \(b_{type_i}\) 复核。
 
 ## 8. Connection probability

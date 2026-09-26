@@ -1,4 +1,4 @@
-"""表生成：把 run 目录的数据汇成报告用表（`实验与评价体系.md` §10 / §11）。
+"""表生成：把 run 目录的数据汇成报告用表（`实验与评价体系.md` §1.4 正式结果原则 / §5.1 目录布局）。
 
 输入（只读）：
 
@@ -86,7 +86,7 @@ def md_table(metrics: pd.DataFrame, summary: dict) -> str:
 def diagnostics(metrics: pd.DataFrame) -> str:
     """口径诊断：分母（`encounters`）的健康度、不变式核对、以及诊断列 `capture_attempts`。
 
-    公式（`实验与评价体系.md` §4，2026-09-26 裁决）：
+    公式（`实验与评价体系.md` §2.1，2026-09-26 裁决）：
     `prey_capture = captures / max(encounters, 1)`。
     `encounters` = 进入 `capture_radius` 的猎物数（尺寸门**之前**，纯距离口径，`arena` S6）。
     """
@@ -97,7 +97,7 @@ def diagnostics(metrics: pd.DataFrame) -> str:
     zero_enc = int((encounters == 0).sum())
     no_catch = int((captures == 0).sum())
 
-    # 不变式（§4 声明）：captures <= capture_attempts <= encounters。违反即为真 bug。
+    # 不变式（§2.1 声明）：captures <= capture_attempts <= encounters。违反即为真 bug。
     bad = int(((attempts > encounters) | (captures > attempts)).sum())
     # `encounters` 严重右偏（少数「蹲守」个体刷高）⇒ 任何引用都必须并列偏态。
     enc_med = float(encounters.median())
@@ -116,7 +116,7 @@ def diagnostics(metrics: pd.DataFrame) -> str:
     lines = [
         "# 指标口径诊断（自动生成）",
         "",
-        "- 公式：`prey_capture = captures / max(encounters, 1)`（§4；"
+        "- 公式：`prey_capture = captures / max(encounters, 1)`（§2.1；"
         "分母 = **尺寸门之前**的纯距离接触数，S6）",
         f"- 个体总数：{n}",
         f"- `encounters == 0` 的个体：{zero_enc}（分母被 `max(·,1)` 兜底"

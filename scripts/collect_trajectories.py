@@ -2,7 +2,7 @@
 
 业务逻辑（episode 子种子、Arena 采集、header/step 落盘）owner 为
 `src/evogenesis/experiment/collect.py`（依据 `core §4.5` 产出方 = `experiment`/`scripts` 编排、
-`experiment/实验与评价体系.md` §11）；本脚本只做 argparse、路径解析、调用与打印
+`experiment/实验与评价体系.md` §5.1）；本脚本只做 argparse、路径解析、调用与打印
 （AGENTS：`scripts/` 为薄 CLI 入口，不放业务逻辑）。
 
 产出：`results/runs/<experiment_id>-s<seed>/trajectories/episode_<episode_id>.jsonl`。

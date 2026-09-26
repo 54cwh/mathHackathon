@@ -1,6 +1,6 @@
-"""实验指标（口径 owner：`实验与评价体系.md` §4 / §9）。
+"""实验指标（口径 owner：`实验与评价体系.md` §2「指标契约」/ §2.4「效率与资源量」）。
 
-口径来源：`实验与评价体系.md` §4 的「指标定义（供 §9 与 fitness 复用）」段。
+口径来源：`实验与评价体系.md` §2.1「原始分量」；fitness 复用见 §2.3「复合分与选择用适应度」。
 
 设计原则（`AGENTS.md`「禁止 AI 填空」）：**只实现文档已定义的量**；文档提到但未定义的量
 一律不猜，登记在 `BLOCKED_METRICS` 里，并在返回值中置 `None`（**当前该表为空**）。
@@ -24,7 +24,7 @@ from __future__ import annotations
 from statistics import fmean, stdev
 from typing import Any
 
-#: composite fitness 权重：§4 的四个指标 → 一个标量。
+#: composite fitness 权重：§2.1 的四个原始分量 → 一个标量。
 COMPOSITE_WEIGHTS: dict[str, float] = {
     "survival": 0.35,
     "prey_capture": 0.25,
@@ -44,7 +44,7 @@ def composite_fitness(
     escape_success: float,
     energy_efficiency: float,
 ) -> float:
-    """§4 的加权合成（权重见 `COMPOSITE_WEIGHTS`）。"""
+    """§2.3 的加权合成（权重见 `COMPOSITE_WEIGHTS`）。"""
     return (
         COMPOSITE_WEIGHTS["survival"] * survival
         + COMPOSITE_WEIGHTS["prey_capture"] * prey_capture
@@ -65,14 +65,15 @@ def capture_rate(captures: int, episode_steps: int) -> float:
 
 
 def survival_rate(survival_steps: int, episode_steps: int) -> float:
-    """§4：`survival = survival_steps / episode_steps`。"""
+    """§2.1：`survival = survival_steps / episode_steps`。"""
     if episode_steps <= 0:
         raise ValueError("episode_steps 必须为正")
     return survival_steps / episode_steps
 
 
 def escape_success_rate(escape_successes: int, predator_encounters: int) -> float:
-    """§4：`escape success = escape_successes / max(predator_encounters, 1)`。
+    """§2.1：`escape success = escape_successes / max(predator_encounters, 1)`。
+
 
     `predator_encounters` = **被捕食者锁定的次数**（目标获取计数，`arena` §18.3.2 S7），
     与 `arena.escape`「放弃锁定」事件同口径，故比值语义为「每次被锁定中成功逃脱的比例」。
@@ -81,19 +82,19 @@ def escape_success_rate(escape_successes: int, predator_encounters: int) -> floa
 
 
 def prey_capture_rate(captures: int, opportunities: int) -> float:
-    """§4：`prey capture = captures / max(opportunities, 1)`。
+    """§2.1：`prey capture = captures / max(opportunities, 1)`。
 
     `opportunities` = **`encounters`**（进入 `capture_radius` 的猎物数，**尺寸门之前**，
     S6 距离口径）。
     这是 2026-09-26 用户裁决：原分母 `capture_attempts` 在确定性捕获下与 `captures` 恒等，
     使指标退化为「是否有过机会」；改用距离口径后它度量「**追近的猎里有多少吃到了**」。
-    见 `arena/Danio_Arena设计与实现说明.md` §8 与实验文档 §4。
+    见 `arena/Danio_Arena设计与实现说明.md` §8 与实验文档 §2.1。
     """
     return captures / max(opportunities, 1)
 
 
 def energy_efficiency(energy_final: float, e_max: float, survival_steps: int) -> float:
-    """§4：`r_i = (E_i(T_i) - E_max) / T_i`（MVP；口径另见 `core/核心机制与数据流.md` §10 #12）。
+    """§2.1：`r_i = (E_i(T_i) - E_max) / T_i`（MVP；口径另见 `core/核心机制与数据流.md` §10 #12）。
 
     **按文档原式实现，不做「修正」**：该量为**非正** —— 它是「终末能量相对容量的平均缺口」，
     `E_i(T_i) == E_max` 时为 0，能量越低越负（量纲：能量/步）。

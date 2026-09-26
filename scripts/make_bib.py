@@ -65,12 +65,21 @@ _MAP = str.maketrans(
 def _tex_escape(text: str) -> str:
     """转义 BibTeX 字段值里对 LaTeX 有特殊含义的字符。
 
-    `.bbl` 里出现的 `#`/`&` 会直接让 LaTeX 报「You can not use macro parameter
-    character #」并中止编译 —— 这是生成器必须自己处理的，不能指望手改。
+    集合：`# & % $ _ ^ ~` 与反斜杠本身。
+
+    - `#` / `&`：LaTeX 报「You can not use macro parameter character #」并中止编译。
+    - `_` / `^`：文本模式下报「Missing $ inserted」。实测某条文献标题含
+      `Interactive_Fish_Eating_Game` 时即崩。
+    - `~`：文本模式是不断行空格，会静默渲染错。
+
+    反斜杠必须**最先**处理：后续替换会插入新的反斜杠，放在后面会被二次转义。
     """
-    out = text
-    for ch in "#" + chr(38) + "%" + chr(36):
-        out = out.replace(ch, "\\" + ch)
+    B = chr(92)
+    out = text.replace(B, B + "textbackslash{}")
+    out = out.replace("~", B + "textasciitilde{}")
+    out = out.replace("^", B + "textasciicircum{}")
+    for ch in "#" + chr(38) + "%" + chr(36) + "_":
+        out = out.replace(ch, B + ch)
     return out
 
 
@@ -207,7 +216,7 @@ def to_bibtex(items: list[dict]) -> str:
         if e["doi"]:
             fields.append(("doi", e["doi"]))
         if e["url"]:
-            fields.append(("url", "{" + "\\" + "url{" + e["url"] + "}}"))
+            fields.append(("url", "{" + e["url"] + "}"))
         fields.append(
             ("note", _tex_escape(f"{e['status']}; evogenesis bibliography.md #{e['num']}"))
         )
