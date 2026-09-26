@@ -134,7 +134,7 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 > 实现状态（2026-09-26）：**已实现**（`src/evogenesis/connectome/baselines.py`，`tests/test_baselines.py`）；§9（消融）仍属实验层待实现。
 >
-> **接线状态（2026-09-26 静态审计）**：`baselines.py` 目前**仅被测试引用**，无生产入口（无脚本/实验构造或训练 baseline）；`build_baselines` 与各 `complexity()` 暂无生产消费点，Experiment C 的横向对照表**尚未接线**。登记为**待接实验项**。
+> **接线状态（2026-09-26）**：Experiment C 横向对照**已接**——编排 `experiment/baseline_run.py`、薄 CLI `scripts/run_baselines.py`（消费 `build_baselines` 与各 `complexity()`，§3.3）。
 - MLP
 - GRU
 - Fixed Sparse RNN

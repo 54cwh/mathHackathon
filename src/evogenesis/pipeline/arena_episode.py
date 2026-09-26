@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, replace
+from typing import Any
 
 import numpy as np
 import torch
@@ -124,28 +125,30 @@ def evaluate_population(
     return PopulationEvaluation(tuple(phenotypes), episode, viable_indices)
 
 
-def drive_arena_with_net(
-    individuals: Sequence[ChainIndividual],
-    net: DanioNet,
+def drive_arena_with_ids(
     *,
+    fish_ids: Sequence[str],
+    genome_ids: Sequence[str],
+    net: Any,
     master_seed: int,
     chain: ModelChainConfig,
     arena_config: ArenaConfig,
     steps: int | None = None,
     generation: int = 0,
 ) -> ArenaEpisodeResult:
-    """用**给定的** `DanioNet` 驱动 Arena 跑一局（不重新发育/构造网络）。
+    """用**给定**的网络 + 稳定 ID 驱动 Arena 跑一局（不发育、不构造网络）。
 
-    供生命周期学习（`experiment/learning_run.py`）在**同一批 arena 子种子**下复用同一
-    网络对象做训练前后对照：``individuals`` 与 ``net`` 的 batch 必须同序等长。
+    ``net`` 只需满足 `DanioNet`/baseline 的共同接口：``n_neurons``（list）与
+    ``step(observations) -> (ω, v)``（`connectome §8`）。供 `drive_arena_with_net`
+    （个体对象）与 Experiment C 的基线（无 genome 的裸网络）共用同一驱动循环。
     """
-    if len(individuals) != len(net.n_neurons):
-        raise ValueError(
-            f"individuals 数 {len(individuals)} 与 net batch {len(net.n_neurons)} 不一致"
-        )
-    fish_ids = [individual.fish_id for individual in individuals]
-    genome_ids = [individual.genome_id for individual in individuals]
-    n_eval = len(individuals)
+    if len(fish_ids) != len(genome_ids):
+        raise ValueError(f"fish_ids 数 {len(fish_ids)} 与 genome_ids 数 {len(genome_ids)} 不一致")
+    if len(fish_ids) == 0:
+        raise ValueError("至少需要一个个体才能驱动 Arena")
+    if len(fish_ids) != len(net.n_neurons):
+        raise ValueError(f"fish_ids 数 {len(fish_ids)} 与 net batch {len(net.n_neurons)} 不一致")
+    n_eval = len(fish_ids)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
     spawn_seed, dynamics_seed = arena_seeds_for(master_seed, generation)
@@ -178,6 +181,34 @@ def drive_arena_with_net(
         steps=arena.step_idx,
         per_fish=arena.per_fish_log(),
         events=tuple(arena.events),
+    )
+
+
+def drive_arena_with_net(
+    individuals: Sequence[ChainIndividual],
+    net: DanioNet,
+    *,
+    master_seed: int,
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    steps: int | None = None,
+    generation: int = 0,
+) -> ArenaEpisodeResult:
+    """用**给定的** `DanioNet` 驱动 Arena 跑一局（不重新发育/构造网络）。
+
+    供生命周期学习（`experiment/learning_run.py`）在**同一批 arena 子种子**下复用同一
+    网络对象做训练前后对照：``individuals`` 与 ``net`` 的 batch 必须同序等长。内部委托
+    `drive_arena_with_ids`（按稳定 `fish_id`/`genome_id`）。
+    """
+    return drive_arena_with_ids(
+        fish_ids=[individual.fish_id for individual in individuals],
+        genome_ids=[individual.genome_id for individual in individuals],
+        net=net,
+        master_seed=master_seed,
+        chain=chain,
+        arena_config=arena_config,
+        steps=steps,
+        generation=generation,
     )
 
 

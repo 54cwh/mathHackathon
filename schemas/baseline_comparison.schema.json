@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/baseline_comparison.schema.json",
+  "title": "EvoGenesis Experiment C baseline comparison table",
+  "meta": {
+    "owns": "results/tables/<experiment_id>_baselines.json（producer=experiment/baseline_run.py，Experiment C §3.3）",
+    "status": "已定稿"
+  },
+  "description": "Experiment C 跨模型对照表：每模型任务指标 mean±std（seed 轴）+ 复杂度。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["experiment_id", "seeds", "steps", "n_agents", "models"],
+  "properties": {
+    "experiment_id": { "type": "string", "minLength": 1 },
+    "seeds": { "type": "array", "items": { "type": "integer" } },
+    "steps": { "type": "integer", "minimum": 1 },
+    "n_agents": { "type": "integer", "minimum": 1 },
+    "models": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model", "metrics", "complexity", "note"],
+        "properties": {
+          "model": { "type": "string", "minLength": 1 },
+          "metrics": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["mean", "std", "n"],
+                  "properties": {
+                    "mean": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+                    "std": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+                    "n": { "type": "integer" }
+                  }
+                }
+              }
+            ]
+          },
+          "complexity": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "parameter_count",
+                  "active_edges",
+                  "macs_implemented",
+                  "macs_theoretical",
+                  "flops_implemented",
+                  "flops_theoretical",
+                  "latency_p50_ms",
+                  "latency_p95_ms"
+                ],
+                "properties": {
+                  "parameter_count": { "type": "integer" },
+                  "active_edges": { "type": "integer" },
+                  "macs_implemented": { "type": "integer" },
+                  "macs_theoretical": { "type": "integer" },
+                  "flops_implemented": { "type": "integer" },
+                  "flops_theoretical": { "type": "integer" },
+                  "latency_p50_ms": { "type": "number" },
+                  "latency_p95_ms": { "type": "number" }
+                }
+              }
+            ]
+          },
+          "note": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        }
+      }
+    }
+  }
+}
