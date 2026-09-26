@@ -95,3 +95,27 @@ def test_arena_accepts_stable_fish_and_genome_ids():
     assert [arena.fish[fid].genome_id for fid in fish_ids] == genome_ids
     with pytest.raises(ValueError):
         DanioArena(config, master_seed=7, fish_ids=fish_ids, genome_ids=["only-one"])
+
+
+def test_arena_injects_generation_into_live_fish():
+    base = load_arena_config(None)
+    config = replace(base, population=replace(base.population, n_fish=1))
+    arena = DanioArena(config, master_seed=7, generation=3)
+    arena.reset()
+    assert next(iter(arena.fish.values())).generation == 3
+
+
+def test_run_arena_episode_propagates_generation():
+    chain = load_model_chain_config()
+    arena_config = load_arena_config(None)
+    population = initial_population(master_seed=MASTER_SEED, experiment_id=EXPERIMENT_ID, n=60)
+    result = run_arena_episode(
+        population,
+        master_seed=MASTER_SEED,
+        chain=chain,
+        arena_config=arena_config,
+        steps=2,
+        generation=3,
+    )
+    assert result.per_fish
+    assert all(rec["generation"] == 3 for rec in result.per_fish.values())

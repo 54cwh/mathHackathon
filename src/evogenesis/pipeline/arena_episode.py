@@ -66,6 +66,7 @@ def run_arena_episode(
     chain: ModelChainConfig,
     arena_config: ArenaConfig,
     steps: int | None = None,
+    generation: int = 0,
     device: str = "cpu",
 ) -> ArenaEpisodeResult:
     """用 DanioNet 驱动 Arena 跑一局（`steps=None` 取 `world.episode_steps`）。"""
@@ -81,7 +82,13 @@ def run_arena_episode(
     n_eval = len(phenotypes)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
-    arena = DanioArena(config, master_seed=master_seed, fish_ids=fish_ids, genome_ids=genome_ids)
+    arena = DanioArena(
+        config,
+        master_seed=master_seed,
+        fish_ids=fish_ids,
+        genome_ids=genome_ids,
+        generation=generation,
+    )
     arena.reset()
     net = danionet_of(phenotypes, master_seed=master_seed, config=chain.network, device=device)
 

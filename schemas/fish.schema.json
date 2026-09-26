@@ -2,7 +2,22 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://evogenesis.local/schemas/fish.schema.json",
   "title": "FishState",
-  "meta": { "owns": "FishState 快照字段：fish_id/generation/genome_id/viable/energy/size/fitness/cell_counts/metrics", "status": "已冻结" },
+  "meta": {
+    "owns": "FishState 快照字段：fish_id/generation/genome_id/viable/energy/size/fitness/cell_counts/metrics",
+    "status": "已冻结",
+    "producer": {
+      "fish_id": "core §3.1 稳定 ID（arena 经 fish_ids 注入）",
+      "genome_id": "core §3.1 稳定 ID（arena 经 genome_ids 注入，或 evolution Individual）",
+      "generation": "arena（构造 generation 注入）/ evolution",
+      "viable": "development/RGCD §7（发育可行性）",
+      "energy": "arena",
+      "size": "arena",
+      "fitness": "evolution",
+      "cell_counts": "development/RGCD §6",
+      "metrics": "experiment"
+    },
+    "note": "无单一实现生产者：快照由 api/FishCard 组装（实现层已移除、待重写）；arena 只产 per_fish_log（另一形状，见 arena §18.6）。"
+  },
   "type": "object",
   "required": [
     "fish_id",

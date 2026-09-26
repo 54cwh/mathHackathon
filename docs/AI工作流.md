@@ -36,7 +36,7 @@ Research
 原则：不得写一套“高级数学”而代码实现另一套。
 
 ## 4. Coding
-输入冻结 equations/schema，输出 modules/tests/config hooks。所有随机过程接 seed manager。
+输入冻结 equations/schema，输出 modules/tests/config hooks。所有随机过程接 seed manager（例外见 `AGENTS.md`「约定·种子」：整数种子下游经 `SeedManager` 取子种子传入）。
 
 ## 5. Testing
 重点：

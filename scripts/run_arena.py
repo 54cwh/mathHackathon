@@ -43,6 +43,7 @@ from pathlib import Path
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.core.ids import mint_id
 from evogenesis.experiment.environments import (
     environment_env_vars,
     load_environment,
@@ -123,6 +124,8 @@ def run_episode(
     steps: int,
     overrides: dict | None = None,
     emit_trajectories: bool = False,
+    experiment_id: str = "run",
+    generation: int = 0,
 ) -> tuple[dict[str, dict], list, float, list[dict]]:
     """跑一局，返回 (每鱼记录, 事件列表, 墙钟秒, 轨迹 step 记录)。
 
@@ -130,7 +133,17 @@ def run_episode(
     死鱼死亡后不再记录：没有 observation/动作就没有训练样本。
     """
     cfg = load_arena_config(cfg_path, overrides=overrides)
-    arena = DanioArena(cfg, master_seed=seed)
+    fish_ids = [mint_id(experiment_id, "fish", generation, i) for i in range(cfg.population.n_fish)]
+    genome_ids = [
+        mint_id(experiment_id, "genome", generation, i) for i in range(cfg.population.n_fish)
+    ]
+    arena = DanioArena(
+        cfg,
+        master_seed=seed,
+        fish_ids=fish_ids,
+        genome_ids=genome_ids,
+        generation=generation,
+    )
     arena.reset()
     expert = ExpertPolicy()
     traj: list[dict] = []
@@ -269,16 +282,14 @@ def main() -> None:
         run_id = f"{args.experiment_id}-s{seed}"
         run_dir = create_run_dir(run_id, args.config, seed, overrides)
         per_fish, events, elapsed, traj = run_episode(
-            cfg_path, seed, steps, overrides, args.emit_trajectories
+            cfg_path,
+            seed,
+            steps,
+            overrides,
+            args.emit_trajectories,
+            experiment_id=args.experiment_id,
         )
         if args.emit_trajectories:
-            ids = {r["genome_id"] for r in traj} if traj else set()
-            if ids == {"unknown"}:
-                print(
-                    '  [warn] trajectories 的 genome_id 全为占位符 "unknown"：'
-                    "鱼尚未从 Individual 出生（evolution→arena 接线未完成，"
-                    "见 handoff 跨 lane 待办 P0-9）。BC 数据暂时无基因型标识。"
-                )
             gen = next(iter(per_fish.values()), {}).get("generation") or 0
             write_episode(
                 run_dir / "trajectories" / "episode_ep0001.jsonl",

@@ -49,6 +49,7 @@ class DanioArena:
         master_seed: int = 0,
         fish_ids: Sequence[str] | None = None,
         genome_ids: Sequence[str] | None = None,
+        generation: int = 0,
     ):
         self.cfg = config or ArenaConfig()
         self.master_seed = master_seed
@@ -76,6 +77,7 @@ class DanioArena:
             if len(set(gids)) != len(gids):
                 raise ValueError("genome_ids 必须互异（core §3.1 稳定 ID）")
             self._genome_ids = gids
+        self._generation = int(generation)
         self.events: list[Event] = []
         self.fish: dict[str, Fish] = {}
         self.prey: dict[str, Prey] = {}
@@ -125,6 +127,7 @@ class DanioArena:
                 size=self.cfg.growth.initial_size,
                 energy=self.cfg.energy.e_max,
                 genome_id=gid,
+                generation=self._generation,
             )
         self.prey = {
             f"prey_{i:02d}": Prey(

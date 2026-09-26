@@ -204,7 +204,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | 字段 | 状态 |
 |---|---|
-| generation | ✅（恒 0，未接演化） |
+| generation | ✅（缺省 0；可由构造 `generation` 注入，见 §18.1；多代演化接入后为真实代数） |
 | genome_id | ⚠️ 不在 `per_fish_log()`；`Fish.genome_id` 由构造注入（`genome_ids`，P0-9），供轨迹落盘读取 |
 | encounters | ✅（\(d<r_{capture}\) 的近距接触计数；**＝`实验与评价体系.md` §4 `prey_capture` 分母**） |
 | captures | ✅ |
@@ -307,13 +307,13 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
 | `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
 | `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 109 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
-| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 517 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造可注入 `fish_ids` / `genome_ids` |
+| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 517 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造可注入 `fish_ids` / `genome_ids` / `generation` |
 | `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方已接线**（`scripts/run_experiment.py`，见 §18.2.3） | 45 | — |
 | `tests/test_arena.py` | 29 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 465 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
 
-**实体 id（定稿）**：`DanioArena(config, master_seed, fish_ids=None, genome_ids=None)` 可注入 `fish_ids`（实体 id）与 `genome_ids`（写入 `Fish.genome_id`，供 `schemas/trajectory.schema.json` 的 `genome_id` 字段）——均取 `core §3.1` 稳定 ID（`pipeline/` 负责铸造）。传入时 `self.fish` 与 `per_fish_log()` 以稳定 `fish_id` 为键、`Fish.genome_id` 为稳定 `genome_id`；不传时保留旧默认（`fish_XX` / `"unknown"`，向后兼容，`tests/test_arena.py` 沿用）。两者长度须等于 `population.n_fish` 且各自互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。
+**实体 id（定稿）**：`DanioArena(config, master_seed, fish_ids=None, genome_ids=None)` 可注入 `fish_ids`（实体 id）与 `genome_ids`（写入 `Fish.genome_id`，供 `schemas/trajectory.schema.json` 的 `genome_id` 字段）——均取 `core §3.1` 稳定 ID（`pipeline/` 负责铸造）。传入时 `self.fish` 与 `per_fish_log()` 以稳定 `fish_id` 为键、`Fish.genome_id` 为稳定 `genome_id`；不传时保留旧默认（`fish_XX` / `"unknown"`，向后兼容，`tests/test_arena.py` 沿用）。两者长度须等于 `population.n_fish` 且各自互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。另可注入 `generation`（`int`，缺省 0），写入每个 `Fish.generation`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均透传本代代数。
 
 ### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 
@@ -511,7 +511,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | # | 机制 | 代码事实 |
 |---|---|---|
-| D1 | **唯一随机源** | `np.random.default_rng(master_seed)`。`arena/` 内**不出现** `import random`、全局 `np.random.*` 调用、或任何时间/OS 熵来源（全仓 `import random` 仅存在于 `core/seed.py`、`evolution/evolution.py`、`genome/genome.py`，均不在 Arena 路径上） |
+| D1 | **唯一随机源** | `np.random.default_rng(master_seed)`；`master_seed` 为 `core §3` 整数子种子（调用方经 `SeedManager.seed("arena_spawn", index)` 派生后传入——`core §3` 明确豁免整数种子下游，实验路径见 `experiment/collect.py`）。`arena/` 内**不出现** `import random`、全局 `np.random.*` 调用、或任何时间/OS 熵来源（全仓 `import random` 现仅存在于 `core/seed.py`）。**已知缺口（A14）**：出生与逐步游走共用本条随机流，未拆 `arena_spawn` / `arena_dynamics` 两命名空间 |
 | ⚠️ D2 | **`reset()` 幂等** | `reset()` **重建** RNG（`np.random.default_rng(self.master_seed)`），并**先清空 `self.obstacles`** 再就地逐个生成障碍（S9）。因此同一 arena 反复 `reset()` 得到**逐字段一致**的初始局面（障碍位置与半径、每条鱼的位置/航向、每个猎物的位置/尺寸）。由 `test_reset_idempotent_on_same_instance` 守护（同时断言障碍的 `pos` 与 `radius`） |
 | D3 | **reset 内消费顺序** | 障碍 → 鱼 → 猎物 → 捕食者。每障碍：1 次半径 uniform + `_free_spot`（≥1 次）；每鱼：`_free_spot(2.0)` + 1 次航向 uniform；每猎物：`_free_spot(1.0)` + 1 次航向 uniform + 1 次尺寸 uniform；每捕食者：`_free_spot(3.0)` + 1 次航向 uniform |
 | D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `rng.normal(0.0, 0.8)`（`PreyPolicy.act`）。鱼、捕食者、障碍、looming 记账**均不消费 RNG** |
@@ -542,7 +542,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | motor commands | `motor_commands` | `Fish.motor_log`（`(ω, v)` 元组列表，**裁剪后**的值） | ✅ |
 | **selected neural activity snapshots** | — | — | ❌ **未实现**：规范 §13 声明的最后一项需 DanioNet 接入，当前 `Fish` 无对应缓冲区 |
 
-`Fish.generation`（恒 0）与 `Fish.genome_id`（经 `genome_ids` 注入，缺省 `"unknown"`）是实体属性，**不在 `per_fish_log()` 键内**；轨迹落盘（`scripts/run_arena.py --emit-trajectories`）直接读 `arena.fish[fid].genome_id`。
+`Fish.genome_id`（经 `genome_ids` 注入，缺省 `"unknown"`）是实体属性、`Fish.generation` 由 `generation` 注入（缺省 0），**都不在 `per_fish_log()` 键内**；轨迹落盘（`scripts/run_arena.py --emit-trajectories`）直接读 `arena.fish[fid].genome_id`。
 
 `per_fish_log()` **不含**位置 / 航向 / 尺寸的逐帧轨迹 —— 那属于 snapshot（`../api/API接口.md` §1.8）与后续的 trajectory 落盘（`../core/核心机制与数据流.md` §4）。
 
@@ -580,7 +580,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | # | 未做项 | 说明 |
 |---|---|---|
-| M1 | 神经控制 | 鱼由外部 `actions` 驱动；DanioNet 推理未接入，`generation` 恒 0（未接演化）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
+| M1 | 神经控制 | 鱼由外部 `actions` 驱动；DanioNet 推理未接入。`generation` 可由构造注入（缺省 0，多代演化未接）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
 | M3 | selected neural activity snapshots | 规范 §13 最后一项，未实现（见 §6） |
 | M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；但「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**场景布置仍未做**，`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |

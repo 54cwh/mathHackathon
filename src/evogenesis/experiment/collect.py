@@ -51,10 +51,6 @@ def default_trajectories(model_config: Path) -> int:
     return int(learning["trajectories"])
 
 
-def _fish_index(fish_id: str) -> int:
-    return int(fish_id.rsplit("_", 1)[1])
-
-
 def collect_episode(
     config: ArenaConfig,
     *,
@@ -64,21 +60,32 @@ def collect_episode(
     schema_version: str,
     episode_index: int,
     seed: int,
-    controlled_fish: str | None = None,
+    controlled_index: int = 0,
 ) -> tuple[dict, list[dict]]:
     """跑一条 episode，返回 (header, step 记录列表)；只记录受控鱼。
 
-    受控鱼默认取 ``sorted(arena.fish)[0]``（即 ``fish_00``，确定性）。其余存活个体同由
-    `ExpertPolicy` 驱动但不入轨迹。``terminated=False``（A9：无任务终止信号）、
-    ``truncated=StepResult.done``（跑满 `episode_steps` 即时限截断）。
+    受控鱼默认取 ``controlled_index=0``，其稳定身份由 ``core §3.1`` 铸造
+    （``mint_id(..., "fish", generation, index)``）并**注入 Arena**（``fish_ids`` /
+    ``genome_ids`` / ``generation``），故轨迹声明的身份与 Arena 实体身份一致。
+    其余存活个体同由 `ExpertPolicy` 驱动但不入轨迹。``terminated=False``（A9：无任务终止
+    信号）、``truncated=StepResult.done``（跑满 `episode_steps` 即时限截断）。
     """
-    arena = DanioArena(config, master_seed=seed)
+    n_fish = config.population.n_fish
+    if not 0 <= controlled_index < n_fish:
+        raise ValueError(f"controlled_index 须在 [0, {n_fish})，得到 {controlled_index}")
+    fish_ids = [mint_id(experiment_id, "fish", generation, i) for i in range(n_fish)]
+    genome_ids = [mint_id(experiment_id, "genome", generation, i) for i in range(n_fish)]
+    arena = DanioArena(
+        config,
+        master_seed=seed,
+        fish_ids=fish_ids,
+        genome_ids=genome_ids,
+        generation=generation,
+    )
     arena.reset()
-    if controlled_fish is None:
-        controlled_fish = sorted(arena.fish)[0]
-    fish_index = _fish_index(controlled_fish)
-    fish_id = mint_id(experiment_id, "fish", generation, fish_index)
-    genome_id = mint_id(experiment_id, "genome", generation, fish_index)
+    controlled_fish = fish_ids[controlled_index]
+    fish_id = controlled_fish
+    genome_id = genome_ids[controlled_index]
     expert = ExpertPolicy()
 
     steps: list[dict] = []
@@ -127,7 +134,7 @@ def collect_trajectories(
     seed: int,
     trajectories: int,
     out_dir: str | Path,
-    controlled_fish: str | None = None,
+    controlled_index: int = 0,
 ) -> list[Path]:
     """采集 ``trajectories`` 条 episode 并逐条落盘，返回写入的文件路径列表。
 
@@ -144,7 +151,7 @@ def collect_trajectories(
             schema_version=schema_version,
             episode_index=index,
             seed=episode_seed(seed, index),
-            controlled_fish=controlled_fish,
+            controlled_index=controlled_index,
         )
         path = out / f"episode_{header['episode_id']}.jsonl"
         write_jsonl(path, [header, *steps])
