@@ -70,9 +70,20 @@ $W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，$L$ 只更新连接权重的\emph{�
 进入 \texttt{artifacts/} 并入库。论文用图另行复制进 \texttt{paper/latex/figs/}，
 不指向 \texttt{results/}（该目录被忽略，他机编译会失败）。
 
-\todo{本小节需要一张数据流总览图（\eqref{method:eq-pipeline} 的三分支版本）。
-图号待 leader 统一分配——\texttt{paper/报告-骨架.md} §6 的清单目前只到 F11，
-原稿里出现的「F12」与清单不一致，请勿沿用。}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig_pipeline}
+  \caption{整体数据流（F12）。骨架为 \texttt{configs}（含 seed）$\to$ Seed Manager $\to$
+  genome（DNA $+$ motif）$\to$ 发育（GRN / RGCD）$\to$ 连接组（DanioNet）$\to$ Arena
+  （$20$\,Hz $\times$ $600$ 步）；Arena \textbf{之后}分成三条并行同源分支：专家轨迹 $\to$ BC
+  训练 $\to$ $\Delta W$、事件日志 $\to$ 实验指标、帧快照 $\to$ WS 推送（仅演示、不落盘）；
+  再由 \texttt{fitness} $\to$ \texttt{selection}/\texttt{drift} 产生下一代 genome。
+  红虚线框与红虚线边标出\textbf{遗传边界}：$\Delta W$ 是\emph{当代}的、\textbf{不遗传}，
+  后代只继承 DNA 并从发育重新开始。底部的 \texttt{results/runs/}（不入库）与
+  \texttt{artifacts/}（入库）是两个去向。节点与边的逐条出处（\texttt{core} \S2 等）见同名
+  \texttt{.xlsx} 的 \texttt{nodes} / \texttt{edges} 两个 sheet。}
+  \label{fig:pipeline}
+\end{figure}
 
 \subsection{基因型与调控网络}\label{method:genome}
 
@@ -329,8 +340,20 @@ left 池主导得 $\omega>0$；「escape」不是离散标签，而是高威胁�
         （该维暂不携带信息，发包侧修复前有效性受限）。
 \end{description}
 
-\todo{本小节需要「连接矩阵 / 拓扑」可视化图（对应 \texttt{paper/报告-骨架.md} §6 的 F7，
-$48\times48$ 矩阵当前只在 WS 侧内存、未落盘，待画）。}
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{fig_connectome}
+  \caption{连接矩阵与结构统计（F7）。左：$48\times48$ 的 $W^0$（含 padding）与其中真正活跃的
+  $N\times N$ 块；中：按 cell type 分块的权重符号结构（Dale 约束）；右：$N$ 与支撑边数在
+  群体上的分布。\textbf{容量 vs 实际规模}：张量恒为 $48\times48=2304$ 元素，但逐个体真正
+  活跃的 $N$ 中位 $36$（$26$--$44$）、支撑连接中位 $186$ 条（$94$--$287$），
+  故\textbf{可训练元素数 $=$ 支撑边数}（$38/38$ 个可构造个体逐条相等）；
+  $\Theta$ 的其余位置被掩码屏蔽、梯度恒 $0$。六类细胞计数中位均为 $6$。
+  另有两条与规模相关的实测事实：$42$ 个基因型中 $38$ 个能构造出 DanioNet
+  （$4$ 个 motor 池为空被拒），其中仅 $4$ 个通过发育 viability 判定。
+  逐个体明细与复现命令见同名 \texttt{.xlsx} 的 \texttt{summary} / \texttt{population} sheet。}
+  \label{fig:connectome}
+\end{figure}
 
 \subsection{遗传边界与当代学习（BC）}\label{method:bc}
 

@@ -208,7 +208,6 @@ def dump_representative(
 
     w0 = np.asarray(net.weights0[0].detach().cpu().numpy(), dtype=np.float64)
     support = np.asarray(net.support[0].cpu().numpy(), dtype=bool)
-    theta = np.asarray(net.theta.detach()[0].cpu().numpy(), dtype=np.float64)
     cell_type = [int(v) for v in net.cell_type[0].cpu().tolist()]
     neuron_mask = [bool(v) for v in net.neuron_mask[0].cpu().tolist()]
 
@@ -232,9 +231,7 @@ def dump_representative(
         "trainable_elements": support_edges,
         "support_density": round(support_edges / (n * (n - 1)), 6) if n > 1 else 0.0,
         "tensor_elements": int(chain.network.max_nodes) ** 2,
-        "support_share_of_tensor": round(
-            support_edges / (int(chain.network.max_nodes) ** 2), 6
-        ),
+        "support_share_of_tensor": round(support_edges / (int(chain.network.max_nodes) ** 2), 6),
         "excitatory_edges": support_edges - inhibitory_edges,
         "inhibitory_edges": inhibitory_edges,
         "support_edges_by_pre_type": by_pre,
@@ -243,14 +240,10 @@ def dump_representative(
         "cell_type": cell_type,
         "neuron_mask": neuron_mask,
         "tau": [float(v) for v in net.tau[0].cpu().tolist()],
-        "positions": [
-            [float(x), float(y)] for x, y in net.positions[0].cpu().numpy().tolist()
-        ],
+        "positions": [[float(x), float(y)] for x, y in net.positions[0].cpu().numpy().tolist()],
         "w0": _as_float_matrix(net.weights0[0]),
         "support": [[int(v) for v in row] for row in support.astype(int).tolist()],
-        "sign": [
-            [int(v) for v in row] for row in np.sign(w0).astype(int).tolist()
-        ],
+        "sign": [[int(v) for v in row] for row in np.sign(w0).astype(int).tolist()],
         "theta": _as_float_matrix(net.theta[0]),
         "support_coordinates": coordinates,
         "probe_record": probe_record,
@@ -386,9 +379,7 @@ def build_payload(
     chain = load_model_chain_config(config_path)
     domains = tuple(chain.network.domains)
 
-    probe_index = {
-        (r["master_seed"], r["index"]): r for r in probe_payload["per_individual"]
-    }
+    probe_index = {(r["master_seed"], r["index"]): r for r in probe_payload["per_individual"]}
     selected = select_representatives(
         probe_payload["per_individual"], list(master_seeds), representatives_per_seed
     )
@@ -475,9 +466,7 @@ def write_csv(payload: dict[str, Any], path: Path) -> Path:
 
 def write_json(payload: dict[str, Any], path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return path
 
 
@@ -518,8 +507,7 @@ def _print_summary(payload: dict[str, Any], json_path: Path, csv_path: Path) -> 
             f"  N={rep['n_neurons']}  边={rep['support_edges']}"
             f"（E/I = {rep['excitatory_edges']}/{rep['inhibitory_edges']}）"
             f"  密度={rep['support_density']:.6f}"
-            f"  可训练={rep['trainable_elements']}"
-            + ("  <- primary" if rep["is_primary"] else "")
+            f"  可训练={rep['trainable_elements']}" + ("  <- primary" if rep["is_primary"] else "")
         )
     print(f"  digest          : {payload['digest']}")
     print(f"  写出            : {json_path}")
@@ -555,7 +543,10 @@ def main(argv: list[str] | None = None) -> int:
     json_path = write_json(payload, Path(args.json))
     csv_path = write_csv(payload, Path(args.csv))
     if not payload["representatives"]:
-        print("警告：本次样本里没有任何可构造 DanioNet 的个体，未落盘任何 48x48 张量", file=sys.stderr)
+        print(
+            "警告：本次样本里没有任何可构造 DanioNet 的个体，未落盘任何 48x48 张量",
+            file=sys.stderr,
+        )
 
     _print_summary(payload, json_path, csv_path)
     return 0

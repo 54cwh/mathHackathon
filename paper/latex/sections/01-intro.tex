@@ -87,9 +87,10 @@ H2 采用 Mantel 检验，二者均不依赖 3 对 3 置换；其余结论以效
 \textbf{与神经架构搜索（NAS）}：NAS 的两条主流路线都在\textbf{架构本身}上搜索——
 在离散的层 / 算子 / 连接空间上直接搜索 \citep{bib224_elsken2019}，
 或把该空间\textbf{连续松弛}为混合算子权重以便梯度优化 \citep{bib225_liu2019}，
-目标都是静态基准上的验证精度。神经演化中的生成式路线则把可演化对象\textbf{上移一层}：
-NEAT 直接演化拓扑 \citep{bib222_stanley2002}，HyperNEAT 再由一个 CPPN
-按几何坐标查询生成连接权重 \citep{bib223_stanley2009}。本文与之有三处差别：
+目标都是静态基准上的验证精度。神经演化中的生成式路线则把可演化对象从\textbf{权重}
+扩展到\textbf{结构或生成规则}：NEAT 以 historical marking 交叉与物种保护直接演化拓扑
+\citep{bib222_stanley2002}，HyperNEAT 再由一个 CPPN 按几何坐标查询生成连接权重
+\citep{bib223_stanley2009}。本文与之有三处差别：
 (i) 搜索对象是\textbf{基因组}（DNA + motif）而非架构——架构只是发育算子的产物，
 「同源基因组 + 不同随机种子」与「单碱基扰动」本身即是可测量的变异来源（RQ1/RQ2）；
 (ii) 生成规则是\textbf{发育过程}（GRN $\to$ 细胞命运 $\to$ RGCD），

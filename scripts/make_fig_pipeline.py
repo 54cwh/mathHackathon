@@ -147,7 +147,7 @@ PIPELINE_NODES: tuple[tuple[str, str, str, str, str], ...] = (
         "delta_w",
         "Delta W\n(contemporary, NOT inherited)",
         "branch",
-        "当代学习增量；只影响当代表现型，绝不进入繁殖通路",
+        "当代学习增量；不遗传 —— 只影响当代表现型，绝不进入繁殖通路",
         "core §2; core §4.4",
     ),
     (
@@ -191,7 +191,8 @@ PIPELINE_NODES: tuple[tuple[str, str, str, str, str], ...] = (
         "results_runs",
         "results/runs/<experiment_id>-s<seed>/   (NOT committed)",
         "storage",
-        "run 目录：metadata / config_snapshot / metrics / population / events / trajectories / plots",
+        "run 目录：metadata / config_snapshot / metrics / population / events / "
+        "trajectories / plots",
         "core §2; core §7; 实验与评价体系.md §5.1",
     ),
     (
@@ -460,12 +461,12 @@ def draw_pipeline(ax, note: str) -> None:
     row1_y, row2_y, row3_y = 0.520, 0.430, 0.340
 
     # --- 主轴（generative chain）------------------------------------------
-    configs = _box(ax, spine_cx, 0.962, spine_w, spine_h, "configs/*.yaml\n(incl. seed)", colors=_C_INPUT)
+    configs = _box(
+        ax, spine_cx, 0.962, spine_w, spine_h, "configs/*.yaml\n(incl. seed)", colors=_C_INPUT
+    )
     seed = _box(ax, spine_cx, 0.892, spine_w, spine_h, "Seed Manager", colors=_C_INPUT)
     genome = _box(ax, spine_cx, 0.822, spine_w, spine_h, "genome\n(DNA + motif)", colors=_C_MODEL)
-    dev = _box(
-        ax, spine_cx, 0.752, spine_w, spine_h, "development\n(GRN / RGCD)", colors=_C_MODEL
-    )
+    dev = _box(ax, spine_cx, 0.752, spine_w, spine_h, "development\n(GRN / RGCD)", colors=_C_MODEL)
     conn = _box(
         ax, spine_cx, 0.682, spine_w, spine_h, "connectome\n(DanioNet, 48-node)", colors=_C_MODEL
     )
@@ -483,7 +484,13 @@ def draw_pipeline(ax, note: str) -> None:
 
     # --- 三条并行分支 ------------------------------------------------------
     traj = _box(
-        ax, lane_cx[0], row1_y, lane_w[0], lane_h, "expert trajectories\n(ExpertPolicy)", colors=_C_BRANCH
+        ax,
+        lane_cx[0],
+        row1_y,
+        lane_w[0],
+        lane_h,
+        "expert trajectories\n(ExpertPolicy)",
+        colors=_C_BRANCH,
     )
     evlog = _box(ax, lane_cx[1], row1_y, lane_w[1], lane_h, "event log", colors=_C_BRANCH)
     snap = _box(
@@ -689,10 +696,14 @@ def build_figure(note: str) -> tuple[Path, Path, dict[str, pd.DataFrame], dict[s
         "figure": f"{FIGURE_ID} data-flow overview",
         "authoritative_source": AUTHORITATIVE_SOURCE,
         "core_section": CORE_SECTION,
-        "related_sections": "core §3 (seed) / §4.4 (genetic boundary) / §5 (event log) / §7 (storage)",
+        "related_sections": (
+            "core §3 (seed) / §4.4 (genetic boundary) / §5 (event log) / §7 (storage)"
+        ),
         "n_nodes": str(len(PIPELINE_NODES)),
         "n_edges": str(len(PIPELINE_EDGES)),
-        "genetic_boundary": "delta_w -> next_genome is a blocked (dashed) edge: Delta W is NOT inherited",
+        "genetic_boundary": (
+            "delta_w -> next_genome is a blocked (dashed) edge: Delta W is NOT inherited"
+        ),
         "branch_origin": "three branches fan out from arena (core §2 prose + core §4.1 / §5)",
         "storage_attribution": "arena -> results/runs by producer ownership (core §4.5 / §7)",
         "reproduce": "python scripts/make_fig_pipeline.py",

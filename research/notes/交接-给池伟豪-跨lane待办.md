@@ -167,3 +167,51 @@ viability 判据 **(iv) `ρ(W⁰) < 1` 是唯一绑定约束**：1000 次随机 
 - **仍空**：`04 基线与消融`（MLP/GRU/Fixed Sparse RNN 未实现）、`05 结果`（阻塞：BC 模块与
   契约已就绪，但**未接入流水线**，评估仍由 `ExpertPolicy` 驱动 ⇒ 「学习前/学习后」对照无数据）。
   这两章我不会用编造数字填。
+
+---
+
+## 追加（2026-09-26 夜）：文献登记（为 §1.3 取证）
+
+> 为让报告 §1.3「与 NAS / HyperNEAT 的差异」能真正引用，本轮登记了 **5 条**新文献
+> （`bibliography.md` **#222–#226**），全部经**一手核实**：OpenAlex DOI 直查，
+> 其中 #226 另用 Crossref 独立复核；JMLR 无 DOI 故用官方页稳定链接（沿用既有惯例）。
+
+| # | key | 条目 | status |
+|---|---|---|---|
+| 222 | `bib222_stanley2002` | Stanley & Miikkulainen, *Evolving Neural Networks through Augmenting
+Topologies*, Evol. Comput. 10(2):99–127 (2002) | peer-reviewed |
+| 223 | `bib223_stanley2009` | Stanley, D'Ambrosio & Gauci, *A Hypercube-Based Encoding…*, Artif. Life 15(2):185–212 (2009) | peer-reviewed |
+| 224 | `bib224_elsken2019` | Elsken, Metzen & Hutter, *Neural Architecture Search: A Survey*, JMLR 20(55):1–21 (2019) | peer-reviewed |
+| 225 | `bib225_liu2019` | Liu, Simonyan & Yang, *DARTS*, ICLR 2019 | **preprint**（登记 arXiv 版；见下） |
+| 226 | `bib226_najarro2023` | Najarro, Sudhakaran & Risi, *Towards Self-Assembling ANNs through NDPs*, ALIFE 2023 | peer-reviewed |
+
+### 需你处理的四条（均属你 lane，我未越界）
+
+1. **Huizinga, Mouret & Clune 2014 (GECCO)「Evolving neural networks that are both modular
+   and regular」至今未登记，但它是 H4「空间布线代价」的**设计依据** ——
+   见 `research/reference/design-basis-connectome.json`（约 L154 附近）。
+   本轮 §1.3 不需要它，故**我没有代为登记**（不越界）。**建议 H4 / connectome owner 补登记**，
+   否则「有设计依据但引不出处」就是硬约束里的缺陷。
+2. **`docs/参数总表.json:265` 的「口径待定」仍未裁决**：其 basis 写
+   「≈ ES-HyperNEAT 5×5 substrate = 25 节点；但经典发育编码从 1 个细胞起步——口径待定」。
+   本轮 #223/#124 已提供可引原文；且 `design-basis-connectome.json` 已警告
+   「**不得用 CPPN 规模冒充 substrate 参数量**」。裁决属你的表。
+3. **#225 DARTS 的 status**：我把它登记为 **arXiv 版 + `preprint`**，因为
+   OpenReview（`forum?id=r1e3H0R9Fm`）返回反爬验证页、DBLP 返回 Access Denied，
+   **无法一手核实 ICLR 正会页链接**，故不冒标 `peer-reviewed`（沿用 #213 惯例）。
+   若你有可达的正会页链接，可升级该条。
+4. **「48×48 矩阵只在 WS 侧内存、未落盘」这一表述应更正。**
+   `paper/图表-数据对照表.md` §4 原先把 F7 的阻塞写成「需 48×48 矩阵落盘 + 与池伟豪一起定（api 边界）」，
+   该前提**不成立**：48×48 张量不是 api/WS 侧的私产，而是 `DanioNet` 对发育产物做 batch 内补零后的
+   **缓冲区**（`connectome/danionet.py` 的 `weights0` / `support` / `theta`，形状 `(batch, 48, 48)`），
+   从发育产物直接可导出，与 api 落盘零依赖。本轮 `scripts/dump_connectome_matrix.py` 已**只依赖发育侧**
+   导出全部 42 个基因型的 `w0` / `support` / `sign` / `theta`（`results/tables/connectome_matrix.json`），
+   是这一点的存在性证明。请确认并更正你 lane 内（`arena` / `development` / `connectome` 文档）
+   任何暗示「存在一个 api 依赖」的表述。
+   （我已在我 lane 的 `paper/图表-数据对照表.md` §4 补记里写明；未改你的文档。）
+
+### 已由我同步（告知，非请求）
+
+- `research/notes/引用登记缺口.md`：§3.1 行 6、§3.2 行 29–30 原标 NEAT / HyperNEAT「未登记」，
+  现已同步为 **「✅ 已登记 = #222 / #223」**（并修掉「Stanley 仅出现于 #124」这句已失效的旁注）。
+  该文件是**活的缺口追踪**，条目一旦登记就应划销 —— 若以后仍见落差，请直接改它。

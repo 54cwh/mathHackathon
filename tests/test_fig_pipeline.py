@@ -88,9 +88,7 @@ def test_spine_order_matches_core_section_2(figmod):
 
 def test_next_generation_genome_loops_back(figmod):
     """闭环：下一代 genome 回到 genome（`core §2` 的「回到 genome」）。"""
-    assert ("next_genome", "genome") in {
-        (src, dst) for src, dst, _, _ in figmod.PIPELINE_EDGES
-    }
+    assert ("next_genome", "genome") in {(src, dst) for src, dst, _, _ in figmod.PIPELINE_EDGES}
 
 
 def test_three_parallel_branches_fan_out_from_arena(figmod):
@@ -113,7 +111,8 @@ def test_every_node_states_its_source_section(figmod):
 def test_figure_sources_include_core_section_2(figmod):
     """图的权威出处必须点明 core §2 的小节号（任务书要求进 `_manifest`）。"""
     assert figmod.CORE_SECTION == "core §2"
-    assert "§2" in figmod.CAPTION or "core" in figmod.CAPTION.lower()
+    assert "核心机制与数据流.md" in figmod.AUTHORITATIVE_SOURCE
+    assert "§2" in figmod.AUTHORITATIVE_SOURCE
 
 
 # ---------------------------------------------------------------------------
@@ -136,11 +135,12 @@ def test_delta_w_is_produced_by_bc_and_source_is_core_4_4(figmod):
     """ΔW 的产者与出处：`bc_training -> delta_w`，出处 core §4.4（遗传边界）。"""
     edges = {(src, dst) for src, dst, _, _ in figmod.PIPELINE_EDGES}
     assert ("bc_training", "delta_w") in edges
-    dw = {nid: (label, note, source) for nid, label, _k, note, source in figmod.PIPELINE_NODES}[
-        "delta_w"
-    ]
-    assert "§4.4" in dw[2]
-    assert "NOT inherited" in dw[1]
+    label, note, source = {
+        nid: (label, note, source) for nid, label, _k, note, source in figmod.PIPELINE_NODES
+    }["delta_w"]
+    assert "§4.4" in source
+    assert "NOT inherited" in label, "ΔW 的图上标签必须显式标出 NOT inherited"
+    assert "不遗传" in note
 
 
 def test_no_inheritance_edge_from_delta_w_into_the_spine(figmod):
@@ -170,10 +170,12 @@ def test_all_figure_labels_are_free_of_cjk(figmod):
 
 
 def test_notes_are_chinese_so_the_excel_stays_informative(figmod):
-    """中文只允许出现在 `.xlsx` 的说明列里 —— 说明列必须真的有中文。"""
-    for nid, _label, _kind, note, source in figmod.PIPELINE_NODES:
+    """中文只允许出现在 `.xlsx` 的说明列里 —— 说明列必须真的有中文。
+
+    `source` 是「文档 §小节」指针，允许纯英文（如 ``core §2``），故不在此断言。
+    """
+    for nid, _label, _kind, note, _source in figmod.PIPELINE_NODES:
         assert _CJK.search(note), f"节点 {nid} 的 note 没有中文说明（Excel 会失去信息量）"
-        assert _CJK.search(source), f"节点 {nid} 的 source 没有中文"
     for src, dst, _kind, note in figmod.PIPELINE_EDGES:
         assert _CJK.search(note), f"边 {src}->{dst} 的 note 没有中文说明"
 

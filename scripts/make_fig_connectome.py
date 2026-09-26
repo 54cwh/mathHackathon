@@ -145,9 +145,7 @@ def load_matrix_payload(path: Path) -> dict[str, Any]:
         if key not in payload:
             raise ValueError(f"{path} 不是 connectome_matrix 产物：缺字段 {key}")
     if not payload["representatives"]:
-        raise ValueError(
-            f"{path} 里没有任何代表个体（本次样本无可构造 DanioNet 的个体），无法出图"
-        )
+        raise ValueError(f"{path} 里没有任何代表个体（本次样本无可构造 DanioNet 的个体），无法出图")
     return payload
 
 
@@ -202,11 +200,14 @@ def build_figure(
     payload: dict[str, Any],
     out_dir: Path,
     note: str,
+    *,
+    source_json: Path | None = None,
 ) -> tuple[Path, Path, dict[str, pd.DataFrame], dict[str, str]]:
     """画 2x2 面板**并**写配套 xlsx；返回 (图路径, Excel 路径, sheets, provenance)。
 
     一个调用 = 一张图 + 一份同名数据表（长期要求：改样式不改数据，
-    见 `paper/图表-数据对照表.md` §1）。
+    见 `paper/图表-数据对照表.md` §1）。``source_json`` 进 provenance，
+    使 manifest 能指回**确切**的输入文件（不是只写个脚本名）。
     """
     dump = _load_dump_module()
     domains: tuple[str, ...] = tuple(payload["domains"])
@@ -227,62 +228,74 @@ def build_figure(
     n_seeds = len(payload["master_seeds"])
     n_per_seed = int(payload["n_individuals_per_seed"])
 
-    fig, axes = plt.subplots(2, 2, figsize=(13.2, 9.8))
+    # 版式 = **左 / 中 / 右** 三栏（与 `paper/latex/sections/02-method.tex` 的 fig:connectome
+    # 图注措辞一一对应）：左 = 48x48 张量热图，中 = 按 cell type 分块的符号结构，
+    # 右 = 群体分布（上：N， 下：支撑边数）。右栏内部上下分格，使「分布」两问同栏并列。
+    fig = plt.figure(figsize=(17.0, 6.4))
+    grid = fig.add_gridspec(
+        2,
+        3,
+        left=0.055,
+        right=0.985,
+        top=0.90,
+        bottom=0.135,
+        width_ratios=(1.0, 1.0, 1.15),
+        height_ratios=(1.0, 1.0),
+        wspace=0.48,
+        hspace=0.60,
+    )
+    ax_left = fig.add_subplot(grid[:, 0])
+    ax_mid = fig.add_subplot(grid[:, 1])
+    ax_right_top = fig.add_subplot(grid[0, 2])
+    ax_right_bottom = fig.add_subplot(grid[1, 2])
 
     # (A) W^0 的 48x48：补零容量 48 与活跃 N 的差别一眼可见（padding 行列恒 0）。
-    ax = axes[0][0]
+    ax = ax_left
     masked = np.ma.masked_where(~support, w0)
     limit = float(np.abs(w0).max()) or 1.0
-    cmap = plt.get_cmap("RdBu_r").copy()
-    cmap.set_bad("#f0f0f0")
+    cmap = plt.get_cmap("RdBu_r").copy().with_extremes(bad="#f0f0f0")
     ax.imshow(masked, cmap=cmap, vmin=-limit, vmax=limit, interpolation="nearest")
     ax.add_patch(Rectangle((-0.5, -0.5), n, n, fill=False, ec="black", lw=1.5))
     tick_step = 8
     ax.set_xticks(range(0, max_nodes, tick_step))
     ax.set_yticks(range(0, max_nodes, tick_step))
-    ax.set_xlabel("postsynaptic neuron index (padded slot)")
-    ax.set_ylabel("presynaptic neuron index (padded slot)")
+    ax.set_xlabel("postsynaptic neuron index (padded slot)", fontsize=8.5)
+    ax.set_ylabel("presynaptic neuron index (padded slot)", fontsize=8.5)
     ax.set_title(
-        f"(A) $W^0$ on the ${max_nodes}\\times{max_nodes}$ tensor: padding vs the active block",
-        fontsize=10,
+        f"(A) $W^0$ on the ${max_nodes}\\times{max_nodes}$ tensor", fontsize=9.5, loc="left"
     )
     ladder = (
-        f"capacity      {max_nodes}x{max_nodes} = {tensor_cells} cells\n"
-        f"active block  NxN = {n}x{n} = {n * n} cells\n"
-        f"support edges {edges} = {edges / tensor_cells:.1%} of tensor\n"
-        f"padding rows/cols {n}..{max_nodes - 1}: all zero"
+        f"seed {rep['master_seed']} / individual {rep['index']}\n"
+        f"capacity     {max_nodes}x{max_nodes} = {tensor_cells} cells\n"
+        f"active block {n}x{n} = {n * n} cells\n"
+        f"support      {edges} edges = {edges / tensor_cells:.1%} of tensor\n"
+        f"padding rows/cols {n}..{max_nodes - 1} = 0"
     )
+    # 阶梯框放在**右下角的补零区**上：那里恒为 0，压住不丢信息，也正好把「容量 vs 实际」
+    # 与「支撑 vs 全张量」两组对比并排写在读者眼睛会落到的那块空白上。
     ax.text(
-        1.02,
-        0.98,
+        0.985,
+        0.02,
         ladder,
         transform=ax.transAxes,
-        ha="left",
-        va="top",
-        fontsize=7.5,
-        family="monospace",
-        bbox={"boxstyle": "round,pad=0.4", "fc": "white", "ec": "0.7", "alpha": 0.92},
-    )
-    ax.text(
-        0.02,
-        0.02,
-        f"seed {rep['master_seed']} / individual {rep['index']}",
-        transform=ax.transAxes,
-        ha="left",
+        ha="right",
         va="bottom",
-        fontsize=7.5,
-        color="0.25",
-        bbox={"boxstyle": "round,pad=0.25", "fc": "white", "ec": "0.8", "alpha": 0.85},
+        fontsize=6.8,
+        family="monospace",
+        bbox={"boxstyle": "round,pad=0.35", "fc": "white", "ec": "0.7", "alpha": 0.92},
     )
-    fig.colorbar(
+    # 色标标题放**上方**而不是右侧：三栏版式里 (A) 与 (B) 之间只剩一条窄缝，
+    # 右侧标签会和 (B) 的 y 轴标签叠在一起。
+    colorbar = fig.colorbar(
         plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=-limit, vmax=limit)),
         ax=ax,
         fraction=0.045,
-        pad=0.02,
-    ).set_label("$W^0$", fontsize=8)
+        pad=0.025,
+    )
+    colorbar.ax.set_title("$W^0$", fontsize=8, pad=6)
 
     # (B) 按 cell type 分块的符号结构：Dale 约束（符号由突触前类型定）肉眼可验。
-    ax = axes[0][1]
+    ax = ax_mid
     # 稳定排序：同类神经元保持原索引顺序，块的边界即可用累计计数定位。
     order = np.argsort(cell_type, kind="stable")
     sign_block = np.sign(w0[:n, :n])[np.ix_(order, order)].astype(int)
@@ -297,29 +310,19 @@ def build_figure(
     ax.set_xticklabels(list(domains), rotation=40, ha="right", fontsize=7.5)
     ax.set_yticks(centers)
     ax.set_yticklabels(list(domains), fontsize=7.5)
-    ax.set_xlabel("cell type of the postsynaptic neuron", fontsize=8.5)
+    # 三栏版式下 (B) 右侧没有空位，故 Dale 口径写进 x 轴标签（不压住任何数据格），
+    # E / I 边数进标题。
+    ax.set_xlabel(
+        "cell type of the postsynaptic neuron\n"
+        f"Dale sign (RGCD 10) is set by the PRESYNAPTIC type: "
+        f"{domains[inhibitory_index]} -> -1, all others -> +1",
+        fontsize=8,
+    )
     ax.set_ylabel("cell type of the presynaptic neuron", fontsize=8.5)
     ax.set_title(
-        "(B) Dale sign by cell type: inhibitory rows are entirely non-positive", fontsize=10
-    )
-    by_pre = rep["support_edges_by_pre_type"]
-    dominant = max(by_pre, key=lambda name: by_pre[name])
-    ax.text(
-        1.02,
-        0.98,
-        "Dale constraint (RGCD 10)\n"
-        f"sign decided by the PRESYNAPTIC type\n"
-        f"inhibitory = {domains[inhibitory_index]} -> -1\n"
-        f"all others -> +1\n\n"
-        f"E edges  {rep['excitatory_edges']}\n"
-        f"I edges  {rep['inhibitory_edges']}\n"
-        f"largest pre-type: {dominant} ({by_pre[dominant]})",
-        transform=ax.transAxes,
-        ha="left",
-        va="top",
-        fontsize=7.5,
-        family="monospace",
-        bbox={"boxstyle": "round,pad=0.4", "fc": "white", "ec": "0.7", "alpha": 0.92},
+        f"(B) Dale sign by cell type (E {rep['excitatory_edges']} / I {rep['inhibitory_edges']})",
+        fontsize=9.5,
+        loc="left",
     )
     ax.legend(
         handles=[
@@ -333,68 +336,62 @@ def build_figure(
     )
 
     # (C) N 的分布 vs 容量上界 48：48 是容量，不是某个基因型的规模。
-    ax = axes[1][0]
+    ax = ax_right_top
     ax.hist(ns, bins=range(int(ns.min()), int(ns.max()) + 2), color="tab:blue", alpha=0.85)
-    ax.axvline(
-        max_nodes,
-        color="tab:red",
-        ls="--",
-        lw=1.6,
-        label=f"capacity max_neurons = {max_nodes}",
-    )
+    ax.axvline(max_nodes, color="tab:red", ls="--", lw=1.6, label=f"capacity {max_nodes}")
     ax.axvline(
         int(probe["initial_precursors"]),
         color="tab:green",
         ls=":",
         lw=1.6,
-        label=f"lower bound initial_precursors = {probe['initial_precursors']}",
+        label=f"lower bound {probe['initial_precursors']}",
     )
-    ax.set_xlabel("realized active neuron count N (per genotype)")
-    ax.set_ylabel("genotypes")
-    ax.set_title(f"(C) Capacity {max_nodes} vs realized N: {n_seeds} seeds x {n_per_seed} genotypes", fontsize=10)
+    ax.set_xlabel("realized active neuron count N (per genotype)", fontsize=8.5)
+    ax.set_ylabel("genotypes", fontsize=8.5)
+    ax.set_title(f"(C) Capacity {max_nodes} vs realized N", fontsize=9.5, loc="left")
     ax.text(
         0.03,
-        0.96,
-        f"n = {ns.size}\nmedian = {int(np.median(ns))}\nrange = {int(ns.min())}--{int(ns.max())}\n"
-        f"never at capacity",
+        0.95,
+        f"n = {ns.size} = {n_seeds} seeds x {n_per_seed}\n"
+        f"median = {int(np.median(ns))}   range = {int(ns.min())}--{int(ns.max())}\n"
+        f"at capacity: {int((ns == max_nodes).sum())}",
         transform=ax.transAxes,
         ha="left",
         va="top",
-        fontsize=8,
+        fontsize=7.5,
         family="monospace",
-        bbox={"boxstyle": "round,pad=0.35", "fc": "white", "ec": "0.75", "alpha": 0.92},
+        bbox={"boxstyle": "round,pad=0.3", "fc": "white", "ec": "0.75", "alpha": 0.92},
     )
-    ax.legend(fontsize=8, loc="upper right")
+    ax.legend(fontsize=7.5, loc="upper right")
     ax.grid(axis="y", alpha=0.3)
 
     # (D) 支撑边数的分布：它只是 Theta 张量元素的一小部分。
-    ax = axes[1][1]
+    ax = ax_right_bottom
     ax.hist(edge_counts, bins=18, color="tab:purple", alpha=0.8)
     ax.axvline(
         float(np.median(edge_counts)),
         color="tab:orange",
         ls="--",
         lw=1.6,
-        label=f"median = {int(np.median(edge_counts))} edges",
+        label=f"median = {int(np.median(edge_counts))}",
     )
-    ax.set_xlabel("support edges per genotype (= trainable Theta elements)")
-    ax.set_ylabel("genotypes")
-    ax.set_title("(D) Support edges vs the full 2304-cell Theta tensor", fontsize=10)
+    ax.set_xlabel("support edges per genotype (= trainable Theta elements)", fontsize=8.5)
+    ax.set_ylabel("genotypes", fontsize=8.5)
+    ax.set_title(f"(D) Support edges vs the {tensor_cells}-cell tensor", fontsize=9.5, loc="left")
     ax.text(
         0.03,
-        0.96,
-        f"n = {edge_counts.size}\nmedian = {int(np.median(edge_counts))}\n"
-        f"range = {int(edge_counts.min())}--{int(edge_counts.max())}\n"
-        f"tensor = {tensor_cells} cells\n"
-        f"median share = {np.median(edge_counts) / tensor_cells:.1%}",
+        0.95,
+        f"n = {edge_counts.size}   median = {int(np.median(edge_counts))}\n"
+        f"range = {int(edge_counts.min())}--{int(edge_counts.max())}   "
+        f"tensor = {tensor_cells} -> share {np.median(edge_counts) / tensor_cells:.1%}",
         transform=ax.transAxes,
         ha="left",
         va="top",
-        fontsize=8,
+        fontsize=7.5,
         family="monospace",
-        bbox={"boxstyle": "round,pad=0.35", "fc": "white", "ec": "0.75", "alpha": 0.92},
+        bbox={"boxstyle": "round,pad=0.3", "fc": "white", "ec": "0.75", "alpha": 0.92},
     )
-    ax.legend(fontsize=8, loc="upper right")
+    ax.legend(fontsize=7.5, loc="upper right")
     ax.grid(axis="y", alpha=0.3)
 
     fig.suptitle(
@@ -403,7 +400,6 @@ def build_figure(
     _stamp(fig, note)
     out_dir.mkdir(parents=True, exist_ok=True)
     fig_path = out_dir / "fig_connectome.png"
-    fig.tight_layout(rect=(0, 0.015, 1, 0.985))
     fig.savefig(fig_path, dpi=150)
     plt.close(fig)
 
@@ -419,7 +415,8 @@ def build_figure(
     }
     provenance = {
         "figure": "F7 连接矩阵 / 拓扑",
-        "matrix_json": str(payload.get("generated_by", "")),
+        "matrix_json": _display_path(source_json if source_json is not None else DEFAULT_JSON),
+        "matrix_json_generated_by": str(payload.get("generated_by", "")),
         "matrix_json_digest": str(payload.get("digest", "")),
         "config_sha256": str(payload.get("config_sha256", "")),
         "master_seeds": ", ".join(str(s) for s in payload["master_seeds"]),
@@ -459,7 +456,9 @@ def main(argv: list[str] | None = None) -> int:
         f"(seeds {payload['master_seeds']}, n={payload['n_individuals_per_seed']}/seed, "
         f"primary = seed {rep['master_seed']} idx {rep['index']})"
     )
-    fig_path, workbook, sheets, _provenance = build_figure(payload, Path(args.out_dir), note)
+    fig_path, workbook, sheets, _provenance = build_figure(
+        payload, Path(args.out_dir), note, source_json=json_path
+    )
 
     print(f"图：{_display_path(fig_path)}")
     print(f"数据：{_display_path(workbook)}")
