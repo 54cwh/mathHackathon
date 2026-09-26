@@ -164,6 +164,26 @@ export interface Leaderboard {
   entries: LeaderboardEntry[];
 }
 
+/** 会话内逐代演化的一步（`API接口.md` §2.3）。`summary` 为当代 `GenerationSummary`。 */
+export interface SessionEvolutionStep {
+  summary: {
+    generation: number;
+    n_individuals: number;
+    n_viable: number;
+    fitness_mean: number | null;
+    fitness_std: number | null;
+    bottleneck: boolean;
+    event: string | null;
+    p_A: number;
+    p_B: number;
+    phenotype_freq: Record<string, number>;
+    mean_neuron: number;
+    mean_edge: number;
+    mean_tau: number;
+  };
+  session: SessionSummary;
+}
+
 // --- genome lab (`API接口.md` §2.3) ----------------------------------------
 
 export interface GenomeCreate {

@@ -49,6 +49,18 @@ class SessionSummary(BaseModel):
     prey_remaining: int
 
 
+class SessionEvolutionStep(BaseModel):
+    """会话内逐代演化的一步（`API接口.md` §2.3）。
+
+    `summary` 为该代 `GenerationSummary`（键见文档）：`generation` / `n_individuals` /
+    `n_viable` / `fitness_mean` / `fitness_std` / `bottleneck` / `event` / `p_A` / `p_B` /
+    `phenotype_freq` / `mean_neuron` / `mean_edge` / `mean_tau`。
+    """
+
+    summary: dict[str, Any]
+    session: SessionSummary
+
+
 # --- story-mutations -------------------------------------------------------
 class StoryMutation(BaseModel):
     genome_id: str

@@ -32,6 +32,7 @@ def _resolve_config(name: str) -> Path:
 DEFAULT_EXPERIMENT_CONFIG_PATH = _resolve_config("experiment.yaml")
 DEFAULT_SEEDS_CONFIG_PATH = _resolve_config("experiment_seeds.yaml")
 DEFAULT_DEMO_SEED_CONFIG_PATH = _resolve_config("demo_seed.yaml")
+DEFAULT_DEMO_SESSION_CONFIG_PATH = _resolve_config("demo_session.yaml")
 
 
 class ExperimentConfig(BaseModel):
@@ -54,6 +55,19 @@ class SeedsConfig(BaseModel):
 
     seeds: list[int]
     minimum_formal_replicates: int
+
+
+class DemoSessionConfig(BaseModel):
+    """``configs/demo_session.yaml`` 的镜像（**会话内演示演化**参数）。
+
+    与正式实验分离（`代循环编排.md` §4）：正式路径的 `episode_steps` 来自 arena 配置（600），
+    本文件只给会话内逐代演化用的演示取值。
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    #: 会话内演化每一代的 Arena 步数（`API接口.md` §2.3）。
+    evolution_steps: int
 
 
 def load_experiment_config(
@@ -81,12 +95,30 @@ def load_formal_seeds(
     return load_config(path, model=SeedsConfig)
 
 
+def load_demo_session_config(
+    path: str | os.PathLike[str] | None = DEFAULT_DEMO_SESSION_CONFIG_PATH,
+    *,
+    overrides: Mapping[str, Any] | None = None,
+    environ: Mapping[str, str] | None = None,
+) -> DemoSessionConfig:
+    """读取 ``configs/demo_session.yaml``（会话内演示演化参数）。
+
+    参数一律来自 config（``core §7`` 禁止在代码处发明取值），``path=None`` 显式报错。
+    """
+    if path is None:
+        raise ValueError("demo_session 参数无内置默认值，必须提供 config 文件（core §7）")
+    return load_config(path, model=DemoSessionConfig, overrides=overrides, environ=environ)
+
+
 __all__ = [
     "DEFAULT_DEMO_SEED_CONFIG_PATH",
+    "DEFAULT_DEMO_SESSION_CONFIG_PATH",
     "DEFAULT_EXPERIMENT_CONFIG_PATH",
     "DEFAULT_SEEDS_CONFIG_PATH",
+    "DemoSessionConfig",
     "ExperimentConfig",
     "SeedsConfig",
+    "load_demo_session_config",
     "load_experiment_config",
     "load_formal_seeds",
 ]

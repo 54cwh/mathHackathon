@@ -85,6 +85,8 @@ interface UiState {
   activeIndividual: SpawnedIndividual | null;
   activeRunId: string | null;
   generation: number;
+  /** 会话内演化一步进行中（长请求的"进行中"反馈，`交互与可视化.md` §1）。 */
+  evolutionBusy: boolean;
   development: LabDevelopment | null;
   individuals: SpawnedIndividual[];
   /** 焦点事件计数；`focusGenome()` 自增，使"同一个体再点一次"也能被订阅到。 */
@@ -108,6 +110,7 @@ interface UiState {
   setActiveIndividual: (individual: SpawnedIndividual | null) => void;
   setActiveRun: (id: string | null) => void;
   setGeneration: (generation: number) => void;
+  setEvolutionBusy: (v: boolean) => void;
   publishDevelopment: (
     genomeId: string | null,
     result: DevelopmentResult | null,
@@ -134,6 +137,7 @@ export const useUiStore = create<UiState>((set) => ({
   activeIndividual: null,
   activeRunId: null,
   generation: 0,
+  evolutionBusy: false,
   development: null,
   individuals: [],
   focusNonce: 0,
@@ -161,6 +165,7 @@ export const useUiStore = create<UiState>((set) => ({
   setActiveIndividual: (activeIndividual) => set({ activeIndividual }),
   setActiveRun: (activeRunId) => set({ activeRunId }),
   setGeneration: (generation) => set({ generation }),
+  setEvolutionBusy: (evolutionBusy) => set({ evolutionBusy }),
   publishDevelopment: (genomeId, result, trace = null) =>
     set((state) => ({
       activeGenomeId: genomeId,

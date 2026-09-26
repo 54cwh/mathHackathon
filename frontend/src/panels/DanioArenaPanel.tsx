@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Fish } from "lucide-react";
 import { Panel } from "@/components/Panel";
 import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
+import { stepSessionEvolution } from "@/api/selections";
+import type { SessionEvolutionStep } from "@/api/types";
 
 import {
   MASTER_SEED,
@@ -72,6 +74,10 @@ export function DanioArenaPanel() {
   const addIndividual = useUiStore((s) => s.addIndividual);
   const setIndividuals = useUiStore((s) => s.setIndividuals);
   const intent = useUiStore((s) => s.intent);
+  const generation = useUiStore((s) => s.generation);
+  const setGeneration = useUiStore((s) => s.setGeneration);
+  const evolutionBusy = useUiStore((s) => s.evolutionBusy);
+  const setEvolutionBusy = useUiStore((s) => s.setEvolutionBusy);
   const tickRef = useRef(0);
   /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
@@ -217,6 +223,39 @@ export function DanioArenaPanel() {
       .catch((e) => setError(String(e)));
   }, [intent, sessionId, activeGenomeId, individuals, addIndividual]);
 
+  // ---- 会话内逐代演化（`API接口.md` §2.3）：EVOLVE 段的「下一代」----------------
+  //  同步长请求（约 2s）→ 用 `evolutionBusy` 给出"进行中"反馈，避免假死。
+  const [evoSummary, setEvoSummary] = useState<SessionEvolutionStep["summary"] | null>(null);
+  const stepEvolution = useCallback(async () => {
+    if (!sessionId || evolutionBusy) return;
+    setEvolutionBusy(true);
+    setError(null);
+    try {
+      const step = await stepSessionEvolution(sessionId);
+      setEvoSummary(step.summary);
+      setGeneration(step.session.generation);
+      // 种群换代：刷新 store 的 individuals（去重/门控用）+ 排行榜 + 场景
+      setIndividuals(await listIndividuals(sessionId));
+      setBoard(await getLeaderboard(sessionId));
+      tickRef.current = 0;
+      sceneRef.current = null;
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setEvolutionBusy(false);
+    }
+  }, [sessionId, evolutionBusy, setEvolutionBusy, setGeneration, setIndividuals]);
+
+  // 导演线意图：进入 EVOLVE 段即推进一代（`交互与可视化.md` §1）。
+  const stepRef = useRef(stepEvolution);
+  stepRef.current = stepEvolution;
+  const handledEvolveIntent = useRef(0);
+  useEffect(() => {
+    if (!intent || intent.stage !== "evolve" || intent.nonce === handledEvolveIntent.current) return;
+    handledEvolveIntent.current = intent.nonce;
+    void stepRef.current();
+  }, [intent]);
+
   // ---- render -------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -273,7 +312,7 @@ export function DanioArenaPanel() {
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* Explicit 5:3 contract (rule 3); the bitmap ratio must equal it, or
             the click hit-test below drifts. */}
-        <div className="w-full shrink-0" style={{ aspectRatio: arenaAspect() }}>
+        <div className="relative w-full shrink-0" style={{ aspectRatio: arenaAspect() }}>
           <canvas
             ref={canvasRef}
             width={CANVAS.w}
@@ -283,6 +322,13 @@ export function DanioArenaPanel() {
             // 640 位图在窄列里被缩小显示，不加会被双线性插值糊掉（§15.4 #10）。
             className="pixelated h-full w-full cursor-crosshair"
           />
+          {!sessionId && (
+            <div className="absolute inset-0 flex items-center justify-center px-3 text-center">
+              <span className="font-pixel text-[10px] leading-tight text-muted-foreground">
+                {error ?? "构建种群中（基因组发育 + 建网）…"}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
@@ -393,6 +439,46 @@ export function DanioArenaPanel() {
           </div>
         </div>
 
+        <div className="shrink-0 border border-border p-2">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="font-pixel text-[10px] leading-none">EVOLVE</span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              GENERATION {generation}
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={!sessionId || evolutionBusy}
+            onClick={() => void stepEvolution()}
+            title="推进一代（约 2s）：评估 → 折算 F → 选择繁殖 → 子代重建 Arena"
+            className={`border border-border px-2 py-0.5 font-pixel text-[10px] leading-none ${
+              !sessionId || evolutionBusy
+                ? "bg-muted text-muted-foreground"
+                : "hover:bg-brand-slate-shadow hover:text-brand-bone"
+            }`}
+          >
+            {evolutionBusy ? "RUNNING…" : "NEXT GENERATION"}
+          </button>
+          {evoSummary && (
+            <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-[10px]">
+              <div>
+                fitness{" "}
+                {evoSummary.fitness_mean === null ? "—" : evoSummary.fitness_mean.toFixed(4)}
+              </div>
+              <div>
+                viable {evoSummary.n_viable}/{evoSummary.n_individuals}
+              </div>
+              <div>N̄ {evoSummary.mean_neuron.toFixed(1)}</div>
+              <div>Ē {evoSummary.mean_edge.toFixed(1)}</div>
+              {evoSummary.bottleneck && (
+                <div className="col-span-2 text-brand-danger-red">
+                  bottleneck: {evoSummary.event}
+                </div>
+              )}
+            </dl>
+          )}
+        </div>
+
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="truncate">{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
           <button
@@ -400,8 +486,8 @@ export function DanioArenaPanel() {
             onClick={() => setModelDriven((v) => !v)}
             title={
               modelDriven
-                ? "当前：DanioNet 驱动（冻结 checkpoint）。点此回到 ExpertPolicy（12 个体）"
-                : "当前：ExpertPolicy（12 个体）。点此切换 DanioNet 驱动 —— 会重建会话，Brain Forge 才收得到真实激活"
+                ? "当前：冻结 checkpoint 的全局网。点此回到逐鱼 DanioNet（默认）"
+                : "当前：逐鱼 DanioNet（基因组种群，默认）。点此切到冻结 checkpoint 的全局网 —— 会重建会话"
             }
             className={`shrink-0 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none ${
               modelDriven ? "bg-brand-fish-navy text-brand-bone" : ""

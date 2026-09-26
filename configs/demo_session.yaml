@@ -1,0 +1,6 @@
+# 会话内逐代演化（`experiment/代循环编排.md` §4 / `api/API接口.md` §2.3）
+#
+# 仅用于**演示**的会话内演化（`POST /v1/sessions/{id}/evolutions/step`）；正式实验仍走
+# `configs/experiment.yaml` + `configs/evolution.yaml` + `configs/default_arena.yaml`（episode_steps=600）。
+# 取值依据：2026-09-27 用户裁决「demo 每代 100 步」（每代 ~2s，16 条种群；200 步会 ~3.5s）。
+evolution_steps: 100

@@ -309,6 +309,19 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `/v1/developments` | POST | 请求 `DevelopmentRequest` → `DevelopmentResult`；`?with_trace=true` 时**额外**返回 `trace` |
 | `/v1/breedings` | POST | 请求 `BreedingRequest` → `201` `BreedingResult` |
 | `/v1/sessions/{session_id}/evolutions` | POST | 会话内演化（**过渡**：复用环境选择 job）→ `202` `JobStatus`；`?generations=` 缺省取 `configs/experiment.yaml` |
+| `/v1/sessions/{session_id}/evolutions/step` | POST | **会话内逐代推进一代**（同步、纯内存）→ `SessionEvolutionStep`（`{summary, session}`） |
+
+**会话内逐代演化（2026-09-27 定稿；`代循环编排.md` §4）**：`/evolutions/step` 与上面的过渡
+`/evolutions` 是两条不同的路——前者是**真·会话内演化**：
+
+- **种群 ≡ 会话当前 Arena 的基因组种群**（`§1.1`）；每步：评估 → 折算 `F` → `advance_generation` →
+  用 **viable 子代**重建 Arena（同群换代，`fish_id == genome_id`）。子代 genome 一并登记进 Lab store。
+- **纯内存、不落盘**（不写 `results/runs/`）；`generation` 由该端点在响应里回填并同步到 `SessionSummary`。
+- **每代步数**取 `configs/demo_session.yaml::evolution_steps`（演示专用，与正式实验的 `episode_steps=600` 分离）。
+- **响应** `summary` 键：`generation` / `n_individuals` / `n_viable` / `fitness_mean` / `fitness_std` /
+  `bottleneck` / `event` / `p_A` / `p_B` / `phenotype_freq` / `mean_neuron` / `mean_edge` / `mean_tau`。
+- **同步阻塞**（一代约 2s @16×100 步）；前端须给"进行中"反馈。子代全不 viable 时保留旧 Arena，
+  该代 `summary.bottleneck=true`。
 
 **已定稿（2026-09-27 用户确认）**：**单点位置** `position ∈ [0, 512)` 线性覆盖二倍体，顺序 `pair0.maternal → pair0.paternal → pair1.maternal → pair1.paternal`（`MutationRequest` 无 haplotype 字段，位置须唯一编码）；与 `story-mutations` 的 `position` **同坐标**（`genome §3.1`）。
 
@@ -434,6 +447,8 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | GET | `/v1/sessions/{session_id}/fish/{fish_id}` | **functional** | 李辰钊 | `session.py::fish_card` |
 | POST | `/v1/sessions/{session_id}/release` | **functional** | 李辰钊 | `session.py::release` |
 | POST | `/v1/sessions/{session_id}/pause` | **functional** | 李辰钊 | `session.py::pause` |
+| GET | `/v1/sessions/{session_id}/individuals` | **functional** | 池伟豪 | `session.py::list_individuals` |
+| POST | `/v1/sessions/{session_id}/evolutions/step` | **functional**（会话内逐代） | 池伟豪 | `session.py::step_evolution` |
 | GET | `/v1/sessions/{session_id}/snapshot` | **functional** | 李辰钊 | `session.py::snapshot` |
 | GET | `/v1/sessions/{session_id}/leaderboard` | **functional** | 李辰钊 | `session.py::leaderboard` |
 | GET | `/v1/health` | **functional** | 李辰钊 | `app.py::health` |

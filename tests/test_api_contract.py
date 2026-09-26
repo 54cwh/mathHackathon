@@ -108,6 +108,35 @@ def test_list_individuals_returns_population() -> None:
         assert it["n_neurons"] > 0 and it["n_edges"] > 0
 
 
+def test_session_evolution_step(monkeypatch) -> None:
+    """§2.3：会话内逐代推进 —— 一代产出 summary、会话代次 +1、种群换代（子代可查 DNA）。
+
+    把演示步数压到 5（`configs/demo_session.yaml` 的 `evolution_steps`）以便快速跑通契约；
+    真实取值 200 由该配置承担。
+    """
+    import types
+
+    from evogenesis.api import session as session_mod
+
+    monkeypatch.setattr(
+        session_mod, "load_demo_session_config", lambda: types.SimpleNamespace(evolution_steps=5)
+    )
+    sid = _create()["session_id"]
+    before = {i["genome_id"] for i in client.get(f"/v1/sessions/{sid}/individuals").json()}
+    assert client.get(f"/v1/sessions/{sid}").json()["generation"] == 0
+
+    resp = client.post(f"/v1/sessions/{sid}/evolutions/step")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["summary"]["generation"] == 0
+    assert body["summary"]["n_individuals"] == 12
+    assert body["session"]["generation"] == 1
+
+    after = {i["genome_id"] for i in client.get(f"/v1/sessions/{sid}/individuals").json()}
+    assert after and before.isdisjoint(after), "子代应换成新的 genome_id（同群换代）"
+    assert client.get(f"/v1/genomes/{next(iter(after))}").status_code == 200
+
+
 def test_health() -> None:
     """`status` 是状态，`manual_control` 是**能力位**（`API接口.md` §1.10）。
 

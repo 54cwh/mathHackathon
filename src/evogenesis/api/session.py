@@ -13,7 +13,7 @@ from __future__ import annotations
 import threading
 import uuid
 from collections import Counter
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +31,7 @@ from evogenesis.api.schemas import (
     LeaderboardEntry,
     Problem,
     SessionCreate,
+    SessionEvolutionStep,
     SessionSummary,
     Snapshot,
     SpawnedIndividual,
@@ -40,7 +41,15 @@ from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.connectome.danionet import DanioNet
 from evogenesis.development.rgcd import ConnectomePhenotype
-from evogenesis.experiment.config import load_experiment_config
+from evogenesis.evolution.config import load_evolution_config
+from evogenesis.evolution.population import Individual
+from evogenesis.experiment.config import load_demo_session_config, load_experiment_config
+from evogenesis.experiment.evolution_run import (
+    EvolutionState,
+    GenerationSummary,
+    one_generation,
+    setup_evolution,
+)
 from evogenesis.pipeline import (
     arena_seeds_for,
     danionet_of,
@@ -167,6 +176,10 @@ class Session:
                     population[i].genome_id, population[i].genome_id, phenotypes[i], generation=0
                 )
         self.expert = expert_policy_from_config(self.arena.cfg)
+        #: Arena 的实际配置（含 population 修正），供会话内演化评估复用。
+        self._arena_config = self.arena.cfg
+        #: 会话内逐代演化状态（首次 `step_evolution` 时用当前种群惰性建立）。
+        self._evolution: EvolutionState | None = None
         # 同步 `def` 路由由 FastAPI 丢进线程池并发执行，单 worker ≠ 单线程；同一会话的
         # 并发调用须串行化（见 `API接口.md` §7.1）。
         self._lock = threading.Lock()
@@ -392,7 +405,93 @@ class Session:
     def individuals_list(self) -> list[SpawnedIndividual]:
         """会话内已登记的个体（初始种群 + §1.11 追加），按 Arena 的鱼顺序列出。"""
         with self._lock:
-            return [self.individuals[k] for k in self.arena.fish if k in self.individuals]
+            return self._individuals_list()
+
+    def _individuals_list(self) -> list[SpawnedIndividual]:
+        """`individuals_list` 的**无锁**版本：供已持 `self._lock` 的调用方使用（非重入锁）。"""
+        return [self.individuals[k] for k in self.arena.fish if k in self.individuals]
+
+    def evolution_state(self) -> EvolutionState:
+        """会话内演化状态（惰性建立）：种群 ≡ 当前 Arena 的基因组种群（`代循环编排.md` §4）。
+
+        纯内存（`run_dir=None`）；每代步数取 `configs/demo_session.yaml::evolution_steps`。
+        `population_size` 覆盖为当前种群大小，使 `advance_generation` 产出同规模的下一代。
+        """
+        if self._evolution is None:
+            demo = load_demo_session_config()
+            population: list[Individual] = []
+            for item in self._individuals_list():  # 已持锁：用无锁版本，避免死锁
+                genome = lab.get(item.genome_id)  # 登记过的个体必定在 Lab store
+                if genome is None:
+                    continue
+                population.append(
+                    Individual(genome_id=item.genome_id, genome=genome, fish_id=item.fish_id)
+                )
+            evolution_config = load_evolution_config().model_copy(
+                update={"population_size": len(population)}
+            )
+            self._evolution = setup_evolution(
+                experiment_id=self.session_id,
+                master_seed=self.master_seed,
+                chain=self.chain,
+                arena_config=self._arena_config,
+                evolution_config=evolution_config,
+                individuals=tuple(population),
+                run_dir=None,
+                environment_id=self.environment,
+                steps=demo.evolution_steps,
+            )
+        return self._evolution
+
+    def step_evolution(self) -> GenerationSummary:
+        """推进一步（一代）：演化 → 用 viable 子代重建 Arena 种群（`API接口.md` §2.3）。
+
+        返回该代 `GenerationSummary`；`self.generation` 同步为已产出代数。子代全不 viable 时
+        保留旧 Arena（bottleneck 由该代 summary 承载），仍返回 summary。
+        """
+        with self._lock:
+            state = self.evolution_state()
+            summary = one_generation(state)
+            self.generation = state.generation
+            if not state.bottleneck:
+                self._rebuild_arena_from_population(state.individuals, generation=self.generation)
+            return summary
+
+    def _rebuild_arena_from_population(
+        self, population: tuple[Individual, ...], *, generation: int
+    ) -> None:
+        """用演化种群重建 Arena（每代一幕）：只收 viable 个体（非 viable 无网可驱动）。"""
+        chain = self.chain
+        motifs = lab.motifs(chain.layout)
+        phenotypes = [
+            phenotype_of(ind.genome, motifs, master_seed=0, index=stable_index(ind.genome_id))
+            for ind in population
+        ]
+        keep = [(ind, ph) for ind, ph in zip(population, phenotypes, strict=True) if ph.viable]
+        if not keep:
+            return  # 团灭：保留旧 Arena，让 bottleneck 一代可见
+        ids = [ind.genome_id for ind, _ in keep]
+        cfg = replace(
+            self._arena_config,
+            population=replace(self._arena_config.population, n_fish=len(keep)),
+        )
+        spawn_seed, dynamics_seed = arena_seeds_for(self.master_seed, _SESSION_ARENA_INDEX)
+        self.arena = DanioArena(
+            cfg,
+            spawn_seed=spawn_seed,
+            dynamics_seed=dynamics_seed,
+            fish_ids=ids,
+            genome_ids=ids,
+        )
+        self.arena.reset()  # `__init__` 不建鱼；reset 才按 `fish_ids` 布置本代种群
+        self.individuals = {}
+        self.nets = {}
+        self._activation = {}
+        for ind, phenotype in keep:
+            lab.store(ind.genome)  # 子代 genome 可查（点鱼回看 DNA）
+            self._register_individual(
+                ind.genome_id, ind.genome_id, phenotype, generation=generation
+            )
 
     def _fish_card(self, fish_id: str) -> FishCard:
         f = self.arena.fish[fish_id]
@@ -565,6 +664,18 @@ def spawn_individual(session_id: str, body: IndividualSpawn) -> SpawnedIndividua
 def list_individuals(session_id: str) -> list[SpawnedIndividual]:
     """列出会话内已登记的个体（初始种群 + §1.11 追加）（`API接口.md` §1.11）。"""
     return _get_session(session_id).individuals_list()
+
+
+@router.post("/sessions/{session_id}/evolutions/step", response_model=SessionEvolutionStep)
+def step_evolution(session_id: str) -> SessionEvolutionStep:
+    """会话内**逐代推进一代**（`API接口.md` §2.3、`代循环编排.md` §4）。
+
+    种群 ≡ 会话当前 Arena 的基因组种群；用 viable 子代重建 Arena（同群换代）。纯内存、不落盘；
+    每代步数取 `configs/demo_session.yaml::evolution_steps`。响应含该代 `summary` 与会话摘要。
+    """
+    s = _get_session(session_id)
+    summary = s.step_evolution()
+    return SessionEvolutionStep(summary=asdict(summary), session=_manager.summary(s))
 
 
 @router.post("/sessions/{session_id}/pause", response_model=SessionSummary)

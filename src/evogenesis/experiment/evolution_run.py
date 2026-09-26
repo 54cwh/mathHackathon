@@ -245,7 +245,7 @@ def assemble_individuals_averaged(
         viable = bool(mask[index])
         reason = None
         if not viable:
-            for evaluation, (part_mask, _) in zip(evaluations, parts):
+            for evaluation, (part_mask, _) in zip(evaluations, parts, strict=True):
                 if not part_mask[index]:
                     reason = evaluation.phenotypes[index].viability_reason
                     break
@@ -294,8 +294,10 @@ def _selection_score(
     if mode == "drop_degenerate":
         spans = {
             name: (
-                float(np.max(np.asarray(components[name], dtype=np.float32)[viable])
-                      - np.min(np.asarray(components[name], dtype=np.float32)[viable]))
+                float(
+                    np.max(np.asarray(components[name], dtype=np.float32)[viable])
+                    - np.min(np.asarray(components[name], dtype=np.float32)[viable])
+                )
                 if bool(viable.any())
                 else 0.0
             )
@@ -419,6 +421,194 @@ def _write_generation_artifacts(
     )
 
 
+@dataclass
+class EvolutionState:
+    """跨代可变的演化状态（`代循环编排.md` §3）：正式 run 与会话内演化共用同一份。
+
+    `run_dir=None` ⇒ **纯内存**（会话内逐代演化）：不写 `g<gen>/`、不写 `evolution.jsonl`，
+    只把 `summaries` 留在内存。`generation` = 下一个待评估代的序号（= 已产出代数）。
+    """
+
+    experiment_id: str
+    master_seed: int
+    chain: ModelChainConfig
+    arena_config: ArenaConfig
+    evolution_config: EvolutionConfig
+    steps: int
+    weights: dict
+    seed_manager: SeedManager
+    individuals: tuple[Individual, ...]
+    motifs: tuple[str, ...]
+    environment_id: str
+    device: str
+    fitness_mode: str
+    fitness_floor: float
+    episodes_per_generation: int = 1
+    forced_by_generation: Mapping[int, tuple[str, str]] | None = None
+    run_dir: Path | None = None
+    generation: int = 0
+    summaries: list[GenerationSummary] = field(default_factory=list)
+    bottleneck: bool = False
+
+
+def setup_evolution(
+    *,
+    experiment_id: str,
+    master_seed: int,
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    evolution_config: EvolutionConfig,
+    individuals: tuple[Individual, ...] | None = None,
+    run_dir: Path | None = None,
+    environment_id: str = "default",
+    steps: int | None = None,
+    device: str = "cpu",
+    forced_by_generation: Mapping[int, tuple[str, str]] | None = None,
+    fitness_mode: str = "minmax",
+    fitness_floor: float = 1e-3,
+    episodes_per_generation: int = 1,
+) -> EvolutionState:
+    """建立代循环的初始状态（generation 0）；`run_dir` 已建好时置 `status="running"`。
+
+    `individuals` 缺省时由 `initial_population` 生成（正式 run）；**会话内演化**显式传入会话
+    自身的基因组种群（于是 Arena 种群 ≡ 演化种群）。`run_dir=None` ⇒ 纯内存、不写盘。
+    """
+    if steps is None:
+        steps = arena_config.world.episode_steps
+    if individuals is None:
+        population = initial_population(
+            master_seed=master_seed,
+            experiment_id=experiment_id,
+            n=evolution_config.population_size,
+            layout=chain.layout,
+        )
+        individuals = tuple(
+            Individual(genome_id=c.genome_id, genome=c.genome, fish_id=c.fish_id)
+            for c in population
+        )
+    state = EvolutionState(
+        experiment_id=experiment_id,
+        master_seed=master_seed,
+        chain=chain,
+        arena_config=arena_config,
+        evolution_config=evolution_config,
+        steps=steps,
+        weights=evolution_config.fitness_weights.model_dump(),
+        seed_manager=SeedManager(master_seed),
+        individuals=individuals,
+        motifs=motif_catalog(master_seed, chain.layout),
+        environment_id=environment_id,
+        device=device,
+        fitness_mode=fitness_mode,
+        fitness_floor=fitness_floor,
+        episodes_per_generation=episodes_per_generation,
+        forced_by_generation=forced_by_generation,
+        run_dir=run_dir,
+    )
+    if run_dir is not None:
+        runlayout.update_run_status(run_dir, "running")
+    return state
+
+
+def one_generation(state: EvolutionState) -> GenerationSummary:
+    """推进**一代**（原地更新 `state`）：评估 → 折算 `F` → 落产物 → `advance_generation`。
+
+    返回该代 `GenerationSummary`；`state.generation` 自增 1（= 已产出代数）。出现 bottleneck
+    时不更换 `state.individuals`（"子代为空的语义"由该代 `summary` 承载，与 `run_evolution` 一致）。
+    """
+    generation = state.generation
+    chain_individuals = to_chain_individuals(state.individuals, experiment_id=state.experiment_id)
+    t0 = time.perf_counter()
+    # K 次独立 episode（`experiment §2.4`；K=1 时与旧行为逐字节一致）
+    episode_indices = generation_episode_indices(generation, state.episodes_per_generation)
+    evaluations = tuple(
+        evaluate_population(
+            chain_individuals,
+            master_seed=state.master_seed,
+            chain=state.chain,
+            arena_config=state.arena_config,
+            steps=state.steps,
+            generation=episode_index,
+            device=state.device,
+        )
+        for episode_index in episode_indices
+    )
+    elapsed = time.perf_counter() - t0
+    evaluation = evaluations[0]  # 落地件取 k=0 的实现
+    if len(evaluations) == 1:
+        individuals = assemble_individuals(
+            chain_individuals,
+            evaluation,
+            arena_config=state.arena_config,
+            weights=state.weights,
+            fitness_mode=state.fitness_mode,
+            fitness_floor=state.fitness_floor,
+            drift_seed=state.master_seed * 1_000_003 + generation,
+        )
+    else:
+        individuals = assemble_individuals_averaged(
+            chain_individuals,
+            evaluations,
+            arena_config=state.arena_config,
+            weights=state.weights,
+            fitness_mode=state.fitness_mode,
+            fitness_floor=state.fitness_floor,
+            drift_seed=state.master_seed * 1_000_003 + generation,
+        )
+    if state.run_dir is not None:
+        _write_generation_artifacts(
+            state.run_dir,
+            experiment_id=state.experiment_id,
+            environment_id=state.environment_id,
+            generation=generation,
+            seed=state.master_seed,
+            individuals=individuals,
+            evaluation=evaluation,
+            arena_config=state.arena_config,
+            weights=state.weights,
+            steps=state.steps,
+            elapsed=elapsed,
+        )
+    viable_fitness = [i.fitness for i in individuals if i.viable]
+    aggregates = dashboard_aggregates(
+        chain_individuals,
+        evaluation,
+        theta_N=state.chain.phenotype.theta_N,
+        theta_H=state.chain.phenotype.theta_H,
+        motifs=state.motifs,
+    )
+    summary = GenerationSummary(
+        generation=generation,
+        n_individuals=len(individuals),
+        n_viable=len(viable_fitness),
+        fitness_mean=(float(np.mean(viable_fitness)) if viable_fitness else None),
+        fitness_std=(float(np.std(viable_fitness, ddof=1)) if len(viable_fitness) > 1 else None),
+        bottleneck=False,
+        event=None,
+        **aggregates,
+    )
+    state.generation = generation + 1
+    state.summaries.append(summary)
+
+    result = advance_generation(
+        individuals,
+        experiment_id=state.experiment_id,
+        generation=generation + 1,
+        seed_manager=state.seed_manager,
+        config=state.evolution_config,
+        layout=state.chain.layout,
+        forced_pair=(
+            state.forced_by_generation.get(generation) if state.forced_by_generation else None
+        ),
+    )
+    if not result.success:
+        state.bottleneck = True
+        state.summaries[-1] = replace(summary, bottleneck=True, event=result.event)
+        return state.summaries[-1]
+    state.individuals = result.offspring
+    return summary
+
+
 def run_evolution(
     *,
     experiment_id: str,
@@ -439,138 +629,54 @@ def run_evolution(
     """跑 `generations` 代；`run_dir` 须已由 `runlayout.create_run_dir` 建好。
 
     逐代写 `<run>/generations/g<gen:04d>/` 与 `<run>/evolution.jsonl`；`metadata.json.status`
-    依 `created → running → completed | bottleneck` 更新。
+    依 `created → running → completed | bottleneck` 更新。**循环体即 `one_generation(state)`**
+    （`代循环编排.md` §3）。
 
     `episodes_per_generation`（默认 1）> 1 时，每代的 `F` 由 K 次**独立** episode 实现
     的分量均值折算（见 `assemble_individuals_averaged`）：第 `g` 代用下标
     `g*K + k, k=0..K-1`，因此 `K=1` 时与旧行为**逐字节一致**。落地件（事件日志、
     dashboard 聚合）取 `k=0` 的实现。诊断依据：单次实现的排序可靠性实测 `rho_1 = 0.069`。
     """
-    steps = arena_config.world.episode_steps if steps is None else steps
-    weights = evolution_config.fitness_weights.model_dump()
-    seed_manager = SeedManager(master_seed)
-
-    population = initial_population(
-        master_seed=master_seed,
+    state = setup_evolution(
         experiment_id=experiment_id,
-        n=evolution_config.population_size,
-        layout=chain.layout,
+        master_seed=master_seed,
+        chain=chain,
+        arena_config=arena_config,
+        evolution_config=evolution_config,
+        run_dir=run_dir,
+        environment_id=environment_id,
+        steps=steps,
+        device=device,
+        forced_by_generation=forced_by_generation,
+        fitness_mode=fitness_mode,
+        fitness_floor=fitness_floor,
+        episodes_per_generation=episodes_per_generation,
     )
-    individuals: tuple[Individual, ...] = tuple(
-        Individual(genome_id=c.genome_id, genome=c.genome, fish_id=c.fish_id) for c in population
-    )
-
-    summaries: list[GenerationSummary] = []
-    bottleneck = False
     generations_run = 0
-    motifs = motif_catalog(master_seed, chain.layout)
-    runlayout.update_run_status(run_dir, "running")
-    for generation in range(generations):
-        chain_individuals = to_chain_individuals(individuals, experiment_id=experiment_id)
-        t0 = time.perf_counter()
-        episode_indices = generation_episode_indices(generation, episodes_per_generation)
-        k_episodes = len(episode_indices)
-        evaluations = tuple(
-            evaluate_population(
-                chain_individuals,
-                master_seed=master_seed,
-                chain=chain,
-                arena_config=arena_config,
-                steps=steps,
-                generation=episode_index,
-                device=device,
-            )
-            for episode_index in episode_indices
-        )
-        elapsed = time.perf_counter() - t0
-        evaluation = evaluations[0]
-        if k_episodes == 1:
-            individuals = assemble_individuals(
-                chain_individuals,
-                evaluation,
-                arena_config=arena_config,
-                weights=weights,
-                fitness_mode=fitness_mode,
-                fitness_floor=fitness_floor,
-                drift_seed=master_seed * 1_000_003 + generation,
-            )
-        else:
-            individuals = assemble_individuals_averaged(
-                chain_individuals,
-                evaluations,
-                arena_config=arena_config,
-                weights=weights,
-                fitness_mode=fitness_mode,
-                fitness_floor=fitness_floor,
-                drift_seed=master_seed * 1_000_003 + generation,
-            )
-        _write_generation_artifacts(
-            run_dir,
-            experiment_id=experiment_id,
-            environment_id=environment_id,
-            generation=generation,
-            seed=master_seed,
-            individuals=individuals,
-            evaluation=evaluation,
-            arena_config=arena_config,
-            weights=weights,
-            steps=steps,
-            elapsed=elapsed,
-        )
-        viable_fitness = [i.fitness for i in individuals if i.viable]
-        aggregates = dashboard_aggregates(
-            chain_individuals,
-            evaluation,
-            theta_N=chain.phenotype.theta_N,
-            theta_H=chain.phenotype.theta_H,
-            motifs=motifs,
-        )
-        summary = GenerationSummary(
-            generation=generation,
-            n_individuals=len(individuals),
-            n_viable=len(viable_fitness),
-            fitness_mean=(float(np.mean(viable_fitness)) if viable_fitness else None),
-            fitness_std=(
-                float(np.std(viable_fitness, ddof=1)) if len(viable_fitness) > 1 else None
-            ),
-            bottleneck=False,
-            event=None,
-            **aggregates,
-        )
+    for _ in range(generations):
+        one_generation(state)
         generations_run += 1
-
-        result = advance_generation(
-            individuals,
-            experiment_id=experiment_id,
-            generation=generation + 1,
-            seed_manager=seed_manager,
-            config=evolution_config,
-            layout=chain.layout,
-            forced_pair=(forced_by_generation.get(generation) if forced_by_generation else None),
-        )
-        if not result.success:
-            bottleneck = True
-            summary = replace(summary, bottleneck=True, event=result.event)
-        summaries.append(summary)
-        if bottleneck:
+        if state.bottleneck:
             break
-        individuals = result.offspring
 
-    write_jsonl(run_dir / "evolution.jsonl", [asdict(s) for s in summaries])
-    runlayout.update_run_status(run_dir, "bottleneck" if bottleneck else "completed")
+    write_jsonl(run_dir / "evolution.jsonl", [asdict(s) for s in state.summaries])
+    runlayout.update_run_status(run_dir, "bottleneck" if state.bottleneck else "completed")
     return EvolutionRunResult(
         generations_run=generations_run,
-        bottleneck=bottleneck,
-        summaries=tuple(summaries),
-        final_population=individuals,
+        bottleneck=state.bottleneck,
+        summaries=tuple(state.summaries),
+        final_population=state.individuals,
     )
 
 
 __all__ = [
     "EVENT_POPULATION_BOTTLENECK",
     "EvolutionRunResult",
+    "EvolutionState",
     "GenerationSummary",
     "assemble_individuals",
+    "one_generation",
     "run_evolution",
+    "setup_evolution",
     "to_chain_individuals",
 ]

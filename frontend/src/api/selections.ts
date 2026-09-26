@@ -11,6 +11,7 @@ import type {
   EnvironmentalSelectionSummary,
   JobStatus,
   Page,
+  SessionEvolutionStep,
 } from "./types";
 
 export type {
@@ -56,4 +57,12 @@ export function evolveSession(sessionId: string, generations?: number): Promise<
   return req<JobStatus>(`/v1/sessions/${encodeURIComponent(sessionId)}/evolutions${query}`, {
     method: "POST",
   });
+}
+
+/** 会话内**逐代推进一代**（`API接口.md` §2.3；纯内存、同步）。 */
+export function stepSessionEvolution(sessionId: string): Promise<SessionEvolutionStep> {
+  return req<SessionEvolutionStep>(
+    `/v1/sessions/${encodeURIComponent(sessionId)}/evolutions/step`,
+    { method: "POST" },
+  );
 }
