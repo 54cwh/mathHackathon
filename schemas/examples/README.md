@@ -1,8 +1,8 @@
 # Schema Examples（契约示例）
 
 > 状态：示例数据。`genome/fish/experiment` 实例已通过各自 schema 校验；
-> `trajectory_example.jsonl` 仍为**旧草案**，与已定稿契约不一致（见下表），**不得被代码依赖**，待重生成；
-> `event_log_example.jsonl` 已按事件词表 v1 重生成（见下）。
+> `genome/fish/experiment` 实例已通过各自 schema 校验；`trajectory_example.jsonl` 与 `event_log_example.jsonl`
+> 已按各自冻结 schema 重生成（`trajectory.schema.json` / `event_log.schema.json`），可被代码依赖。
 >
 > 本目录是**契约示例**，不是仿真运行产物——真实 run 数据属于
 > `results/runs/`（不入库）。
@@ -14,7 +14,7 @@
 | `genome_example.json` | `schemas/genome.schema.json` | schema 已冻结，实例已通过校验 |
 | `fish_example.json` | `schemas/fish.schema.json` | schema 已冻结，实例已通过校验 |
 | `experiment_example.json` | `schemas/experiment.schema.json` | schema 已冻结，实例已通过校验 |
-| `trajectory_example.jsonl` | 已定稿 `schemas/trajectory.schema.json` | ⚠️ 陈旧：8 行仅 4 键、无 header，未通过校验（`research/notes/评估指标与事件映射-草案.md` S-09）；待重生成 |
+| `trajectory_example.jsonl` | 已定稿 `schemas/trajectory.schema.json` | ✅ 已重生成：header + 8 step，稳定 ID（`exp-example:g0:fish0000`），逐条过 schema |
 | `event_log_example.jsonl` | `schemas/event_log.schema.json`（首行 header + 事件词表 v1） | ✅ 已重生成：header + 8 类各 1 条、payload 与实现逐字段一致（§18.4.4 闭合） |
 
 ## 生成来源（provenance）
@@ -38,6 +38,13 @@
   - `capture_attempt`：鱼正前方 2.0 处放置 `size=5.0` 的猎物（`size_ratio=0.2 < κ=1.25` → `too_small_to_eat`）。
   - `energy_depleted`：将某鱼能量置 0 后结算一步。
 - 摘录行保留原始 `seq` / `step`；受控场景行的 `seq` 为示例内编号。文件首行为 **header**（run 级上下文示意，`n_events=8`），其后 8 条事件；形状由 `schemas/event_log.schema.json` 冻结。**本文件是契约示例，不是仿真运行产物。**
+
+### trajectory_example.jsonl 重生成（2026-09-26）
+
+- 由 **`experiment/collect.py::collect_episode`**（业务逻辑 owner）生成，示例种子 `20260925`、
+  `episode_steps=8`、`environment_id=example`；受控鱼 = index 0，稳定 ID `exp-example:g0:fish0000`。
+- 形态：首行 header + 8 条 step（`is_first`/`is_last` 选填字段未落盘，见 `learning §2`）；
+  `truncated=True`（跑满该 episode 的 8 步）。**契约示例，非正式 run 产物。**
 
 ## trajectory 观测向量的 12 维语义（connectome/DanioNet设计规范.md §2）
 

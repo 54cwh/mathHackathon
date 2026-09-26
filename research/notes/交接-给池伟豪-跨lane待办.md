@@ -43,6 +43,12 @@
 | E3 | **文献待登记** | `bibliography.md` `待登记-2`（Arena 生物学 5 组，一条未登记）、`-3`（`reference_magnitudes` 6 条）、`-4`（#217 License 复核）、`-5`（前端资源） |
 | E4 | **`docs/declaration/THIRD_PARTY.md` 空表** | 开来源码机制对照 `[bib#215]–[bib#220]` 未声明；`待登记-4` |
 | E5 | **参数总表 arena 组** | 1 `missing`（`body_length_mm`，属长度契约）、33 `no_basis`；`env_*` 三组状态「草案待确认」 |
+| E6 | ~~`episodes.jsonl` 只计 6/8 类事件~~ ✅ **已闭合（2026-09-26）**：`run_arena EVENT_KEYS` 补齐 8 类；`make_figs` 事件图同步 8 列 | — |
+| E7 | **run 产物 JSON schema 未建** | `metadata.json`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`（`experiment §5.2` 自述「待实现」）；`schemas/run_metadata.schema.json` 待建 |
+| E8 | **arena 实体快照无生产者** | `API接口.md:151` 需 `fish[].x/y/heading/speed/energy/size/alive`；api 移除后无代码产出（= B3） |
+| E9 | **`run_chain.py` 缺 `--environment`/overrides 与多代/BC 接口** | Exp F 三组环境无法用 DanioNet 驱动；B1/B2 前置 |
+| E10 | **`viable_pairs` 丢弃 non-viable** | evolution 回填 fitness 需「全部个体 + viability 掩码 + `F=0`」；B1 前置接口缺口 |
+| E11 | Tier6 副本 `delta-B-and-penetrance.*` 仍用旧分母 `capture_attempts` | 非契约（Tier6），暂不清 |
 
 ## 五、arena 实现完善（P2，勿混入基线改动）
 

@@ -67,12 +67,14 @@ from evogenesis.experiment.trajectories import (
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SEEDS = "1103,2207,3301"  # configs/experiment_seeds.yaml
 EVENT_KEYS = (
+    "arena.spawn",
+    "arena.capture_attempt",
     "arena.prey_captured",
-    "arena.fish_captured",
     "arena.collision",
     "arena.escape",
     "arena.energy_depleted",
-    "arena.spawn",
+    "arena.fish_captured",
+    "arena.episode_end",
 )
 METRIC_COLUMNS = (
     "survival_steps",

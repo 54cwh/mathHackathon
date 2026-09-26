@@ -257,7 +257,16 @@ def report_figs(
         c
         for c in eps.columns
         if c
-        in ("prey_captured", "fish_captured", "escape", "spawn", "energy_depleted", "collision")
+        in (
+            "spawn",
+            "capture_attempt",
+            "prey_captured",
+            "collision",
+            "escape",
+            "energy_depleted",
+            "fish_captured",
+            "episode_end",
+        )
     ]
     fig, ax = plt.subplots(figsize=(8, 4.5))
     x = range(len(eps))
