@@ -248,7 +248,7 @@
 
 ---
 
-### 2.3 基因组实验室（已实现，`草案待确认`）
+### 2.3 基因组实验室（已实现）
 
 genome / development / breeding 三条 + 两个 store 出入口，**实现已先行、待确认 2026-09-26**（语义选择见下）。
 
@@ -263,7 +263,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 
 **已定稿（2026-09-27 用户确认）**：**单点位置** `position ∈ [0, 512)` 线性覆盖二倍体，顺序 `pair0.maternal → pair0.paternal → pair1.maternal → pair1.paternal`（`MutationRequest` 无 haplotype 字段，位置须唯一编码）；与 `story-mutations` 的 `position` **同坐标**（`genome §3.1`）。
 
-**本实现自行选定的语义（`草案待确认`，须确认后方可作契约）**：
+**实现语义（已定稿 2026-09-27）**：
 - **参考种子** = `configs/demo_seed.yaml::master_seed`（`250927`）；参考 motif 目录由它派生（`genome §6`）。
 - **`genome_id`** = `core.ids.mint_id("lab","genome",0,index)`（`core §3.1`）。
 - **随机源**：经 `SeedManager(参考种子)` 的**已注册命名空间**（创建=`initial_population`；繁殖=`crossover`/`mutation`）；不新建命名空间（`core §3`）。
@@ -276,7 +276,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
 
-> `sys.hello` / `sys.error` 与业务推送 `arena.fish_state` / `arena.events` / `job.progress` **已实现**；`sys.echo` **未实现**（B5）；`brain.activation` **未接**（无模型驱动会话）。推送清单与采样率见 `API与系统工程.md §5`（已定稿）。
+> `sys.hello` / `sys.error` 与业务推送 `arena.fish_state` / `arena.events` / `job.progress` / `brain.activation` **已实现**（`brain.activation` 仅**模型驱动会话**，见 §7.2）；`sys.echo` **未实现**（B5）。推送清单与采样率见 `API与系统工程.md §5`（已定稿）。
 
 | type | 方向 | payload | 触发 | 状态 |
 |---|---|---|---|---|
@@ -286,7 +286,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `arena.fish_state` | 服务端 → 客户端 | `{session_id, step, fish:{...}}` | 订阅会话 `release` 推进后 | 已实现 |
 | `arena.events` | 服务端 → 客户端 | `{session_id, events:[...]}` | 同上的新增事件 | 已实现 |
 | `job.progress` | 服务端 → 客户端 | `{job_id, status, progress}` | 实验/任务进度变化 | 已实现 |
-| `brain.activation` | 服务端 → 客户端 | `{session_id, fish_id, activation}` | 选中鱼神经激活 | **未接**（无模型驱动会话） |
+| `brain.activation` | 服务端 → 客户端 | `{session_id, step, fish:{fish_id: activation[]}}` | 模型驱动会话 `release` 后 | **已实现**（仅 `model_driven=true`） |
 
 - 订阅：`/v1/ws?session_id=<id>`；采样率=**事件驱动**（`release` 触发，非定时）；不每帧发 48×48 matrix（`API与系统工程.md §5`，已定稿）。
 - `seq`：**每连接**单调递增（B5/L6 闭合）。
@@ -387,16 +387,17 @@ class SessionCreate(BaseModel):
     model_config_path: str = "configs/default_model.yaml"
 ```
 
-> ⚠️ §1.1 的「请求体：无」只说明该 body **可省略**（4 个字段全有默认值），并不表示不存在请求体模型 —— `create_session` 的形参就是 `create: SessionCreate`。下表列出全部 4 个字段的实际效果。
+> ⚠️ §1.1 的「请求体：无」只说明该 body **可省略**（5 个字段全有默认值），并不表示不存在请求体模型 —— `create_session` 的形参就是 `create: SessionCreate`。下表列出全部 5 个字段的实际效果。
 
 | 字段 | 是否生效 | 说明 |
 |---|---|---|
 | `master_seed` | ✅ 生效 | 经 `arena_seeds_for(master_seed, session._SESSION_ARENA_INDEX)`（`=0`）派生 `spawn_seed` / `dynamics_seed` 传入 `DanioArena`（`core §3`）；是**唯一的复现开关** |
 | `environment` | ⚠️ **仅存储回显** | 写入 `Session.environment` 并在 `SessionSummary` 回显；**不改变任何 Arena 参数** —— `food_rich` / `predator_rich` / `resource_scarce` 三档行为完全一致（实测三档位的 `population` / `prey_remaining` 与初始世界完全相同）。场景布置见 `../arena/Danio_Arena设计与实现说明.md` §12 |
 | `arena_config_path` | ✅ 生效 | `Session.__init__` 经 `arena.config.load_arena_config` 读取（相对路径按仓库根解析），Arena 实际取值以该文件为准 |
-| `model_config_path` | ❌ **未生效** | Demo 用 `ExpertPolicy` 驱动，不加载 DanioNet，故接收但不参与本层行为（`API与系统工程.md` §4.3）；接入模型驱动时生效 |
+| `model_config_path` | ⚠️ **仅模型驱动会话生效** | `model_driven=true` 时经 `load_model_chain_config` 读取（构建 DanioNet）；否则接收但不参与（ExpertPolicy） |
+| `model_driven` | ⚠️ **草案待确认** | `true` 时由 **DanioNet** 驱动（`initial_population→phenotypes_of→danionet_of`），`release` 后经 WS 推 `brain.activation`；无 viable 个体则 `422`。默认 `false`（ExpertPolicy，行为不变） |
 
-**结论：`master_seed` 与 `arena_config_path` 生效，`model_config_path` 暂不参与（Demo 走 `ExpertPolicy`）。** 前端只发 `master_seed` + `environment`，均兼容。
+**结论：`master_seed`、`arena_config_path` 生效；`model_config_path` 与 `model_driven` 仅**模型驱动会话**参与（`model_driven=true` 时由 DanioNet 驱动并推 `brain.activation`）。** 前端只发 `master_seed` + `environment` → 默认 ExpertPolicy，行为不变。
 
 ### 7.3 `release` 的实现细节
 

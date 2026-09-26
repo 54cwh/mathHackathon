@@ -27,6 +27,9 @@ class SessionCreate(BaseModel):
     master_seed: int = 0
     arena_config_path: str = "configs/default_arena.yaml"
     model_config_path: str = "configs/default_model.yaml"
+    #: 模型驱动会话（`API接口.md` §7.2）：DanioNet 驱动并推送 `brain.activation`；默认
+    #: false（ExpertPolicy）。
+    model_driven: bool = False
 
 
 class SessionSummary(BaseModel):

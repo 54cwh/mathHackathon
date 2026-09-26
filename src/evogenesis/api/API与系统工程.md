@@ -114,7 +114,7 @@
 | `arena.fish_state` | `{session_id, step, fish:{fish_id:{x,y,heading,speed,energy,size,alive}}}` | 订阅会话每次 `release` 推进后 | 已实现 |
 | `arena.events` | `{session_id, events:[{seq,type,step,payload}]}` | 同上（本次新增事件） | 已实现 |
 | `job.progress` | `{job_id, status, progress}` | 实验/任务进度或状态变化 | 已实现 |
-| `brain.activation` | `{session_id, fish_id, activation:[...]}` | 选中鱼的神经激活 | **未接**（需模型驱动会话/DanioNet；当前会话由 `ExpertPolicy` 驱动，无 activation 生产者） |
+| `brain.activation` | `{session_id, step, fish:{fish_id: activation[]}}` | **模型驱动会话**（`model_driven=true`）`release` 后；选中鱼由客户端按 `fish` 键取 | 已实现（仅模型驱动会话） |
 
 - **采样率**：**事件驱动**，不做定时采样 —— `arena.*` 由订阅会话的 `release` 触发；不每帧发送全部 48×48 matrix（保持）。
 - **`seq`**：**每连接**单调递增（原进程级全局已废弃）。
