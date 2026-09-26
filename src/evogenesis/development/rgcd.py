@@ -664,6 +664,8 @@ def develop(
                     if bool(active.any())
                     else 0.0,
                     "max_abs": float(state.grn.abs().max().item()),
+                    "positions": [[float(v) for v in row] for row in state.positions.tolist()],
+                    "cell_type": [int(v) for v in cell_type.tolist()],
                 }
             )
 

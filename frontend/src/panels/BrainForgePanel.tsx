@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Brain } from "lucide-react";
 import { Panel } from "@/components/Panel";
 import { StatusPlaceholder } from "@/components/StatusPlaceholder";
 import { BrainForgeVisual } from "@/visuals/BrainForgeVisual";
 import { subscribe, type BrainActivationPayload } from "@/api/ws";
 import { DevelopmentPipeline } from "@/panels/DevelopmentPipeline";
+import { getLatestDevelopment, subscribeDevelopment } from "@/store/labBus";
+import type { DevelopmentTraceSample } from "@/api/types";
+
+/** 轨迹播放帧率（采样点少，慢放才看得清）。 */
+const PIPELINE_FPS = 3;
 import { useUiStore } from "@/store/ui";
 
 /**
@@ -28,6 +33,57 @@ export function BrainForgePanel() {
   const sessionId = useUiStore((s) => s.sessionId);
   const [activation, setActivation] = useState<BrainActivationPayload | null>(null);
   const lastRef = useRef(0);
+  // §4 发育时间线：游标/播放由本面板持有，同一游标同时驱动画布几何与曲线（必须同步）
+  const [trace, setTrace] = useState<DevelopmentTraceSample[] | null>(
+    () => getLatestDevelopment().trace,
+  );
+  const [genomeId, setGenomeId] = useState<string | null>(() => getLatestDevelopment().genomeId);
+  const [cursor, setCursor] = useState(0);
+  const [playing, setPlaying] = useState(false);
+  const cursorRef = useRef(0);
+  const playingRef = useRef(false);
+
+  useEffect(
+    () =>
+      subscribeDevelopment((payload) => {
+        setTrace(payload.trace);
+        setGenomeId(payload.genomeId);
+        // 新轨迹到达即从第 0 帧开始播放
+        cursorRef.current = 0;
+        setCursor(0);
+        playingRef.current = true;
+        setPlaying(true);
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    let raf = 0;
+    let last = 0;
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      if (!playingRef.current) return;
+      if (now - last < 1000 / PIPELINE_FPS) return;
+      last = now;
+      const total = trace?.length ?? 0;
+      if (total === 0) return;
+      const next = cursorRef.current + 1;
+      if (next >= total) {
+        playingRef.current = false;
+        setPlaying(false);
+        return;
+      }
+      cursorRef.current = next;
+      setCursor(next);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [trace]);
+
+  const currentSample = useMemo(
+    () => (trace && trace.length > 0 ? trace[Math.min(cursor, trace.length - 1)] : null),
+    [trace, cursor],
+  );
 
   useEffect(() => {
     setActivation(null);
@@ -52,13 +108,43 @@ export function BrainForgePanel() {
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* min-h-40：矮面板下视觉区不被读数块挤没（与 DNA 面板同因）。 */}
         <div className="min-h-32 flex-[2] overflow-hidden">
-          <BrainForgeVisual activation={vector ?? undefined} />
+          <BrainForgeVisual
+            activation={vector ?? undefined}
+            geometry={
+              currentSample?.positions
+                ? {
+                    stage: currentSample.stage,
+                    positions: currentSample.positions,
+                    cellType: currentSample.cell_type,
+                  }
+                : null
+            }
+          />
         </div>
 
         {/* §4 发育管线（真实逐阶段轨迹；数据来自 DNA 实验室的 with_trace 发育）。
             shrink-0 = 按内容高，避免与下方 ACTIVATION 之间出现空档。 */}
         <div className="min-h-0 shrink-0">
-          <DevelopmentPipeline />
+          <DevelopmentPipeline
+            trace={trace}
+            genomeId={genomeId}
+            cursor={cursor}
+            playing={playing}
+            onCursor={(index) => {
+              playingRef.current = false;
+              setPlaying(false);
+              cursorRef.current = index;
+              setCursor(index);
+            }}
+            onTogglePlay={() => {
+              if (!playingRef.current && trace && cursorRef.current >= trace.length - 1) {
+                cursorRef.current = 0;
+                setCursor(0);
+              }
+              playingRef.current = !playingRef.current;
+              setPlaying(playingRef.current);
+            }}
+          />
         </div>
 
         <div className="shrink-0 space-y-2 overflow-y-auto border border-border p-2">

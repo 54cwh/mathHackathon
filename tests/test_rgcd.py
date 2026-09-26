@@ -348,6 +348,28 @@ def test_trace_stages_cover_the_pipeline_in_order():
     assert trace[-1]["mean_abs"] >= 0.0
 
 
+def test_trace_carries_real_geometry_and_fates():
+    """轨迹要带**逐神经元坐标**（画真实几何）与终点 fate；坐标在单位方域内。"""
+    phenotype = develop(Q, master_seed=42, index=0, collect_trace=True)
+    trace = list(phenotype.trace or [])
+
+    for sample in trace:
+        positions = sample["positions"]
+        assert positions is not None, f"{sample['stage']} 缺少坐标"
+        assert len(positions) == sample["n_neurons"]
+        for x, y in positions:
+            assert 0.0 <= x <= 1.0 and 0.0 <= y <= 1.0, "坐标必须在单位方域（§3）"
+
+    # 早期阶段 fate 未定 -> None；终点给出与神经元等长的 fate 序号（0..5）
+    assert trace[0]["cell_type"] is None
+    assert trace[-1]["cell_type"] is not None
+    assert len(trace[-1]["cell_type"]) == trace[-1]["n_neurons"]
+    assert set(trace[-1]["cell_type"]) <= set(range(len(DEFAULT_CONFIG.domains)))
+
+    # 坐标随阶段变化（分裂产生子代 -> 末阶段坐标与初态不同）
+    assert trace[0]["positions"] != trace[-1]["positions"]
+
+
 def test_different_seed_differs():
     first = develop(Q, master_seed=42, index=0)
     second = develop(Q, master_seed=43, index=0)

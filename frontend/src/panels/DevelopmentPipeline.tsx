@@ -1,82 +1,40 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { Pause, Play } from "lucide-react";
 import { BRAND } from "@/design/palette";
 import { MetricChart } from "@/visuals/MetricChart";
 import { drawLineChart, type SeriesDef } from "@/visuals/chartPrimitives";
-import { getLatestDevelopment, subscribeDevelopment } from "@/store/labBus";
 import type { DevelopmentTraceSample } from "@/api/types";
 
 /**
- * §4 发育管线分阶段视图（`交互与可视化.md` §4 的动画顺序）。
+ * §4 发育管线的**时间线控件 + 曲线**（受控组件）。
  *
- * 数据：`POST /v1/developments?with_trace=true` 返回的**真实逐阶段轨迹**
- * （GRN 逐步 → 增殖 → 连接组；`API接口.md` §2.3）。记录只读、不抽随机数，故看到的过程
- * 就是该个体真实发育的中间态，不是叙事动画。
- *
- * 播放：把轨迹当时间线，用 `cursor` 逐步揭示（PLAY/PAUSE + 拖动）。播放不引入新数据，
- * 也不改任何后端状态。
+ * 状态（游标/播放）由 `BrainForgePanel` 持有 —— 因为同一游标还要驱动
+ * `BrainForgeVisual` 的**真实几何**，两边必须同一个游标，否则图与曲线不同步。
  */
 
-const STAGE_FPS = 3; // 轨迹只有 14 个采样点，慢放才看得清
-/** 阶段 -> 中文说明（顺序与后端列表一致）。 */
 const STAGE_LABEL: Record<DevelopmentTraceSample["stage"], string> = {
   grn: "GRN 表达迭代（§4）",
   proliferate: "precursor 增殖（§5）",
   connectome: "连接组成形（§6）",
 };
 
-export function DevelopmentPipeline() {
-  const [trace, setTrace] = useState<DevelopmentTraceSample[] | null>(
-    () => getLatestDevelopment().trace,
-  );
-  const [genomeId, setGenomeId] = useState<string | null>(
-    () => getLatestDevelopment().genomeId,
-  );
-  const [cursor, setCursor] = useState(0);
-  const [playing, setPlaying] = useState(false);
-  const cursorRef = useRef(0);
-  const playingRef = useRef(false);
+export interface DevelopmentPipelineProps {
+  trace: DevelopmentTraceSample[] | null;
+  genomeId: string | null;
+  cursor: number;
+  playing: boolean;
+  onCursor: (index: number) => void;
+  onTogglePlay: () => void;
+}
 
-  // 订阅 DNA 实验室的发育结果（模块级总线，不进 React 热路径）
-  useEffect(
-    () =>
-      subscribeDevelopment((payload) => {
-        setTrace(payload.trace);
-        setGenomeId(payload.genomeId);
-        cursorRef.current = payload.trace ? payload.trace.length - 1 : 0;
-        setCursor(cursorRef.current);
-        playingRef.current = true; // 新数据到达即从头播放
-        setPlaying(true);
-        cursorRef.current = 0;
-        setCursor(0);
-      }),
-    [],
-  );
-
-  // 播放循环
-  useEffect(() => {
-    let raf = 0;
-    let last = 0;
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame);
-      if (!playingRef.current) return;
-      if (now - last < 1000 / STAGE_FPS) return;
-      last = now;
-      const total = trace?.length ?? 0;
-      if (total === 0) return;
-      const next = cursorRef.current + 1;
-      if (next >= total) {
-        playingRef.current = false;
-        setPlaying(false);
-        return;
-      }
-      cursorRef.current = next;
-      setCursor(next);
-    };
-    raf = requestAnimationFrame(frame);
-    return () => cancelAnimationFrame(raf);
-  }, [trace]);
-
+export function DevelopmentPipeline({
+  trace,
+  genomeId,
+  cursor,
+  playing,
+  onCursor,
+  onTogglePlay,
+}: DevelopmentPipelineProps) {
   const revealed = useMemo(() => (trace ? trace.slice(0, cursor + 1) : []), [trace, cursor]);
   const current = revealed[revealed.length - 1];
 
@@ -112,14 +70,7 @@ export function DevelopmentPipeline() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => {
-            if (!playing && cursor >= sliderMax) {
-              cursorRef.current = 0;
-              setCursor(0);
-            }
-            playingRef.current = !playingRef.current;
-            setPlaying(playingRef.current);
-          }}
+          onClick={onTogglePlay}
           className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
         >
           {playing ? <Pause className="size-3" /> : <Play className="size-3" />}
@@ -139,13 +90,7 @@ export function DevelopmentPipeline() {
         min={0}
         max={sliderMax}
         value={cursor}
-        onChange={(e) => {
-          playingRef.current = false;
-          setPlaying(false);
-          const next = Number(e.target.value);
-          cursorRef.current = next;
-          setCursor(next);
-        }}
+        onChange={(e) => onCursor(Number(e.target.value))}
         aria-label="development stage"
         className="w-full"
       />

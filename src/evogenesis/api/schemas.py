@@ -92,6 +92,10 @@ class DevelopmentTraceSample(BaseModel):
     n_edges: int | None = None
     mean_abs: float
     max_abs: float
+    #: 逐神经元坐标（单位方域，`RGCD §3`）；供前端画真实几何。
+    positions: list[list[float]] | None = None
+    #: 逐神经元 fate（六类序号）；仅 connectome 阶段确定，早期为 null。
+    cell_type: list[int] | None = None
 
 
 class DevelopmentRequest(BaseModel):

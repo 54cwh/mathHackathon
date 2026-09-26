@@ -130,6 +130,8 @@ def proliferate(
                     "n_edges": None,
                     "mean_abs": float(grn.abs().mean().item()),
                     "max_abs": float(grn.abs().max().item()),
+                    "positions": [[float(v) for v in row] for row in positions.tolist()],
+                    "cell_type": None,  # fate 在连接组阶段才确定
                 }
             )
     return DevelopmentState(

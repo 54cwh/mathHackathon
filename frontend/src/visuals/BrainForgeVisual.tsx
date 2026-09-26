@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { BRAIN } from "@/design/palette";
+import { BRAIN, BRAND } from "@/design/palette";
 
 /* ===========================================================================
    Brain Forge 的**装饰性神经视觉暗示纹理**。
@@ -43,6 +43,26 @@ const MIN_H = 32;
  * 任何全局可变状态；布局是 (seed, w, h) 的纯函数。
  */
 const BRAIN_FORGE_SEED = 20260926;
+
+/**
+ * 六类 fate 的着色（顺序 = `configs/default_model.yaml::development.domains`，已定稿）。
+ * **只取 BRAND**（唯一色源），不新增色板条目；仅用于「发育几何」模式（§4）。
+ */
+const FATE_COLORS = [
+  BRAND.deepWater,
+  BRAND.grassGreen,
+  BRAND.sandWarm,
+  BRAND.mutationViolet,
+  BRAND.blueGrey,
+  BRAND.coralOrange,
+] as const;
+
+/** GRN / 增殖阶段的单色（fate 未定）。 */
+const STAGE_COLORS: Record<string, string> = {
+  grn: BRAND.shallowWater,
+  proliferate: BRAND.amber,
+  connectome: BRAND.bone,
+};
 
 /** 装饰分组的三色（明度层次用，非 cell type —— 见文件头）。 */
 const LANES = [BRAIN.particleA, BRAIN.particleB, BRAIN.particleC] as const;
@@ -326,12 +346,61 @@ function drawBrainForge(
   }
 }
 
+/** 发育轨迹的当前采样（画真实几何用；`positions` 已在单位方域）。 */
+export interface DevelopmentGeometry {
+  stage: "grn" | "proliferate" | "connectome";
+  positions: [number, number][];
+  cellType: number[] | null;
+}
+
+/**
+ * 发育几何绘制：把 `positions` 按**单位方域**等比映射到画布（保纵横比、居中、
+ * 整数取整），每个神经元一个 3×3 方块；`cellType` 有值时按六类 fate 上色。
+ * **不画连线**（`交互与可视化.md` §八 禁止 node-edge 图；用户 2026-09-27 裁决取"真几何 + fate 着色"）。
+ */
+function drawDevelopmentGeometry(
+  canvas: HTMLCanvasElement,
+  geometry: DevelopmentGeometry,
+): void {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, w, h);
+
+  // 单位方域边框（1px）：让"方域"这件事可见，而不是让人猜坐标含义。
+  const side = Math.max(8, Math.min(w, h) - 2);
+  const ox = Math.round((w - side) / 2);
+  const oy = Math.round((h - side) / 2);
+  ctx.fillStyle = BRAIN.clusterBase;
+  ctx.fillRect(ox - 1, oy - 1, side + 2, 1);
+  ctx.fillRect(ox - 1, oy + side, side + 2, 1);
+  ctx.fillRect(ox - 1, oy - 1, 1, side + 2);
+  ctx.fillRect(ox + side, oy - 1, 1, side + 2);
+
+  const fallback = STAGE_COLORS[geometry.stage] ?? BRAIN.particleA;
+  geometry.positions.forEach((position, index) => {
+    const [x, y] = position;
+    const px = ox + Math.round(Math.min(1, Math.max(0, x)) * (side - 1));
+    const py = oy + Math.round(Math.min(1, Math.max(0, y)) * (side - 1));
+    const fate = geometry.cellType?.[index];
+    ctx.fillStyle = typeof fate === "number" ? FATE_COLORS[fate % FATE_COLORS.length] : fallback;
+    ctx.fillRect(px - 1, py - 1, 3, 3);
+  });
+}
+
 export interface BrainForgeVisualProps {
   /**
    * 真实 DanioNet 激活向量（`BrainActivationPayload.fish[<id>]`）。
    * 缺省 = 无数据，退化为环境闪烁（不编造数值）。
    */
   activation?: number[];
+  /**
+   * 发育几何（§4）。给出时画布改为**真实几何**：`positions` 映射到单位方域，
+   * 有 `cellType` 则按 fate 上色；否则退回装饰纹理 + 激活驱动。
+   */
+  geometry?: DevelopmentGeometry | null;
 }
 
 /**
@@ -339,12 +408,14 @@ export interface BrainForgeVisualProps {
  * 因此逻辑像素 = CSS 像素，1 px 的线段与 1-3 px 的粒子不会被缩放糊掉；
  * 设备像素比 > 1 时是整数倍放大，仍然锐利。
  */
-export function BrainForgeVisual({ activation }: BrainForgeVisualProps) {
+export function BrainForgeVisual({ activation, geometry }: BrainForgeVisualProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // props 走 ref：帧循环只建一次，不因每次激活帧重建 RAF。
   const activationRef = useRef(activation);
   activationRef.current = activation;
+  const geometryRef = useRef(geometry);
+  geometryRef.current = geometry;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -376,12 +447,19 @@ export function BrainForgeVisual({ activation }: BrainForgeVisualProps) {
       if (now - last < 1000 / FPS) return;
       last = now;
       resize();
+      const geometry = geometryRef.current;
+      if (geometry) {
+        drawDevelopmentGeometry(canvas, geometry);
+        return;
+      }
       if (!layout) return;
       drawBrainForge(canvas, layout, staticLayer, activationRef.current, Math.floor(now / (1000 / FPS)));
     };
 
     resize();
-    if (layout) drawBrainForge(canvas, layout, staticLayer, activationRef.current, 0);
+    const initialGeometry = geometryRef.current;
+    if (initialGeometry) drawDevelopmentGeometry(canvas, initialGeometry);
+    else if (layout) drawBrainForge(canvas, layout, staticLayer, activationRef.current, 0);
     raf = requestAnimationFrame(frame);
 
     const ro = new ResizeObserver(() => resize());

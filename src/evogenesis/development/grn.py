@@ -58,7 +58,7 @@ def discrete_grn(
     P = P.to(torch.float32)
     bias = bias.to(torch.float32)
     if trace is not None:
-        trace.append(_grn_sample(g, step=0, stage="grn"))
+        trace.append(_grn_sample(g, pos, step=0, stage="grn"))
     for step in range(steps):
         recurrent = torch.einsum("...nd,de->...ne", g, Wg)
         genome_term = torch.einsum("...d,ed->...e", q, B).unsqueeze(-2)
@@ -66,16 +66,18 @@ def discrete_grn(
         target = torch.sigmoid(recurrent + genome_term + pos_term + bias)
         g = (1.0 - rho) * g + rho * target
         if trace is not None:
-            trace.append(_grn_sample(g, step=step + 1, stage="grn"))
+            trace.append(_grn_sample(g, pos, step=step + 1, stage="grn"))
     return g
 
 
-def _grn_sample(g: torch.Tensor, *, step: int, stage: str) -> dict:
+def _grn_sample(g: torch.Tensor, pos: torch.Tensor, *, step: int, stage: str) -> dict:
     """逐步状态摘要（**只读**：不抽随机数，故开关 trace 不改变任何数值）。
 
     统一键集合，便于前端把三个阶段画成同一条时间线：
     ``stage`` / ``step`` / ``n_neurons`` / ``n_divisions`` / ``n_edges`` /
-    ``mean_abs`` / ``max_abs``；早期阶段没有的量记 ``None``（缺失 ≠ 0）。
+    ``mean_abs`` / ``max_abs`` / ``positions`` / ``cell_type``；
+    早期阶段没有的量记 ``None``（缺失 ≠ 0）。
+    ``positions`` 为逐神经元坐标（单位方域，§3），供前端画**真实几何**。
     """
     with torch.no_grad():
         return {
@@ -86,4 +88,8 @@ def _grn_sample(g: torch.Tensor, *, step: int, stage: str) -> dict:
             "n_edges": None,
             "mean_abs": float(g.abs().mean().item()),
             "max_abs": float(g.abs().max().item()),
+            # 画"真实几何"所需的逐神经元坐标（单位方域，§3）；GRN 阶段位置不变，故每步同值。
+            "positions": [[float(v) for v in row] for row in pos.tolist()],
+            # fate 在连接组阶段才确定（`z = argmax`），故早期阶段记 None（缺失 ≠ 0）。
+            "cell_type": None,
         }

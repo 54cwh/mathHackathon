@@ -216,6 +216,10 @@ export interface DevelopmentTraceSample {
   n_edges: number | null;
   mean_abs: number;
   max_abs: number;
+  /** 逐神经元坐标（单位方域，`RGCD §3`）——画**真实几何**用。 */
+  positions: [number, number][] | null;
+  /** 逐神经元 fate（六类序号）；仅 connectome 阶段确定，早期为 null。 */
+  cell_type: number[] | null;
 }
 
 export interface DevelopmentResult {

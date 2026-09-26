@@ -291,6 +291,8 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `n_divisions` | int \| null | 仅 proliferate：本代分裂出的子代数 |
 | `n_edges` | int \| null | 仅 connectome：真实连接数（`(A≠0).sum()`） |
 | `mean_abs` / `max_abs` | float | 状态张量绝对值的均值/峰值（"表达量"标量代理） |
+| `positions` | `[[float, float], …]` | **逐神经元坐标**（单位方域，`RGCD §3`）—— 供画真实几何；长度 == `n_neurons` |
+| `cell_type` | `[int] \| null` | 逐神经元 fate（六类序号，顺序见 `configs/default_model.yaml::development.domains`）；仅 `connectome` 阶段确定 |
 
 > **两条硬约束（有测试守护）**：① **默认关**（不传 `with_trace` 时 `trace=null`）；
 > ② 记录**只读张量、不抽随机数**，故开/关该参数的表型与 `dev_trace` **逐位相同**
