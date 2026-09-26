@@ -10,7 +10,9 @@
 
 六类都属于基础谱系；viable individual 每类至少一个。
 
-依据：六类是**功能抽象**，其划分参照斑马鱼感觉运动回路 `[bib#6][bib#7]` 与全脑连接组组织 `[bib#14]`，不对应特定真实细胞类型（见 `docs/设计依据审计.md` 表 3）。
+依据：六类是**功能抽象**，其划分参照斑马鱼感觉运动回路 `[bib#6][bib#7]` 与全脑连接组组织 `[bib#14]`，不对应特定真实细胞类型（真实类型远超 6 类 `[bib#84]`；见 `docs/设计依据审计.md` 表 3）。
+
+**owner**：六类**功能语义**归本文件；`type_i` 如何由 GRN **产出**归 `development/RGCD数学模型.md` §6。⚠️ `argmax` 是离散化理想化（真实 fate 为连续谱 `[bib#75]`），实现宜同时记录 `z_i` 分布/熵。
 
 ## 2. 12 维输入
 1. prey_left_signal
@@ -26,7 +28,7 @@
 11. energy
 12. hunger
 
-依据：prey/threat 通道对应斑马鱼视觉捕食与威胁回避 `[bib#8]`；hunger/energy 对应内部状态调制决策 `[bib#9][bib#10]`；looming 为逃避触发量。维度顺序冻结，Arena↔DanioNet 的编码规则见 `arena/Danio_Arena设计规范.md`（待闭合）。
+依据：prey/threat 通道对应斑马鱼视觉捕食与威胁回避 `[bib#8]`；hunger/energy 对应内部状态调制决策 `[bib#9][bib#10]`；looming 为逃避触发量。维度顺序与值域冻结（**本文件为 12 维 observation 的语义 owner**）；由视野计算这 12 个数的**编码规则**归 `arena/Danio_Arena设计规范.md` §4.1（Arena 产出满足本契约的向量）。
 
 ## 3. 神经动力学
 \[

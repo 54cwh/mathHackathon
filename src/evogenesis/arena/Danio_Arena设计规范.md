@@ -39,6 +39,18 @@ Fast Evolution 使用 48 个 Danio 个体，不渲染所有轨迹。
 
 FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。
 
+### 4.1 12 维 observation 编码（草案，本文件为编码 owner）
+
+本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）：
+
+- `prey` / `threat` / `obstacle` 的 `_{left,right}_signal`：对 FOV 内该类目标按方位角以朝向为界分左右，取距离核 \((1-d/\text{radius})_+\) 之和（**左右划分与距离核为设计选择**，文献未规定）。
+- `prey/predator_relative_size`：目标尺寸 / 自身尺寸。
+- `looming_rate`：按 Gabbiani 1999 定义 \(\theta(t)=2\tan^{-1}(l/(v t))\)，取标定值 \(l/\lVert v\rVert\) `[bib#65]`。
+- `current_speed`：**取自身上一步推进 \(v_{t-1}\)**（决策：与 energy/hunger 同属自身状态，见 `research/notes/契约决策记录.md`）。
+- `energy` / `hunger`：直接取 Arena 生理状态（口径见 §6）。
+
+依据：prey/threat 通道分离 `[bib#58][bib#60]`；详见 `research/reference/sensory-encoding-12d.md`。
+
 ## 5. 连续运动
 动作：
 

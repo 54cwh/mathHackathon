@@ -194,7 +194,7 @@
 - `../core/核心机制与数据流.md` §5.1 是**设计侧的草案事件表**（6 类，待冻结，载荷要点按设计口径写）。**实现侧实际发射的 8 类点分层事件名与 payload 以本文档 §4.2 为准**。两者分工不同：设计侧列"应有哪些事件"，实现侧列"代码当前发什么"，字段名只在 §4.2 维护一套。
 - **机器可读权威名单是 `tests/test_arena.py::KNOWN_EVENTS`**，由 `test_all_events_in_known_vocabulary` 守护（断言：整局事件的 `type` 均以 `arena.` 开头且属于该集合）。任何一方改词表都必须同时改这个集合。
 - 命名风格与 WS 消息 `type` 的点分层约定（`../api/API与系统工程.md` §4.1 R11）一致：**磁盘与推送共用同一词表**。
-- 词表状态：**v1 已起草，待池伟豪确认后生效**（`../core/核心机制与数据流.md` §10 第 2 行）。确认前 `arena.fish_captured` / `arena.collision` 属于"实现已发射、词表未批准"的状态。
+- 词表状态：**v1 已生效**（池伟豪确认 2026-09-26；见 `research/notes/契约决策记录.md`）。本文件 §4.2 + `tests::KNOWN_EVENTS` 为事件词表的唯一权威。
 
 ### 4.4 与草案实例 `schemas/examples/event_log_example.jsonl` 的差异
 

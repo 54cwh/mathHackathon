@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/trajectory.schema.json",
+  "title": "EvoGenesis 行为克隆轨迹（逐 episode 一个 JSONL）",
+  "description": "每行是一个 JSON 对象：首行为 episode header（record_type=header），其后每行为 step 记录（record_type=step）。字段语义见 src/evogenesis/core/核心机制与数据流.md §4.2；决策见 research/notes/契约决策记录.md。",
+  "oneOf": [
+    { "$ref": "#/$defs/header" },
+    { "$ref": "#/$defs/step" }
+  ],
+  "$defs": {
+    "header": {
+      "type": "object",
+      "properties": {
+        "record_type": { "const": "header" },
+        "schema_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "experiment_id": { "type": "string" },
+        "episode_id": { "type": "string" },
+        "environment_id": { "type": "string" },
+        "generation_id": { "type": "integer", "minimum": 0 },
+        "episode_seed": { "type": "integer" },
+        "total_steps": { "type": "integer", "minimum": 1 },
+        "terminated": { "type": "boolean" },
+        "truncated": { "type": "boolean" },
+        "environment_config": { "type": "object" },
+        "obs_dim_names": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 12,
+          "maxItems": 12
+        }
+      },
+      "required": [
+        "record_type",
+        "schema_version",
+        "experiment_id",
+        "episode_id",
+        "environment_id",
+        "generation_id",
+        "episode_seed",
+        "total_steps",
+        "terminated",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "step": {
+      "type": "object",
+      "properties": {
+        "record_type": { "const": "step" },
+        "fish_id": { "type": "string" },
+        "genome_id": { "type": "string" },
+        "step": { "type": "integer", "minimum": 0 },
+        "observation": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 12,
+          "maxItems": 12
+        },
+        "expert_action": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "reward": { "type": "number" },
+        "is_first": { "type": "boolean" },
+        "is_last": { "type": "boolean" }
+      },
+      "required": ["record_type", "fish_id", "genome_id", "step", "observation", "expert_action"],
+      "additionalProperties": false
+    }
+  }
+}
