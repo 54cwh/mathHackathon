@@ -62,7 +62,11 @@ def survival_rate(survival_steps: int, episode_steps: int) -> float:
 
 
 def escape_success_rate(escape_successes: int, predator_encounters: int) -> float:
-    """§4：`escape success = escape_successes / max(predator_encounters, 1)`。"""
+    """§4：`escape success = escape_successes / max(predator_encounters, 1)`。
+
+    `predator_encounters` = **被捕食者锁定的次数**（目标获取计数，`arena` §18.3.2 S7），
+    与 `arena.escape`「放弃锁定」事件同口径，故比值语义为「每次被锁定中成功逃脱的比例」。
+    """
     return escape_successes / max(predator_encounters, 1)
 
 

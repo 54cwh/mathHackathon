@@ -28,7 +28,7 @@
 
 | # | 事项 | 证据 | 建议 |
 |---|---|---|---|
-| C1 | **`predator_encounters` 口径** | arena S7=目标获取计数（owner）；`experiment §2.2` 写「与天敌接触计数」，且为 `escape_success` 分母 | 改 `experiment` 措辞 |
+| ~~C1~~ | ~~`predator_encounters` 口径~~ ✅ **已闭合（2026-09-26）**：`experiment §2.1/§2.2/§7` 与 `metrics.py` 已回写为 arena S7（被锁定次数）；`encounters` 粒度亦回写 S6（每鱼每步至多 1 次） | — | — |
 | C2 | **评估驱动方（部分闭合）** | 新增 `scripts/run_chain.py`（DanioNet 驱动 Arena，落 metrics/events/seed_summary）已提供模型评估入口；`experiment §3.3`「即 `run_arena.py` 现状」措辞待改（`run_arena`=ExpertPolicy pre-check/基线） | `experiment` 改措辞并指向 `run_chain.py` |
 | C3 | **规模口径** | `experiment §4` 泛述「n_fish=12 不变」与 Exp F 48-genome 协议张力（arena §3 已澄清两种规模） | `experiment` 同步限定「12=ExpertPolicy pre-check；48=演化评估」 |
 | C4 | **`configs/experiment_environments.yaml` 注释** | 称「填 `missing_required` 第 1 项」，但该项已变 penetrance | 修注释 |

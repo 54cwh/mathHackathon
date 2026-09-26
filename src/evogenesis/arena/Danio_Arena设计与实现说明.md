@@ -209,7 +209,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | genome_id | ⚠️ 不在 `per_fish_log()`；`Fish.genome_id` 由构造注入（`genome_ids`，P0-9），供轨迹落盘读取 |
 | encounters | ✅（\(d<r_{capture}\) 的近距接触计数；**＝`实验与评价体系.md` §4 `prey_capture` 分母**） |
 | captures | ✅ |
-| predator encounters | ✅（口径＝捕食者**获得新目标**计数，非近距接触；待认领） |
+| predator encounters | ✅（口径＝捕食者**获得新目标**（被锁定）计数，非近距接触；S7 已定稿） |
 | escape successes | ✅（口径见 §15 逃脱判定） |
 | collisions | ✅ |
 | energy trajectory | ✅ |
@@ -525,7 +525,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | encounters | `encounters` | `Fish.encounters` | ✅ 语义为"$d < r_{capture}$ 的近距接触数"（S6）。**自 2026-09-26 起同时是 `实验与评价体系.md` §4 `prey_capture` 的分母** |
 | captures | `captures` | `Fish.captures` | ✅ |
 | capture attempts | `capture_attempts` | `Fish.capture_attempts` | ✅ **2026-09-26 新增**（用户裁定「进过口」口径）：每鱼每步**至多 1 次** —— 猎物 $d < r_{capture}$ **且**在猎人前向锥内**且**判定了尺寸口径，**不论吃到与否**（吃到走 `arena.prey_captured`，太小走 `arena.capture_attempt`）。因此**逐事件对齐**于既有事件，且恒有 `capture_attempts ≥ captures`。**曾**是 `实验与评价体系.md` §4 `prey_capture` 的分母，**2026-09-26 同日降为诊断列**（`capture_attempts − captures` = 「进过口但吃不下」的次数；§4 分母改指 `encounters`，见上两行）。由 `test_capture_attempts_counts_eaten_prey_as_well` 与 `test_too_small_to_eat_attempt_logged` 守护 |
-| predator encounters | `predator_encounters` | `Fish.predator_encounters` | ✅ **已实现**：捕食者**获得新目标**时 +1（S7）。由 `test_predator_encounter_recorded_on_acquisition` 守护。⚠️ 口径是"被锁定次数"而非"近距遭遇次数"，属待认领（§7 A8 邻域） |
+| predator encounters | `predator_encounters` | `Fish.predator_encounters` | ✅ **已实现且已定稿**：捕食者**获得新目标**（被锁定）时 +1（S7）。由 `test_predator_encounter_recorded_on_acquisition` 守护。下游 `experiment §2.1/§2.2` 以此为 `escape success` 分母 |
 | escape successes | `escape_successes` | `Fish.escape_successes` | ✅ 口径见 S17（仅对**仍存活**的丢失目标计数） |
 | collisions | `collisions` | `Fish.collisions` | ✅ |
 | energy trajectory | `energy_trajectory` | `Fish.energy_trace` | ✅ 能量结算后追加（**在死亡判定之前**）。故对**存活鱼**与**被捕食者吃掉的鱼**有 `len(energy_trajectory) == survival_steps`；对**饿死鱼**多 1 条（该步写了 trace 但未自增 `survival_steps`）。`test_per_fish_log_completeness` 只在无死亡场景（10 步）覆盖此断言 |
