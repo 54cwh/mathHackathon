@@ -228,8 +228,24 @@ export interface EnvironmentalSelectionSummary {
   seeds: number[];
 }
 
+export interface EnvironmentalSelectionRun {
+  seed: number;
+  run_dir: string;
+  /** 实现附加字段（`API接口.md` §2.2 的表只列 seed/run_dir；实测有这两项）。 */
+  generations_run?: number;
+  bottleneck?: boolean;
+}
+
+/** `results` 实测形状（`environment`/`generations`/`job_id` + `runs`）。 */
+export interface EnvironmentalSelectionResults {
+  environment?: string;
+  generations?: number;
+  job_id?: string;
+  runs: EnvironmentalSelectionRun[];
+}
+
 export interface EnvironmentalSelectionDetail extends EnvironmentalSelectionSummary {
-  results: Record<string, unknown>;
+  results: EnvironmentalSelectionResults;
 }
 
 export interface Health {

@@ -5,6 +5,7 @@ import { Panel } from "@/components/Panel";
 import { DNA2BrainPanel } from "@/panels/DNA2BrainPanel";
 import { BrainForgePanel } from "@/panels/BrainForgePanel";
 import { DanioArenaPanel } from "@/panels/DanioArenaPanel";
+import { EvolutionDashboardPanel } from "@/panels/EvolutionDashboardPanel";
 import { useUiStore, type ViewId } from "@/store/ui";
 
 const VIEW_LABELS: Record<ViewId, string> = {
@@ -25,6 +26,8 @@ function App() {
             <BrainForgePanel />
             <DanioArenaPanel />
           </>
+        ) : activeView === "evolution" ? (
+          <EvolutionDashboardPanel />
         ) : (
           <Panel title={VIEW_LABELS[activeView]} className="col-span-3">
             <p className="text-sm text-muted-foreground">此视图待实现。</p>
