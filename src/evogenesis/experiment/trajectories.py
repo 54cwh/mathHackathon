@@ -9,8 +9,9 @@ owner 归属（2026-09-26 用户裁定，见 `research/notes/契约决策记录.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
+
+from evogenesis.core.io import write_jsonl
 
 # schema 版本（SemVer）。加可选字段=MINOR，改必填=MAJOR（schema 的兼容规则）。
 SCHEMA_VERSION = "1.1.0"
@@ -104,11 +105,7 @@ def step_record(
 
 def write_episode(path: Path, header: dict, steps: list[dict]) -> Path:
     """写一个 episode 的 JSONL：首行 header，其后逐 step（`core §4.5` 布局）。"""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as fh:
-        fh.write(json.dumps(header, ensure_ascii=False) + chr(10))
-        for rec in steps:
-            fh.write(json.dumps(rec, ensure_ascii=False) + chr(10))
+    write_jsonl(path, [header, *steps])
     return path
 
 

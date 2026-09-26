@@ -12,11 +12,11 @@
 
 from __future__ import annotations
 
-import json
 from collections.abc import Iterable
 from pathlib import Path
 
 from evogenesis.arena.env import Event
+from evogenesis.core.io import write_jsonl
 
 #: 事件日志 schema 版本（独立于 trajectory；owner：`schemas/event_log.schema.json`）。
 EVENT_SCHEMA_VERSION = "1.0.0"
@@ -51,11 +51,7 @@ def event_record(event: Event) -> dict:
 
 def write_event_log(path: Path, header: dict, events: Iterable[Event]) -> Path:
     """写事件日志 JSONL：首行 header，其后逐事件（`core §5.1`）。"""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as fh:
-        fh.write(json.dumps(header, ensure_ascii=False) + "\n")
-        for event in events:
-            fh.write(json.dumps(event_record(event), ensure_ascii=False) + "\n")
+    write_jsonl(path, [header, *(event_record(event) for event in events)])
     return path
 
 

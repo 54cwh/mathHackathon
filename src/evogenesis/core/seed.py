@@ -81,7 +81,7 @@ class SeedManager:
     def seed(self, name: str, index: int) -> int:
         """实体级整数子种子 ``g``（``core §3``）：``C.generate_state(1, uint32)[0]``。
 
-        供只接受整数种子的下游（如 ``DanioArena(master_seed=...)``）使用；同一
+        供只接受整数种子的下游（如 ``DanioArena(spawn_seed=..., dynamics_seed=...)``）使用；同一
         ``(master_seed, name, index)`` 恒得同一 ``g``。
         """
         if index < 0:

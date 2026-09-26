@@ -139,6 +139,7 @@ def main() -> None:
     ]
     write_metrics_csv(run_dir, rows)
     dump_json(run_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
+    runlayout.update_run_status(run_dir, "completed")
     print(
         f"chain run: {run_dir}｜viable {result.evaluated_individuals}/{n}"
         f"｜steps {result.steps}｜events {len(result.events)}"

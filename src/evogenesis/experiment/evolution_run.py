@@ -262,68 +262,66 @@ def run_evolution(
     bottleneck = False
     generations_run = 0
     _update_status(run_dir, "running")
-    evo_path = run_dir / "evolution.jsonl"
-    with evo_path.open("w", encoding="utf-8", newline="") as evo_fh:
-        for generation in range(generations):
-            chain_individuals = to_chain_individuals(individuals, experiment_id=experiment_id)
-            t0 = time.perf_counter()
-            evaluation = evaluate_population(
-                chain_individuals,
-                master_seed=master_seed,
-                chain=chain,
-                arena_config=arena_config,
-                steps=steps,
-                generation=generation,
-                device=device,
-            )
-            elapsed = time.perf_counter() - t0
-            individuals = assemble_individuals(
-                chain_individuals, evaluation, arena_config=arena_config, weights=weights
-            )
-            _write_generation_artifacts(
-                run_dir,
-                experiment_id=experiment_id,
-                environment_id=environment_id,
-                generation=generation,
-                seed=master_seed,
-                individuals=individuals,
-                evaluation=evaluation,
-                arena_config=arena_config,
-                weights=weights,
-                steps=steps,
-                elapsed=elapsed,
-            )
-            viable_fitness = [i.fitness for i in individuals if i.viable]
-            summary = GenerationSummary(
-                generation=generation,
-                n_individuals=len(individuals),
-                n_viable=len(viable_fitness),
-                fitness_mean=(float(np.mean(viable_fitness)) if viable_fitness else None),
-                fitness_std=(
-                    float(np.std(viable_fitness, ddof=1)) if len(viable_fitness) > 1 else None
-                ),
-                bottleneck=False,
-                event=None,
-            )
-            generations_run += 1
+    for generation in range(generations):
+        chain_individuals = to_chain_individuals(individuals, experiment_id=experiment_id)
+        t0 = time.perf_counter()
+        evaluation = evaluate_population(
+            chain_individuals,
+            master_seed=master_seed,
+            chain=chain,
+            arena_config=arena_config,
+            steps=steps,
+            generation=generation,
+            device=device,
+        )
+        elapsed = time.perf_counter() - t0
+        individuals = assemble_individuals(
+            chain_individuals, evaluation, arena_config=arena_config, weights=weights
+        )
+        _write_generation_artifacts(
+            run_dir,
+            experiment_id=experiment_id,
+            environment_id=environment_id,
+            generation=generation,
+            seed=master_seed,
+            individuals=individuals,
+            evaluation=evaluation,
+            arena_config=arena_config,
+            weights=weights,
+            steps=steps,
+            elapsed=elapsed,
+        )
+        viable_fitness = [i.fitness for i in individuals if i.viable]
+        summary = GenerationSummary(
+            generation=generation,
+            n_individuals=len(individuals),
+            n_viable=len(viable_fitness),
+            fitness_mean=(float(np.mean(viable_fitness)) if viable_fitness else None),
+            fitness_std=(
+                float(np.std(viable_fitness, ddof=1)) if len(viable_fitness) > 1 else None
+            ),
+            bottleneck=False,
+            event=None,
+        )
+        generations_run += 1
 
-            result = advance_generation(
-                individuals,
-                experiment_id=experiment_id,
-                generation=generation + 1,
-                seed_manager=seed_manager,
-                config=evolution_config,
-                layout=chain.layout,
-            )
-            if not result.success:
-                bottleneck = True
-                summary = replace(summary, bottleneck=True, event=result.event)
-            summaries.append(summary)
-            evo_fh.write(json.dumps(asdict(summary), ensure_ascii=False) + "\n")
-            if bottleneck:
-                break
-            individuals = result.offspring
+        result = advance_generation(
+            individuals,
+            experiment_id=experiment_id,
+            generation=generation + 1,
+            seed_manager=seed_manager,
+            config=evolution_config,
+            layout=chain.layout,
+        )
+        if not result.success:
+            bottleneck = True
+            summary = replace(summary, bottleneck=True, event=result.event)
+        summaries.append(summary)
+        if bottleneck:
+            break
+        individuals = result.offspring
 
+    write_jsonl(run_dir / "evolution.jsonl", [asdict(s) for s in summaries])
     _update_status(run_dir, "bottleneck" if bottleneck else "completed")
     return EvolutionRunResult(
         generations_run=generations_run,

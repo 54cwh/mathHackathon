@@ -15,7 +15,7 @@ from dataclasses import replace
 
 import numpy as np
 
-from evogenesis.core.ids import mint_id
+from evogenesis.core.ids import mint_id, parse_id
 from evogenesis.genome.config import DEFAULT_LAYOUT, GenomeLayout
 from evogenesis.genome.genome import DiploidGenome, fertilize, make_gamete
 
@@ -33,19 +33,13 @@ def gamete_seed_index(genome_id: str, *, population_size: int) -> int:
         raise ValueError("genome_id 不能为空")
     if population_size <= 0:
         raise ValueError("population_size 必须为正")
-    parts = genome_id.rsplit(":", 2)
-    if len(parts) != 3 or not parts[1].startswith("g"):
-        raise ValueError(f"genome_id 格式非法：{genome_id!r}")
-    generation_text = parts[1][1:]
-    if not generation_text.isdigit():
-        raise ValueError(f"genome_id 的 generation 段必须为数字，实际 {generation_text!r}")
-    tail = parts[2]
-    if not tail.startswith(_GENOME_ROLE_PREFIX):
-        raise ValueError(f"genome_id 末段必须以 {_GENOME_ROLE_PREFIX!r} 开头，实际 {tail!r}")
-    digits = tail[len(_GENOME_ROLE_PREFIX) :]
-    if not digits.isdigit():
-        raise ValueError(f"genome_id 的 index 段必须为数字，实际 {digits!r}")
-    return int(generation_text) * population_size + int(digits)
+    try:
+        _, generation, role, index = parse_id(genome_id)
+    except ValueError as exc:  # core §3.1 的唯一解析器
+        raise ValueError(f"genome_id 格式非法：{genome_id!r}") from exc
+    if role != _GENOME_ROLE_PREFIX:
+        raise ValueError(f"genome_id 的 role 必须为 {_GENOME_ROLE_PREFIX!r}，实际 {role!r}")
+    return generation * population_size + index
 
 
 def offspring_genome(

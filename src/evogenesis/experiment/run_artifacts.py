@@ -50,8 +50,17 @@ def dump_json(path: Path, payload: object, *, indent: int | None = None) -> None
 
 
 def write_metrics_csv(run_dir: Path, rows: list[dict]) -> None:
-    """写 `metrics.csv`（逐个体一行；列 = `seed`/`fish_id` + `METRIC_COLUMNS`）。"""
-    fields = ["seed", "fish_id", *METRIC_COLUMNS]
+    """写 `metrics.csv`（逐个体一行）。
+
+    列 = `seed`/`fish_id` + `METRIC_COLUMNS` + **行内出现的附加键**（按首次出现顺序，如
+    BC 生命周期的 `phase` / `generation`）——后者不被静默丢弃（`experiment §5.2`）。
+    """
+    extras: list[str] = []
+    for row in rows:
+        for key in row:
+            if key not in ("seed", "fish_id", *METRIC_COLUMNS) and key not in extras:
+                extras.append(key)
+    fields = ["seed", "fish_id", *METRIC_COLUMNS, *extras]
     with (run_dir / "metrics.csv").open("w", encoding="utf-8", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=fields)
         writer.writeheader()

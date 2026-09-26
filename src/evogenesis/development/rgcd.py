@@ -419,6 +419,11 @@ def develop(
     """
     if q.shape[-1] != config.grn_dim:
         raise ValueError(f"q(G) 维数 {q.shape[-1]} 与 grn.dim {config.grn_dim} 不一致")
+    if config.distance_space != "unit_square":
+        raise NotImplementedError(
+            "仅实现 distance_space='unit_square'（RGCD §8 的 λ 口径），"
+            f"实际 {config.distance_space!r}"
+        )
     if config.placement != "domain_blocked" or config.position_space != "unit_square":
         raise NotImplementedError("仅实现冻结的 domain_blocked / unit_square 放置（RGCD §3）")
     if config.grn_activation != "sigmoid":

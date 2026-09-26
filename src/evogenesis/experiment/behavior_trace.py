@@ -12,12 +12,12 @@ owner：`experiment`；schema `schemas/behavior_trace.schema.json`。用途与 B
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import numpy as np
 
 from evogenesis.arena.env import DanioArena
+from evogenesis.core.io import write_jsonl
 from evogenesis.experiment.arena_rollout import RolloutStep
 from evogenesis.experiment.trajectories import OBS_DIM_NAMES
 
@@ -88,11 +88,7 @@ def trace_step(
 
 def write_trace(path: Path, header: dict, steps: list[dict]) -> Path:
     """写一个整群 trace 的 JSONL：首行 header，其后逐 step。"""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as fh:
-        fh.write(json.dumps(header, ensure_ascii=False) + chr(10))
-        for rec in steps:
-            fh.write(json.dumps(rec, ensure_ascii=False) + chr(10))
+    write_jsonl(path, [header, *steps])
     return path
 
 

@@ -36,6 +36,16 @@ def git_commit(repo_root: Path = _REPO_ROOT) -> str:
         return "unknown"
 
 
+def update_run_status(run_dir: str | Path, status: str) -> None:
+    """改写 run 的 ``metadata.json.status``（入口脚本/代循环在结束时置终态）。"""
+    metadata_path = Path(run_dir) / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata["status"] = status
+    metadata_path.write_text(
+        json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+
+
 def create_run_dir(
     *,
     experiment_id: str,

@@ -1,9 +1,9 @@
-{"record_type": "header", "schema_version": "1.0.0", "experiment_id": "exp-example", "episode_id": "ep0001", "environment_id": "example", "generation": 0, "episode_seed": 3804086077, "n_events": 8}
-{"seq": 1, "type": "arena.spawn", "step": 0, "payload": {"entity_id": "fish_00"}}
-{"seq": 2, "type": "arena.capture_attempt", "step": 0, "payload": {"fish_id": "fish_00", "prey_id": "prey_00", "distance": 2.0, "size_ratio": 0.2, "threshold": 1.25, "capture_radius": 4.61, "result": "too_small_to_eat"}}
-{"seq": 3, "type": "arena.prey_captured", "step": 0, "payload": {"fish_id": "fish_04", "prey_id": "prey_17", "distance": 4.061, "size_ratio": 1.858, "food_reward": 0.143488}}
-{"seq": 4, "type": "arena.collision", "step": 0, "payload": {"fish_id": "fish_00", "obstacle_id": "obstacle_00"}}
-{"seq": 5, "type": "arena.escape", "step": 101, "payload": {"fish_id": "fish_04", "threat_source": "predator_01"}}
-{"seq": 6, "type": "arena.energy_depleted", "step": 0, "payload": {"fish_id": "fish_00", "survival_steps": 0}}
-{"seq": 7, "type": "arena.fish_captured", "step": 0, "payload": {"fish_id": "fish_00", "predator_id": "predator_00", "survival_steps": 1}}
-{"seq": 8, "type": "arena.episode_end", "step": 600, "payload": {"steps": 600, "fish_alive": 12, "prey_remaining": 23}}
+{"record_type":"header","schema_version":"1.0.0","experiment_id":"exp-example","episode_id":"ep0001","environment_id":"example","generation":0,"episode_seed":3804086077,"n_events":8}
+{"seq":1,"type":"arena.spawn","step":0,"payload":{"entity_id":"fish_00"}}
+{"seq":2,"type":"arena.capture_attempt","step":0,"payload":{"fish_id":"fish_00","prey_id":"prey_00","distance":2.0,"size_ratio":0.2,"threshold":1.25,"capture_radius":4.61,"result":"too_small_to_eat"}}
+{"seq":3,"type":"arena.prey_captured","step":0,"payload":{"fish_id":"fish_04","prey_id":"prey_17","distance":4.061,"size_ratio":1.858,"food_reward":0.143488}}
+{"seq":4,"type":"arena.collision","step":0,"payload":{"fish_id":"fish_00","obstacle_id":"obstacle_00"}}
+{"seq":5,"type":"arena.escape","step":101,"payload":{"fish_id":"fish_04","threat_source":"predator_01"}}
+{"seq":6,"type":"arena.energy_depleted","step":0,"payload":{"fish_id":"fish_00","survival_steps":0}}
+{"seq":7,"type":"arena.fish_captured","step":0,"payload":{"fish_id":"fish_00","predator_id":"predator_00","survival_steps":1}}
+{"seq":8,"type":"arena.episode_end","step":600,"payload":{"steps":600,"fish_alive":12,"prey_remaining":23}}

@@ -53,11 +53,18 @@ def load_model_chain_config(
     file > default），供 Experiment D 消融臂（`experiment §3.4` / `connectome §9`）不改
     YAML 即换配置；**仅对文件加载的配置生效**（``path=None`` 时各 loader 直接取冻结默认值）。
     """
-    return ModelChainConfig(
+    chain = ModelChainConfig(
         layout=load_genome_config(path, overrides=overrides, environ=environ),
         rgcd=load_development_config(path, overrides=overrides, environ=environ),
         network=load_network_config(path, overrides=overrides, environ=environ),
     )
+    # 跨配置不变式（`genome §6` 冻结 motif_count == grn.dim == 8）：偏离须同步 B 形状并重标定。
+    if chain.layout.motif_count != chain.rgcd.grn_dim:
+        raise ValueError(
+            "不变式违反：genome.motif_count="
+            f"{chain.layout.motif_count} != grn.dim={chain.rgcd.grn_dim}（genome §6）"
+        )
+    return chain
 
 
 @dataclass(frozen=True)

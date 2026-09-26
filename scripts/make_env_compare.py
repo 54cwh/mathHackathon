@@ -36,7 +36,12 @@ CONDITIONS = [
     ("exp_env_predator_rich", "predator_rich\n(pred 6)"),
     ("exp_env_resource_scarce", "resource_scarce\n(prey 12)"),
 ]
-METRICS = ["survival", "prey_capture", "escape_success", "composite_fitness"]
+METRICS = ["survival", "capture_rate", "prey_capture", "escape_success", "composite_fitness"]
+
+
+def _environment_id(run_id: str) -> str:
+    """实验 id → `environment_id`（默认环境组用标准名 `default`，`experiment §4`）。"""
+    return "default" if run_id == "exp_env_baseline" else run_id.removeprefix("exp_env_")
 
 
 def _commit() -> str:
@@ -105,7 +110,7 @@ def main() -> None:
                 [
                     {
                         "condition": exp,
-                        "environment_id": exp.removeprefix("exp_env_"),
+                        "environment_id": _environment_id(exp),
                         "metric": m,
                         "mean": summaries[exp]["per_metric"][m]["mean"],
                         "std": summaries[exp]["per_metric"][m]["std"],
@@ -162,7 +167,7 @@ def main() -> None:
                 [
                     {
                         "condition": exp,
-                        "environment_id": exp.removeprefix("exp_env_"),
+                        "environment_id": _environment_id(exp),
                         "captures_total": tot[exp][0],
                         "encounters_total": tot[exp][1],
                         "n_individuals": tot[exp][2],

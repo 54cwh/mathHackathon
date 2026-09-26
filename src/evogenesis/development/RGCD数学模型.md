@@ -174,6 +174,7 @@ domain bias 保证六个基础谱系有 developmental competence，DNA/GRN 决�
 **owner**：`type_i` 如何由 GRN **产出**（本式）归本文件；六类**功能语义**与 left/right motor 标记归 `connectome/DanioNet设计规范.md` §1/§5。`argmax` 为离散化理想化（真实 fate 为连续谱 `[bib#75]`），建议同时记录 `z_i` 分布/熵。
 
 ## 7. Viability
+所有判据在 **active subset**（`M` 为真者）上计算：非活跃神经元不参与 fate 计数/路径/动力学判定（与 `DanioNet §3` 的最终复核口径一致）。
 ### Developmental viability
 每种基础 fate：
 

@@ -18,6 +18,7 @@ from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
 from evogenesis.core.config import ModelConfig, load_config
+from evogenesis.core.io import write_jsonl
 from evogenesis.experiment import collect, learning_run, runlayout
 from evogenesis.experiment.environments import BASELINE, load_environment
 from evogenesis.experiment.metrics import aggregate_by_seed
@@ -131,9 +132,7 @@ def main(argv: list[str] | None = None) -> None:
         generation=args.generation,
     )
     write_metrics_csv(run_dir, rows)
-    with (run_dir / "learning.jsonl").open("w", encoding="utf-8") as handle:
-        for record in learning_run.learning_records(result):
-            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+    write_jsonl(run_dir / "learning.jsonl", list(learning_run.learning_records(result)))
     post_rows = [row for row in rows if row["phase"] == "post"]
     (run_dir / "seed_summary.json").write_text(
         json.dumps(aggregate_by_seed(post_rows), indent=2, ensure_ascii=False) + "\n",

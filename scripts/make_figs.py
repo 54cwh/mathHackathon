@@ -47,7 +47,8 @@ TABLES = ROOT / "results" / "tables"
 #: 报告图的展示顺序与标题（键 = metrics.csv 里的列名）。
 REPORT_METRICS = (
     ("survival", "survival"),
-    ("prey_capture", "prey capture"),
+    ("capture_rate", "capture rate (main, §2.1)"),
+    ("prey_capture", "prey capture (diagnostic)"),
     ("escape_success", "escape success"),
     ("energy_efficiency", "energy efficiency"),
     ("composite_fitness", "composite fitness"),

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import yaml
+from evogenesis.core.config import read_yaml
 
 ROOT = Path(__file__).resolve().parents[3]
 ENVIRONMENTS_FILE = ROOT / "configs" / "experiment_environments.yaml"
@@ -20,7 +20,7 @@ BASELINE = "default"
 
 def load_environments() -> dict:
     """返回 `environment_id -> 段级 overrides` 的映射（元信息键已剔除）。"""
-    data = yaml.safe_load(ENVIRONMENTS_FILE.read_text(encoding="utf-8")) or {}
+    data = read_yaml(ENVIRONMENTS_FILE) or {}
     envs = data.get("environments") or {}
     return {
         name: {k: v for k, v in spec.items() if isinstance(v, dict)} for name, spec in envs.items()

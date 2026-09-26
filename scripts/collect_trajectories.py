@@ -93,6 +93,8 @@ def main(argv: list[str] | None = None) -> None:
         trajectories=trajectories,
         out_dir=out_dir,
     )
+    if args.out_dir is None:
+        runlayout.update_run_status(run_dir, "completed")
     print(f"已写入 {len(written)} 条 episode 轨迹 → {out_dir}")
 
 

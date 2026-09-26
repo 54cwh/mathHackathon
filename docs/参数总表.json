@@ -1776,6 +1776,36 @@
       "config": "configs/default_arena.yaml → actors.predator_obstacle_avoid_gain",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "formal_seed_list",
+      "value": [
+        1103,
+        2207,
+        3301
+      ],
+      "unit": "—",
+      "group": "seed",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "正式实验的 3 个随机种子（`formal_seeds=3`）；Demo 与正式隔离。由 `experiment/config.py::load_formal_seeds` 读取，scripts 不再硬编码。",
+      "source": "configs/experiment_seeds.yaml",
+      "config": "configs/experiment_seeds.yaml → seeds",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "demo_master_seed",
+      "value": 250927,
+      "unit": "—",
+      "group": "seed",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "现场 Demo 固定主种子，与正式实验种子隔离（`core §3`）。",
+      "source": "configs/demo_seed.yaml",
+      "config": "configs/demo_seed.yaml → master_seed",
+      "sensitivity": null,
+      "suggest": null
     }
   ],
   "missing_required": {

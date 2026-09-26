@@ -58,6 +58,7 @@ from evogenesis.experiment.behavior_trace import (
     trace_header,
     write_trace,
 )
+from evogenesis.experiment.config import load_formal_seeds
 from evogenesis.experiment.environments import load_environment
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import (
@@ -73,7 +74,11 @@ from evogenesis.experiment.run_artifacts import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SEEDS = "1103,2207,3301"  # configs/experiment_seeds.yaml
+
+
+def _default_seeds() -> str:
+    """正式 seed 轴（`configs/experiment_seeds.yaml`，`core §3`；唯一来源）。"""
+    return ",".join(str(seed) for seed in load_formal_seeds().seeds)
 
 
 def create_run_dir(
@@ -177,7 +182,9 @@ def _parse_args() -> argparse.Namespace:
         default=None,
         help="configs/experiment_environments.yaml 的 environment_id；缺省=基线",
     )
-    parser.add_argument("--seeds", default=DEFAULT_SEEDS, help="逗号分隔；见 experiment_seeds.yaml")
+    parser.add_argument(
+        "--seeds", default=_default_seeds(), help="逗号分隔；见 experiment_seeds.yaml"
+    )
     parser.add_argument("--steps", type=int, default=None, help="默认取 world.episode_steps")
     return parser.parse_args()
 
@@ -265,6 +272,7 @@ def main() -> None:
         dump_json(run_dir / "seed_summary.json", by_seed, indent=2)
         all_rows.extend(rows)
         seed_rows.extend(by_seed)
+        runlayout.update_run_status(run_dir, "completed")
         print(f"[{run_id}] {steps} 步 / {len(rows)} 个体 / {elapsed:.1f}s")
 
     summary = summarise_over_seeds(seed_rows)

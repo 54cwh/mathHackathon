@@ -33,7 +33,8 @@ TABLES = ROOT / "results" / "tables"
 #: (列名, 展示名, 单位)。energy_efficiency 是**率**（每步），其余是比值。
 ROWS = (
     ("survival", "survival", "ratio"),
-    ("prey_capture", "prey capture", "ratio"),
+    ("capture_rate", "capture rate (main)", "per step"),
+    ("prey_capture", "prey capture (diagnostic)", "ratio"),
     ("escape_success", "escape success", "ratio"),
     ("energy_efficiency", "energy efficiency", "per step"),
     ("composite_fitness", "composite fitness", "ratio"),
@@ -154,7 +155,7 @@ def diagnostics(metrics: pd.DataFrame) -> str:
         "否则会被少数「蹲守」个体主导。",
         f"- **捕获率有两个口径，必须标明**：个体比值均值={per_fish_mean:.4f}；"
         f"汇总比值={pooled:.4f}（{cap_total} / {enc_total}）；"
-        f"绝对量 captures/episode={cap_total}",
+        f"绝对量 captures（全体 {n} 个体合计）={cap_total}",
         f"- 两者相差 {ratio_gap:.1f}x —— 前者是「典型个体的得手率」，"
         "后者是「全部接触中的得手比例」，**不可互换**。",
         "",
