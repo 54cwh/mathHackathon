@@ -871,6 +871,19 @@
       "config": "configs/default_model.yaml → development.saturation_eps",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "motif_scan_scope",
+      "value": "per_chromosome",
+      "unit": null,
+      "group": "genome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "haploid=2×128=256 bp；窗口逐染色体滑动、不跨边界，TopKMean 在窗口并集上取 top-K（避免虚构跨染色体 junction motif）",
+      "source": "src/evogenesis/development/RGCD数学模型.md §2",
+      "config": "configs/default_model.yaml → genome.motif_scan_scope",
+      "sensitivity": null,
+      "suggest": null
     }
   ],
   "missing_required": {

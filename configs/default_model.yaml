@@ -6,6 +6,7 @@ genome:
   motif_length: 6
   motif_window: 6
   motif_topk: 3
+  motif_scan_scope: per_chromosome
 grn:
   dim: 8
   development_steps: 12

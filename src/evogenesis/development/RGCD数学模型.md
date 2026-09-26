@@ -1,6 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+> 状态：**v1.0 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 RGCD 输入：
@@ -41,7 +42,7 @@ q_k(S)=TopKMean_{s\subset S}a(M_k,s)
 **参数（定稿）**：
 - motif 长度 \(|M_k|=6\) bp；滑窗 \(|s|=6\) bp、步长 1；`TopK` 的 \(K=3\)。
 - 8 条 motif 目录由 \(\Theta_D\) 的 seed 从 \(\{A,C,G,T\}^6\) 一次抽样后固定（不随个体或代变化）。
-- 扫描范围：每个 haplotype 的**串联序列**（`chromosome_pairs × bp_per_haplotype_chromosome` = \(2\times128=256\) bp）。
+- 扫描范围：每个 haplotype 有 **2 条染色体**（各 `bp_per_haplotype_chromosome`=128 bp，合计 haploid 256 bp）；窗口在**各染色体内**滑动、**不跨染色体边界**，`TopKMean` 在两条染色体的**窗口并集**上取 top-\(K\)。实现侧须按 2 条染色体存储（不塌成单串）。
 - 依据与定位：长度 6 bp 落在真实 TF motif 6–12 bp 区间下沿，属 A-life 尺度（`docs/设计依据审计.md` R5：Stormo 2000；Lambert et al. 2018）；\(K=3\) 与 motif 条数为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
 
 ## 3. Developmental domains
@@ -334,6 +335,7 @@ behavior effect（四维向量，不合成标量）：
 
 > 逐份阅读本文时发现的未定义点；§2–§8、§10–§11 各项已随本文件定稿（见 §13 总表）。
 
-1. **motor left/right 标记（G2）与动作合成（G3）不属本文件**：标记规则归 `connectome/DanioNet设计规范.md` §5、动作 \(y_\omega,y_v\) 归其 §4；§7 developmental viability 只**引用**该标记，待 DanioNet 冻结时闭合。
-2. **\(\theta_N,\theta_H\) 数值**（genome §6，G12）：待 pilot 反解，与本文件 §7 的架构档绑定，登记 `docs/参数总表.json`。
-3. **bp 口径**：本文件按 haplotype 串联序列 256 bp（\(2\times128\)）计 motif 窗口；实现侧口径须与此一致。
+（无遗留：
+- G2 left/right 标记归 `connectome/DanioNet设计规范.md` §5、G3 动作合成 \(y_\omega,y_v\) 归其 §4；§7 developmental viability 只**引用**该标记，属**范围外**，待 DanioNet 冻结时闭合。
+- \(\theta_N,\theta_H\) 数值（genome §6，G12）为**标定任务**，登记 `docs/参数总表.json`；本文件 §7 只引用其规则。
+- bp 口径（已定）：haploid \(=2\times128=256\) bp，motif 窗口逐染色体、不跨界，见 §2。）
