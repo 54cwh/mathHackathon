@@ -71,6 +71,11 @@ class RGCDConfig:
     gene_noise: float = 0.1
     c_domain_bonus: float = 1.5
     domain_identity_spread_scale: float = 1.0
+    #: §5 的两个设计增益（α/β）与基因组通道的 motif 索引。
+    #: 索引**单一来源**：`genome.motif_subset_A`（不在此另写一版）。
+    division_drive_gain: float = 1.0
+    division_locus_gain: float = 0.0
+    division_locus_indices: tuple[int, ...] = (0,)
     zero_input_steps: int = 50
     saturation_ratio_max: float = 0.9
     saturation_eps: float = 0.001
@@ -123,6 +128,9 @@ class RGCDConfig:
             gene_noise=cfg.development.gene_noise,
             c_domain_bonus=cfg.development.c_domain_bonus,
             domain_identity_spread_scale=cfg.development.domain_identity_spread_scale,
+            division_drive_gain=cfg.development.division_drive_gain,
+            division_locus_gain=cfg.development.division_locus_gain,
+            division_locus_indices=(cfg.genome.motif_subset_A,),
             zero_input_steps=cfg.development.zero_input_steps,
             saturation_ratio_max=cfg.development.saturation_ratio_max,
             saturation_eps=cfg.development.saturation_eps,

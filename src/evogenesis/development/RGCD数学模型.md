@@ -154,6 +154,37 @@ daughter：
 
 **参数与初始化（定稿）**：\(\mathbf w_d\in\mathbb R^8\)、\(b_d\in\mathbb R\)；\(\mathbf w_d\sim\mathcal N(0,(1/\sqrt8)^2)\)、\(b_d=0\)（分裂概率约 0.5）。分裂扰动 \(\epsilon_p\in\mathbb R^2\sim\mathcal N(0,0.05^2)\)（单位方域）、\(\epsilon_g\in\mathbb R^8\sim\mathcal N(0,0.1^2)\)；\(\mathbf p_{daughter}\) 裁剪回 \([0,1]^2\)。尺度均为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
 
+**§5 扩展：分裂读数的两个设计增益（2026-09-26）**
+
+读数可加两个**默认关闭**的设计增益 \(\alpha\)（`development.division_drive_gain`）与
+\(\beta\)（`development.division_locus_gain`）；关闭时（\(\alpha=1,\beta=0\)）与上式**逐位一致**：
+
+\[
+p_i^{divide}=\sigma\!\left(\alpha\left(\mathbf w_d^T\mathbf g_i^{12}+b_d-\overline{\mathbf w_d^T\mathbf g^{12}}\right)+\beta\,c_i\right),
+\qquad
+c_i=\overline{q_A^{(i)}}-\overline{q^{(i)}}
+\]
+
+其中横线在**该个体**的 24 个 precursor 上取均值；\(c_i\) 为**基因组通道** = A 位点 motif 亲和均值 −
+全 motif 亲和均值，索引的单一来源是 `genome.motif_subset_A`（不另立常数）。**逐个体中心化是先决条件**：
+\(\mathbf g\in[0,1]^8\) 若原样相加等于给全体前体一个正偏置 ⇒ sigmoid 整体饱和 ⇒ \(N\equiv48\)、区分力归零。
+
+**两条已实测结论（关键）**
+
+1. **\(\beta\) 是单位规范（gauge），不是校准值，也不可校准。** 下游读数经**秩统计量**（AUC、外显率阈分类）
+   读取，而秩统计量对 \(\beta>0\) 的任何单调尺度**不变**。实测 \(\alpha\in[0.5,16]\times\beta\in[0.05,2]\)
+   的**全平面同值**（AUC / 两档间隙 / 外显率皆不变）⇒ 取 1.0 与取 0.05 等价。
+2. **\(\alpha\) 在线性区一阶惰性。** 逐个体中心化使 \(\sum_i(\mathbf w_d^T\mathbf g_i^{12}-\overline{\cdot})=0\)，
+   故线性区该通道对 \(\sum_i p_i\) 的一阶贡献**恒为 0**；仅当 \(\alpha\,\sigma_u\gtrsim0.3\) 才起作用，
+   而该区已进入饱和。实测 \(\alpha\in[0.5,16]\) 对秩统计量无影响。
+
+**机制价值与边界**：\(\beta\) 由 0 翻 1.0 后 N 轴由 `separable=false` 转为 `separable=true`（官方校准集实测
+AUC 0.4775 → 0.6284、\(p=3.4\times10^{-19}\)、min-misclassification 0.500 → 0.408、
+\(\theta_N^{obs}\) 由退化贴顶转为区间内部 35.5 / 36.5）。但该改动会改动 3 处**已冻结锚**
+（含论文 `02-method.tex` 的 \(N\) 中位 36.5 / 195 边 / 0.149）并须重跑 Exp C/D/E/F；且 §7 判据无
+**效应下限**（AUC 0.628 属弱效应）⇒ **翻默认待用户裁决**，当前出货默认仍 \(\alpha=1,\beta=0\)（= 原式）。
+依据见 `research/notes/契约决策记录.md` 2026-09-26 条目。
+
 ## 6. Cell identity
 \[
 \mathbf l_i=U\mathbf g_i+\mathbf c_{domain(i)}
@@ -439,6 +470,7 @@ x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
 | \(\mathbf a,b_\tau\) | \(\mathbb R^8,\mathbb R\) | \(\mathcal N(0,(1/\sqrt8)^2),\,0\) | 设计选择 |
 | \(\epsilon_p\) | \(\mathcal N(0,0.05^2)\) | — | 设计选择 |
 | \(\epsilon_g\) | \(\mathcal N(0,0.1^2)\) | — | 设计选择 |
+| \(\alpha,\beta\) | \(\mathbb R_{\ge0}\)（配置标量） | 默认 \(1.0,0.0\)（= 原式）；\(\beta\) 单位规范、\(\alpha\) 线性区惰性 | §5 扩展（2026-09-26）；翻 \(\beta=1.0\) 待用户裁决（`docs/参数总表.json` `changes_pending`） |
 | motif 长度 / 窗口 / \(K\) | 6 bp / 6 bp / 3 | — | 审计 R5；\(K\) 为设计选择 |
 
 ## 阅读问题（待确认）

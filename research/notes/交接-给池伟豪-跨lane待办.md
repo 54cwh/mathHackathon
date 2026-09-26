@@ -362,3 +362,37 @@ commit **3ab3e0e**（已推送）。修三处：Θ_D 改每-seed（新命名空�
 - `genome/生物学与进化遗传学基础.md:70` 的旧门禁措辞（`separable = 错分 < 多数类基线`）已与
   `experiment §3.9` 对齐 —— 上一轮 `fbec51e` 漏改此处，两处曾互相矛盾。
 
+### §5 基因组通道：penetrance N 轴可辨识化（2026-09-26；告知 + 一处待裁）
+
+**已落地（未提交，原因见末段）**：`development.division_drive_gain`(α) 与
+`development.division_locus_gain`(β)，默认 `1.0 / 0.0` = 原式**逐位一致**。**逐个体中心化是先决条件**：
+`q_A∈[0,1]` 若原样相加即成全体前体的正偏置 ⇒ 饱和 ⇒ `N≡48`、区分力归零。索引单一来源
+`genome.motif_subset_A`（不另立常数）。
+
+**端到端实测（官方校准集，n=1600）**：β=0 → N 轴 AUC 0.4775、min-misclass 0.500（= 多数类基线）；
+**β=1.0 → AUC 0.6284、p=3.4e-19、min-misclass 0.408、θ_N^obs 35.5/36.5 由退化贴顶落回区间内部**。
+H 轴仍 `separable=false`（AUC 0.4993；已按用户裁决退役 ⇒ 单轴 N）。
+
+**两条结构性结论 —— 可直接取代本文件 §9「penetrance 观测轴对 `q(G)` 不敏感」的表述**：
+1. **β 是单位规范（gauge），不是校准值**：下游读数经秩统计量，对 β>0 的任何单调尺度不变
+   （实测 `α∈[0.5,16]×β∈[0.05,2]` **全平面同值**）⇒ **不存在可标定的 β**。
+2. **α 在线性区一阶惰性**：逐个体中心化使 `Σᵢu_c,ᵢ = 0` ⇒ 一阶贡献恒为 0。
+   根因：`w_d` 把 A 位点类信号投影到**随机方向**（`|cos(w_d, d̂)|` = 0.046 vs 0.476）。
+
+**⚠️ 若 β 翻 1.0，会动 3 处已冻结锚（请论文 lane 预先知悉）**：
+`tests/test_dump_connectome_matrix.py` 的**论文锚**（**N 中位 36.5 → 37.0**，及 195 边 / 0.149 密度，
+对应 `paper/02-method.tex`「48-node 的含义」）、`tests/test_fig_connectome.py` 代表个体 index 4 → 0、
+`tests/test_development_config.py` 的 `DEFAULT_CONFIG`；并须重生成 `artifacts/demo` checkpoint。
+
+**时序（更正我上一轮的成本判断）**：Θ_D 每-seed（`3ab3e0e`，已落地）**已强制** Exp C/D/E/F 与
+`n_danio` 那波重跑；β 与之**同源失效**（都改 `N`），**并入同一波增量≈0** ⇒ 分开裁会**多付一波**。
+故建议在 Exp C/D/E/F 重跑完成**前**裁决 β。
+另：**B1（读数换 `E[N]`）便宜得多** —— 只加读数字段 + 提 `CHECKPOINT_VERSION`，**不改 `N`/连接组/训练**，
+不触发 Exp 重跑，只需重生成 demo checkpoint + 重跑校准；且它是比 β 更大的杠杆（去掉 Bernoulli 实现噪声，
+该噪声 sd≈2.26 把类间差≈0.29 淹掉）。**但两支的绝对效应都小**（AUC 高≠效应大），详见
+`docs/参数总表.json` 的 `changes_pending`。本 lane 不挑 seed 取好看数字（1103/42 上可报 0.955，那是挑种子，已拒绝）。
+
+**未提交的阻塞**：工作区 `rgcd.py` 同时含本 lane 的 locus 改动与并发 lane **未提交**的 `collect_trace` 删除
+（**同一 hunk 混编，无法按 hunk 拆分**）；而 `HEAD` 的 `model_chain.py:134` 仍在传 `collect_trace=`
+⇒ 单独提交 `rgcd.py` 会让**提交后的树坏掉**。故按既有裁决留在工作区，等对方批次先落地再一次性提。
+

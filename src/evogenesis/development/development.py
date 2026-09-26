@@ -72,10 +72,33 @@ def place_precursors(
 
 
 def division_probability(
-    grn: torch.Tensor, w_div: torch.Tensor, b_div: torch.Tensor
+    grn: torch.Tensor,
+    w_div: torch.Tensor,
+    b_div: torch.Tensor,
+    *,
+    drive_gain: float = 1.0,
+    locus_gain: float = 0.0,
+    locus_channel: float | torch.Tensor | None = None,
 ) -> torch.Tensor:
-    """§5 分裂概率 ``sigma(w_d^T g + b_d)``（``(N,)``）。"""
-    return torch.sigmoid(grn @ w_div + b_div)
+    """§5 分裂概率（``(N,)``）。默认（``drive_gain=1.0``、``locus_gain=0.0``）与
+    ``sigma(w_d^T g + b_d)`` **逐位一致**。两个增益即 RGCD §5 的 ``alpha``/``beta``：
+
+    * ``drive_gain``(α)：作用在**逐个体中心化**的 GRN 驱动上。中心化等价于按 §8
+      ``solve_bias_for_density`` 的方式反解 ``b_d``，把 sigmoid 钉在灵敏段（§5 自述「分裂
+      概率约 0.5」）；**若不中心化，叠加基因组通道后整体饱和、区分力归零**（实测）。
+    * ``locus_gain``(β)：作用在**基因组通道** ``locus_channel`` 上。这是把「基因型→增殖」从
+      **随机方向投影**（``w_d``）改为**确定性通道**的关键：消除每-seed 的方向抽签。
+      **通道值须由调用方预先中心化**（见 `rgcd.develop`：取 A 位点亲和减本个体全 motif
+      均值）——`q_A ∈ [0,1]` 原样相加会给全体前体一个正偏置、令 sigmoid 饱和、区分力归零。
+    """
+    drive = grn @ w_div + b_div
+    if drive_gain != 1.0:
+        drive = drive_gain * (drive - drive.mean())
+    if locus_channel is not None and locus_gain != 0.0:
+        drive = drive + locus_gain * torch.as_tensor(
+            locus_channel, dtype=drive.dtype, device=drive.device
+        )
+    return torch.sigmoid(drive)
 
 
 def cell_identity(grn: torch.Tensor, U: torch.Tensor, domain_bias: torch.Tensor) -> torch.Tensor:
@@ -95,6 +118,9 @@ def proliferate(
     max_divisions_per_precursor: int,
     generator: torch.Generator,
     trace: list[dict] | None = None,
+    drive_gain: float = 1.0,
+    locus_gain: float = 0.0,
+    locus_channel: float | torch.Tensor | None = None,
 ) -> DevelopmentState:
     """§5 增殖：每个 precursor 至多分裂一次，子代 ``p+ε_p``（裁 ``[0,1]^2``）、``g+ε_g``。
 
@@ -102,7 +128,10 @@ def proliferate(
     """
     if max_divisions_per_precursor != 1:
         raise ValueError("§5 冻结为每 precursor 至多分裂一次（max_divisions_per_precursor=1）")
-    divide_prob = division_probability(grn, w_div, b_div)
+    divide_prob = division_probability(
+        grn, w_div, b_div,
+        drive_gain=drive_gain, locus_gain=locus_gain, locus_channel=locus_channel,
+    )
     divide = torch.rand(grn.shape[0], generator=generator, device=grn.device) < divide_prob
     parent = torch.nonzero(divide, as_tuple=False).squeeze(-1)
     k = int(parent.numel())

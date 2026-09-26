@@ -126,3 +126,50 @@ def test_proliferate_is_reproducible():
     assert torch.equal(first.grn, second.grn)
     assert torch.equal(first.positions, second.positions)
     assert torch.equal(first.domain_index, second.domain_index)
+
+def test_division_probability_defaults_are_bit_identical():
+    """默认参数（``drive_gain=1.0`` / ``locus_gain=0.0``）必须与 §5 原式**逐位一致** ——
+    这是「改变是 opt-in」的保证，也是全仓下游数字不被无意改动的守卫。"""
+    g = torch.Generator().manual_seed(0)
+    grn = torch.randn(6, 8, generator=g)
+    w_div = torch.randn(8, generator=g)
+    b_div = torch.tensor(0.3)
+    assert torch.equal(division_probability(grn, w_div, b_div),
+                       torch.sigmoid(grn @ w_div + b_div))
+
+
+def test_division_probability_locus_channel_is_monotone():
+    """基因组通道 β·q_A 必须**单调**抬升分裂概率（A 位点亲和越高→越可能分裂），
+    且 α 的中心化把驱动钉在灵敏段（否则整体饱和、区分力归零）。"""
+    g = torch.Generator().manual_seed(1)
+    grn = torch.randn(9, 8, generator=g)
+    w_div = torch.randn(8, generator=g)
+    b_div = torch.zeros(())
+    lo = division_probability(grn, w_div, b_div, drive_gain=2.0, locus_gain=3.0,
+                              locus_channel=0.1)
+    hi = division_probability(grn, w_div, b_div, drive_gain=2.0, locus_gain=3.0,
+                              locus_channel=0.9)
+    assert torch.all(hi >= lo)
+    assert float(hi.mean()) > float(lo.mean())
+    centred = division_probability(grn, w_div, b_div, drive_gain=2.0)
+    assert abs(float(centred.mean()) - 0.5) < 0.25, "中心化后均值应回到灵敏段附近"
+
+
+def test_division_gains_and_locus_index_wire_from_config():
+    """``configs → RGCDConfig`` 必须把 §5 两个增益与通道索引带上（含 CLI 覆盖层）；
+    索引以 ``genome.motif_subset_A`` 为**单一来源**。"""
+    from evogenesis.core.config import ModelConfig, load_config
+    from evogenesis.development.config import RGCDConfig, _resolve_default_model_config
+
+    cfg = load_config(
+        _resolve_default_model_config(),
+        model=ModelConfig,
+        overrides={
+            "development.division_drive_gain": 14.5,
+            "development.division_locus_gain": 12.0,
+        },
+    )
+    rgcd = RGCDConfig.from_config(cfg)
+    assert (rgcd.division_drive_gain, rgcd.division_locus_gain) == (14.5, 12.0)
+    assert rgcd.division_locus_indices == (cfg.genome.motif_subset_A,)
+

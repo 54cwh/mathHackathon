@@ -124,8 +124,10 @@ def _clamp_domain_identity_spread(
     配置或更大的 ``U`` 仍需它上报）。
 
     ``scale``（κ）来自 ``configs/default_model.yaml`` →
-    ``development.domain_identity_spread_scale``，把重定目标从「解析安全界」放大为
-    ``κ · c_domain_bonus / √dim``。**默认 1.0 与原行为逐位一致**。
+    ``development.domain_identity_spread_scale``，
+    把重定目标从「解析安全界」放大为
+    ``κ · c_domain_bonus / √dim``。
+    **默认 1.0 与原行为逐位一致**。
 
     实测（2026-09-26，seed 1103 / 2207 / 3301 各 400 个体，以 κ 标定替代恒真钳制）——
     **本判据不存在可用的工作点**：
@@ -569,6 +571,15 @@ def develop(
         steps=config.development_steps,
         trace=trace,
     )
+    # §5 基因组通道：A 位点 motif 亲和**相对本个体的全 motif 均值**（索引单一来源
+    # `genome.motif_subset_A`）。**必须中心化**：`q_A ∈ [0,1]` 若原样相加，等于给全体前体
+    # 一个正偏置 ⇒ sigmoid 整体饱和到 p≈1、`N ≡ 48`、区分力归零（实测 ΔE[N]=0.058）。
+    # 参照量取**该个体自己的** `mean(q)`，故不引入任何新常数、也不依赖总体统计量。
+    locus_channel: torch.Tensor | None = None
+    if config.division_locus_gain != 0.0 and config.division_locus_indices:
+        index = torch.tensor(list(config.division_locus_indices), dtype=torch.long,
+                             device=q_tensor.device)
+        locus_channel = q_tensor[index].mean() - q_tensor.mean()
     state = proliferate(
         grn,
         positions,
@@ -580,6 +591,9 @@ def develop(
         max_divisions_per_precursor=config.max_divisions_per_precursor,
         generator=generator,
         trace=trace,
+        drive_gain=config.division_drive_gain,
+        locus_gain=config.division_locus_gain,
+        locus_channel=locus_channel,
     )
     if state.grn.shape[0] > config.max_neurons:
         raise ValueError(

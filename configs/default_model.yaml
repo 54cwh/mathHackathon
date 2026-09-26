@@ -32,6 +32,26 @@ development:
   # §7 missing_fate 的 U 跨域散布重定尺度 κ（RGCD §10 实测：κ≤0.8 判据空转、
   # κ≥1.2 断崖成每-seed 赢者通吃；无可用工作点 ⇒ 该判据属设计约定，不贡献区分力）。
   domain_identity_spread_scale: 1.0
+  # §5 分裂读数的两个设计增益（RGCD §5）。默认 1.0 / 0.0 = 原式 `sigma(w_d·g + b_d)`
+  # **逐位一致**（改变是 opt-in 的）。
+  # α 作用在**逐个体中心化**的 GRN 驱动上；β 作用在**基因组通道**（A 位点 motif 亲和 q 的
+  # 均值 − 全 motif 均值，索引单一来源 `genome.motif_subset_A`）。
+  # **β 是单位规范（gauge），不是校准值**：读数经秩统计量（AUC / 外显率阈分类）读取，
+  # 二者对 β>0 的任何单调尺度**不变** ⇒ β 既不需要、也不可能被"标定"
+  # （实测 α∈[0.5,16]×β∈[0.05,2] 全平面同值）。α 在逐个体中心化后于线性区
+  # **一阶抵消**（Σ_i u_c,i = 0）⇒ 线性区 α 惰性、保持 1.0。
+  # 实测（β=1.0 全链，官方校准 seeds，n=1600）：N 轴 AUC 0.6284、p=3.4e-19、
+  # min-misclass 0.408（= pen 0.592），θ_N^obs 35.5 / 36.5 落**区间内部**；
+  # 对照 β=0 基线 AUC 0.4775、min-misclass 0.500（= 多数类基线）。H 轴仍不可分离
+  # （已按用户裁决停用，单轴 N）。
+  # **β 由 0.0 翻 1.0 待用户裁决**：它改动 3 处已冻结锚
+  # （`tests/test_dump_connectome_matrix.py` 的论文锚 N 中位 36.5 / 195 边 / 0.149 →
+  # 现 37.0、`tests/test_fig_connectome.py` 代表个体 index 4 → 0、
+  # `tests/test_development_config.py` 的 DEFAULT_CONFIG），并须重跑 Exp C/D/E/F +
+  # demo checkpoint；且 §7 判据无**效应下限**（AUC 0.628 虽 p 极小但仍属弱效应）。
+  # 依据：`research/notes/契约决策记录.md` 2026-09-26 条目（含权衡面与端到端实测）。
+  division_drive_gain: 1.0
+  division_locus_gain: 0.0
   zero_input_steps: 50
   saturation_ratio_max: 0.9
   saturation_eps: 0.001

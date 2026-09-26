@@ -79,6 +79,11 @@ class DevelopmentConfig(_Section):
     c_domain_bonus: float
     #: `U` 跨域散布重定尺度 κ（RGCD §10）。1.0 = 解析安全界（`missing_fate` 不可达）。
     domain_identity_spread_scale: float = 1.0
+    #: §5 分裂读数的两个设计增益（RGCD §5）。默认 = 原式**逐位一致**。
+    #: ``division_drive_gain``(α) 作用在**逐个体中心化**的 GRN 驱动上；
+    #: ``division_locus_gain``(β) 作用在基因组通道（A 位点 motif 亲和）上。
+    division_drive_gain: float = 1.0
+    division_locus_gain: float = 0.0
     zero_input_steps: int
     saturation_ratio_max: float
     saturation_eps: float
