@@ -75,6 +75,7 @@ def test_namespaces_frozen():
         "arena_spawn": 3,
         "motif_catalog": 4,
         "network_init": 5,
+        "selection": 6,
     }
 
 

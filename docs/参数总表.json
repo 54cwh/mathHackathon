@@ -694,19 +694,6 @@
       "suggest": "保留 0.5（设计选择，非可调超参）"
     },
     {
-      "name": "max_crossovers_per_chromosome",
-      "value": 1,
-      "unit": null,
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "文档规定每对染色体一次 crossover，无外部依据",
-      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md:7-11",
-      "config": "configs/evolution.yaml → max_crossovers_per_chromosome",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
       "name": "mendel_display_n",
       "value": 160,
       "unit": "offspring",
