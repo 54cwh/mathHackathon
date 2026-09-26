@@ -13,7 +13,7 @@ import time
 
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena
-from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.core.seed import SeedManager
 from evogenesis.experiment.run_artifacts import EVENT_KEYS
 
@@ -31,7 +31,7 @@ def run(seed: int) -> dict:
         dynamics_seed=manager.seed("arena_dynamics", 0),
     )
     arena.reset()
-    expert = ExpertPolicy()
+    expert = expert_policy_from_config(arena.cfg)
     t0 = time.perf_counter()
     for _ in range(STEPS):
         actions = {fid: expert(arena.observe(fid)) for fid, f in arena.fish.items() if f.alive}

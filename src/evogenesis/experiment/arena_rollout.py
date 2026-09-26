@@ -10,11 +10,15 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from evogenesis.arena.env import DanioArena
-from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.arena.policies import expert_policy_from_config
+
+if TYPE_CHECKING:
+    from evogenesis.arena.policies import ExpertPolicy
 
 
 @dataclass(frozen=True)
@@ -45,7 +49,7 @@ def expert_rollout(
     调用方须先 `arena.reset()`。`actions` 只含存活鱼（`arena.step` 跳过死鱼）；
     `track_ids` 用于「即使该鱼已死也要它的**步前**观测」（如 BC 受控鱼逐步记录）。
     """
-    policy = ExpertPolicy() if expert is None else expert
+    policy = expert_policy_from_config(arena.cfg) if expert is None else expert
     tracked = tuple(track_ids)
     for step in range(steps):
         alive_ids = tuple(fid for fid, fish in arena.fish.items() if fish.alive)

@@ -222,9 +222,11 @@ def run_lifetime_learning(
         generation=generation,
     )
 
-    delta_w_norm = tuple(
-        float(eval_net.delta_weights[slot].abs().max()) for slot in range(len(viable_individuals))
-    )
+    with torch.no_grad():
+        delta_w_norm = tuple(
+            float(eval_net.delta_weights[slot].abs().max())
+            for slot in range(len(viable_individuals))
+        )
 
     # 非遗传证据：重新发育同一 genome 的网络 ΔW 必须为 0、W⁰ 必须与训练网络相同
     fresh = danionet_of(

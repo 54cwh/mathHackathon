@@ -92,7 +92,9 @@ class DanioArena:
         self._spawn_rng = np.random.default_rng(self.spawn_seed)
         self._dynamics_rng = np.random.default_rng(self.dynamics_seed)
         self._prey_policy = PreyPolicy(
-            speed=self.cfg.actors.prey_speed, turn_std=self.cfg.actors.wander_turn_std
+            speed=self.cfg.actors.prey_speed,
+            turn_std=self.cfg.actors.wander_turn_std,
+            turn_clip=self.cfg.actors.prey_turn_clip,
         )
         self._pred_policy = PredatorPolicy(
             cruise_speed=self.cfg.actors.predator_cruise_speed,
@@ -434,7 +436,7 @@ class DanioArena:
             max_turn = self.cfg.actors.predator_turn_rate * dt
             pred.heading += float(np.clip(diff, -max_turn, max_turn))
             pred.speed = speed
-            self._steer_away_from_obstacles(pred)
+            self._steer_away_from_obstacles(pred, gain=self.cfg.actors.predator_obstacle_avoid_gain)
             pred.advance(dt, self.cfg.world.width, self.cfg.world.height)
 
             if target is None:
@@ -466,7 +468,7 @@ class DanioArena:
             omega, v = self._prey_policy.act(self._dynamics_rng)
             prey.heading += omega * dt
             prey.speed = v
-            self._steer_away_from_obstacles(prey, gain=2.0)
+            self._steer_away_from_obstacles(prey, gain=self.cfg.actors.prey_obstacle_avoid_gain)
             prey.advance(dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary)
 
         # --- prey regrowth (section 12, R2 open replenishment): deterministic timing

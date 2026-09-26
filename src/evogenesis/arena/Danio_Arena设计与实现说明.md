@@ -69,7 +69,7 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 ### 4.1 12 维 observation 编码（本文件为编码 owner）
 > **值域契约**：12 维的语义 / 顺序 / **值域 `[0,1]`** / dtype（`float32`）由 `../connectome/DanioNet设计规范.md` §2（v1.8，2026-09-26 冻结）own；本节职责是**编码规则**，其结果须映射到该区间。
 > ⚠️ **dtype 现状（对齐缺口）**：`sensing.observe()` 返回 **`float64`**（`sensing.py:162` `dtype=float`），而 DanioNet §2 契约是 `float32`。当前由下游转换为 `float32`（`pipeline/arena_episode.py` 写入 `np.float32` 数组；`core §7` 定「消费方转换」），故**契约未被违反**；但若未来直接把 `arena.observe()` 输出喂给 DanioNet，须先转 `float32`。改 Arena 内部 dtype 会轻微改变 `ExpertPolicy` 动作（float64→float32 舍入）从而作废 §18.11 基线，故**暂不改**。
-本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。【草案待确认】（公式由实现先行落地，待认领表 A1）
+本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。**【已定稿】**（2026-09-26；12 维公式与截断口径已认领，唯一遗留 `looming_norm`=R_loom 为标定占位）
 
 现状（代码）：
 - `prey` / `threat` / `obstacle` 的 `_{left,right}_signal`：对 FOV 内该类目标按方位角以朝向为界分左右 —— **左右按 \(\mathrm{sign}(\sin(\text{rel\_bearing}))\) 划分**；强度取距离核 \((1-d/r)_{+}\)，**每通道求和后截断到 1.0**。
@@ -174,7 +174,7 @@ predator 不用神经网络：【已定稿】
 
 【已定稿】滞回与参数：旧目标仍存活且 \(d\le release=22\) → 保持锁定并全速追击；否则在 \(detect=15\) 内取**最近**存活鱼；无候选则返回"维持当前航向、巡游速度 \(0.40\)"。
 
-【已定稿·D8 裁决（2026-09-26）】`detect=15`（获取新锁定）< `sensing.radius=18`（鱼视野）< `release=22`（放弃锁定）的**不对称是有意设计**（依据 D，设计选择）：三者是**不同量**——`detect` 是捕食者**获取**新目标的阈值、`release` 是**已锁定追击**的滞回上界、`sensing.radius` 是鱼的**瞬时视野**。故存在 `18<d≤22` 的「已锁定但鱼看不见」窗口，模拟**追击惯性**（捕食者可持续追击暂时游出鱼视野的目标）；鱼在 `d≤18` 内仍能感知并逃离（`threat_*_signal`、ExpertPolicy）。该不对称**不视为缺陷**；若未来要求二者一致，须显式改参数并重跑基线。巡游速度 \(0.40\)、追击速度 \(0.65\)（`【草案待确认】`，待认领表 A5）。转向速率在 env 侧限制：\(\mathrm{clip}(\Delta\theta,\pm \text{turn\_rate}\cdot\Delta t)\)，`turn_rate` \(=5.0\) **rad/s**（\(\equiv 0.25\) rad/step，待认领表 A10）。
+【已定稿·D8 裁决（2026-09-26）】`detect=15`（获取新锁定）< `sensing.radius=18`（鱼视野）< `release=22`（放弃锁定）的**不对称是有意设计**（依据 D，设计选择）：三者是**不同量**——`detect` 是捕食者**获取**新目标的阈值、`release` 是**已锁定追击**的滞回上界、`sensing.radius` 是鱼的**瞬时视野**。故存在 `18<d≤22` 的「已锁定但鱼看不见」窗口，模拟**追击惯性**（捕食者可持续追击暂时游出鱼视野的目标）；鱼在 `d≤18` 内仍能感知并逃离（`threat_*_signal`、ExpertPolicy）。该不对称**不视为缺陷**；若未来要求二者一致，须显式改参数并重跑基线。巡游速度 \(0.40\)、追击速度 \(0.65\) **【已定稿】**（`actors.predator_cruise_speed` / `predator_chase_speed`，§2.2）。转向速率在 env 侧限制：\(\mathrm{clip}(\Delta\theta,\pm \text{turn\_rate}\cdot\Delta t)\)，`turn_rate` \(=5.0\) **rad/s**（\(\equiv 0.25\) rad/step，待认领表 A10）。
 
 ## 10. PreyPolicy
 透明简单规则：【已定稿】结构
@@ -182,7 +182,7 @@ predator 不用神经网络：【已定稿】
 - obstacle avoidance
 - ~~proximity avoidance~~ → 见下
 
-【草案待确认】（待认领表 A5、M5/M6）现状：\(\omega\sim\mathcal N(0,0.8)\) 且截断到 \(\pm3.0\)（单位 rad/s），速度恒为 \(0.35\)；避障由 env 的前视点转向处理（gain \(=2.0\)）。**无主动逃跑**（prey 不感知鱼）。~~`PreyPolicy.avoid_gain`（\(=2.5\)）死参数~~ ✅ **2026-09-26 已删除**（连同未用的 `obstacle_rel_bearing` 形参）；避障统一由 env `_steer_away_from_obstacles(prey, gain=2.0)` 处理。
+【已定稿】（2026-09-26；A5/M5/M6）：\(\omega\sim\mathcal N(0,\texttt{actors.wander\_turn\_std})\) 截断到 \(\pm\texttt{actors.prey\_turn\_clip}\)，速度恒为 \(\texttt{actors.prey\_speed}\)；避障 gain \(=\texttt{actors.prey\_obstacle\_avoid\_gain}\)。**无主动逃跑**（prey 不感知鱼）。~~`PreyPolicy.avoid_gain`（\(=2.5\)）死参数~~ ✅ **2026-09-26 已删除**（连同未用的 `obstacle_rel_bearing` 形参）；避障统一由 env `_steer_away_from_obstacles(prey, gain=2.0)` 处理。
 
 ## 11. ExpertPolicy
 用于 imitation learning，不参与最终 DanioNet scoring：【已定稿】结构
@@ -193,7 +193,7 @@ predator 不用神经网络：【已定稿】
 u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 \]
 
-再映射到连续 \((\omega^*,v^*)\)。参数 \(w_{p0},k_H,w_d,w_o\) `【草案待确认】`（G4，未落 config）。
+再映射到连续 \((\omega^*,v^*)\)。参数 \(w_{p0},k_H,w_d,w_o\) 与速度式常数 **【已定稿】**（落 `configs/default_arena.yaml::expert`，由 `policies.expert_policy_from_config(cfg)` 注入；G4 闭合）。
 
 ## 12. 风险—收益冲突
 **2026-09-26 已定稿三项**（认领表 §12；依据 dossier T3）：
@@ -294,7 +294,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 |---|---|
 | 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）。**余**：M4 环境三组仍不改变任何参数 |
 | 编码接口 | ✅ A1 12 维归一化**已定**（含 looming 角尺寸扩张率、每通道截断口径）；仅余 `looming_norm`（R_loom）标定占位 |
-| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，已进参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors **14 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（待落 config） |
+| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，已进参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors **14 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（已落 config，§11） |
 | 契约/工程 | §18 实例事件（重生成 vs 降级）；~~config 接线~~ ✅ 已闭合（loader + Arena 映射 + 调用方接线，2026-09-26）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 ## 18. 实现映射（原 Danio Arena 实现说明）
@@ -315,19 +315,19 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 **事实来源优先级：代码 > `configs/default_arena.yaml` > 本文档。** 本文档只做映射与记录，不发明规则；与代码冲突以代码为准（发现冲突请直接改本文档）。
 
-**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，参数总表 v0.12 中 `group="arena"` 共 **43** 项，其中 `sim_hz` 为 `confirmed`、`predator_size`/`episode_steps`/`capture_radius`/`episode_seconds` 为 `derived`，余为 `no_basis`，`body_length_mm` 为 `missing`）。
+**上游参数表**：`../../../docs/参数总表.json`（项数、`missing_required` 计数与状态均以该文件为准，随登记变动）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，参数总表 v0.13 中 `group="arena"` 共 **53** 项，其中 `sim_hz` 为 `confirmed`、`predator_size`/`episode_steps`/`capture_radius`/`episode_seconds` 为 `derived`，余为 `no_basis`，`body_length_mm` 为 `missing`）。
 
 ---
 
 ### 18.1 模块清单
 | 文件 | 职责 | 行数 | 对外接口 |
 |---|---|---|---|
-| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 197 | `ArenaConfig()`、`load_arena_config()` |
+| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ExpertConfig` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 220 | `ArenaConfig()`、`load_arena_config()` |
 | `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
 | `src/evogenesis/arena/sensing.py` | 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`、`nearest_predator_angular_size()`（looming 角尺寸，env 消费） | 195 | `observe(...)`、`nearest_predator_relative_size(...)`、`nearest_predator_angular_size(...)` |
-| `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 105 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
+| `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**）；`expert_policy_from_config(cfg)`（§11） | 136 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)`、`expert_policy_from_config(cfg)` |
 | `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 562 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造 **必传** `spawn_seed` / `dynamics_seed`，可注入 `fish_ids` / `genome_ids` / `generation` |
-| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，run 目录由 `experiment/runlayout.py` 建（`scripts/run_arena.py` / `run_chain.py` / `run_evolution.py` 调用） | 48 | — |
+| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，run 目录由 `experiment/runlayout.py` 建（`scripts/run_arena.py` / `run_chain.py` / `run_evolution.py` 调用） | 59 | — |
 | `tests/test_arena.py` | 29 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 503 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
@@ -394,13 +394,27 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `actors.obstacle_radius_min` | 1.5 | `actors.obstacle_radius_min` | 1.5 | ✅ | ✅ `obstacle_radius_min` |
 | `actors.obstacle_radius_max` | 3.5 | `actors.obstacle_radius_max` | 3.5 | ✅ | ✅ `obstacle_radius_max` |
 | `actors.wander_turn_std` | 0.8 | `actors.wander_turn_std` | 0.8 | ✅ | ✅ `wander_turn_std` |
+| `actors.prey_turn_clip` | 3.0 | `actors.prey_turn_clip` | 3.0 | ✅ | ✅ `prey_turn_clip` |
+| `actors.prey_obstacle_avoid_gain` | 2.0 | `actors.prey_obstacle_avoid_gain` | 2.0 | ✅ | ✅ `prey_obstacle_avoid_gain` |
+| `actors.predator_obstacle_avoid_gain` | 0.5 | `actors.predator_obstacle_avoid_gain` | 0.5 | ✅ | ✅ `predator_obstacle_avoid_gain` |
 | `actors.escape_hold_steps` | 20 | `actors.escape_hold_steps` | 20 | ✅ | ✅ `escape_hold_steps` |
 | `actors.predator_max_chase_steps` | 80 | `actors.predator_max_chase_steps` | 80 | ✅ | ✅ `predator_max_chase_steps` |
 
+#### 18.2.2b `ExpertConfig`（§11；由 `expert_policy_from_config(cfg)` 注入）
+| 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | 参数总表 收录 |
+|---|---|---|---|---|---|
+| `expert.prey_weight` | 1.0 | `expert.prey_weight` | 1.0 | ✅ | ✅ `expert_prey_weight` |
+| `expert.threat_weight` | 1.8 | `expert.threat_weight` | 1.8 | ✅ | ✅ `expert_threat_weight` |
+| `expert.obstacle_weight` | 1.2 | `expert.obstacle_weight` | 1.2 | ✅ | ✅ `expert_obstacle_weight` |
+| `expert.hunger_gain` | 0.8 | `expert.hunger_gain` | 0.8 | ✅ | ✅ `expert_hunger_gain` |
+| `expert.speed_base` | 0.45 | `expert.speed_base` | 0.45 | ✅ | ✅ `expert_speed_base` |
+| `expert.speed_hunger_gain` | 0.35 | `expert.speed_hunger_gain` | 0.35 | ✅ | ✅ `expert_speed_hunger_gain` |
+| `expert.speed_threat_gain` | 0.30 | `expert.speed_threat_gain` | 0.30 | ✅ | ✅ `expert_speed_threat_gain` |
+
 #### 18.2.3 三条必须写明的结论
 
-1. **`ActorDefaults` 整块（**14 项**）已全部进 `configs/default_arena.yaml` 的 `actors:` 段**（2026-09-26 补入；此前这 14 项在 YAML 中无归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`。**更正（2026-09-26，审计 A13）**：本节原写「12 项 + `growth.biomass_to_size_gain`」，但该字段已随 A4 面积式**删除**（现为 `growth.prey_area_gain`），且 `ActorDefaults` 实为 **14** 个字段、YAML `actors:` 段亦为 **14** 个键 —— 三种说法（12 项 / 14 项 / 含 biomass）已统一为本句。
-2. **`../../../docs/参数总表.json`（v0.12）已收录 `group="arena"` 共 43 项**，覆盖 `world` / `population` / `sensing` / `energy`（含 `collision_penalty`）/ `growth`（含 `prey_area_gain`）/ `actors` 全部字段。其中 `sim_hz` 为 `confirmed`，`predator_size` / `episode_steps` / `capture_radius` / `episode_seconds` 为 `derived`，其余为 `no_basis`（依据 D＝设计选择，**非「未登记」**）；`status` 描述**依据强度**、不表示冻结与否（冻结与否见本文件条款状态）。`body_length_mm` 记为 `missing`（属 DanioNet 侧长度契约，不是 Arena 世界参数）；`world.boundary` 已进表（`world_boundary`，§2.1 表 ✅）。
+1. **`ActorDefaults` 整块（**17 项**）已全部进 `configs/default_arena.yaml` 的 `actors:` 段**（2026-09-26 补入；此前这 14 项在 YAML 中无归属）。同一提交把键名对齐 dataclass：`live_demo.{fish,prey,predators,obstacles}` → `population.{n_fish,n_prey,n_predators,n_obstacles}`。**更正（2026-09-26，审计 A13）**：本节原写「12 项 + `growth.biomass_to_size_gain`」，但该字段已随 A4 面积式**删除**（现为 `growth.prey_area_gain`），且 `ActorDefaults` 实为 **17** 个字段（2026-09-26 增 `prey_turn_clip` / `prey_obstacle_avoid_gain` / `predator_obstacle_avoid_gain`）、YAML `actors:` 段亦为 **17** 个键 —— 三种说法（12 项 / 14 项 / 含 biomass）已统一为本句。
+2. **`../../../docs/参数总表.json`（v0.13）已收录 `group="arena"` 共 53 项**，覆盖 `world` / `population` / `sensing` / `energy`（含 `collision_penalty`）/ `growth`（含 `prey_area_gain`）/ `actors` 全部字段。其中 `sim_hz` 为 `confirmed`，`predator_size` / `episode_steps` / `capture_radius` / `episode_seconds` 为 `derived`，其余为 `no_basis`（依据 D＝设计选择，**非「未登记」**）；`status` 描述**依据强度**、不表示冻结与否（冻结与否见本文件条款状态）。`body_length_mm` 记为 `missing`（属 DanioNet 侧长度契约，不是 Arena 世界参数）；`world.boundary` 已进表（`world_boundary`，§2.1 表 ✅）。
 3. **`configs/default_arena.yaml` 已有调用方读取它 —— 该实现债 2026-09-26 闭合。** **Arena 侧加载已落地**：`arena/config.py::load_arena_config(path)`（严格构造，未知 section/键即报错）与 `arena_config_snapshot()`；键名已对齐 dataclass（`live_demo.*` → `population.*`，并补 `actors:` 段），由 `tests/test_arena_config.py` 的「YAML ↔ dataclass 逐字段一致」守护。**调用方接线已完成**：`experiment/runlayout.py::create_run_dir` 对 Arena 型配置（顶层键 ⊆ `ARENA_SECTIONS`）调用 loader，并落盘 **`arena_config_resolved.json`（已解析值快照）** —— 因为「原始 YAML 副本」与实际生效值可能漂移（默认值 / env / overrides）。**原对外服务层 `api/session.py` 已按用户决定移除**；arena 配置现行调用方为 `experiment/runlayout.py`（落盘 `arena_config_resolved.json`）、`scripts/run_arena.py`、`scripts/collect_trajectories.py`、`src/evogenesis/experiment/environments.py` 与 `src/evogenesis/pipeline/arena_episode.py`。与「所有数值必须由 config 读取」（`../../../docs/参数总表.json` 末行）的要求**已闭环**（见 §8 M8、认领表 B7）。
 
 ---

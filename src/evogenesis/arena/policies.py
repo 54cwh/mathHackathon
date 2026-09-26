@@ -4,9 +4,15 @@ ExpertPolicy is used for imitation data only -- it never takes part in
 DanioNet scoring. Predator/Prey policies are the transparent ecology rules.
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from evogenesis.arena.config import ArenaConfig
 
 
 @dataclass
@@ -15,6 +21,9 @@ class ExpertPolicy:
     threat_weight: float = 1.8
     obstacle_weight: float = 1.2
     hunger_gain: float = 0.8
+    speed_base: float = 0.45
+    speed_hunger_gain: float = 0.35
+    speed_threat_gain: float = 0.30
 
     def __call__(self, obs):
         prey_l, prey_r = obs[0], obs[1]
@@ -27,7 +36,15 @@ class ExpertPolicy:
             - (obstacle_r - obstacle_l) * self.obstacle_weight
         )
         omega = max(-1.0, min(1.0, turn))
-        speed = max(0.0, min(1.0, 0.45 + 0.35 * hunger + 0.30 * max(threat_l, threat_r)))
+        speed = max(
+            0.0,
+            min(
+                1.0,
+                self.speed_base
+                + self.speed_hunger_gain * hunger
+                + self.speed_threat_gain * max(threat_l, threat_r),
+            ),
+        )
         return omega, speed
 
 
@@ -41,10 +58,11 @@ class PreyPolicy:
 
     speed: float = 0.35
     turn_std: float = 0.8
+    turn_clip: float = 3.0  # rad/s, 游走转向裁剪（§10，config actors.prey_turn_clip）
 
     def act(self, rng: np.random.Generator) -> tuple[float, float]:
         omega = float(rng.normal(0.0, self.turn_std))
-        return float(np.clip(omega, -3.0, 3.0)), self.speed
+        return float(np.clip(omega, -self.turn_clip, self.turn_clip)), self.speed
 
 
 @dataclass
@@ -103,3 +121,16 @@ class PredatorPolicy:
     @staticmethod
     def _toward(pos: np.ndarray, target: np.ndarray) -> float:
         return float(np.arctan2(target[1] - pos[1], target[0] - pos[0]))
+
+
+def expert_policy_from_config(cfg: ArenaConfig) -> ExpertPolicy:
+    """由 `cfg.expert` 构造 `ExpertPolicy`（§11，数值唯一来源 = config）。"""
+    return ExpertPolicy(
+        prey_weight=cfg.expert.prey_weight,
+        threat_weight=cfg.expert.threat_weight,
+        obstacle_weight=cfg.expert.obstacle_weight,
+        hunger_gain=cfg.expert.hunger_gain,
+        speed_base=cfg.expert.speed_base,
+        speed_hunger_gain=cfg.expert.speed_hunger_gain,
+        speed_threat_gain=cfg.expert.speed_threat_gain,
+    )

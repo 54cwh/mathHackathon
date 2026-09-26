@@ -102,8 +102,29 @@ class ActorDefaults:
     obstacle_radius_min: float = 1.5
     obstacle_radius_max: float = 3.5
     wander_turn_std: float = 0.8  # rad/s, std of the prey turning-rate jitter
+    prey_turn_clip: float = 3.0  # rad/s, PreyPolicy 游走转向裁剪（§10）
+    prey_obstacle_avoid_gain: float = 2.0  # rad/step, 猎物避障转向增益（§10）
+    predator_obstacle_avoid_gain: float = 0.5  # rad/step, 捕食者避障转向增益（§9）
     escape_hold_steps: int = 20  # A8 threat-outcome survival window; placeholder
     predator_max_chase_steps: int = 80  # A8 limited chase; placeholder
+
+
+@dataclass(frozen=True)
+class ExpertConfig:
+    """ExpertPolicy 的透明规则权重与速度式常数（§11）。
+
+    owner=本 dataclass；取值 `configs/default_arena.yaml::expert`。
+
+    用于 BC 采集与现场 Demo 的**教师**策略；不参与 DanioNet scoring。
+    """
+
+    prey_weight: float = 1.0
+    threat_weight: float = 1.8
+    obstacle_weight: float = 1.2
+    hunger_gain: float = 0.8
+    speed_base: float = 0.45
+    speed_hunger_gain: float = 0.35
+    speed_threat_gain: float = 0.30
 
 
 @dataclass(frozen=True)
@@ -114,6 +135,7 @@ class ArenaConfig:
     energy: EnergyConfig = field(default_factory=EnergyConfig)
     growth: GrowthConfig = field(default_factory=GrowthConfig)
     actors: ActorDefaults = field(default_factory=ActorDefaults)
+    expert: ExpertConfig = field(default_factory=ExpertConfig)
 
 
 # --- 装配与分层加载 ---------------------------------------------------------
@@ -128,6 +150,7 @@ ARENA_SECTIONS: dict[str, type] = {
     "energy": EnergyConfig,
     "growth": GrowthConfig,
     "actors": ActorDefaults,
+    "expert": ExpertConfig,
 }
 
 # 允许出现在 YAML、但不参与构造的**派生只读键**（§18.2.1：episode_seconds = episode_steps / hz）

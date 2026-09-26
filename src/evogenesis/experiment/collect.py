@@ -18,7 +18,7 @@ from pathlib import Path
 
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena
-from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.core.config import read_yaml
 from evogenesis.core.ids import mint_id
 from evogenesis.core.seed import SeedManager
@@ -109,7 +109,7 @@ def collect_episode(
     controlled_fish = fish_ids[controlled_index]
     fish_id = controlled_fish
     genome_id = genome_ids[controlled_index]
-    expert = ExpertPolicy()
+    expert = expert_policy_from_config(config)
 
     steps: list[dict] = []
     done = False

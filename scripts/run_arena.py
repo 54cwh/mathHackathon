@@ -46,7 +46,7 @@ from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
-from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.core.ids import mint_id
 from evogenesis.core.io import write_jsonl
 from evogenesis.core.seed import SeedManager
@@ -134,7 +134,7 @@ def run_episode(
         generation=generation,
     )
     arena.reset()
-    expert = ExpertPolicy()
+    expert = expert_policy_from_config(cfg)
     collector = TraceCollector(arena) if emit_behavior_trace else None
     done = False
     steps_run = 0

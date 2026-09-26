@@ -44,5 +44,16 @@ actors:
   obstacle_radius_min: 1.5
   obstacle_radius_max: 3.5
   wander_turn_std: 0.8
+  prey_turn_clip: 3.0
+  prey_obstacle_avoid_gain: 2.0
+  predator_obstacle_avoid_gain: 0.5
   escape_hold_steps: 20
   predator_max_chase_steps: 80
+expert:
+  prey_weight: 1.0
+  threat_weight: 1.8
+  obstacle_weight: 1.2
+  hunger_gain: 0.8
+  speed_base: 0.45
+  speed_hunger_gain: 0.35
+  speed_threat_gain: 0.30
