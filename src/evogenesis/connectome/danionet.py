@@ -163,6 +163,8 @@ class DanioNet(torch.nn.Module):
         self.register_buffer("weights0", weights0)
         self.register_buffer("sign0", torch.sign(weights0))
         self.register_buffer("support", support)
+        # 预算 support ⊙ sign(W⁰)（训练期冻结），effective_weights 只需再乘 softplus(Θ)。
+        self.register_buffer("support_sign0", support.to(torch.float32) * torch.sign(weights0))
         self.register_buffer("tau", tau)
         self.register_buffer("cell_type", cell_type)
         self.register_buffer("positions", positions)
@@ -189,12 +191,18 @@ class DanioNet(torch.nn.Module):
 
     @property
     def n_neurons(self) -> list[int]:
+        """每个个体占用的 real slot 数（padding 前），用于按 n 切片。"""
         return list(self._n_neurons)
+
+    @property
+    def active_counts(self) -> list[int]:
+        """每个个体**活跃**神经元数（``M`` 为真者），可小于 ``n_neurons``。"""
+        return [int(mask.sum()) for mask in self.neuron_mask]
 
     @property
     def effective_weights(self) -> torch.Tensor:
         """``W = A ⊙ (sign(W⁰) ⊙ softplus(Θ))``（§3）。"""
-        return self.support.to(torch.float32) * self.sign0 * F.softplus(self.theta)
+        return self.support_sign0 * F.softplus(self.theta)
 
     @property
     def delta_weights(self) -> torch.Tensor:

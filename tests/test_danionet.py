@@ -237,3 +237,9 @@ def test_mismatched_shapes_rejected():
     )
     with pytest.raises(ValueError):
         DanioNet([phenotype], master_seed=MASTER_SEED)
+
+
+def test_active_counts_and_budgeted_support_sign(net: DanioNet):
+    assert net.active_counts == [net.n_neurons[0]]
+    assert torch.allclose(net.support_sign0, net.support.to(torch.float32) * net.sign0)
+    assert float(net.support_sign0[~net.support].abs().sum()) == 0.0
