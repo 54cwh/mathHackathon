@@ -262,7 +262,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 1. 模块清单
+### 18.1 模块清单
 
 | 文件 | 职责 | 行数 | 对外接口 |
 |---|---|---|---|
@@ -278,7 +278,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 2. 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
+### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 
 `config.py` 的 docstring 声明：
 
@@ -286,7 +286,7 @@ Complex Scene 可设置：【草案待确认】
 
 下表逐项核对这一声明。
 
-#### 2.1 `WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig`
+#### 18.2.1 `WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig`
 
 | 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | `../../../docs/参数总表.json` 收录 |
 |---|---|---|---|---|---|
@@ -308,7 +308,7 @@ Complex Scene 可设置：【草案待确认】
 
 `world.dt` 是派生属性：$dt = 1/hz = 0.05$ s。
 
-#### 2.2 `GrowthConfig` / `ActorDefaults`
+#### 18.2.2 `GrowthConfig` / `ActorDefaults`
 
 | 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | `../../../docs/参数总表.json` 收录 | 性质 |
 |---|---|---|---|---|---|---|
@@ -331,7 +331,7 @@ Complex Scene 可设置：【草案待确认】
 | `actors.obstacle_radius_max` | 3.5 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮** |
 | `actors.wander_turn_std` | 0.8 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮**（单位 **rad/s**） |
 
-#### 2.3 三条必须写明的结论
+#### 18.2.3 三条必须写明的结论
 
 1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 在 `configs/default_arena.yaml` 中不存在。** 即共 **13 项**未进 YAML。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计与实现说明.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
 2. **`../../../docs/参数总表.json` 现收录 Arena 侧 13 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
@@ -339,9 +339,9 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 3. 规则 → 代码映射
+### 18.3 规则 → 代码映射
 
-#### 3.1 规范节号 → 文件 / 函数 → 要点
+#### 18.3.1 规范节号 → 文件 / 函数 → 要点
 
 | 规范 § | 主题 | 代码位置 | 要点 |
 |---|---|---|---|
@@ -359,7 +359,7 @@ Complex Scene 可设置：【草案待确认】
 | §12 | 风险—收益冲突 | （未实现） | 高价值 prey 靠近 predator 等场景布置属后续迭代 |
 | §13 | 事件日志 / 每鱼记录 | `env.py::per_fish_log()`、`entities.py::Fish` 缓冲字段 | 规范列 11 项，代码实现 10 项（1 项已声明未实现，见 §6） |
 
-#### 3.2 规范未逐字规定、但代码已定型的补充细节
+#### 18.3.2 规范未逐字规定、但代码已定型的补充细节
 
 以下细节规范没有写死，是实现的既定选择。**改动它们等于改动 Arena 行为，须同步 §10 变更纪律。** 标 ⚠️ 者为与 §10 变更纪律强相关、须双方同步的条目。
 
@@ -391,9 +391,9 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 4. 事件词表 v1
+### 18.4 事件词表 v1
 
-#### 4.1 信封
+#### 18.4.1 信封
 
 `Event` 是 `@dataclass(frozen=True)`，字段顺序 `seq, step, type, payload`；`Event.to_dict()` 输出：
 
@@ -410,7 +410,7 @@ Complex Scene 可设置：【草案待确认】
 
 `StepResult.events` 是**本步新增事件**，返回前按 `seq` 排序；`DanioArena.events` 累积**整局**全部事件（不清理，直到 `reset()`）。
 
-#### 4.2 词表 v1（8 项，点分层 `arena.*`）
+#### 18.4.2 词表 v1（8 项，点分层 `arena.*`）
 
 | # | `type` | 触发时机 | payload |
 |---|---|---|---|
@@ -433,14 +433,14 @@ Complex Scene 可设置：【草案待确认】
 - `arena.episode_end` 的 `steps` 取 `step_idx`（此时已自增）：正常跑满恒为 600；**团灭提前结束时小于 600**（实测：灭绝后的第一步即结束，`steps` 为该步号）。
 - **`escape_successes` 与 `predator_encounters` 都是"计数而非事件"**：它们只出现在 `per_fish_log()` / `FishCard.metrics` / leaderboard 侧，事件流里没有对应条目。
 
-#### 4.3 与 `../core/核心机制与数据流.md` §5.1 的关系
+#### 18.4.3 与 `../core/核心机制与数据流.md` §5.1 的关系
 
 - `../core/核心机制与数据流.md` §5.1 已定为**设计侧参考**（该文件状态行注明"权威词表见 arena"，非待冻结）：它列"应有哪些事件"、命名 `arena.<event>`、**只增不删**。**事件词表的唯一权威是本文档 §4.2 + `tests/test_arena.py::KNOWN_EVENTS`（v1，已生效）**，字段名只在 §4.2 维护一套。
 - **机器可读权威名单是 `tests/test_arena.py::KNOWN_EVENTS`**，由 `test_all_events_in_known_vocabulary` 守护（断言：整局事件的 `type` 均以 `arena.` 开头且属于该集合）。任何一方改词表都必须同时改这个集合。
 - 命名风格与 WS 消息 `type` 的点分层约定（`../api/API与系统工程.md` §4.1 R11）一致：**磁盘与推送共用同一词表**。
 - 词表状态：**v1 已生效**（池伟豪确认 2026-09-26；见 `research/notes/契约决策记录.md`）。本文件 §4.2 + `tests::KNOWN_EVENTS` 为事件词表的唯一权威。
 
-#### 4.4 与草案实例 `schemas/examples/event_log_example.jsonl` 的差异
+#### 18.4.4 与草案实例 `schemas/examples/event_log_example.jsonl` 的差异
 
 该实例按 §5.1 **草案**生成，早于当前实现。**现状核对（已部分对齐，但未闭环）**：
 
@@ -461,7 +461,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 5. 确定性 / 复现判据
+### 18.5 确定性 / 复现判据
 
 **判据：同一 `(ArenaConfig 取值, master_seed)` ⇒ 逐事件一致的事件序列与逐字段一致的实体状态。** 该判据由 D1（唯一随机源）、D2（`reset()` 幂等）与 D3–D5 的消费顺序共同保障。
 
@@ -479,7 +479,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 6. 每鱼记录字段表（规范 §13）
+### 18.6 每鱼记录字段表（规范 §13）
 
 `DanioArena.per_fish_log()` 返回 `{fish_id: 记录}`，**包含全部 12 条鱼（含已死鱼）**。
 
@@ -501,7 +501,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 7. 未认领的实现决定（指向 `research/notes/arena-api-决策认领表.md` A 节）
+### 18.7 未认领的实现决定（指向 `research/notes/arena-api-决策认领表.md` A 节）
 
 > **本节是本文档的契约状态核心。** 以下数值与语义由实现先于设计落地，`Danio_Arena设计与实现说明.md` 与 `../../../docs/参数总表.json` 未定义；在认领表被回答、结论写进上游文档之前，状态一律为 **`草案待确认`**，**不得写进论文与正式实验**。
 
@@ -527,7 +527,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 8. MVP 边界（明确未做项）
+### 18.8 MVP 边界（明确未做项）
 
 | # | 未做项 | 说明 |
 |---|---|---|
@@ -548,7 +548,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 9. 测试覆盖（`tests/test_arena.py`，15 项）
+### 18.9 测试覆盖（`tests/test_arena.py`，15 项）
 
 | # | 测试 | 守护的契约 |
 |---|---|---|
@@ -574,7 +574,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 10. 变更纪律
+### 18.10 变更纪律
 
 改下列任一内容，必须**同时**改对应文件，否则 CI 或契约会静默漂移。**代码 / 配置 / 测试 / 样例路径为仓库根相对；文档交叉引用为本文件所在目录相对。**
 
@@ -591,7 +591,7 @@ Complex Scene 可设置：【草案待确认】
 
 ---
 
-#### 附：冒烟基线
+### 18.11 冒烟基线
 
 本文件自测基线：`master_seed = 250927`、600 步、12 条 ExpertPolicy 鱼、默认 `ArenaConfig()`。
 
@@ -616,6 +616,7 @@ Complex Scene 可设置：【草案待确认】
 | 250927 | 5 | 0 | 0 | 0 | 0 | 12 |
 
 **三条给指标口径的提醒**：① 默认场景下 `arena.collision` 与 `arena.escape` **一次都不触发**（A7 / A8 待认领）；② 饥饿在 600 步内不会发生（$C_{base} \times 600 = 0.48 < E_{max} = 1.0$，且有食物奖励补回），因此"饿死"路径在默认配置下同样观测不到；③ 死亡全部来自捕食者。
+
 ## 19. 合并后细化与明确清单
 
 本节把合并审查中仍会阻断复现、论文或正式实验的事项列成执行清单。它不替责任人做设计裁决；每项必须在上游契约、配置、代码和测试之间闭环后，才能从“草案待确认”改为“已定稿”。
