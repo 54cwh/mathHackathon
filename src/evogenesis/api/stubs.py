@@ -1,8 +1,8 @@
-"""模型 / 实验侧端点的 501 stub（`API接口.md` §2）。
+"""模型侧端点的 501 stub（`API接口.md` §2.1）。
 
 这些端点定义请求 / 响应**形状**（`schemas.py`）并统一返回 `501`，使契约先于管线冻结、
 双方可并行开发。本层不实现业务（`前端驱动-API实现清单.md` §4：重写服务层时不要顺手
-把它们从 501 变成实现）。
+把它们从 501 变成实现）。实验与任务端点已实现，见 `experiments.py`（§2.2）。
 """
 
 from fastapi import APIRouter, HTTPException
@@ -12,13 +12,9 @@ from evogenesis.api.schemas import (
     BreedingResult,
     DevelopmentRequest,
     DevelopmentResult,
-    ExperimentDetail,
-    ExperimentLaunch,
-    ExperimentSummary,
     JobStatus,
     MutationRequest,
     MutationResult,
-    Page,
     Problem,
     StoryMutation,
 )
@@ -62,29 +58,4 @@ def breed(req: BreedingRequest) -> BreedingResult:
 
 @router.post("/sessions/{session_id}/evolutions", status_code=202, response_model=JobStatus)
 def evolve(session_id: str) -> JobStatus:
-    raise _not_impl()
-
-
-@router.post("/experiments", status_code=202, response_model=JobStatus)
-def start_experiment(req: ExperimentLaunch) -> JobStatus:
-    raise _not_impl()
-
-
-@router.get("/experiments", response_model=Page[ExperimentSummary])
-def list_experiments(limit: int = 20, cursor: str | None = None) -> Page[ExperimentSummary]:
-    raise _not_impl()
-
-
-@router.get("/experiments/{experiment_id}", response_model=ExperimentDetail)
-def get_experiment(experiment_id: str) -> ExperimentDetail:
-    raise _not_impl()
-
-
-@router.get("/jobs/{job_id}", response_model=JobStatus)
-def get_job(job_id: str) -> JobStatus:
-    raise _not_impl()
-
-
-@router.post("/jobs/{job_id}/cancel", response_model=JobStatus)
-def cancel_job(job_id: str) -> JobStatus:
     raise _not_impl()

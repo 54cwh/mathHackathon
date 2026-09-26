@@ -18,6 +18,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from evogenesis.api.experiments import router as experiments_router
 from evogenesis.api.schemas import Problem
 from evogenesis.api.session import router as sessions_router
 from evogenesis.api.stubs import router as stubs_router
@@ -28,6 +29,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 app = FastAPI(title="EvoGenesis API", version="0.1.0")
 
 app.include_router(sessions_router)
+app.include_router(experiments_router)
 app.include_router(stubs_router)
 app.include_router(ws_router)
 

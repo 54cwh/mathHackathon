@@ -197,9 +197,11 @@
 
 ---
 
-## 2. 模型与实验接口（契约已定；当前返回 501）
+## 2. 模型与实验接口
 
-这些端点由 `stubs.py` 定义请求/响应形状（`schemas.py`），在模型与实验管线落地前统一返回：
+### 2.1 模型侧（契约已定；当前返回 501）
+
+这些端点定义请求/响应形状（`schemas.py`），在对应管线落地前统一返回：
 
 ```json
 {"type":"about:blank","title":"Not Implemented","status":501,
@@ -214,25 +216,42 @@
 | `/v1/developments` | POST | 发育解码 | `DevelopmentRequest` | `DevelopmentResult` |
 | `/v1/breedings` | POST | 繁殖 | `BreedingRequest` | `BreedingResult` |
 | `/v1/sessions/{session_id}/evolutions` | POST | 演化 | — | `202` `JobStatus` |
-| `/v1/experiments` | POST | 启动正式实验 | `ExperimentLaunch` | `202` `JobStatus` |
-| `/v1/experiments` | GET | 实验列表（分页） | — | `Page[ExperimentSummary]` |
-| `/v1/experiments/{experiment_id}` | GET | 实验元数据 + 指标 | — | `ExperimentDetail` |
-| `/v1/jobs/{job_id}` | GET | 任务状态 / 进度 | — | `JobStatus` |
-| `/v1/jobs/{job_id}/cancel` | POST | 取消任务 | — | `JobStatus` |
 
-**请求/响应模型字段**（`schemas.py`）：
+模型字段（`schemas.py`）：`StoryMutation`（`genome_id`/`position`/`from_base`/`to_base`/`tag`）；
+`MutationRequest`（`position`≥0、`base`∈`A|C|G|T`）/`MutationResult`（`genome_id`/`new_genome_id`/`diff`）；
+`DevelopmentRequest`（`genome_id`/`seed`）/`DevelopmentResult`（`genome_id`/`dev_trace`/`phenotype`）；
+`BreedingRequest`（`genome_a`/`genome_b`/`n_offspring`）/`BreedingResult`（`offspring`/`meiosis_trace`）。
 
-- `StoryMutation`：`genome_id`、`position`、`from_base`、`to_base`、`tag`
-- `MutationRequest`：`position`(int ≥0)、`base`(`A|C|G|T`)；`MutationResult`：`genome_id`、`new_genome_id`、`diff`
-- `DevelopmentRequest`：`genome_id`、`seed`；`DevelopmentResult`：`genome_id`、`dev_trace`、`phenotype`
-- `BreedingRequest`：`genome_a`、`genome_b`、`n_offspring`；`BreedingResult`：`offspring`、`meiosis_trace`
-- `ExperimentLaunch`（**实验启动请求**：一请求展开为 N 个 `ExperimentRun`，见下）：`name`、`seeds`(int[])、`environment`、`generations`；`ExperimentSummary`：`experiment_id`、`name`、`status`、`seeds`
-- `JobStatus`：`job_id`、`status`(`queued|running|done|failed|cancelled`)、`progress`(0–1)、`detail`
-- `Page[T]`（分页泛型，R9）：`items`、`next_cursor`；`GET /v1/experiments` 为 `Page[ExperimentSummary]`
+- **代码位置**：`stubs.py`（§2.1 各同名函数）。
 
-> ✅ **两对象并存（B6 已闭合，2026-09-26）**：本层 `ExperimentLaunch`（多 `seeds` × `generations` → `202` job，展开为 N 个 run）与 Tier3 `schemas/experiment.schema.json` 的 **`ExperimentRun`**（单 `seed` + 三条 config 路径，**单 run 元数据**，已定稿）是**不同物**，非同一契约的两版。`environment` 枚举统一为 `default / food_rich / predator_rich / resource_scarce`（owner：`experiment §4`）。
+### 2.2 实验与任务（已实现）
 
-- **代码位置**：`stubs.py`（各同名函数）。
+`POST /v1/experiments` 启动一次**演化型实验**（**Experiment F 形态**：`seeds` × `generations` 代 × `environment`，48 个体；复用 `experiment/evolution_run.py::run_evolution`）。每 seed 产出一个 **`ExperimentRun`**（`results/runs/<experiment_id>-s<seed>/`，含 `generations/` 与 `evolution.jsonl`）。请求**即时返回 `202` + `job_id`**，随后在后台线程执行；`seeds` 展开为 N 个 run（B6）。
+
+| 端点 | 方法 | 请求 / 响应 |
+|---|---|---|
+| `/v1/experiments` | POST | 请求 `ExperimentLaunch` → `202` `JobStatus` |
+| `/v1/experiments` | GET | `Page[ExperimentSummary]`（分页 `?limit=&cursor=`） |
+| `/v1/experiments/{experiment_id}` | GET | `ExperimentDetail`（含 `results.runs`） |
+| `/v1/jobs/{job_id}` | GET | `JobStatus` |
+| `/v1/jobs/{job_id}/cancel` | POST | `JobStatus`（协作式取消：在 seed 边界生效） |
+
+**`ExperimentLaunch` → `ExperimentRun` 字段级映射**：
+
+| `ExperimentLaunch` | 去向 |
+|---|---|
+| `name` | 仅存 `ExperimentSummary` / `ExperimentDetail.name`（`ExperimentRun` 不含 name，run 以 `experiment_id` 为键） |
+| `seeds[]` | 每 seed 建一个 `ExperimentRun`：`runlayout.create_run_dir(experiment_id, seed, …)` → `metadata.seed` |
+| `environment` | 映射为 Arena 段级 overrides（`experiment/environments.py::load_environment`；`default` = 无覆盖）→ 落 `arena_config_resolved.json`，并作 `environment_id` 进 `events.jsonl` header |
+| `generations` | 传入 `run_evolution(generations=…)` → `evolution.jsonl` 行数 |
+| （服务端铸造）`experiment_id` | `exp_<12hex>`；run 目录名 `<experiment_id>-s<seed>` |
+| （隐含默认）`model_config` / `arena_config` / `evolution_config` | `configs/default_model.yaml` / `default_arena.yaml` / `evolution.yaml`；复制入 `config_snapshot/`，对应 `ExperimentRun.*_config` |
+
+`ExperimentSummary`：`experiment_id`、`name`、`status`、`seeds`；
+`ExperimentDetail`：上述 + `results`（`{"environment", "generations", "runs":[{"seed","run_dir"}]}`）；
+`JobStatus`：`job_id`、`status`(`queued|running|done|failed|cancelled`)、`progress`(0–1)、`detail`。
+
+- **代码位置**：`experiments.py`（实验与任务）；§2.1 模型侧见 `stubs.py`。
 
 ---
 
@@ -309,13 +328,13 @@
 | POST | `/v1/developments` | **501 stub** | 池伟豪 | `stubs.py::develop` |
 | POST | `/v1/breedings` | **501 stub** | 池伟豪 | `stubs.py::breed` |
 | POST | `/v1/sessions/{session_id}/evolutions` | **501 stub** | 池伟豪 | `stubs.py::evolve` |
-| POST | `/v1/experiments` | **501 stub** | 池伟豪 | `stubs.py::start_experiment` |
-| GET | `/v1/experiments` | **501 stub** | 池伟豪 | `stubs.py::list_experiments` |
-| GET | `/v1/experiments/{experiment_id}` | **501 stub** | 池伟豪 | `stubs.py::get_experiment` |
-| GET | `/v1/jobs/{job_id}` | **501 stub** | 池伟豪 | `stubs.py::get_job` |
-| POST | `/v1/jobs/{job_id}/cancel` | **501 stub** | 池伟豪 | `stubs.py::cancel_job` |
+| POST | `/v1/experiments` | **functional**（`202`） | 池伟豪 | `experiments.py::start_experiment` |
+| GET | `/v1/experiments` | **functional** | 池伟豪 | `experiments.py::list_experiments` |
+| GET | `/v1/experiments/{experiment_id}` | **functional** | 池伟豪 | `experiments.py::get_experiment` |
+| GET | `/v1/jobs/{job_id}` | **functional** | 池伟豪 | `experiments.py::get_job` |
+| POST | `/v1/jobs/{job_id}/cancel` | **functional** | 池伟豪 | `experiments.py::cancel_job` |
 
-**计数**：functional **11**（9 个会话端点 + `/v1/health` + WS），501 stub **10**，合计 **21**。
+**计数**：functional **16**（9 会话 + `/v1/health` + WS + 5 实验/任务），501 stub **5**（模型侧），合计 **21**。
 
 **§2 的 10 个 stub 共享同一个异常实例**：`stubs.py::_NOT_IMPL = HTTPException(501, detail="Pipeline not implemented yet -- owned by 池伟豪 (genome/development/breeding/evolution).")`，全部 `raise` 同一对象。其中 `evolutions` 与 `experiments` 的装饰器带 `status_code=202`，但**因为一开始就 `raise`，实际永远返回 501** —— `202` 只出现在 OpenAPI（`/openapi.json`）里，见 §11 L7。
 
@@ -430,7 +449,7 @@ class SessionCreate(BaseModel):
 
 ## 10. 测试覆盖（`tests/test_api_contract.py`）
 
-> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（10 项，`pytest tests/test_api_contract.py` → 10 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
+> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（**22 项**，含会话/实验/任务/WS；`pytest tests/test_api_contract.py` → 22 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
 
 **旧实现 9 项**（`d894cbb` 移除前；`pytest tests/test_api_contract.py` → 9 passed）。
 

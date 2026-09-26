@@ -8,10 +8,13 @@
 from __future__ import annotations
 
 import json
+import threading
+import time
 
 import pytest
 from fastapi.testclient import TestClient
 
+from evogenesis.api import experiments as experiments_mod
 from evogenesis.api.app import app
 from evogenesis.api.session import _manager
 
@@ -22,10 +25,24 @@ WORLD_W, WORLD_H = 100.0, 60.0
 
 @pytest.fixture(autouse=True)
 def _clean_sessions():
-    """每个测试独立：清空模块级内存会话表（避免跨测试累积）。"""
+    """每个测试独立：清空模块级内存会话/实验/任务表。"""
     _manager._sessions.clear()
+    experiments_mod._experiments.clear()
+    experiments_mod._jobs.clear()
     yield
     _manager._sessions.clear()
+    experiments_mod._experiments.clear()
+    experiments_mod._jobs.clear()
+
+
+def _wait_job(job_id: str, timeout: float = 60.0) -> dict:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        status = client.get(f"/v1/jobs/{job_id}").json()
+        if status["status"] in ("done", "failed", "cancelled"):
+            return status
+        time.sleep(0.1)
+    raise AssertionError("job did not finish in time")
 
 
 def _create(master_seed: int = 250927, environment: str = "food_rich") -> dict:
@@ -183,10 +200,6 @@ def test_model_stubs_return_501() -> None:
     assert client.post("/v1/breedings", json={"genome_a": "a", "genome_b": "b"}).status_code == 501
 
 
-def test_experiments_list_stub_501() -> None:
-    assert client.get("/v1/experiments").status_code == 501
-
-
 def test_openapi_exposes_problem_and_experiment_summary() -> None:
     schemas = client.get("/openapi.json").json()["components"]["schemas"]
     assert "Problem" in schemas  # S-5：错误体进 OpenAPI
@@ -202,3 +215,71 @@ def test_ws_hello_and_error_envelope() -> None:
         ws.send_text(json.dumps({"not": "an envelope"}))
         err = ws.receive_json()
         assert err["type"] == "sys.error"
+
+
+def test_experiment_launch_lifecycle(tmp_path, monkeypatch) -> None:
+    """实验启动 → job 完成 → 列表/详情可见（用假 _run_one，不跑真实演化）。"""
+    monkeypatch.setattr(experiments_mod, "_OUT_ROOT", tmp_path / "runs")
+    monkeypatch.setattr(experiments_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
+
+    def fake_run_one(expt, seed):
+        return {"seed": seed, "run_dir": f"runs/{expt.experiment_id}-s{seed}", "generations_run": 0}
+
+    monkeypatch.setattr(experiments_mod, "_run_one", fake_run_one)
+    resp = client.post(
+        "/v1/experiments",
+        json={"name": "exp-a", "seeds": [1103, 2207], "environment": "default", "generations": 3},
+    )
+    assert resp.status_code == 202
+    job_id = resp.json()["job_id"]
+    final = _wait_job(job_id)
+    assert final["status"] == "done"
+    assert final["progress"] == 1.0
+
+    listed = client.get("/v1/experiments").json()
+    assert listed["items"][0]["name"] == "exp-a"
+    eid = listed["items"][0]["experiment_id"]
+    detail = client.get(f"/v1/experiments/{eid}").json()
+    assert [r["seed"] for r in detail["results"]["runs"]] == [1103, 2207]
+    assert detail["results"]["generations"] == 3
+
+
+def test_experiment_cancel_at_seed_boundary(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(experiments_mod, "_OUT_ROOT", tmp_path / "runs")
+    monkeypatch.setattr(experiments_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
+    started = threading.Event()
+
+    def slow_run_one(expt, seed):
+        started.set()
+        time.sleep(0.5)
+        return {"seed": seed, "run_dir": "x"}
+
+    monkeypatch.setattr(experiments_mod, "_run_one", slow_run_one)
+    resp = client.post("/v1/experiments", json={"name": "c", "seeds": [1, 2], "generations": 1})
+    job_id = resp.json()["job_id"]
+    assert started.wait(5.0)
+    cancelled = client.post(f"/v1/jobs/{job_id}/cancel").json()
+    assert cancelled["status"] == "cancelled"
+    assert _wait_job(job_id)["status"] == "cancelled"
+
+
+def test_experiment_and_job_not_found() -> None:
+    assert client.get("/v1/experiments/exp_nope").status_code == 404
+    assert client.get("/v1/jobs/job_nope").status_code == 404
+
+
+def test_experiment_launch_real_run_generations_zero(tmp_path, monkeypatch) -> None:
+    """真实跑通一次：generations=0（不入代循环）仍建 ExperimentRun 目录并落 evolution.jsonl。"""
+    monkeypatch.setattr(experiments_mod, "_OUT_ROOT", tmp_path / "runs")
+    monkeypatch.setattr(experiments_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
+    resp = client.post(
+        "/v1/experiments",
+        json={"name": "real", "seeds": [1103], "environment": "default", "generations": 0},
+    )
+    job_id = resp.json()["job_id"]
+    final = _wait_job(job_id)
+    assert final["status"] == "done", final
+    detail = client.get(f"/v1/experiments/{next(iter(experiments_mod._experiments))}").json()
+    run = detail["results"]["runs"][0]
+    assert run["seed"] == 1103 and run["generations_run"] == 0
+    assert (tmp_path / "runs" / f"{detail['experiment_id']}-s1103" / "evolution.jsonl").exists()
