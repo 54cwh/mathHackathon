@@ -1,4 +1,4 @@
-"""DanioNet 连接组与神经动力学（`DanioNet设计规范.md` v1.3）。"""
+"""DanioNet 连接组与神经动力学（`DanioNet设计规范.md` v1.5）。"""
 
 from evogenesis.connectome.config import (
     DEFAULT_NETWORK_CONFIG,

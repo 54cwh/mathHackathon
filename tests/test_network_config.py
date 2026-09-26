@@ -24,7 +24,10 @@ NETWORK_FIELDS = (
     "neuron_bias_std",
     "motor_pool_split",
     "action_pooling",
+    "input_weight_scope",
 )
+
+DEVELOPMENT_FIELDS = ("zero_input_steps", "saturation_ratio_max", "saturation_eps")
 
 
 def _sections() -> tuple[dict, dict]:
@@ -37,6 +40,8 @@ def test_default_config_mirrors_frozen_config():
     network, development = _sections()
     for name in NETWORK_FIELDS:
         assert getattr(DEFAULT_NETWORK_CONFIG, name) == network[name], name
+    for name in DEVELOPMENT_FIELDS:
+        assert getattr(DEFAULT_NETWORK_CONFIG, name) == development[name], name
     assert DEFAULT_NETWORK_CONFIG.max_nodes == development["max_neurons"]
     assert list(DEFAULT_NETWORK_CONFIG.domains) == development["domains"]
 
@@ -62,3 +67,7 @@ def test_unsupported_split_and_pooling_rejected():
         NetworkReadoutConfig(motor_pool_split="x_quantile")
     with pytest.raises(NotImplementedError):
         NetworkReadoutConfig(action_pooling="max")
+    with pytest.raises(NotImplementedError):
+        NetworkReadoutConfig(action_dim=3)
+    with pytest.raises(NotImplementedError):
+        NetworkReadoutConfig(input_weight_scope="global")

@@ -1,7 +1,7 @@
 """DanioNet（Stage 4）测试：结构 / 权重约束 / 动力学 / 动作 / 梯度屏蔽 / viability。
 
-夹具用 RGCD ``develop`` 在固定 q 与 master seed 下产出 viable 个体（``DanioNet规范.md``
-v1.3）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
+夹具用 RGCD ``develop`` 在固定 q 与 master seed 下产出 viable 个体（``DanioNet设计规范.md``
+v1.4）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
 """
 
 import numpy as np
@@ -218,6 +218,17 @@ def test_active_mask_from_rgcd_is_honored():
     assert int(net.left_mask.sum()) == 2 and int(net.right_mask.sum()) == 2
     net.step(np.zeros((1, DEFAULT_NETWORK_CONFIG.sensory_dim), dtype=np.float32))
     assert float(net.h[0, 6].abs()) == 0.0
+    # §3：非活跃神经元的 W⁰/ΔW 亦为 0（M 屏蔽），初始 ΔW 全局为 0
+    assert float(net.delta_weights[0, 6, :].abs().sum()) == 0.0
+    assert float(net.delta_weights[0, :, 6].abs().sum()) == 0.0
+    assert float(net.delta_weights.abs().max()) < 1e-6
+    net.zero_grad()
+    net.step(np.zeros((1, DEFAULT_NETWORK_CONFIG.sensory_dim), dtype=np.float32))
+    (net.h.sum()).backward()
+    grad = net.theta.grad
+    assert torch.isfinite(grad).all()
+    assert float(grad[0, 6, :].abs().sum()) == 0.0
+    assert float(grad[0, :, 6].abs().sum()) == 0.0
 
 
 def test_mismatched_shapes_rejected():
@@ -243,3 +254,47 @@ def test_active_counts_and_budgeted_support_sign(net: DanioNet):
     assert net.active_counts == [net.n_neurons[0]]
     assert torch.allclose(net.support_sign0, net.support.to(torch.float32) * net.sign0)
     assert float(net.support_sign0[~net.support].abs().sum()) == 0.0
+
+
+def test_n_greater_than_max_nodes_rejected(viable_phenotype: ConnectomePhenotype):
+    from evogenesis.connectome.config import NetworkReadoutConfig
+
+    tiny = NetworkReadoutConfig(max_nodes=1)
+    with pytest.raises(ValueError):
+        DanioNet([viable_phenotype], master_seed=MASTER_SEED, config=tiny)
+
+
+def test_observation_shape_mismatch_rejected(net: DanioNet):
+    with pytest.raises(ValueError):
+        net.step(np.zeros((1, 5), dtype=np.float32))
+
+
+def test_unsupported_activation_rejected(viable_phenotype: ConnectomePhenotype):
+    from evogenesis.connectome.config import NetworkReadoutConfig
+
+    cfg = NetworkReadoutConfig(activation="relu")
+    with pytest.raises(NotImplementedError):
+        DanioNet([viable_phenotype], master_seed=MASTER_SEED, config=cfg)
+
+
+def test_batch_isolation_of_outputs(viable_phenotype: ConnectomePhenotype):
+    net = DanioNet([viable_phenotype, viable_phenotype], master_seed=MASTER_SEED)
+    base = np.zeros((2, DEFAULT_NETWORK_CONFIG.sensory_dim), dtype=np.float32)
+    w0, _ = net.step(base)
+    net.reset()
+    changed = base.copy()
+    changed[1, 0] = 1.0  # 只改样本 1
+    w1, _ = net.step(changed)
+    assert torch.allclose(w0[0], w1[0]), "样本 0 的输出不应受样本 1 输入影响"
+    assert not torch.allclose(w0[1], w1[1])
+
+
+def test_hunger_term_enters_via_m(net: DanioNet):
+    """把 U 置零后，仅 hunger 维变化仍应改变 h，证明 m 项生效（§3）。"""
+    net.U.zero_()
+    net.reset()
+    net.step(_obs(hunger=0.0))
+    low = net.h.clone()
+    net.reset()
+    net.step(_obs(hunger=1.0))
+    assert not torch.allclose(low, net.h)

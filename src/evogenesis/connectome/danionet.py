@@ -1,4 +1,4 @@
-"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.3 §1–§9）。
+"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.4 §1–§9）。
 
 产出：activation ``h`` / 连续动作 ``(ω, v)`` / 当代 ``ΔW``。消费 RGCD 的
 ``ConnectomePhenotype``（``A, Z, τ, W⁰, M``）；``ΔW`` 不遗传（§7）。
@@ -139,16 +139,16 @@ class DanioNet(torch.nn.Module):
             adjacency[b, :n, :n] = to_float32_tensor(phenotype.adjacency, device=device)
             weights0[b, :n, :n] = to_float32_tensor(phenotype.weights0, device=device)
             tau[b, :n] = to_float32_tensor(phenotype.tau, device=device)
-            cell_type[b, :n] = phenotype.cell_type.to(torch.long)
+            cell_type[b, :n] = phenotype.cell_type.to(device=device, dtype=torch.long)
             positions[b, :n] = to_float32_tensor(phenotype.positions, device=device)
             neuron_mask[b, :n] = phenotype.active_mask.to(torch.bool)
             self._n_neurons.append(n)
 
-            types = phenotype.cell_type.to(torch.long)
-            active = phenotype.active_mask.to(torch.bool)
+            types = phenotype.cell_type.to(device=device, dtype=torch.long)
+            active = phenotype.active_mask.to(device=device, dtype=torch.bool)
             motor_local = torch.nonzero((types == motor_index) & active, as_tuple=False).squeeze(-1)
             left_local, right_local = motor_sides(
-                phenotype.positions[motor_local], types[motor_local], motor_index
+                phenotype.positions[motor_local].to(device=device), types[motor_local], motor_index
             )
             left_local = motor_local[left_local]
             right_local = motor_local[right_local]
@@ -158,6 +158,11 @@ class DanioNet(torch.nn.Module):
             right_mask[b, right_local] = True
             motor_mask[b, motor_local] = True
 
+        if not bool((tau > 0).all() and torch.isfinite(tau).all()):
+            raise ValueError("tau 必须为正且有限（§3 动力学 1/τ）")
+        # §3：非活跃神经元（M=False）的行/列恒 0 —— W⁰ 亦按 M 屏蔽，
+        # 使 sign(W⁰)、Θ 初值与 ΔW 在非活跃处天然为 0（初始 ΔW=0 全局成立）。
+        weights0 = weights0 * neuron_mask[:, :, None] * neuron_mask[:, None, :]
         support = (adjacency != 0) & neuron_mask[:, :, None] & neuron_mask[:, None, :]
         self.register_buffer("adjacency", adjacency)
         self.register_buffer("weights0", weights0)
@@ -261,18 +266,14 @@ class DanioNet(torch.nn.Module):
                 self.weights0[b, :n, :n],
                 self.neuron_mask[b, :n],
                 domains=self.config.domains,
+                zero_input_steps=self.config.zero_input_steps,
+                saturation_ratio_max=self.config.saturation_ratio_max,
+                saturation_eps=self.config.saturation_eps,
                 activation=self.config.activation,
                 neuron_bias=self.b[self.cell_type[b, :n]],
             )
             results.append((viable, reason))
         return results
-
-
-def zero_observation(
-    batch: int, config: NetworkReadoutConfig = DEFAULT_NETWORK_CONFIG
-) -> np.ndarray:
-    """全零 observation（测试/调试用；形状 ``(batch, sensory_dim)``，值域 ``[0,1]``）。"""
-    return np.zeros((batch, config.sensory_dim), dtype=np.float32)
 
 
 __all__ = [

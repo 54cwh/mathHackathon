@@ -40,10 +40,21 @@ class NetworkReadoutConfig:
     neuron_bias_std: float = 0.1
     motor_pool_split: str = "median_x"
     action_pooling: str = "mean"
+    input_weight_scope: str = "per_cell_type"
+    # §7 viability 判据（与 development 同一组）
+    zero_input_steps: int = 50
+    saturation_ratio_max: float = 0.9
+    saturation_eps: float = 0.001
     max_nodes: int = 48
     domains: tuple[str, ...] = DOMAIN_ORDER
 
     def __post_init__(self) -> None:
+        if self.action_dim != 2:
+            raise NotImplementedError(f"未实现 action_dim={self.action_dim}（§4 输出 (ω, v)）")
+        if self.input_weight_scope != "per_cell_type":
+            raise NotImplementedError(
+                f"未实现 input_weight_scope={self.input_weight_scope!r}（§3 U_i=U_{{type_i}}）"
+            )
         if self.motor_pool_split != "median_x":
             raise NotImplementedError(f"未实现 motor_pool_split={self.motor_pool_split!r}（§5）")
         if self.action_pooling != "mean":
@@ -79,6 +90,10 @@ def load_network_config(
         neuron_bias_std=cfg.network.neuron_bias_std,
         motor_pool_split=cfg.network.motor_pool_split,
         action_pooling=cfg.network.action_pooling,
+        input_weight_scope=cfg.network.input_weight_scope,
+        zero_input_steps=cfg.development.zero_input_steps,
+        saturation_ratio_max=cfg.development.saturation_ratio_max,
+        saturation_eps=cfg.development.saturation_eps,
         max_nodes=cfg.development.max_neurons,
         domains=tuple(cfg.development.domains),
     )

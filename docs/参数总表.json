@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.6",
+    "version": "v0.7",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -408,6 +408,19 @@
       "basis": "连续动作 (ω, v) 两维",
       "source": "src/evogenesis/connectome/DanioNet设计规范.md:49-62",
       "config": "configs/default_model.yaml → network.action_dim",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "activation",
+      "value": "tanh",
+      "unit": null,
+      "group": "network",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "默认 φ=tanh（DanioNet §3 神经动力学定稿）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
+      "config": "configs/default_model.yaml → network.activation",
       "sensitivity": null,
       "suggest": null
     },
