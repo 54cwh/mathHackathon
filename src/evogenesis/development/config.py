@@ -8,8 +8,8 @@
 ``connectome.ablation_random_density`` 为未实现消融（DanioNet 随机图基线）的预留参数，待接线。
 参数依据与状态见 ``docs/参数总表.json``（``group`` ∈ {grn, development, connectome, network}）。
 
-读取时只用本模块自带的 section 模型（顶层 ``extra="ignore"``），因此不依赖
-``core.ModelConfig`` 的其它节，避免跨 lane 编辑相互干扰。
+字段 schema（`configs/default_model.yaml` 各节）归 ``core/config.py`` **唯一拥有**；
+本模块只保留运行期镜像 dataclass ``RGCDConfig`` 与 ``from_config`` 映射，不另写 Pydantic section。
 """
 
 from __future__ import annotations
@@ -20,9 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
-
-from evogenesis.core.config import load_config
+from evogenesis.core.config import ModelConfig, load_config
 
 
 def _resolve_default_model_config() -> Path:
@@ -45,69 +43,6 @@ DOMAIN_ORDER: tuple[str, ...] = (
     "inhibitory",
     "motor",
 )
-
-
-class _Section(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class _GRNSection(_Section):
-    dim: int
-    development_steps: int
-    rho: float
-    activation: str
-    weight_init: str
-    spectral_radius: float
-    init_b_std: float
-
-
-class _DevelopmentSection(_Section):
-    initial_precursors: int
-    domains: list[str]
-    precursors_per_domain: int
-    max_divisions_per_precursor: int
-    max_neurons: int
-    placement: str
-    position_space: str
-    split_noise: float
-    gene_noise: float
-    c_domain_bonus: float
-    zero_input_steps: int
-    saturation_ratio_max: float
-    saturation_eps: float
-
-
-class _ConnectomeSection(_Section):
-    target_density: float
-    allow_self_loops: bool
-    distance_lambda: float
-    distance_space: str
-    regulatory_gamma: float
-    w_bar_initial: float
-    ablation_random_density: float
-    tau_min: float
-    tau_max: float
-
-
-class _NetworkSection(_Section):
-    sensory_dim: int
-    action_dim: int
-    activation: str
-    input_weight_scope: str
-    input_weight_std: float
-    hunger_gain_std: float
-    neuron_bias_std: float
-    motor_pool_split: str
-    action_pooling: str
-
-
-class _RGCDModelConfig(BaseModel):
-    model_config = ConfigDict(extra="ignore")
-
-    grn: _GRNSection
-    development: _DevelopmentSection
-    connectome: _ConnectomeSection
-    network: _NetworkSection
 
 
 @dataclass(frozen=True)
@@ -161,7 +96,7 @@ class RGCDConfig:
         return 2 * self.grn_dim + 2 * self.n_domains
 
     @classmethod
-    def from_config(cls, cfg: _RGCDModelConfig) -> RGCDConfig:
+    def from_config(cls, cfg: ModelConfig) -> RGCDConfig:
         return cls(
             grn_dim=cfg.grn.dim,
             development_steps=cfg.grn.development_steps,
@@ -211,5 +146,5 @@ def load_development_config(
     """
     if path is None:
         return RGCDConfig()
-    cfg = load_config(path, model=_RGCDModelConfig, overrides=overrides, environ=environ)
+    cfg = load_config(path, overrides=overrides, environ=environ)
     return RGCDConfig.from_config(cfg)
