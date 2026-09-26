@@ -11,6 +11,8 @@
  *  R3  `index.css` 的 `--radius` 必须是 `0rem`（R2-4 的代码落点）。
  *  R4  `palette.ts` 的 `BRAND` 必须恰好 24 项（防误删/误加）。
  *  R5  `palette.ts` 不得含 `#FF00FF`（洋红是抠图键控色，进了色板会挖掉素材本身）。
+ *  R6  禁止破坏像素硬度 / 引入调色板外混合色的手段（§十一）：
+ *      阴影 / 模糊 / glass / 渐变 / opacity 淡出 / transition 颜色插值 / 动画 / 颜色透明后缀。
  *
  * 已知局限（诚实声明）：注释剥离是**逐行状态机**，只处理 `/* … *​/` 块注释与
  * `//` 行注释（且 `//` 前是 `:` 时不视为注释，避开 `https://`）。
@@ -27,6 +29,29 @@ const SRC = join(ROOT, "src");
 
 const PALETTE_REL = "src/design/palette.ts"; // 正斜杠：与 relative(...) 归一化后的形式比对
 const ALLOW_HEX = new Set([PALETTE_REL]);
+
+/* ---- R6：禁止破坏像素硬度 / 引入调色板外混合色的手段（§十一）----
+   `shadow` 必须带「前面是空白/引号/行首」的边界：品牌色名 `stone-shadow` 里的
+   `-shadow` 前面是 `-`，不会被误判 —— 这是 R6 唯一的假阳性陷阱。 */
+const TS_BAN = [
+  { re: /(?:^|[\s"'`])(?:drop-)?shadow(?:-[a-z0-9]+)?(?=[\s"'`]|$)/, why: "阴影" },
+  { re: /(?:^|[\s"'`])blur(?:-[a-z0-9]+)?(?=[\s"'`]|$)/, why: "模糊" },
+  { re: /(?:^|[\s"'`])backdrop-[a-z0-9-]+/, why: "backdrop（glass）" },
+  { re: /(?:^|[\s"'`])bg-gradient(?:-[a-z0-9-]+)?/, why: "渐变" },
+  { re: /(?:^|[\s"'`])(?:from|via|to)-[a-z]+-[0-9]{2,3}(?=[\s"'`]|$)/, why: "渐变端点" },
+  { re: /(?:^|[\s"'`])opacity-[0-9]+/, why: "opacity 淡出" },
+  { re: /(?:^|[\s"'`])transition(?:-[a-z0-9]+)?(?=[\s"'`]|$)/, why: "颜色插值" },
+  { re: /(?:^|[\s"'`])animate-[a-z0-9-]+/, why: "动画" },
+  { re: /(?:bg|text|border|ring|divide|outline|fill|stroke)-[a-z-]+\/[0-9]{1,3}(?=[\s"'`]|$)/, why: "颜色透明后缀" },
+];
+const CSS_BAN = [
+  { re: /box-shadow\s*:/, why: "box-shadow" },
+  { re: /text-shadow\s*:/, why: "text-shadow" },
+  { re: /(?:^|[;\s])filter\s*:/, why: "filter（模糊）" },
+  { re: /backdrop-filter\s*:/, why: "backdrop-filter（glass）" },
+  { re: /(?:linear|radial|conic)-gradient\(/, why: "gradient()" },
+  { re: /(?:^|[;\s])transition\s*:/, why: "transition" },
+];
 
 const violations = [];
 const bad = (rule, file, line, msg) =>
@@ -96,6 +121,12 @@ for (const file of files) {
   for (const { text, line } of stripped) {
     if (ROUNDED.test(text)) bad("R2", file, line, "出现 rounded 类（R2-4 无圆角）");
   }
+  const rules = rel.endsWith(".css") ? CSS_BAN : TS_BAN;
+  for (const { text, line } of stripped) {
+    for (const { re, why } of rules) {
+      if (re.test(text)) bad("R6", file, line, "出现" + why + "（§十一）");
+    }
+  }
 }
 
 /* R3：--radius 必须为 0rem */
@@ -118,12 +149,12 @@ if (/#FF00FF/i.test(paletteSrc))
 
 /* 输出 */
 if (violations.length === 0) {
-  console.log(`lint:design OK（扫描 ${files.length} 个文件，R1–R5 全过）`);
+  console.log(`lint:design OK（扫描 ${files.length} 个文件，R1–R6 全过）`);
   process.exit(0);
 }
 console.error(`lint:design 失败：${violations.length} 处\n`);
 for (const v of violations) {
   console.error(`  [${v.rule}] ${v.file}:${v.line}  ${v.msg}`);
 }
-console.error("\n规则说明见 scripts/lint-design.mjs 顶部；R2-4 / Q4 等决策见 frontend/交互与可视化.md §14；审计证据见其 §A。");
+console.error("\n规则说明见 scripts/lint-design.mjs 顶部；R2-4 / Q4 / §十一 等决策见 frontend/交互与可视化.md §14；审计证据见其 §A。");
 process.exit(1);

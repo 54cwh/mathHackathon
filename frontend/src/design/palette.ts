@@ -80,8 +80,8 @@ export const ARENA = {
   /** 能量环：充足 / 告急 */
   energyOk: BRAND.grassGreen,
   energyLow: BRAND.dangerRed,
-  /** 画布内 HUD 文字（step 计数等） */
-  hudText: BRAND.stoneGrey,
+  // 原 `hudText` 已删除：`step N` 不再烧进位图，改由 DOM 渲染（用户裁决 §三），
+  // 画布内已无文字消费者。留一个空角色只会变成审计 §A.3.4 说的那种「死 token」。
 } as const;
 
 /**
@@ -95,3 +95,52 @@ export const ARENA = {
  * 因此即便有人写 `rounded-lg` / `rounded-full` 也拿不到圆角（lint 另有类名检查）。
  */
 export const RADIUS = "0" as const;
+
+/**
+ * Brain Forge 的**装饰性**配色（程序化视觉，非拓扑图）。
+ *
+ * ⚠️ **这三色不是「三类 cell type」，也不要被读成 cell type 契约。**
+ * 真实的 `CellType` 有**六**类（`frontend/types.ts:7`：
+ * `sensory|prey|threat|memory|inhibitory|motor`），且 `core §10` 把
+ * 「六类 cell type owner」列为**未定契约**。按 `AGENTS.md`「未定契约不得被下游依赖」，
+ * 本视觉**故意不绑定**该契约 —— 这三色只是**装饰分组**，用于让纹理有三档明度层次。
+ * 将来 cell type 定稿后，若要把真数据接进 Brain Forge，需另立一格映射并登记 owner。
+ */
+export const BRAIN = {
+  particleA: BRAND.midWater,
+  particleB: BRAND.mutationViolet,
+  particleC: BRAND.amber,
+  /** 断开的微小线段（比粒子暗，只做纹理底噪） */
+  microSegment: BRAND.blueGrey,
+  /** 装饰簇的极暗垫底 */
+  clusterBase: BRAND.slateShadow,
+} as const;
+
+/**
+ * Nucleotide strip 的碱基配色（真实数据渲染，A/C/G/T 由 DOM/Canvas 画出，**不进图片**）。
+ * 类型对齐 `frontend/types.ts:1` 的 `Base`。
+ */
+export const STRIP = {
+  /** A / C / G / T 四色 */
+  A: BRAND.midWater,
+  C: BRAND.grassGreen,
+  G: BRAND.amber,
+  T: BRAND.coralOrange,
+  /** 选中碱基的高亮描边 */
+  selected: BRAND.bone,
+  /** 未选中碱基的文字/底纹 */
+  idle: BRAND.stoneGrey,
+  /** 条带底色 */
+  band: BRAND.fishNavy,
+} as const;
+
+/** DNA 双螺旋（像素风，非 PBR 3D）配色 */
+export const DNA = {
+  strandA: BRAND.fishBlue,
+  strandB: BRAND.shallowWater,
+  rung: BRAND.sandWarm,
+  /** 螺旋的暗部/交织点 */
+  shadow: BRAND.slateShadow,
+  /** 选定区段的高亮 */
+  highlight: BRAND.bone,
+} as const;

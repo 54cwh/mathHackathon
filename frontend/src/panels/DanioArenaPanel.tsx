@@ -18,14 +18,21 @@ const CANVAS_W = 640;
 const CANVAS_H = 384;
 const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
 
+/**
+ * 世界 -> 画布映射。**这三个 helper 一律返回整数**。
+ *
+ * 小数坐标会让 `ctx.arc` / `moveTo`+`lineTo` 的边缘被抗锯齿柔化 —— 这是审计
+ * §A.2 规则 9(b) 认定的**当前唯一真像素缺陷**。取整集中放在这里，所有调用点
+ * 一次性生效（含 `handleClick` 的命中测试，±0.5px 不影响判定）。
+ */
 function sx(x: number): number {
-  return (x / WORLD_W) * CANVAS_W;
+  return Math.round((x / WORLD_W) * CANVAS_W);
 }
 function sy(y: number): number {
-  return (y / WORLD_H) * CANVAS_H;
+  return Math.round((y / WORLD_H) * CANVAS_H);
 }
 function sr(r: number): number {
-  return (r / WORLD_W) * CANVAS_W;
+  return Math.round((r / WORLD_W) * CANVAS_W);
 }
 
 export function DanioArenaPanel() {
@@ -110,6 +117,9 @@ export function DanioArenaPanel() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
+    // 关掉插值：将来 drawImage 贴像素精灵时不会被双线性放大糊掉（§十一）。
+    // 注意：几何图元的锐度靠**整数坐标**保证，不是靠这一行。
+    ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
     ctx.fillStyle = ARENA.canvas;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
@@ -174,11 +184,8 @@ export function DanioArenaPanel() {
       }
     }
 
-    ctx.fillStyle = ARENA.hudText;
-    // 注：Canvas 要用自托管 webfont 必须先 await document.fonts.ready，
-    // 否则静默回退到系统等宽 —— 故此处仍用 monospace（Q4：数值走清晰等宽）。
-    ctx.font = "12px monospace";
-    ctx.fillText(`step ${snap.step}`, 8, 16);
+    // 原来此处把 `step N` 用 fillText 烧进位图（审计 §A.2 规则 6 的唯一硬违规）——
+    // 已删除。按用户裁决，数值一律由 DOM 渲染真实数据，见下方状态行。
   }, [snap, selectedFishId]);
 
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
@@ -206,19 +213,26 @@ export function DanioArenaPanel() {
   return (
     <Panel title="Danio Arena" icon={<Fish className="size-4 text-primary" />}>
       <div className="flex h-full flex-col gap-2">
-        {/* The canvas bitmap carries the arena's 100:60 intrinsic ratio; letting
-            it fill the column non-uniformly would stretch every fish vertically. */}
-        <div className="flex min-h-0 flex-1 items-center justify-center">
+        {/* 视口**恒 5:3**（`.eg-arena`，owner = `index.css` 的几何契约区）。
+            位图 640x384 同为 5:3，故 `w-full h-full` 不会变形；命中测试走
+            `getBoundingClientRect` 线性映射，只有等比才不会系统性偏移。
+            **不再 `flex-1` 撑满纵向** —— Arena 不为了填满右栏而拉伸（§七）；
+            余下纵向空间留给下方状态行与留白。 */}
+        <div className="eg-arena">
           <canvas
             ref={canvasRef}
             width={CANVAS_W}
             height={CANVAS_H}
             onClick={handleClick}
-            className="max-h-full max-w-full cursor-crosshair"
+            className="block h-full w-full cursor-crosshair"
           />
         </div>
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
+        <div className="mt-auto flex items-center justify-between gap-2 text-xs text-muted-foreground">
+          <span className="font-mono">
+            {shortSessionId ? `session ${shortSessionId}` : "connecting..."}
+          </span>
+          {/* step 是真实 simulation state，由 DOM 渲染（用户裁决：数值不得烧进位图）。 */}
+          <span className="font-mono">{snap ? `step ${snap.step}` : "—"}</span>
           <span>{error ? `⚠ ${error}` : "click a fish to inspect"}</span>
         </div>
       </div>

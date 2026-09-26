@@ -43,6 +43,11 @@
   > 那条约束**只针对 Arena 面板**；WebGL 仅出现在 DNA2Brain 面板。
   > **配套**：ChatGPT 生成的 DNA 素材在本方案下作为**贴图/背景**使用（不是直接当螺旋位图），
   > 因此素材要求为「可平铺的 DNA 纹理 / 碱基符号」而非「螺旋成品图」。
+  > **⚠️ 2026-09-26 推迟（用户裁决，见 `交互与可视化.md` §15.1）**：本轮起**暂不引入 three.js**。
+  > DNA 视觉改用 **Canvas 像素风**（`src/visuals/DnaHelixVisual.tsx`），理由是项目定位为
+  > pixel-art + scientific UI hybrid，PBR / glossy 不属于这套视觉语言。
+  > **本条不是删除，是推迟**：`three` / `r3f` 的依赖仍在 `package.json` 里，若将来要做真正的
+  > 3D 螺旋再启用本条；届时须按本文件顶部「升级须显式改版本并重测」执行。
 
 ## 防坑约定（AI 协作）
 
@@ -54,6 +59,7 @@
 6. **颜色与圆角走检查**：`npm run lint:design`（`scripts/lint-design.mjs`）。
    硬规则：hex 只允许出现在 `src/design/palette.ts`；禁止 `rounded*`（除 `rounded-none`）；
    `--radius` 必须为 `0`；色板必须 24 项且不含洋红 `#FF00FF`（抠图键控色）。
+   **R6** 禁 `shadow*` / `blur*` / `bg-gradient*` / `opacity-*` / `transition*` / `animate-*` / 颜色透明后缀（`bg-x/50`）。
    **两人并行时这是唯一能自动兜住「各改一版颜色」的闸门** —— 提交前必跑。
 
 ## 目录规划
@@ -149,7 +155,7 @@ frontend/
 > - **品牌 24 色** = `src/design/palette.ts`（唯一数据源）。
 >
 > 本表与代码不一致时**以代码为准**，并把本表改回来 —— `npm run lint:design` 会抓
-> hex 越界与圆角残留（规则 R1–R5，见 `scripts/lint-design.mjs`）。
+> hex 越界、圆角残留、以及破坏像素硬度的手段（规则 R1–R6，见 `scripts/lint-design.mjs`）。
 > 品牌色的 Tailwind 用法是 **`brand` 命名空间**：`bg-brand-ink` / `text-brand-foam` /
 > `border-brand-stone-shadow`（不是 `bg-ink` —— 那是**错的**，Tailwind 会静默不生成）。
 

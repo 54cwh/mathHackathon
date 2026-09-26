@@ -442,3 +442,22 @@ def test_workers_parallel_matches_serial_bit_for_bit(tmp_path: Path, monkeypatch
         for key in ("latency_p50_ms", "latency_p95_ms"):
             assert isinstance(a["complexity"][key], float)
             assert isinstance(b["complexity"][key], float)
+
+
+def test_workers_gt_one_actually_uses_the_pool(tmp_path: Path, monkeypatch) -> None:
+    """`workers > 1` 必须**真的走进程池**（否则上一条等价性测试会因两条路径都串行而空过）。
+
+    判据：并行跑完后，**主进程**的 `baseline_run._WORKER_CTX` 仍为空 —— 数据集只在子进程里加载；
+    而串行路径会把它填满。
+    """
+    kwargs = {"seeds": (1103,), "n_agents": 2, "n_episodes": 2}
+    baseline_run._WORKER_CTX.clear()
+    _run_small(tmp_path / "serial", monkeypatch, workers=1, **kwargs)
+    assert baseline_run._WORKER_CTX, "串行路径应在主进程内预热 _WORKER_CTX"
+
+    baseline_run._WORKER_CTX.clear()
+    _run_small(tmp_path / "parallel", monkeypatch, workers=2, **kwargs)
+    assert baseline_run._WORKER_CTX == {}, (
+        "并行路径下主进程不得加载数据集/持有训练上下文；"
+        "若非空说明 executor 未真正传到 _evaluate_*（子进程池被绕过）"
+    )

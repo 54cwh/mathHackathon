@@ -590,6 +590,7 @@ def _evaluate_all_seeds(
                     generation=generation,
                     device=device,
                     allow_partial=allow_partial,
+                    executor=executor,
                 )
             else:
                 rows = _evaluate_baseline(
@@ -607,6 +608,7 @@ def _evaluate_all_seeds(
                     steps=steps,
                     generation=generation,
                     device=device,
+                    executor=executor,
                 )
             results.extend(rows)
             rows_by_model[name] = rows
