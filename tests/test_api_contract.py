@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from evogenesis.api import environmental_selections as selections_mod
+from evogenesis.api import genome_lab as lab_mod
 from evogenesis.api import ws as ws_mod
 from evogenesis.api.app import app
 from evogenesis.api.session import _manager
@@ -33,6 +34,9 @@ def _clean_sessions():
     ws_mod._subs.clear()
     ws_mod._seq.clear()
     ws_mod._loop = None
+    lab_mod._genomes.clear()
+    lab_mod._lineage.clear()
+    lab_mod._counter = 0
     yield
     _manager._sessions.clear()
     selections_mod._selections.clear()
@@ -40,6 +44,9 @@ def _clean_sessions():
     ws_mod._subs.clear()
     ws_mod._seq.clear()
     ws_mod._loop = None
+    lab_mod._genomes.clear()
+    lab_mod._lineage.clear()
+    lab_mod._counter = 0
 
 
 def _wait_job(job_id: str, timeout: float = 60.0) -> dict:
@@ -198,13 +205,13 @@ def test_snapshot_within_world_bounds() -> None:
 
 
 def test_model_stubs_return_501() -> None:
-    resp = client.post("/v1/developments", json={"genome_id": "g0", "seed": 0})
+    resp = client.get("/v1/story-mutations")
     assert resp.status_code == 501
     assert resp.headers["content-type"].startswith("application/problem+json")
     body = resp.json()
     assert {"type", "title", "status", "detail", "instance"} <= set(body)
-    assert body["instance"] == "/v1/developments"
-    assert client.post("/v1/breedings", json={"genome_a": "a", "genome_b": "b"}).status_code == 501
+    assert body["instance"] == "/v1/story-mutations"
+    assert client.post("/v1/sessions/session_x/evolutions").status_code == 501
 
 
 def test_openapi_exposes_problem_and_experiment_summary() -> None:
@@ -338,3 +345,58 @@ def test_ws_job_progress_push(tmp_path, monkeypatch) -> None:
             assert r["type"] == "job.progress"
             r = ws.receive_json()
         assert r["payload"]["status"] == "done" and r["payload"]["progress"] == 1.0
+
+
+def _new_genome() -> str:
+    resp = client.post("/v1/genomes", json={})
+    assert resp.status_code == 201, resp.text
+    return resp.json()["genome_id"]
+
+
+def test_genome_create_and_get() -> None:
+    gid = _new_genome()
+    got = client.get(f"/v1/genomes/{gid}").json()
+    assert got["genome_id"] == gid
+    assert len(got["chromosome_pairs"]) == 2
+    assert set(got["chromosome_pairs"][0]) == {"maternal", "paternal"}
+
+
+def test_genome_mutation_creates_child_with_diff() -> None:
+    gid = _new_genome()
+    resp = client.post(f"/v1/genomes/{gid}/mutations", json={"position": 0, "base": "A"})
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["genome_id"] == gid and body["new_genome_id"] != gid
+    assert body["diff"]["to_base"] == "A"
+    child = client.get(f"/v1/genomes/{body['new_genome_id']}").json()
+    assert child["lineage"] == gid  # 血缘
+
+
+def test_genome_mutation_invalid_position_422() -> None:
+    gid = _new_genome()
+    resp = client.post(f"/v1/genomes/{gid}/mutations", json={"position": 99999, "base": "A"})
+    assert resp.status_code == 422
+
+
+def test_development_returns_trace_and_phenotype() -> None:
+    gid = _new_genome()
+    resp = client.post("/v1/developments", json={"genome_id": gid, "seed": 0})
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["genome_id"] == gid
+    assert len(body["dev_trace"]["q"]) == 8  # 8 维 q(G)
+    assert "viable" in body["phenotype"] and "n_neurons" in body["phenotype"]
+
+
+def test_breeding_creates_offspring() -> None:
+    a, b = _new_genome(), _new_genome()
+    resp = client.post("/v1/breedings", json={"genome_a": a, "genome_b": b, "n_offspring": 3})
+    assert resp.status_code == 201
+    ids = resp.json()["offspring"]
+    assert len(ids) == 3 and len(set(ids)) == 3
+    assert all(i not in (a, b) for i in ids)
+
+
+def test_genome_endpoints_404() -> None:
+    assert client.get("/v1/genomes/lab:g0:genome9999").status_code == 404
+    assert client.post("/v1/developments", json={"genome_id": "nope", "seed": 0}).status_code == 404

@@ -50,6 +50,16 @@ class StoryMutation(BaseModel):
 
 
 # --- genomes / mutations (R3: action as noun subresource) ------------------
+class GenomeCreate(BaseModel):
+    seed: int | None = None  # 缺省用参考种子（`API接口.md` §2.3）
+
+
+class GenomeRecord(BaseModel):
+    genome_id: str
+    chromosome_pairs: list[dict[str, str]]
+    lineage: str | None = None
+
+
 class MutationRequest(BaseModel):
     position: int = Field(ge=0)
     base: Literal["A", "C", "G", "T"]

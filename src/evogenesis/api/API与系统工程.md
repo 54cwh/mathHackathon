@@ -80,9 +80,11 @@
 | POST | `/v1/sessions/{session_id}/reset` | 重置会话 |
 | DELETE | `/v1/sessions/{session_id}` | 结束会话 |
 | GET | `/v1/story-mutations` | 预验证 SNP 列表 |
-| POST | `/v1/genomes/{genome_id}/mutations` | base 编辑，返回新 `genome_id` + diff |
-| POST | `/v1/developments` | 发育，返回 `dev_trace` + phenotype |
-| POST | `/v1/breedings` | 繁殖，返回 offspring + meiosis trace |
+| POST | `/v1/genomes` | **创建随机基因组（已实现）**，返回 `genome_id` |
+| GET | `/v1/genomes/{genome_id}` | **取回基因组（已实现）** |
+| POST | `/v1/genomes/{genome_id}/mutations` | **base 编辑（已实现）**，返回新 `genome_id` + diff |
+| POST | `/v1/developments` | **发育（已实现）**，返回 `dev_trace` + phenotype |
+| POST | `/v1/breedings` | **繁殖（已实现）**，返回 offspring + meiosis trace |
 | GET | `/v1/sessions/{session_id}/fish/{fish_id}` | Fish Card |
 | POST | `/v1/sessions/{session_id}/release` | **推进仿真 `steps` 步**（query `steps`/`use_expert`，默认 `ExpertPolicy` 驾驶），返回 `SessionSummary`（B1 定稿） |
 | POST | `/v1/sessions/{session_id}/pause` | **暂停 / 恢复开关**（toggle `running`，暂停后 `release` 不推进；无独立 `resume` 端点）（B2 定稿） |

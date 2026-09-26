@@ -1,20 +1,14 @@
-"""模型侧端点的 501 stub（`API接口.md` §2.1）。
+"""模型侧端点中尚未实现的两条（`API接口.md` §2.1）。
 
-这些端点定义请求 / 响应**形状**（`schemas.py`）并统一返回 `501`，使契约先于管线冻结、
-双方可并行开发。本层不实现业务（`前端驱动-API实现清单.md` §4：重写服务层时不要顺手
-把它们从 501 变成实现）。实验与任务端点已实现，见 `experiments.py`（§2.2）。
+`story-mutations` 的「预验证位点」判据（`交互与可视化.md` 阅读问题 6）与
+`sessions/{id}/evolutions` 的语义（会话不持有模型链种群）**上游未定义**，故仍返回 `501`。
+genome / development / breeding 已实现，见 `genomes.py`（§2.3）。
 """
 
 from fastapi import APIRouter, HTTPException
 
 from evogenesis.api.schemas import (
-    BreedingRequest,
-    BreedingResult,
-    DevelopmentRequest,
-    DevelopmentResult,
     JobStatus,
-    MutationRequest,
-    MutationResult,
     Problem,
     StoryMutation,
 )
@@ -38,21 +32,6 @@ def _not_impl() -> HTTPException:
 
 @router.get("/story-mutations", response_model=list[StoryMutation])
 def list_story_mutations() -> list[StoryMutation]:
-    raise _not_impl()
-
-
-@router.post("/genomes/{genome_id}/mutations", response_model=MutationResult)
-def mutate_genome(genome_id: str, req: MutationRequest) -> MutationResult:
-    raise _not_impl()
-
-
-@router.post("/developments", response_model=DevelopmentResult)
-def develop(req: DevelopmentRequest) -> DevelopmentResult:
-    raise _not_impl()
-
-
-@router.post("/breedings", response_model=BreedingResult)
-def breed(req: BreedingRequest) -> BreedingResult:
     raise _not_impl()
 
 

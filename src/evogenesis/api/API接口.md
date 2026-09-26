@@ -199,30 +199,24 @@
 
 ## 2. 模型与实验接口
 
-### 2.1 模型侧（契约已定；当前返回 501）
+### 2.1 模型侧（未实现，当前返回 501）
 
-这些端点定义请求/响应形状（`schemas.py`），在对应管线落地前统一返回：
+仍 501 的两条（上游未定义，见 §2.3 说明）：
+
+| 端点 | 方法 | 用途 | 未实现原因 |
+|---|---|---|---|
+| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 「清晰变化」判据未定义（`交互与可视化.md` 阅读问题 6） |
+| `/v1/sessions/{session_id}/evolutions` | POST | 会话内演化 | 会话不持有模型链种群，语义未定义 |
 
 ```json
 {"type":"about:blank","title":"Not Implemented","status":501,
  "detail":"Pipeline not implemented yet -- owned by 池伟豪 (genome/development/breeding/evolution).",
- "instance":"/v1/developments"}
+ "instance":"/v1/story-mutations"}
 ```
 
-| 端点 | 方法 | 用途 | 请求体 | 成功响应（计划） |
-|---|---|---|---|---|
-| `/v1/story-mutations` | GET | 预验证 SNP 列表 | — | `[StoryMutation]` |
-| `/v1/genomes/{genome_id}/mutations` | POST | base 编辑 | `MutationRequest` | `201` `MutationResult` |
-| `/v1/developments` | POST | 发育解码 | `DevelopmentRequest` | `DevelopmentResult` |
-| `/v1/breedings` | POST | 繁殖 | `BreedingRequest` | `BreedingResult` |
-| `/v1/sessions/{session_id}/evolutions` | POST | 演化 | — | `202` `JobStatus` |
+模型字段：`StoryMutation`（`genome_id`/`position`/`from_base`/`to_base`/`tag`）；`JobStatus`（见 §2.2）。
 
-模型字段（`schemas.py`）：`StoryMutation`（`genome_id`/`position`/`from_base`/`to_base`/`tag`）；
-`MutationRequest`（`position`≥0、`base`∈`A|C|G|T`）/`MutationResult`（`genome_id`/`new_genome_id`/`diff`）；
-`DevelopmentRequest`（`genome_id`/`seed`）/`DevelopmentResult`（`genome_id`/`dev_trace`/`phenotype`）；
-`BreedingRequest`（`genome_a`/`genome_b`/`n_offspring`）/`BreedingResult`（`offspring`/`meiosis_trace`）。
-
-- **代码位置**：`stubs.py`（§2.1 各同名函数）。
+- **代码位置**：`stubs.py`。
 
 ### 2.2 环境选择实验（Experiment F，已实现）
 
@@ -254,6 +248,28 @@
 - **代码位置**：`environmental_selections.py`；§2.1 模型侧见 `stubs.py`。
 
 ---
+
+### 2.3 基因组实验室（已实现，`草案待确认`）
+
+genome / development / breeding 三条 + 两个 store 出入口，**实现已先行、待确认 2026-09-26**（语义选择见下）。
+
+| 端点 | 方法 | 请求 / 响应 |
+|---|---|---|
+| `/v1/genomes` | POST | 请求 `GenomeCreate`（`{seed?}`，缺省参考种子）→ `201` `GenomeRecord` |
+| `/v1/genomes/{genome_id}` | GET | `GenomeRecord` |
+| `/v1/genomes/{genome_id}/mutations` | POST | 请求 `MutationRequest` → `201` `MutationResult`（单点 Free Edit） |
+| `/v1/developments` | POST | 请求 `DevelopmentRequest` → `DevelopmentResult` |
+| `/v1/breedings` | POST | 请求 `BreedingRequest` → `201` `BreedingResult` |
+
+**本实现自行选定的语义（`草案待确认`，须确认后方可作契约）**：
+- **参考种子** = `configs/demo_seed.yaml::master_seed`（`250927`）；参考 motif 目录由它派生（`genome §6`）。
+- **`genome_id`** = `core.ids.mint_id("lab","genome",0,index)`（`core §3.1`）。
+- **单点位置**：`position ∈ [0, 512)` 线性覆盖二倍体，顺序 `pair0.maternal → pair0.paternal → pair1.maternal → pair1.paternal`（`MutationRequest` 无 haplotype 字段，位置须唯一编码）。
+- **随机源**：经 `SeedManager(参考种子)` 的**已注册命名空间**（创建=`initial_population`；繁殖=`crossover`/`mutation`）；不新建命名空间（`core §3`）。
+- **`dev_trace` / `phenotype` 字段**：`dev_trace`={`q`(8)、`cell_type_counts`、`tau`({mean,std})、`n_neurons`、`n_edges`、`viable`、`viability_reason`}；`phenotype`={`n_neurons`、`n_edges`、`edge_density`、`tau_mean`、`tau_std`、`viable`}。
+- **store**：纯内存、无持久化（同会话语义）；`GenomeRecord` 含 `lineage`（父 id）。
+
+- **代码位置**：`genomes.py`（端点）、`genome_lab.py`（store 与原语）。
 
 ## 3. WebSocket `/v1/ws`
 
@@ -307,7 +323,7 @@
 
 ## 6. 端点总览：functional / 501 × 归属
 
-> **本表已按 2026-09-26 重写回填**：Arena 会话端点（含 WS）**functional**、模型/实验端点 **501 stub**，与 `session.py` / `ws.py` / `stubs.py` 一致；计数仍为 11 functional + 10 stub。
+> **本表已按 2026-09-26 重写回填**：Arena 会话、环境选择、基因组实验室 **functional**；仅 `story-mutations` / `sessions/{id}/evolutions` **501**。
 > **归属（2026-09-26 裁定）**：`api/` **全部端点由池伟豪负责实现**；表内「李辰钊」列为历史协作者记录。
 
 §1 / §2 按端点逐个说明；本表给出**实现状态 × 归属**的一览，用于快速判断"某端点现在归谁、能不能用"。
@@ -328,19 +344,21 @@
 | GET | `/v1/health` | **functional** | 李辰钊 | `app.py::health` |
 | WS | `/v1/ws` | **functional**（仅信封契约） | 李辰钊 | `ws.py::ws_endpoint`（见 §8） |
 | GET | `/v1/story-mutations` | **501 stub** | 池伟豪 | `stubs.py::list_story_mutations` |
-| POST | `/v1/genomes/{genome_id}/mutations` | **501 stub** | 池伟豪 | `stubs.py::mutate_genome` |
-| POST | `/v1/developments` | **501 stub** | 池伟豪 | `stubs.py::develop` |
-| POST | `/v1/breedings` | **501 stub** | 池伟豪 | `stubs.py::breed` |
 | POST | `/v1/sessions/{session_id}/evolutions` | **501 stub** | 池伟豪 | `stubs.py::evolve` |
+| POST | `/v1/genomes` | **functional**（`201`） | 池伟豪 | `genomes.py::create_genome` |
+| GET | `/v1/genomes/{genome_id}` | **functional** | 池伟豪 | `genomes.py::get_genome` |
+| POST | `/v1/genomes/{genome_id}/mutations` | **functional**（`201`） | 池伟豪 | `genomes.py::mutate_genome` |
+| POST | `/v1/developments` | **functional** | 池伟豪 | `genomes.py::develop` |
+| POST | `/v1/breedings` | **functional**（`201`） | 池伟豪 | `genomes.py::breed` |
 | POST | `/v1/environmental-selections` | **functional**（`202`） | 池伟豪 | `environmental_selections.py::start_environmental_selection` |
 | GET | `/v1/environmental-selections` | **functional** | 池伟豪 | `environmental_selections.py::list_environmental_selections` |
 | GET | `/v1/environmental-selections/{experiment_id}` | **functional** | 池伟豪 | `environmental_selections.py::get_environmental_selection` |
 | GET | `/v1/jobs/{job_id}` | **functional** | 池伟豪 | `environmental_selections.py::get_job` |
 | POST | `/v1/jobs/{job_id}/cancel` | **functional** | 池伟豪 | `environmental_selections.py::cancel_job` |
 
-**计数**：functional **16**（9 会话 + `/v1/health` + WS + 5 实验/任务），501 stub **5**（模型侧），合计 **21**。
+**计数**：functional **21**（9 会话 + `/v1/health` + WS + 3 环境选择 + 2 任务 + 5 基因组/发育/繁殖），501 stub **2**，合计 **23**。
 
-**§2 的 10 个 stub 共享同一个异常实例**：`stubs.py::_NOT_IMPL = HTTPException(501, detail="Pipeline not implemented yet -- owned by 池伟豪 (genome/development/breeding/evolution).")`，全部 `raise` 同一对象。其中 `evolutions` 与 `experiments` 的装饰器带 `status_code=202`，但**因为一开始就 `raise`，实际永远返回 501** —— `202` 只出现在 OpenAPI（`/openapi.json`）里，见 §11 L7。
+**§2.1 的 2 条 stub** 经 `stubs.py::_not_impl()`（每次新实例）返回 501；`evolutions` 的装饰器带 `status_code=202`，但一开始就 `raise`，**实际永远 501**，`202` 只进 OpenAPI（§11 L7）。
 
 ---
 
@@ -453,7 +471,7 @@ class SessionCreate(BaseModel):
 
 ## 10. 测试覆盖（`tests/test_api_contract.py`）
 
-> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（**22 项**，含会话/实验/任务/WS；`pytest tests/test_api_contract.py` → 22 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
+> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（**31 项**，含会话/实验/任务/基因组/WS；`pytest tests/test_api_contract.py` → 31 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
 
 **旧实现 9 项**（`d894cbb` 移除前；`pytest tests/test_api_contract.py` → 9 passed）。
 
