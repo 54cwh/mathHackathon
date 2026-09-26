@@ -1,0 +1,16 @@
+# penetrance 校准与报告配置（实验登记 `experiment/实验与评价体系.md` §3.9；契约 `genome §3`）
+#
+# 状态：**草案待确认（2026-09-26）**——`θ^obs` 数值、校准集规模与口径未经用户签署前，
+# 不得作为结论引用（`AGENTS.md`「禁止 AI 填空」）。
+#
+# 校准/报告分离：两者用**不同命名空间**从同一 motif 目录抽独立样本，报告集不得调阈值。
+theta_N_obs: null  # 观测量阈值（作用于 N=|M|）；由 run_calibration 产出后人工签署写入
+theta_H_obs: null  # 观测量阈值（作用于 CV_τ）；同上
+calibration:
+  # 独立校准集：`AaBb × AaBb` 自交（genome §3）
+  master_seeds: [20260926]
+  offspring: 4000
+report:
+  # 报告集：genome §3 的 160 例演示口径 × 3 seed
+  master_seeds: [1103, 2207, 3301]
+  offspring: 160

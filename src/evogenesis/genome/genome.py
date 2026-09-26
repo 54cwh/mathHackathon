@@ -333,6 +333,92 @@ def architecture(e_a: np.float32, e_b: np.float32, theta_N: float, theta_H: floa
 
 
 # ---------------------------------------------------------------------------
+# Mendel Mode 显式功能等位装置（genome §3）
+# ---------------------------------------------------------------------------
+
+
+def least_frequent_base(motif: str, *, layout: GenomeLayout = DEFAULT_LAYOUT) -> str:
+    r"""``motif`` 中出现次数最少的碱基（并列时按 ``layout.alphabet`` 顺序取先者）。
+
+    功能丧失链取该碱基的**常数链**时，任何窗口对 ``motif`` 的匹配数 = 该碱基在 motif 中
+    的出现次数；motif 长度 6、字母表 4 时最少次数 ∈ {0,1}，故单链读出 ``q_k`` ∈ {0, 1/6}
+    —— 低于 ``θ_N=θ_H=0.25``（genome §3），使 ``aa`` 判 low、``Aa``（半合子均值）判 high。
+    """
+    _validate_alphabet(motif, "motif", layout)
+    if not motif:
+        raise ValueError("motif 不能为空")
+    return min(layout.alphabet, key=lambda base: (motif.count(base), layout.alphabet.index(base)))
+
+
+def _mendel_positions(copies: int, layout: GenomeLayout) -> tuple[int, ...]:
+    """功能等位植入位置：步长 ``2·motif_length``、起点 ``2·motif_length``（互不重叠）。"""
+    positions = tuple(2 * layout.motif_length * (i + 1) for i in range(copies))
+    if positions[-1] + layout.motif_length > layout.bp_per_haplotype_chromosome:
+        raise ValueError(f"{copies} 个植入位超出染色体长度 {layout.bp_per_haplotype_chromosome} bp")
+    return positions
+
+
+def functional_chromosome(
+    motif: str,
+    *,
+    copies: int | None = None,
+    layout: GenomeLayout = DEFAULT_LAYOUT,
+) -> str:
+    r"""功能等位链：以 ``least_frequent_base`` 为 backbone，把 ``motif`` 植入 ``copies`` 个位置。
+
+    ``copies`` 缺省取 ``layout.motif_topk``——``TopKMean`` 取最大 ``K`` 个窗口，植入数 ≥ K
+    才能让单链读出 ``q_k=1``（genome §6）。backbone 的常数背景保证非命中窗口亲和力 ≤1/6。
+    """
+    if len(motif) != layout.motif_length:
+        raise ValueError(f"motif 长度须为 {layout.motif_length}，实际 {len(motif)}")
+    kk = layout.motif_topk if copies is None else copies
+    if kk < layout.motif_topk:
+        raise ValueError(f"copies 须 ≥ motif_topk({layout.motif_topk})，否则 TopKMean 均值 <1")
+    backbone = least_frequent_base(motif, layout=layout)
+    sequence = list(backbone * layout.bp_per_haplotype_chromosome)
+    for start in _mendel_positions(kk, layout):
+        for offset, symbol in enumerate(motif):
+            sequence[start + offset] = symbol
+    return "".join(sequence)
+
+
+def loss_chromosome(motif: str, *, layout: GenomeLayout = DEFAULT_LAYOUT) -> str:
+    r"""功能丧失链：``least_frequent_base`` 的常数链（``q_k`` ∈ {0, 1/6} < 0.25）。"""
+    backbone = least_frequent_base(motif, layout=layout)
+    return backbone * layout.bp_per_haplotype_chromosome
+
+
+def mendel_founder(
+    motif_a: str,
+    motif_b: str,
+    *,
+    layout: GenomeLayout = DEFAULT_LAYOUT,
+    genome_id: str = "",
+) -> DiploidGenome:
+    r"""AaBb 双杂合 founder：``pairs[0]=(功能A, 丧失A)``、``pairs[1]=(功能B, 丧失B)``（genome §3）。
+
+    功能/丧失等位的构造为**项目装置**（``functional_chromosome``/``loss_chromosome``）；
+    自交即得四类 9:3:3:1 的 ``AaBb × AaBb`` 分离（genome §3）。
+    """
+    return DiploidGenome(
+        (
+            ChromosomePair(
+                functional_chromosome(motif_a, layout=layout),
+                loss_chromosome(motif_a, layout=layout),
+                layout=layout,
+            ),
+            ChromosomePair(
+                functional_chromosome(motif_b, layout=layout),
+                loss_chromosome(motif_b, layout=layout),
+                layout=layout,
+            ),
+        ),
+        genome_id=genome_id,
+        layout=layout,
+    )
+
+
+# ---------------------------------------------------------------------------
 # 遗传算子（genome §4/§5）
 # ---------------------------------------------------------------------------
 

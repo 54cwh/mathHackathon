@@ -29,6 +29,8 @@ NAMESPACES: dict[str, int] = {
     "bc": 8,
     "arena_dynamics": 9,
     "baseline_init": 10,
+    "penetrance_calibration": 11,
+    "penetrance_report": 12,
 }
 
 

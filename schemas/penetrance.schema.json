@@ -1,0 +1,188 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/penetrance.schema.json",
+  "title": "penetrance 报告 payload",
+  "description": "experiment/penetrance.py::run_report 的产物（results/tables/<id>_penetrance.json）。契约 owner：genome §3；实验登记：experiment §3.9。状态：草案待确认。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "experiment_id",
+    "generated_by",
+    "status",
+    "theta_N",
+    "theta_H",
+    "tau_statistic",
+    "observation_thresholds",
+    "report",
+    "expected_9331",
+    "model_config_path",
+    "model_config_sha256",
+    "digest"
+  ],
+  "properties": {
+    "kind": { "const": "penetrance_report" },
+    "experiment_id": { "type": "string", "minLength": 1 },
+    "generated_by": { "type": "string" },
+    "status": { "type": "string" },
+    "theta_N": { "type": "number" },
+    "theta_H": { "type": "number" },
+    "tau_statistic": { "const": "cv_tau" },
+    "observation_thresholds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["theta_N_obs", "theta_H_obs"],
+      "properties": {
+        "theta_N_obs": { "type": "number" },
+        "theta_H_obs": { "type": "number" }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "master_seeds",
+        "offspring_per_seed",
+        "per_seed",
+        "pooled",
+        "cross_seed",
+        "continuous",
+        "observed_9331"
+      ],
+      "properties": {
+        "master_seeds": { "type": "array", "items": { "type": "integer" } },
+        "offspring_per_seed": { "type": "integer", "minimum": 1 },
+        "per_seed": {
+          "type": "object",
+          "patternProperties": { "^[0-9]+$": { "$ref": "#/$defs/stats" } },
+          "additionalProperties": false
+        },
+        "pooled": { "$ref": "#/$defs/stats" },
+        "cross_seed": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["A_B_", "A_bb", "aaB_", "aabb"],
+          "properties": {
+            "A_B_": { "$ref": "#/$defs/seedAgg" },
+            "A_bb": { "$ref": "#/$defs/seedAgg" },
+            "aaB_": { "$ref": "#/$defs/seedAgg" },
+            "aabb": { "$ref": "#/$defs/seedAgg" }
+          }
+        },
+        "continuous": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["A_B_", "A_bb", "aaB_", "aabb"],
+          "properties": {
+            "A_B_": { "$ref": "#/$defs/continuous" },
+            "A_bb": { "$ref": "#/$defs/continuous" },
+            "aaB_": { "$ref": "#/$defs/continuous" },
+            "aabb": { "$ref": "#/$defs/continuous" }
+          }
+        },
+        "observed_9331": { "$ref": "#/$defs/counts" }
+      }
+    },
+    "expected_9331": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["A_B_", "A_bb", "aaB_", "aabb"],
+      "properties": {
+        "A_B_": { "type": "number" },
+        "A_bb": { "type": "number" },
+        "aaB_": { "type": "number" },
+        "aabb": { "type": "number" }
+      }
+    },
+    "model_config_path": { "type": "string" },
+    "model_config_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  },
+  "$defs": {
+    "counts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["A_B_", "A_bb", "aaB_", "aabb"],
+      "properties": {
+        "A_B_": { "type": "integer", "minimum": 0 },
+        "A_bb": { "type": "integer", "minimum": 0 },
+        "aaB_": { "type": "integer", "minimum": 0 },
+        "aabb": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "confusion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["highN_highH", "highN_lowH", "lowN_highH", "lowN_lowH"],
+      "properties": {
+        "highN_highH": { "type": "integer", "minimum": 0 },
+        "highN_lowH": { "type": "integer", "minimum": 0 },
+        "lowN_highH": { "type": "integer", "minimum": 0 },
+        "lowN_lowH": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "classStat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "hits", "penetrance", "wilson_low", "wilson_high", "observed_2x2"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "hits": { "type": "integer", "minimum": 0 },
+        "penetrance": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "wilson_low": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "wilson_high": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "observed_2x2": { "$ref": "#/$defs/confusion" }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["per_class", "observed_architecture_counts"],
+      "properties": {
+        "per_class": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["A_B_", "A_bb", "aaB_", "aabb"],
+          "properties": {
+            "A_B_": { "$ref": "#/$defs/classStat" },
+            "A_bb": { "$ref": "#/$defs/classStat" },
+            "aaB_": { "$ref": "#/$defs/classStat" },
+            "aabb": { "$ref": "#/$defs/classStat" }
+          }
+        },
+        "observed_architecture_counts": { "$ref": "#/$defs/confusion" }
+      }
+    },
+    "seedAgg": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n_seeds", "mean", "std"],
+      "properties": {
+        "n_seeds": { "type": "integer", "minimum": 0 },
+        "mean": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "std": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "axisSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "min", "median", "mean", "max"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0 },
+        "min": { "type": ["number", "null"] },
+        "median": { "type": ["number", "null"] },
+        "mean": { "type": ["number", "null"] },
+        "max": { "type": ["number", "null"] }
+      }
+    },
+    "continuous": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n_neurons", "cv_tau"],
+      "properties": {
+        "n_neurons": { "$ref": "#/$defs/axisSummary" },
+        "cv_tau": { "$ref": "#/$defs/axisSummary" }
+      }
+    }
+  }
+}

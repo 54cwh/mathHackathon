@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.14",
+    "version": "v0.15",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -182,9 +182,9 @@
       "status": "missing",
       "basis": "penetrance 观测档阈值，作用于发育产物 N=|M|（genome §3）；须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调",
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": null,
+      "config": "configs/penetrance.yaml → theta_N_obs",
       "sensitivity": null,
-      "suggest": "待 Phase-1 RGCD 产出 N 分布后标定；属报告量，不阻断代码"
+      "suggest": "校准器已实现（`experiment/penetrance.py` + `scripts/run_penetrance.py --mode calibrate`；实验登记 `experiment §3.9`）；跑校准后由人签署写入 configs/penetrance.yaml 并把 status 改 confirmed"
     },
     {
       "name": "theta_H_obs",
@@ -195,9 +195,35 @@
       "status": "missing",
       "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs",
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": null,
+      "config": "configs/penetrance.yaml → theta_H_obs",
       "sensitivity": null,
-      "suggest": "待 Phase-1 产出 CV_τ 分布后标定；属报告量，不阻断代码"
+      "suggest": "校准器已实现（同 theta_N_obs；`scripts/run_penetrance.py --mode calibrate`）；跑校准后由人签署写入并改 confirmed"
+    },
+    {
+      "name": "penetrance_calibration_offspring",
+      "value": 4000,
+      "unit": "offspring",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 独立校准集规模（实验设计选择，无文献取值；delta-B §2.2 建议 ≥1000/类）",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → calibration.offspring",
+      "sensitivity": null,
+      "suggest": "草案待确认：4000 例下最小类 aabb 期望约 250（<1000/类建议），若需更窄 CI 再上调"
+    },
+    {
+      "name": "penetrance_report_offspring",
+      "value": 160,
+      "unit": "offspring",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 报告集规模（genome §3 的 160 例演示口径）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → report.offspring",
+      "sensitivity": null,
+      "suggest": "160 例为演示、非统计验证（genome §3）"
     },
     {
       "name": "mutation_rate",
@@ -1833,7 +1859,7 @@
   "missing_required": {
     "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。 2026-09-26：`body_length_mm` 按方案 B（wu 不与 BL 固定换算）退役，不再作为世界换算基准。",
     "items": [
-      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 与 τ 异质性统计量（CV；genome §3；须在独立校准集上定，属报告量）"
+      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 数值（genome §3；须在独立校准集上定，属报告量）：τ 异质性统计量已冻结为 CV、校准器已实现（`experiment §3.9`），仅剩数值待校准后由人签署"
     ]
   },
   "citation_risks": [
