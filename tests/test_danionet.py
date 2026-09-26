@@ -1,7 +1,7 @@
 """DanioNet（Stage 4）测试：结构 / 权重约束 / 动力学 / 动作 / 梯度屏蔽 / viability。
 
 夹具用 RGCD ``develop`` 在固定 q 与 master seed 下产出 viable 个体（``DanioNet设计规范.md``
-v1.4）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
+v1.6）。q 取自 ``numpy.random.default_rng(7)`` 的第 7 次抽样，master_seed=250927、index=6。
 """
 
 import numpy as np
@@ -160,10 +160,9 @@ def test_batch_of_two_individuals(viable_phenotype: ConnectomePhenotype):
 def test_viability_recheck_matches_development(viable_phenotype: ConnectomePhenotype):
     net = DanioNet([viable_phenotype], master_seed=MASTER_SEED)
     results = net.viability()
-    assert len(results) == 1
-    viable, reason = results[0]
-    assert isinstance(viable, bool)
-    assert reason == "ok" if viable else reason != ""
+    assert results == [(True, "ok")]
+    # 与 RGCD 发育期判定一致（同一组 §7 判据）
+    assert (viable_phenotype.viable, viable_phenotype.viability_reason) == (True, "ok")
 
 
 def test_empty_motor_pool_rejected():
@@ -298,3 +297,82 @@ def test_hunger_term_enters_via_m(net: DanioNet):
     net.reset()
     net.step(_obs(hunger=1.0))
     assert not torch.allclose(low, net.h)
+
+
+def test_softplus_inverse_stable_and_roundtrips():
+    import torch.nn.functional as F
+
+    values = torch.tensor([0.0, 1e-8, 1.0, 10.0, 40.0, 1e2], dtype=torch.float32)
+    theta = DanioNet._softplus_inverse(values)
+    assert bool(torch.isfinite(theta).all())
+    positive = values > 0
+    assert torch.allclose(F.softplus(theta[positive]), values[positive], rtol=1e-4, atol=1e-6)
+    assert float(theta[0]) == 0.0
+
+
+def test_tau_below_contract_min_rejected():
+    n = 4
+    phenotype = ConnectomePhenotype(
+        adjacency=torch.zeros((n, n), dtype=torch.float32),
+        weights0=torch.zeros((n, n), dtype=torch.float32),
+        tau=torch.tensor([1.0, 1.0, 1.0, 0.5], dtype=torch.float32),
+        cell_type=torch.tensor([0, 5, 5, 5], dtype=torch.long),
+        positions=torch.tensor(
+            [[0.1, 0.1], [0.3, 0.1], [0.5, 0.1], [0.7, 0.1]], dtype=torch.float32
+        ),
+        active_mask=torch.ones(n, dtype=torch.bool),
+        viable=True,
+        viability_reason="ok",
+        z=torch.zeros((n, 6), dtype=torch.float32),
+    )
+    with pytest.raises(ValueError):
+        DanioNet([phenotype], master_seed=MASTER_SEED)
+
+
+def test_non_square_adjacency_rejected():
+    n = 4
+    phenotype = ConnectomePhenotype(
+        adjacency=torch.zeros((n, n + 1), dtype=torch.float32),
+        weights0=torch.zeros((n, n + 1), dtype=torch.float32),
+        tau=torch.ones(n, dtype=torch.float32),
+        cell_type=torch.tensor([0, 5, 5, 5], dtype=torch.long),
+        positions=torch.tensor(
+            [[0.1, 0.1], [0.3, 0.1], [0.5, 0.1], [0.7, 0.1]], dtype=torch.float32
+        ),
+        active_mask=torch.ones(n, dtype=torch.bool),
+        viable=True,
+        viability_reason="ok",
+        z=torch.zeros((n, 6), dtype=torch.float32),
+    )
+    with pytest.raises(ValueError):
+        DanioNet([phenotype], master_seed=MASTER_SEED)
+
+
+def test_multi_step_activation_bounded(net: DanioNet):
+    """τ≥1 且 φ=tanh ⇒ h 是「旧 h 与 tanh 项」的凸组合，逐元素 |h|≤1。"""
+    rng = np.random.default_rng(0)
+    for _ in range(200):
+        obs = rng.random((1, DEFAULT_NETWORK_CONFIG.sensory_dim)).astype(np.float32)
+        net.step(obs)
+        assert float(net.h.abs().max()) <= 1.0 + 1e-6
+
+
+def test_motor_sides_matches_development_implementation():
+    """§5 语义 owner 在本模块；development 侧保留等价实现，二者须逐位一致。"""
+    from evogenesis.development.rgcd import _motor_sides as development_motor_sides
+
+    rng = np.random.default_rng(1)
+    for motor_count in range(0, 7):
+        for pattern in range(6):
+            others = 3
+            n = others + motor_count
+            x = rng.random(n)
+            if pattern % 2 == 0 and motor_count >= 2:  # 制造并列值
+                x[others:] = 0.5
+            if pattern >= 4 and motor_count >= 3:  # 单侧极端
+                x[others : others + motor_count - 1] = 0.0
+            positions = torch.tensor(np.stack([x, np.zeros(n)], axis=1), dtype=torch.float32)
+            types = torch.tensor([0] * others + [5] * motor_count, dtype=torch.long)
+            mine = motor_sides(positions, types, 5)
+            theirs = development_motor_sides(positions, types, 5)
+            assert [sorted(a.tolist()) for a in mine] == [sorted(b.tolist()) for b in theirs]

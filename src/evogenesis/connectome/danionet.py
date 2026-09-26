@@ -1,4 +1,4 @@
-"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.4 §1–§9）。
+"""DanioNet：六类神经元网络（`DanioNet设计规范.md` v1.6 §1–§9）。
 
 产出：activation ``h`` / 连续动作 ``(ω, v)`` / 当代 ``ΔW``。消费 RGCD 的
 ``ConnectomePhenotype``（``A, Z, τ, W⁰, M``）；``ΔW`` 不遗传（§7）。
@@ -28,6 +28,10 @@ from evogenesis.development import ConnectomePhenotype
 from evogenesis.development.rgcd import viability_check
 
 _ACTIVATIONS = {"tanh": torch.tanh}
+# 数值实现常量：softplus⁻¹ 在 y 超过该值时改用渐近式（float32 下 expm1 约在 88 溢出）
+_SOFTPLUS_INVERSE_SWITCH = 40.0
+# RGCD §11 的下界（tau_min）；tau<1 会使 1/τ>1 而放大，超出契约
+_TAU_MIN = 1.0
 
 
 def motor_sides(
@@ -141,7 +145,7 @@ class DanioNet(torch.nn.Module):
             tau[b, :n] = to_float32_tensor(phenotype.tau, device=device)
             cell_type[b, :n] = phenotype.cell_type.to(device=device, dtype=torch.long)
             positions[b, :n] = to_float32_tensor(phenotype.positions, device=device)
-            neuron_mask[b, :n] = phenotype.active_mask.to(torch.bool)
+            neuron_mask[b, :n] = phenotype.active_mask.to(device=device, dtype=torch.bool)
             self._n_neurons.append(n)
 
             types = phenotype.cell_type.to(device=device, dtype=torch.long)
@@ -158,8 +162,10 @@ class DanioNet(torch.nn.Module):
             right_mask[b, right_local] = True
             motor_mask[b, motor_local] = True
 
-        if not bool((tau > 0).all() and torch.isfinite(tau).all()):
-            raise ValueError("tau 必须为正且有限（§3 动力学 1/τ）")
+        if not bool((tau >= _TAU_MIN).all() and torch.isfinite(tau).all()):
+            raise ValueError(
+                f"tau 必须 ≥ {_TAU_MIN}（RGCD §11 tau_min）且有限；§3 动力学按 1/τ 更新"
+            )
         # §3：非活跃神经元（M=False）的行/列恒 0 —— W⁰ 亦按 M 屏蔽，
         # 使 sign(W⁰)、Θ 初值与 ΔW 在非活跃处天然为 0（初始 ΔW=0 全局成立）。
         weights0 = weights0 * neuron_mask[:, :, None] * neuron_mask[:, None, :]
@@ -190,9 +196,15 @@ class DanioNet(torch.nn.Module):
 
     @staticmethod
     def _softplus_inverse(value: torch.Tensor) -> torch.Tensor:
-        r"""``softplus^{-1}(y) = log(exp(y) - 1)``（``y > 0``）；``y = 0`` 处取 0。"""
-        safe = value.clamp_min(torch.finfo(value.dtype).tiny)
-        return torch.where(value > 0, torch.log(torch.expm1(safe)), torch.zeros_like(value))
+        r"""``softplus^{-1}(y) = log(exp(y) - 1)``（``y > 0``）；``y = 0`` 处取 0。
+
+        ``y`` 较大时改用等价式 ``y + log1p(-exp(-y))``（float32 下避免 ``expm1`` 溢出为 inf）。
+        """
+        small = value <= _SOFTPLUS_INVERSE_SWITCH
+        direct = torch.log(torch.expm1(torch.where(small, value, torch.zeros_like(value))))
+        asymptotic = value + torch.log1p(-torch.exp(-value))
+        result = torch.where(small, direct, asymptotic)
+        return torch.where(value > 0, result, torch.zeros_like(value))
 
     @property
     def n_neurons(self) -> list[int]:
@@ -227,7 +239,10 @@ class DanioNet(torch.nn.Module):
         ``observations`` 形状 ``(batch, sensory_dim)``（§2，``[0,1]`` ``float32``）；
         ``H_t`` 取第 11 维 hunger。
         """
-        x = to_float32_tensor(observations, device=self.device)
+        if isinstance(observations, torch.Tensor):
+            x = observations.to(dtype=torch.float32, device=self.device)
+        else:
+            x = to_float32_tensor(observations, device=self.device)
         if x.dim() == 1:
             x = x.unsqueeze(0)
         if x.shape[0] != self.h.shape[0] or x.shape[-1] != self.config.sensory_dim:
