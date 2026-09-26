@@ -199,7 +199,10 @@
 
 ### 1.10 GET `/v1/health` — 健康检查
 
-- **成功响应** `200` → `{"status":"ok"}`。
+- **成功响应** `200` → `{"status":"ok","manual_control":true}`。
+  `manual_control`：能力位（`true` = 本进程的 `release` 支持 §1.6 的 `fish_id/omega/speed`）。
+  前端据此判定"后端版本落后"——**旧进程会静默忽略不认识的查询参数**，不报错、也不生效
+  （2026-09-27 实际踩过：改完后端但没重启 API，操控无反应）。
 - **代码位置**：`app.py` → `health`。
 
 ---

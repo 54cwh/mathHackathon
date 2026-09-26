@@ -37,8 +37,8 @@ app.include_router(ws_router)
 
 
 @app.get("/v1/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, str | bool]:
+    return {"status": "ok", "manual_control": True}
 
 
 def _problem(

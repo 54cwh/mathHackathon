@@ -5,6 +5,7 @@ import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { getFishCard, getSnapshot, release, type FishCard } from "@/api/arena";
+import { getHealth } from "@/api/health";
 
 /**
  * Playback —— **Manual Control 操场**（`交互与可视化.md` §10）。
@@ -48,11 +49,25 @@ export function PlaybackPanel() {
   const [controlledId, setControlledId] = useState<string | null>(null);
   const [card, setCard] = useState<FishCard | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** 后端能力位：旧进程缺 `manual_control` ⇒ 操控请求会被静默忽略（实测踩过）。 */
+  const [staleBackend, setStaleBackend] = useState(false);
   const keysRef = useRef<Set<string>>(new Set());
   const controlledRef = useRef<string | null>(null);
   const tickRef = useRef(0);
 
   const active = activeView === "playback";
+
+  // 后端能力自检：只在进入本视图时探一次（旧进程会静默忽略手动动作参数）。
+  useEffect(() => {
+    if (!active) return;
+    let stop = false;
+    void getHealth()
+      .then((h) => !stop && setStaleBackend(h.manual_control !== true))
+      .catch(() => !stop && setStaleBackend(true));
+    return () => {
+      stop = true;
+    };
+  }, [active]);
 
   // 键盘：只在 playback 视图监听；方向键要阻止页面滚动。
   useEffect(() => {
@@ -227,6 +242,13 @@ export function PlaybackPanel() {
               )}
             </div>
           </div>
+
+          {staleBackend && (
+            <p className="border border-brand-danger-red p-2 text-xs text-brand-danger-red">
+              ⚠ 后端版本落后：当前 API 进程不支持手动控制（`/v1/health` 无 `manual_control`）。
+              请重启 API（改完后端没重启时，FastAPI 会静默忽略 `fish_id/omega/speed`，按键看起来无效）。
+            </p>
+          )}
 
           <p className="text-xs text-muted-foreground">
             {error
