@@ -9,17 +9,54 @@
 ## 快速开始（4 步 —— 这 3 条提示词是全流程最高优先）
 
 ```text
-1. 跑下面 3 条提示词（每条新开一次对话），得到 3 张参考图
+1. 跑提示词 1 / 3 / 4（每条新开一次对话）→ 得 3 张参考图
 2. 挑 1 张 —— 怎么挑见 §选型对照表；取色板以「提示词 3」为准
 3. 把选定的图交给 ChatGPT，用 §步骤 2 的「取色板提示词」让它吐 hex
 4. 把 hex 回填 §候选色板，并填进 asset_prompts.md 的 {色板}
 ```
 
-**这 3 条为什么最重要**：它们冻结的是**整套视觉系统的上游**——配色、密度、层级、质感。
-色板从它们身上取，之后 20 张素材全部依赖这个色板。**这 3 条没定，后面全是白做。**
+**跑哪 3 条**（Q7 = 跑 1 + 3；Q8(a) 让 Dashboard 住进 `Evolution` 视图，故再 +1 条）：
+
+| 跑 | 得到什么 |
+|---|---|
+| 提示词 **1** | 「极限观感」—— 纯像素外壳的观感上限，用来判断颜色能推到多艳 |
+| 提示词 **3** | 「可交付折中」—— 像素 Arena + 精密数据区；**色板以它为准** |
+| 提示词 **4** | `Evolution` 视图（9 项 Dashboard）—— 同时是**「精密面板」的样板** |
+
+提示词 **2**（sprite sheet）本轮**不必跑**，已降级为风格对照图（见该节内的 skill 警告）。
+
+**这 3 条为什么最重要**：它们冻结的是**整套视觉系统的上游** —— 配色、密度、层级、质感，
+以及「哪些地方像素、哪些地方精密」这条边界。色板从它们身上取，之后 20 张素材全部依赖这个色板。
+**这几个没定，后面全是白做。**
 
 粘贴注意：每条是一个完整的 `text` 代码块，**整块复制**，不要只挑几句；
 **首行 `Use this prompt AS-IS.` 不要删**。
+## 决定记录（2026-09-26 第二轮：grill → 拍板）
+
+> 来源：辰钊对 10 题的回答「**都按照推荐**」，及第二轮 5 条由 Q1/Q2 **推论**出的决定。
+> 全部决定在此登记，**不留沉默假设**。
+
+| # | 决定 | 理由（非显然的才写） |
+|---|---|---|
+| Q1 | **结构像素化 + 文字层清晰**：边框/按钮/图标/分割线/Arena 走像素；**数值与长标签走等宽清晰字体** | 全局像素化与已装 ECharts/Cytoscape 正面冲突（不原生支持像素渲染），且 13 字段读不动 |
+| Q2 | **双调性**：亮外壳 + 暗 Arena（`#0B1220` 系） | 水越深越暗是物理直觉；A8 海洋背景已按暗调写 |
+| Q3 | **三栏严格等宽**；若要 Arena 更宽，**先改 `App.tsx` 再让参考图跟随** | 在参考图里画代码没打算实现的布局，是「像真界面」最容易骗到自己的地方 |
+| Q4 | 顶栏数据项**抽象占位**；**但 `Env` 显示 `Food Rich`** | `Food Rich` 是 `App.tsx` 里的硬编码字符串，不是跑出来的数据 → 显示它不触红线 |
+| Q5 | **像素徽标 + 字标并排**（徽标此刻只是占位块） | 顶栏左端宽度预算取决于有没有图形；定下来 C1 生成时才知道该做多大 |
+| Q6 | 可进 PPT 但**必须标注「视觉方向参考」**；不进论文正文；**另补视觉冻结判据 + 冻结时点** | 它看起来像真界面，进论文正文会被读作伪 data |
+| Q7 | 跑**提示词 1 + 3**，另加**新第 4 条（Evolution 视图）** | 1 给「极限观感」（颜色上限），3 给「可交付折中」；色板以 3 为准 |
+| Q8 | **Fish Card = Arena 栏内就地浮层**（挂已实现的 `selectedFishId`）；**Dashboard = 底栏三词改成真视图 tab**，住进 `Evolution` 视图 | 不引入新容器；底栏那三词在代码里现在只是灰色文字，本来就是留给视图切换的 |
+| Q9 | 中栏 Brain Forge 改**抽象连接占位** | §12 逐字把 `network graphs` 列进「禁止用于伪造」；「稀疏→密集的发展序列」正是 §8 真实数据的形态，最容易被读作结果 |
+| Q10 | **Arena 5:3 写进提示词** | `frontend/README.md:127` 明令「不得非等比拉伸，否则鱼会被纵向压扁」 |
+| R2-1 | **交界**＝硬 1–2px 深色分割线，两区共用同色同粗细；**禁渐隐/模糊/发光** | 渐隐属于平滑渐变，违反像素原则 |
+| R2-2 | **精密区**＝浅色面板 + 等宽数值 + 1px 锐边、**无圆角** | Q1(b) 与 Q2(a) 的直接推论 |
+| R2-3 | **双主题不做**，只做明亮单主题 | 双主题会让 20 张素材、`index.css`、验收全部翻倍，时间不允许 |
+| R2-4 | **面板外壳去圆角**，改像素斜角边框；标题栏图标改像素图标 | 代码现在是 `rounded-lg` + lucide 图标，与 Q1(b) 冲突 |
+| R2-5 | **Fish Card 不单独出参考图** | 它是密集数据表，样式由第 4 条「精密面板」直接派生 |
+
+**由此产生的一条硬约束**（写进提示词 1 / 3）：**三栏严格等宽 + Arena 5:3 ⟹ Arena 的高度被它的宽度锁死。**
+参考图里 Arena 若画得比 5:3 高，你按它取比例，实现时鱼就会被纵向压扁。
+
 
 ## 变更记录
 
@@ -91,57 +128,59 @@ Danio Arena 是**水下俯视**，自然偏暗——它沿用画布底色 `#0B12
 
 ---
 
-## 选型对照表（3 条里挑哪张）
+## 选型对照表（1 / 3 / 4 各给你什么）
 
 | 你若最看重 | 选 | 理由 |
 |---|---|---|
-| 路演 / 答辩第一眼的冲击力 | **提示词 1** | 整屏像素游戏感最强、最好看；代价是数据区不实用（9 项指标、13 字段塞不进这种密度） |
-| 工程上真能落地 | **提示词 3** | 竞技场像素 + 数据区精密，是唯一不牺牲数据可读性的折中 |
-| 先看全套素材风格是否统一 | **提示词 2** | 用途已降级为**风格对照图**（见下方「但有一条 skill 警告」） |
+| 路演 / 答辩第一眼的冲击力 | **提示词 1** | 纯像素外壳，观感最强；代价是数据区不实用（9 项指标、13 字段塞不进这种密度） |
+| 工程上真能落地 | **提示词 3** | 像素 Arena + 精密数据区，唯一不牺牲数据可读性的折中 |
+| 看 Dashboard 与「精密面板」的样子 | **提示词 4** | `Evolution` 视图；同时是 Fish Card 与指标卡的样式模板（R2-5） |
+| 看全套素材风格是否统一 | 提示词 2（**可选**） | 用途已降级为**风格对照图** |
 
-**建议至少跑 1 和 3**：1 帮你定「极限观感」，3 帮你定「可交付的折中」。
-
-**色板以提示词 3 的取色结果为准**（不是 1）——因为 3 才是要真正搭出来的界面，
+**色板以提示词 3 的取色结果为准**（不是 1，也不是 4）—— 因为 3 才是要真正搭出来的界面，
 它的表面才是 `index.css` 要承载的。1 的色板更艳，直接拿去配 UI 会压不住小字号文本。
 
-Arena 面板的水下暗调**不参与取色**：它沿用画布底色 `#0B1220` 系，见 §候选色板 末段。
+**Q1(b) 的边界在这里兑现**：边框/按钮/图标/分割线走像素，**数值与长标签走等宽清晰字体** ——
+所以取色时**别只取像素区的高饱和色**，要**单独取一对文本色**（正文色 + 次文字色），
+否则 `index.css` 里那 19 个 token 有三分之一没着落。
 
+**Arena 面板的水下暗调不参与取色**：它沿用画布底色 `#0B1220` 系（见 §候选色板 末段）。
 ## 提示词 1 —— 整台界面像素质感（主诉求 · 风格定调图）
 
 **定调理由**：直接对应「像素风实验台」。明亮、饱和、有限调色板，俯视视角，接近 16 位农场模拟游戏的暖色自然调。
 **定位说明**：这一条是**风格定调图**，目标是定颜色/密度/层级/质感，**不是**可交付界面
 （skill 的 `ui-mockup` 类目要求 realistic product UI, shippable look，本图不追求那个；追求可交付的是提示词 3）。
 
-**要点**：比例改声明 `landscape 3:2`；色名全换 hex；文字 12 处压到 7 处并给占位回退；首行 AS-IS 阻止加戏。
+**要点**：本轮按 Q1(b)/Q2(a)/Q3/Q4/Q5/Q8/Q9/Q10 全部改写 —— 三栏**严格等宽**、Arena **5:3**、底栏三词改**真视图 tab**（`Experiment` 激活）、中栏改**抽象连接占位**（不触 §12）、`Env` 显 `Food Rich` 而其余 5 项为占位块、徽标+字标并排、**全图去圆角**。本条所有数据值都是占位块，因此 Q1(b)「数值走等宽」在本条**无适用对象**（等宽字体在第 3、4 条才登场）。
 
 ```text
 Use this prompt AS-IS. Do not add or embellish any details.
 
 Landscape 3:2 composition.
 
-Background: a bright, saturated 16-bit pixel-art scene acting as the app's own backdrop - grass green and warm earth tones, no dark areas except thin outlines.
+Background: a bright, saturated 16-bit pixel-art scene acting as the app's own backdrop - grass green and warm earth tones, with thin dark pixel outlines as the only dark elements.
 
-Subject: a complete desktop web application screen for a life-evolution lab named "EvoGenesis", drawn entirely in 16-bit pixel art. Three horizontal bands: a top status bar, a three-column main area, and a bottom control bar.
+Subject: a complete desktop web application screen for a life-evolution lab named "EvoGenesis", drawn entirely in 16-bit pixel art: a top status bar, a three-column main area of exactly equal width, and a bottom control bar. Do not draw any page title, heading or caption beyond the labels listed below.
 
 Key details:
-Top status bar: one pixel-art horizontal strip with a beveled pixel frame (light on the top-left edges, dark on the bottom-right). The left end reads the product name "EvoGenesis" in a dot-matrix pixel font. The right end has six status items in a row, each one small pixel icon plus one short label: "Env", "Gen", "Fish", "Prey", "Step", "Seed".
-Main area, three equal columns separated by 2-pixel pixel divider lines:
+Top status bar: one pixel-art horizontal strip with a beveled pixel frame, light on the top-left edges and dark on the bottom-right, built from square pixel steps with NO rounded corners. The left end shows a small pixel emblem, a simple abstract mark containing no letters, followed by the product name "EvoGenesis" in a dot-matrix pixel font. The right end has six status items in a row, each one small pixel icon plus one short label: first "Env", whose value reads "Food Rich"; then "Gen", "Fish", "Prey", "Step", "Seed", whose values are each a plain uniform pixel block of placeholder width rather than any readable number.
+Main area: three columns of exactly equal width, separated by 2-pixel pixel divider lines. Each column is headed by a small pixel icon plus a pixel-font title.
 Left column "DNA2Brain Lab": the upper half is a three-dimensional-looking pixel DNA double helix built from bright candy-colored pixel blocks, with the chunky feel of a retro game power-up; the lower half is a flat sequence strip of the letters "A" "C" "G" "T" in a dot-matrix pixel font, with one letter highlighted by a pixel selection box and a small pixel triangle marker.
-Middle column "Brain Forge": a pixel neural-network diagram - nodes are small pixel squares, edges are 1-pixel lines, the network goes from sparse at the top-left to dense at the bottom-right, three cell types marked in three clearly different pixel colors, reading like a game skill tree.
-Right column "Danio Arena": a top-down pixel pool arena. Water surface in blue-green pixel blocks with dithered ripples; the bank is grass and stone pixel tiles; in the water swim several slender pixel zebrafish (dark body, light horizontal stripes), a few much smaller prey dots, one clearly larger predator silhouette, and several square pixel obstacle blocks.
-Bottom control bar: one thin pixel strip. The left end has two pixel buttons with beveled edges and a pressed feel - the primary button labeled "Pause" and a secondary button labeled "Reset". The right end has one short row of small grey pixel text: "Evolution / Experiment / Playback".
+Middle column "Brain Forge": an abstract pixel connection pattern - geometric pixel nodes joined by 1-pixel lines, evenly distributed, deliberately NOT readable as a network topology: no legible node or edge counts, no labels, no axes, no progression from sparse to dense, and nothing that reads as a measured quantity. It is decorative texture only. Three cell types are marked by three clearly different pixel colors.
+Right column "Danio Arena": a top-down pixel pool arena in a panel whose width-to-height ratio is exactly 5 to 3. Water surface in blue-green pixel blocks with dithered ripples; the bank is grass and stone pixel tiles; in the water swim several slender pixel zebrafish, dark body with light horizontal stripes, a few much smaller prey dots, one clearly larger predator silhouette, and several square pixel obstacle blocks. The panel edge is a beveled pixel frame with no rounded corners.
+Bottom control bar: one thin pixel strip. The left end has two pixel buttons with beveled edges and a pressed feel - the primary button labeled "Pause" and a secondary button labeled "Reset". The right end has three small pixel buttons reading "Evolution", "Experiment", "Playback", forming view tabs; the "Experiment" tab is the active one and is drawn pressed or highlighted.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing and no smoothing anywhere. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Do not introduce any color outside this list. All line weights are exactly 1 or 2 pixels. Use dithering patterns for all transitions.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing and no smoothing anywhere. No rounded corners anywhere - every frame, panel and button is built from square pixel steps. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Do not introduce any color outside this list. All line weights are exactly 1 or 2 pixels. Use dithering patterns for all transitions.
 
-Composition: the full app screen fills the frame with an even margin on all sides; the three columns are visually equal in width; hierarchy is carried by size and color, not by drop shadows.
+Composition: the full app screen fills the frame with an even margin on all sides; the three columns are exactly equal in width; hierarchy is carried by size and color, never by drop shadows.
 
-Lighting: flat and even, no light source - pixel art with hand-placed highlight and shadow pixels only.
+Lighting: flat and even, no light source - hand-placed highlight and shadow pixels only.
 
-Text: render every label verbatim, in a dot-matrix pixel font, correct spelling, no extra characters. Labels are limited to the seven shown above. If any label cannot be rendered legibly, replace it with a clean uniform pixel block of the same size - never invent letters and never render garbled or blurry text.
+Text: the only text in the image is the set of labels listed above. Render each one verbatim in a dot-matrix pixel font with correct spelling and no extra characters. Values other than "Food Rich" must NOT be rendered as numbers. If any label cannot be rendered legibly, replace it with a clean uniform pixel block of the same size - never invent letters and never render garbled or blurry text.
 
-Constraints: this is a UI mockup, not a poster and not concept art; keep the layout tidy and grid-aligned; no readable data values anywhere - all data areas are abstract pixel placeholders.
+Constraints: this is a UI mockup, not a poster and not concept art; keep the layout tidy and grid-aligned; no readable data values anywhere - every data area is an abstract placeholder.
 
-Avoid: antialiasing, soft or blurred edges, smooth gradients, soft shadows, glassmorphism, modern flat UI, 3D rendering, photorealistic textures, a dark moody palette, cyberpunk neon, any readable numbers or statistics, any fake charts or graphs, watermark; do not copy any specific existing game's characters or interface.
+Avoid: antialiasing, soft or blurred edges, smooth gradients, soft shadows, rounded corners, glassmorphism, modern flat UI, 3D rendering, photorealistic textures, a dark moody palette, cyberpunk neon, any readable numbers or statistics, any fake charts or graphs, watermark; do not copy any specific existing game's characters or interface.
 ```
 
 ---
@@ -198,34 +237,74 @@ Avoid: antialiasing, gradients, soft shadows, 3D rendering, photorealism, any te
 **定调理由**：竞技场拿像素游戏感，数据区保持专业可读。这是像素风与「9 项指标的 Dashboard、13 字段的 Fish Card、精确的 ACGT 序列」共存时唯一不牺牲功能的做法。
 **定位说明**：这一条是三条里**最接近可交付界面**的一档，也是 skill `ui-mockup` 类目真正对应的那条。
 
-**要点**：同一套标签结构与 hex；文字 7 处 + 占位回退；两区共用分割线粗细与画角处理达成统一（避免突兀拼接）。
+**要点**：同上，另加一节 **`Junction:`** —— 双调性的唯一接缝，也是全图最难调的地方（硬 1–2px 分割线、两区共用同色同粗细、**禁渐隐**）；数值明确走**等宽字体**；浅色精密区**无圆角**。
 
 ```text
 Use this prompt AS-IS. Do not add or embellish any details.
 
 Landscape 3:2 composition.
 
-Background: split by region - the right column sits on a dark deep-water arena palette, the left and middle columns sit on a clean near-white panel surface; the two are joined by one shared divider-line weight and one shared accent palette.
+Background: split by region - the right column sits on a dark deep-water arena palette, while the left column, the middle column and both horizontal bars sit on a clean light panel surface. The regions meet along a hard dark divider, never a soft fade.
 
-Subject: a complete desktop web application screen for a life-evolution lab named "EvoGenesis", in a deliberately hybrid style - the game-like region is rendered as 16-bit pixel art, the data-dense regions are rendered as precise modern scientific software, unified by a single shared palette.
+Subject: a complete desktop web application screen for a life-evolution lab named "EvoGenesis", in a deliberately hybrid style: the game-like region is 16-bit pixel art, the data-dense regions are precise modern scientific software, unified by a single shared palette. Do not draw any page title, heading or caption beyond the labels listed below.
 
 Key details:
-Top status bar and bottom control bar: pixel-art beveled frames and buttons, but the values inside use a clean monospace font for legibility. The top bar shows six status items in a row: "Env", "Gen", "Fish", "Prey", "Step", "Seed". The bottom bar has two pixel buttons on the left - the primary button labeled "Pause" and a secondary button labeled "Reset" - and a short row of small grey text on the right: "Evolution / Experiment / Playback".
-Right column "Danio Arena": entirely a 16-bit pixel-art top-down pool arena. Blue-green water with dithered ripples, grass and stone pixel tiles at the bank, slender pixel zebrafish with dark bodies and light stripes, a few much smaller prey dots, one clearly larger predator silhouette, and several square pixel obstacle blocks. The edges are a pixel frame with beveled corners.
-Left column "DNA2Brain Lab" and middle column "Brain Forge": clean, precise modern scientific software - no pixel font. The left column's upper half is a sharply drawn 3D DNA double helix; its lower half is a monospace sequence strip of the letters "A" "C" "G" "T" with one letter inside a crisp selection box. The middle column is a precisely drawn neuron network diagram with thin clean edges, node sizes by importance, and cell types in clearly distinct flat accent colors.
-The top and bottom bars span the full width; the three columns are equal in width.
+Top status bar and bottom control bar: pixel-art beveled frames and pixel buttons built from square pixel steps with NO rounded corners. Every numeric readout inside them is set in a clean monospace font, not a pixel font.
+Top bar left end: a small pixel emblem, a simple abstract mark containing no letters, followed by "EvoGenesis" in a dot-matrix pixel font.
+Top bar right end: six status items - first "Env", whose value reads "Food Rich"; then "Gen", "Fish", "Prey", "Step", "Seed", whose values are each a plain uniform placeholder block rather than any readable number.
+Bottom bar left end: a primary pixel button labeled "Pause" and a secondary pixel button labeled "Reset".
+Bottom bar right end: three pixel buttons reading "Evolution", "Experiment", "Playback", forming view tabs, with "Experiment" drawn as the active tab.
+Right column "Danio Arena": entirely 16-bit pixel art - a top-down pool arena in a panel whose width-to-height ratio is exactly 5 to 3. Blue-green water with dithered ripples, grass and stone pixel tiles at the bank, slender pixel zebrafish with dark bodies and light stripes, a few much smaller prey dots, one clearly larger predator silhouette, and several square pixel obstacle blocks. Beveled pixel frame, no rounded corners.
+Left column "DNA2Brain Lab" and middle column "Brain Forge": clean, precise modern scientific software on a light panel - no pixel font, crisp 1-pixel edges, no rounded corners. The left column's upper half is a sharply drawn 3D DNA double helix; its lower half is a monospace sequence strip of the letters "A" "C" "G" "T" with one letter inside a crisp selection box. The middle column is an abstract connection pattern of small nodes and thin lines, evenly distributed, deliberately NOT readable as a network topology - no legible node or edge counts, no labels, no axes, no sparse-to-dense progression, and nothing that reads as a measured quantity. Decorative texture only. Three cell types appear in three distinct flat accent colors.
+The top and bottom bars span the full width; the three columns are exactly equal in width.
 
-Style: hybrid - pixel regions follow 16-bit pixel art with hand-placed square pixels, hard edges and no antialiasing; precise regions follow clean vector-drawn UI with sharp edges. Both regions share one palette. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Do not introduce any color outside this list.
+Junction: where the dark pixel arena meets the light precise panels, the boundary is a single hard dark divider line of 1 to 2 pixels, shared by both sides and using the same colour and the same weight as the top and bottom bar frames. Do not fade, blur, glow or gradient across this boundary. Because both regions draw from one palette, the join must read as intentional rather than pasted.
 
-Composition: the full app screen fills the frame with an even margin on all sides; the three columns are visually equal in width; the join between the pixel and precise regions must feel intentional - same divider weight, same corner treatment, same palette.
+Style: hybrid - the pixel region follows 16-bit pixel art with hand-placed square pixels, hard edges and no antialiasing; the precise regions follow clean vector-drawn UI with sharp 1-pixel edges. Neither region uses rounded corners. Both regions share one palette. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Do not introduce any color outside this list.
+
+Composition: the full app screen fills the frame with an even margin on all sides; the three columns are exactly equal in width; the join between the pixel and precise regions must feel intentional - same divider weight, same corner treatment, same palette.
 
 Lighting: even and flat in both regions; no drop shadows, no glass effects.
 
-Text: render every label verbatim, correct spelling, no extra characters. Labels are limited to the seven shown above. If any label cannot be rendered legibly, replace it with a clean uniform block of the same size - never invent letters and never render garbled or blurry text.
+Text: the only text in the image is the set of labels listed above. Render each one verbatim with correct spelling and no extra characters; labels in the bars use a dot-matrix pixel font, and numeric readouts use a clean monospace font. Values other than "Food Rich" must NOT be rendered as numbers. If any label cannot be rendered legibly, replace it with a clean uniform block of the same size - never invent letters and never render garbled or blurry text.
 
-Constraints: this must read as one coherent product interface, not a collage; no readable data values anywhere - all data areas are abstract placeholders.
+Constraints: this must read as one coherent product interface, not a collage; no readable data values anywhere - every data area is an abstract placeholder.
 
-Avoid: a dark moody background for the whole app, antialiased fake-pixel edges, gradients, glassmorphism, 3D rendering, any readable numbers or statistics, any fake charts or graphs, watermark; do not copy any specific existing game's characters or interface.
+Avoid: a dark moody background for the whole app, antialiased fake-pixel edges, gradients, rounded corners, glassmorphism, 3D rendering, any readable numbers or statistics, any fake charts or graphs, watermark; do not copy any specific existing game's characters or interface.
+```
+
+---
+
+## 提示词 4（新）—— Evolution 视图（Dashboard 9 项 · 「精密面板」的样板）
+
+**要点**：本条是 Q8(a) 的产物 —— Dashboard 住进 `Evolution` 视图，底栏 `Evolution` tab 激活。**它同时定义「精密面板」的模板**：Fish Card 的 13 字段与将来的指标卡都照它搭，所以 R2-5 不再单独出图。9 个卡名取自 `frontend/交互与可视化.md:110-118` 的**真实指标名**（不是编的）；但**所有数值/坐标/刻度/图例一律占位块**（红线：不得出现可读数值）。
+
+```text
+Use this prompt AS-IS. Do not add or embellish any details.
+
+Landscape 3:2 composition.
+
+Background: a clean light panel surface covering the whole frame. The only pixel-art elements are thin beveled pixel frames and pixel buttons. There is no dark region anywhere in this image.
+
+Subject: the "Evolution" view of the same application - a data dashboard for a life-evolution lab named "EvoGenesis". Do not draw any page title, heading or caption beyond the labels listed below.
+
+Key details:
+Top status bar: identical in style and content to the other views of this app - a pixel-art beveled strip built from square pixel steps with no rounded corners. The left end shows a small pixel emblem, a simple abstract mark containing no letters, followed by "EvoGenesis" in a dot-matrix pixel font. The right end has six status items: first "Env", whose value reads "Food Rich"; then "Gen", "Fish", "Prey", "Step", "Seed", whose values are each a plain uniform placeholder block rather than any readable number.
+Main area: a neat grid of nine equal cards, three columns by three rows, evenly spaced, separated by thin crisp 1-pixel lines, with no rounded corners. Each card has a short label set in a clean monospace font, and below it one abstract placeholder visual - alternating simple bar clusters, simple line shapes and simple block rows, drawn in flat accent colours. Every number, axis value, tick, unit and legend entry is replaced by a plain uniform placeholder block, so that no quantity can be read from the image.
+The nine card labels, in reading order, left to right then top to bottom: "generation", "p(A) p(B)", "genotype freq", "fitness dist", "viability", "mean neurons", "mean edges", "mean tau", "env change".
+Bottom control bar: same as the other views - a primary pixel button labeled "Pause", a secondary pixel button labeled "Reset", and three pixel buttons reading "Evolution", "Experiment", "Playback" forming view tabs, with "Evolution" drawn as the active tab.
+
+Style: precise modern scientific software on a light panel with crisp 1-pixel edges and no rounded corners, combined with pixel-art beveled frames and buttons. No pixel font is used for the data itself. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Do not introduce any color outside this list.
+
+Composition: the nine cards form a regular 3-by-3 grid filling the main area evenly; the whole app screen fills the frame with an even margin on all sides.
+
+Lighting: even and flat, no light source, no drop shadows.
+
+Text: the only text in the image is the set of labels listed above. Render the bar labels in a dot-matrix pixel font and the nine card labels in a clean monospace font, each one verbatim with correct spelling and no extra characters. No numbers, no units, no axis values, no legend entries and no captions may appear anywhere. If any label cannot be rendered legibly, replace it with a clean uniform block of the same size - never invent letters and never render garbled or blurry text.
+
+Constraints: no readable data values anywhere - every data area is an abstract placeholder; this is a UI mockup, not a poster.
+
+Avoid: a dark background, antialiasing, gradients, rounded corners, glassmorphism, 3D rendering, any readable numbers or statistics, any axis or legend values, any fake chart presented as a real result, watermark; do not copy any specific existing game's characters or interface.
 ```
 
 ---
@@ -296,20 +375,29 @@ Change only what I describe below. Keep everything else exactly unchanged - layo
 
 ## 生成后自检清单
 
-对照 `docs/验收清单.md` 的 Demo 部分与 `frontend/交互与可视化.md` §12：
+**判据来源**：`frontend/交互与可视化.md` §12（生成式视觉素材边界，逐字引用见 §使用前提）
+与本文件 §决定记录。
 
-- [ ] **比例是 landscape 3:2**（不是 16:9——网页版不认；也不是正方形）
-- [ ] 三栏清晰可辨，且左中右内容对得上 DNA2Brain / Brain Forge / Danio Arena
-- [ ] 顶部六项状态完整出现
-- [ ] 底栏主按钮 + Reset 在位（主按钮文案：运行中 `Pause`、停止态 `Release`）
+**⚠️ 更正一处假引用**：本节此前写「对照 `docs/验收清单.md` 的 Demo 部分」—— 那 6 条里
+**没有一条是视觉判据**（唯一沾 UI 的是 `reset`），**已删**。视觉冻结的判据与时点改由
+`frontend/交互与可视化.md` 的「视觉冻结判据」一节承载（2026-09-26 新增）。
+
+- [ ] **比例是 landscape 3:2**（不是 16:9 —— 网页版不认；也不是正方形）
+- [ ] **三栏严格等宽**，且左中右内容对得上 DNA2Brain / Brain Forge / Danio Arena
+- [ ] **Arena 是 5:3**（不是高瘦的竞技场 —— 否则实现时鱼会被纵向压扁）
+- [ ] 顶部六项齐全，且 **`Env` 的值是 `Food Rich`**、**其余 5 项是占位块**（不是数字）
+- [ ] 底栏：主按钮 + `Reset`，且 **`Evolution` / `Experiment` / `Playback` 是按钮或 tab 形态**
+      （不是灰色小字 —— 这是 Q8(a) 要改代码去对齐的一处）
+- [ ] 中栏 Brain Forge 是**抽象连接占位**（无可读节点数、无坐标、无「稀疏→密集」序列）
 - [ ] 像素是**方形硬边**（不是被抗锯齿柔化过的「伪像素」）
+- [ ] **全图无圆角**（面板外壳已按 R2-4 改像素斜角边框）
+- [ ] **数值与长标签走等宽清晰字体**；点阵像素字体只用于标签（Q1(b)）
+- [ ] 双调性时：**交界是硬 1–2px 深色分割线**，无渐隐 / 模糊 / 发光
 - [ ] 颜色**落在候选色板内**，没有跑出表外的颜色
-- [ ] 点阵字体下的英文标签可读；**若某处标签是占位色块也可接受**（不作硬要求）
 - [ ] **没有**出现具体数值、曲线或统计图（红线）
 - [ ] **没有**与任何现有游戏资产雷同的角色或界面（红线）
-- [ ] 主体四周**留了边距**（因为 3:2 → 16:9 要裁掉上下各约 7.8%）
-- [ ] 若选了提示词 3，像素区与精密区的衔接是否自然
-
+- [ ] 主体四周**留了边距**（3:2 → 16:9 要裁掉上下各约 7.8%）
+- [ ] 若跑的是提示词 3，像素区与精密区的衔接是否自然
 ## 两条操作纪律（skill 直接要求，不做就会踩坑）
 
 1. **一条提示词 = 一次新对话。** skill 的 `Same-chat memory`：ChatGPT 记得同一对话里先前生成的图，
@@ -332,16 +420,28 @@ Change only what I describe below. Keep everything else exactly unchanged - layo
 3. 为 ECharts 补序列色板、为 Cytoscape 补网络图配色，并决定是否接受其非像素渲染；
 4. 把风格词回填进 `artifacts/assets_placeholder/image_prompt_template.md` 的三类素材。
 
-## 两处与代码对齐的校正（2026-09-26）
+## 六处与代码对齐的校正（2026-09-26 第二次修订）
 
-1. **底栏主按钮不是固定的「Pause」**：`App.tsx` 里按钮文案随状态变——运行中显示 `Pause`、停止态显示
-   `Release`。提示词 1 / 3 已按此改（原来写死 Pause，会让生成的参考图与真实界面不一致）。
-2. **顶栏 6 项以代码为准**：`App.tsx` 实际渲染 `Env / Generation / Fish / Prey / Step / Seed`（6 项）；
-   而 `frontend/交互与可视化.md` §1 的 ASCII 草图写的是 `Env | Generation | Population | Seed`（4 项）——
-   **草图已过期**，提示词 1 的 6 项与代码一致，无需改。
-   > 提示词里 `Generation` 缩写成 `Gen`：为把每图文字量压到 skill 建议范围。它只是视觉占位，
-   > 真实界面标签由代码渲染，不受参考图影响。
+事实来源：`frontend/src/App.tsx` 与 `frontend/src/components/panel.tsx` 的**实际渲染**。
+`frontend/交互与可视化.md:6-15` 的 ASCII 草图与代码有**六处**不一致：前两处此前已记，
+本轮补出另外四处。**提示词一律以代码为准。**
 
+| # | 项 | 草图 | 代码 | 本文件怎么处理 |
+|---|---|---|---|---|
+| 1 | 顶栏状态项 | `Env / Generation / Population / Seed`（4 项，竖线分隔） | `Env / Generation / Fish / Prey / Step / Seed`（6 项，间距分隔） | 用 6 项；`Generation` 缩写为 `Gen` 以压文字量 |
+| 2 | 底栏内容 | 只有一行文字 | **两个按钮**：主按钮（`Pause` / `Release` 切换）+ `Reset` | 已按代码加按钮（文案：运行中 `Pause`、停止态 `Release`） |
+| 3 | 底栏末词 | `... Playback Controls` | `... Playback`（**无 `Controls`**） | 用代码版 |
+| 4 | 顶栏分隔 | 用竖线 | 用**间距**，无竖线 | 提示词不画竖线 |
+| 5 | 窄屏 | 恒三栏 | `grid-cols-1`，仅 `lg` 以上才 `lg:grid-cols-3` | 只画桌面三栏（`lg` 态） |
+| 6 | 面板外壳 | 共享边框的表格状三栏，栏内无图标 | 每栏是**独立圆角卡片** + 图标 + 标题栏（`rounded-lg border`，圆角 `0.625rem`） | **按 R2-4 走第三方**：去圆角、改像素斜角边框；标题栏图标保留但改像素图标 |
+
+**另有一条方向相反的差异，必须记住**：底栏 `Evolution / Experiment / Playback` 在代码里
+**只是灰色文字**（`App.tsx:64-66`），**不是按钮**。Q8(a) 决定把它们改成**真的视图 tab** ——
+所以这一处是**要改代码去对齐提示词**，方向与前五处相反。**改完 `App.tsx` 才算真正对齐。**
+
+**还有一条数据不一致**：Arena 画布底色 `#0B1220`（`DanioArenaPanel.tsx:113`），
+而主题 token 的 `bg` 是 `#0B0F14`（`frontend/README.md:143`）—— **两个数不一样**。
+`{画布色}` 引用的是前者；重写 `index.css` 时要把这个差对齐。
 ## ⚠️ 一处必须知道的口径：DNA 面板的参考图是「目标观感」，不是「要切的素材」
 
 3D DNA 已于 2026-09-26 定为 **three.js / @react-three/fiber 程序化渲染**（见 `frontend/README.md` 技术栈），
@@ -354,7 +454,11 @@ Change only what I describe below. Keep everything else exactly unchanged - layo
 - 同理，中栏 Brain Forge 的神经网络也是**数据驱动渲染**（Cytoscape，库已装），
   参考图里的网络只是观感参考，不是素材。
 
-## 待办：提示词 2 的定位需要在 README 里同步
+## 待办（跨 lane 与后续）
 
-提示词 2（sprite sheet）已被 skill 判为「不适合作为最终切图来源」，
-`README.md` 的文件索引里若仍把它写作素材来源，需要同步更正。
+1. **`App.tsx` 底栏三词要改成真 tab**（Q8(a)）—— `frontend/` 是我自己的 lane，可直接改；
+   这是**唯一一处「改代码去对齐提示词」**（其余五处都是提示词跟随代码）。
+2. **`docs/验收清单.md` 的 Demo 节若要引用视觉判据** —— `docs/` 为**只读 lane**，
+   需由池伟豪补（Demo 节现 6 条无一条视觉判据；视觉判据现落在 `frontend/交互与可视化.md`）。
+3. **提示词 2 的降级已在 `README.md` 写明** —— 原「待同步」待办**已闭合**。
+4. **`#0B1220` 与 `#0B0F14` 的差**（见上节末）在重写 `index.css` 时一并对齐。
