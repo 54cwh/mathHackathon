@@ -18,7 +18,7 @@
 
 | # | 事项 | 证据 | 待定 |
 |---|---|---|---|
-| ~~D1~~ | ~~A14 arena 随机源~~ ✅ **已闭合（2026-09-26）**：已拆 `arena_spawn`/`arena_dynamics`（id 9），`DanioArena(spawn_seed, dynamics_seed)`；全基线已重跑（v3） | — |
+| ~~D1~~ | ~~**A14 arena 随机源**~~ ✅ **已闭合 2026-09-26（池伟豪 `ec2eaf3`）** | 原：`env.py` 单条 `default_rng(master)` 同时驱动 spawn 与逐步游走 | 已拆 `arena_spawn`(id 3) / `arena_dynamics`(id 9)，`DanioArena(*, spawn_seed, dynamics_seed)`，编排经 `arena_seeds_for` 透传；**全基线已重跑（v3）**。残留 D5（改障碍数量/半径/clearance 会平移 spawn 流）仍在 |
 | D2 | **H3 探针实现** | `arena §14` 任务定义已定稿、实现未做；`§19 P1 #8` | 用 `integrator_memory` 激活替代（零代码）or 实现探针（会加字段/可能加事件） |
 | D3 | **`encounters` 去重口径** | `prey_capture=captures/max(encounters,1)`；实测中位 2/最大 225/前 3 占 65.7% | 是否改去重口径（`experiment §7 #1` 已由 arena S6 明确粒度，剩口径抉择） |
 | D4 | ~~捕获成功率随机化~~ ✅ **已闭合（2026-09-26）**：新增 `growth.capture_success_prob`（默认 1.0=确定性，零行为）；<1 时失败记 `capture_attempt('missed')`。**待正式实验前定值**（play-test） | — |

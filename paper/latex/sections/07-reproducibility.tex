@@ -165,20 +165,13 @@ Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}
 
 \subsection{已知缺口：哪些能重跑，哪些不能}
 
-以下三条是仓库自己登记、且直接限制「复现到什么粒度」的缺口，
-与 \S\ref{sec:exp-gaps} 同源，此处只写它们对\emph{复现方式}的后果：
+按同样口径，原第三条 A14（Arena 自建随机源、未走 \texttt{SeedManager}）已于
+2026-09-26 \textbf{闭合}：Arena 现从 \texttt{SeedManager} 取两条整数子种子——
+\texttt{arena\_spawn}（id 3，出生 / 再生）与 \texttt{arena\_dynamics}（id 9，逐步游走），
+两者各自独立派生，\textbf{改其一不再平移另一条流}，故\emph{出生布局}与\emph{逐步游走}
+可分别重放，不再是复现粒度的瓶颈。以下两条是仍然成立的缺口，
 
 \begin{itemize}
-  \item \textbf{A14——Arena 的随机数未走 \texttt{SeedManager}。}
-        \texttt{arena/env.py} 用一条 \texttt{np.random.default\_rng(master\_seed)}
-        同时驱动出生与每步游走，未拆成 \texttt{arena\_spawn} 与 \texttt{arena\_dynamics}
-        两个命名空间。
-        \emph{后果}：目前\textbf{只能靠 master seed 整体重跑复现}，
-        \textbf{无法按模块重放}（例如「只重放逐 step 游走、复用同一初始局面」做不到）。
-        \emph{为何不现在修}：拆分命名空间会改动随机流，
-        从而作废既有冒烟基线（\texttt{arena} \S18.11），故本轮明确\textbf{暂不实施}，
-        待 \texttt{bc} 命名空间（id 8）落地后再一并处理 \texttt{arena\_dynamics}（id 9）。
-        这是一条\emph{知情接受的限制}，不是遗漏。
   \item \textbf{P0-9——落盘轨迹尚没有真实基因型标识。}
         \texttt{Fish.genome\_id} 的\textbf{缺省值仍是占位} \texttt{"unknown"}；
         实验路径虽已可由构造注入 \texttt{genome\_ids}，

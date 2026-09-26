@@ -132,20 +132,17 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \textbf{合并后果}：本文的数值结论只支持两类主张——「平台可运行」与「环境对照可区分」；
   \textbf{不支持任何「演化有效」或「学习有效」的主张}。这一界限是有意写明的，不是可以省略的脚注。
 
-  \item \textbf{A14：Arena 的随机数未走 SeedManager，故只能整体重跑、不能按模块重放。}
-  \texttt{arena/env.py} 用同一个 \texttt{np.random.default\_rng(master\_seed)}
-  同时驱动「初始布局 / 猎物再生」与「逐步游走」，两条流拆不成
-  \texttt{arena\_spawn} / \texttt{arena\_dynamics} 两个命名空间
-  （\texttt{arena} \S18.5 的 D1 行；认领表 A14）。
-  后果具体且可操作：跨模块复现只能靠 master seed 整体重跑；
-  且改障碍数量 / 半径范围 / clearance 会使后续所有实体的随机流整体平移，
-  同 seed 下的初始世界随之改变，\textbf{历史基线不可直接对比}（\texttt{arena} \S18.5 D5）。
-  该项的「选择 / 理由 / 代价」已记录：\texttt{arena\_dynamics} 的命名空间 id 已定（9），
-  但 2026-09-26 的决策是\textbf{暂不实施}，理由是会改 RNG 流、作废
-  \texttt{arena} \S18.11 的冒烟基线（\texttt{pipeline/模型链装配.md} \S4）。
-  代价：在此之前，任何 Arena 侧的改动都必须整体重跑并重建基线。
-  复现流程的另一半见 \S\ref{sec:repro}。
-
+  \item \textbf{改布局参数必须重定基线。}
+  A14（Arena 自建随机源）已于 2026-09-26 \textbf{闭合}：Arena 现从
+  \texttt{SeedManager} 取两条整数子种子——\texttt{arena\_spawn}（id 3，出生 / 再生）
+  与 \texttt{arena\_dynamics}（id 9，逐步游走），编排层经
+  \texttt{pipeline/arena\_episode.py} 的 \texttt{arena\_seeds\_for} 透传
+  （\texttt{arena} \S18.5 的 D1 行；\texttt{pipeline/模型链装配.md} \S4）。
+  但 \texttt{arena} \S18.5 的 D5 仍在：\texttt{arena\_spawn} 流内，
+  \texttt{\_free\_spot} 的\textbf{拒绝采样次数}取决于本局障碍布局，
+  故改障碍数量 / 半径范围 / clearance 会使 spawn 流整体平移，
+  \textbf{同 seed 下的初始世界随之改变，历史基线不可直接对比}。
+  这条限制的性质是「改布局参数就得重定基线」，\textbf{不是}「不能按模块重放」。
   \item \textbf{轨迹的基因型标识：链路已补上，但现存产物仍是占位。}
   现存的一份磁盘轨迹产物逐 step 记录的是
   \texttt{fish\_id="fish\_00"}、\texttt{genome\_id="unknown"}——

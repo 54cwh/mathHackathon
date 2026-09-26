@@ -308,8 +308,6 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
         该事实\textbf{不影响}公式 \eqref{eq:prey-capture}——分母已是尺寸门之前的
         \texttt{encounters}；若未来引入 $P_{\text{capture\_success}}<1$，
         公式不变，该指标自动成为标准成功率。
-  \item \textbf{A14}：Arena 的随机数\textbf{未走 SeedManager}，
-        故目前只能\textbf{整体重跑}复现，不能按模块重放。
   \item \textbf{P0-9}：\texttt{Fish.genome\_id} 的\textbf{缺省值}仍是占位
         \texttt{"unknown"}；实验路径已可由构造注入铸出的 \texttt{genome\_id}
         （\texttt{scripts/run\_arena.py} 经 \texttt{core/ids.py::mint\_id}，纯函数、确定性）。
