@@ -1,6 +1,8 @@
 """配置加载与校验（core §0 / §10 #5，已定稿）。
 
-覆盖优先级 **CLI > env > file > default**（core §0）。
+覆盖优先级 **CLI > env > file > default**（core §0）。分层 API 以公开函数
+``read_yaml`` / ``env_overrides`` / ``deep_update`` 提供，供各模块封装自己的加载器
+（如 ``genome/config.py``、``arena/config.py``）；本文件的 ``load_config`` 是它们的通用组合。
 - file 层：``configs/*.yaml``（运行期取值的唯一来源，core §7）。
 - env 层：前缀 ``EVOGENESIS_``，嵌套用双下划线 ``__``（沿用 pydantic-settings 的命名约定）；
   段名对 Pydantic 字段名大小写不敏感匹配；值按 YAML 标量解析（契约见 core §0）。
@@ -119,10 +121,10 @@ class ModelConfig(_Section):
     learning: LearningConfig
 
 
-def _deep_update(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
+def deep_update(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
     for key, value in override.items():
         if isinstance(value, Mapping) and isinstance(base.get(key), dict):
-            _deep_update(base[key], value)
+            deep_update(base[key], value)
         else:
             base[key] = value
     return base
@@ -133,7 +135,7 @@ def _nested(overrides: Mapping[str, Any]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for key, value in overrides.items():
         if isinstance(value, Mapping):
-            _deep_update(out, {key: _nested(value)})
+            deep_update(out, {key: _nested(value)})
             continue
         parts = key.split(".")
         cursor = out
@@ -169,7 +171,7 @@ def _canonical_path(segments: list[str], model: type[BaseModel]) -> list[str]:
     return canonical
 
 
-def _env_overrides(environ: Mapping[str, str], model: type[BaseModel]) -> dict[str, Any]:
+def env_overrides(environ: Mapping[str, str], model: type[BaseModel]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for raw_key, raw_value in environ.items():
         if not raw_key.startswith(ENV_PREFIX):
@@ -189,7 +191,7 @@ def _env_overrides(environ: Mapping[str, str], model: type[BaseModel]) -> dict[s
     return out
 
 
-def _read_yaml(path: Path) -> dict[str, Any]:
+def read_yaml(path: Path) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(f"config 文件不存在：{path}")
     loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -213,10 +215,10 @@ def load_config[ConfigModel: BaseModel](
     """
     data: dict[str, Any] = {}
     if path is not None:
-        _deep_update(data, _read_yaml(Path(path)))
-    _deep_update(data, _env_overrides(os.environ if environ is None else environ, model))
+        deep_update(data, read_yaml(Path(path)))
+    deep_update(data, env_overrides(os.environ if environ is None else environ, model))
     if overrides:
-        _deep_update(data, _nested(overrides))
+        deep_update(data, _nested(overrides))
     return model.model_validate(data)
 
 

@@ -16,7 +16,7 @@ from pydantic import BaseModel, create_model
 # 分层语义（CLI > env > file > default）的 owner 是 ``core §config``。此处**直接复用**
 # `core.config` 的 helper，不在本模块另写一版（AGENTS「不得在两处各写一版」）。
 # 若 core 把分层上提为公开 API，这里应改为公开导入。
-from evogenesis.core.config import _deep_update, _env_overrides, _read_yaml
+from evogenesis.core.config import deep_update, env_overrides, read_yaml
 
 
 @dataclass(frozen=True)
@@ -121,7 +121,7 @@ DERIVED_READONLY_KEYS: frozenset[tuple[str, str]] = frozenset({("world", "episod
 
 def _build_env_schema() -> type[BaseModel]:
     """按 ``ARENA_SECTIONS`` **运行时生成** Pydantic 镜像，仅供 ``core`` 的 env 层做段名
-    大小写规范化（``_env_overrides(environ, model)``）。字段名的唯一 owner 仍是上面的
+    大小写规范化（``env_overrides(environ, model)``）。字段名的唯一 owner 仍是上面的
     dataclass —— 本表不手写第二份，故不构成 AGENTS 所禁的「两处各写一版」。
     """
     sections = {
@@ -170,10 +170,10 @@ def load_arena_config(
     """
     data: dict[str, Any] = {}
     if path is not None:
-        _deep_update(data, _read_yaml(Path(path)))
-    _deep_update(data, _env_overrides(os.environ if environ is None else environ, _ENV_SCHEMA))
+        deep_update(data, read_yaml(Path(path)))
+    deep_update(data, env_overrides(os.environ if environ is None else environ, _ENV_SCHEMA))
     if overrides:
-        _deep_update(data, overrides)
+        deep_update(data, overrides)
     return _build_arena_config(data)
 
 
