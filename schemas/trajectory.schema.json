@@ -70,7 +70,7 @@
           "minItems": 12,
           "maxItems": 12,
           "items": { "type": "number" },
-          "description": "感知向量 float[12]（sensory_dim=12）。维度顺序冻结（DanioNet §2）：0 prey_left_signal / 1 prey_right_signal / 2 threat_left_signal / 3 threat_right_signal / 4 obstacle_left_signal / 5 obstacle_right_signal / 6 prey_relative_size / 7 predator_relative_size / 8 looming_rate / 9 current_speed / 10 energy / 11 hunger。编码规则见 arena/Danio_Arena设计规范.md §4.1。"
+          "description": "感知向量 float[12]（sensory_dim=12）。维度顺序冻结（DanioNet §2）：0 prey_left_signal / 1 prey_right_signal / 2 threat_left_signal / 3 threat_right_signal / 4 obstacle_left_signal / 5 obstacle_right_signal / 6 prey_relative_size / 7 predator_relative_size / 8 looming_rate / 9 current_speed / 10 energy / 11 hunger。编码规则见 arena/Danio_Arena设计与实现说明.md §4.1。"
         },
         "expert_action": {
           "type": "array",

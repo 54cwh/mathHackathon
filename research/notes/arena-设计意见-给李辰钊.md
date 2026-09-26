@@ -1,7 +1,7 @@
 # Arena 设计意见（给李辰钊）
 
 > 收件人：李辰钊
-> 用途：池伟豪侧对 `arena/` 的审查意见与检索依据，供你整合进 `arena/Danio_Arena设计规范.md`、`Danio_Arena实现说明.md` 与代码。
+> 用途：池伟豪侧对 `arena/` 的审查意见与检索依据，供你整合进 `arena/Danio_Arena设计与实现说明.md`、`Danio_Arena设计与实现说明.md` 与代码。
 > 状态：**意见稿（2026-09-26）**，非契约。我们**不直接改 arena 文档**，避免与你并发冲突；采纳与否由你定。
 > 配套：`research/notes/arena-api-决策认领表.md`（待你逐条签 `接受/改 X/说明`）。
 

@@ -1,9 +1,9 @@
 # arena / api 决策认领表
 
 > 收件人：李辰钊
-> 目的：`src/evogenesis/arena/` 与 `src/evogenesis/api/` 的代码**先于文档**落地。审计发现其中大量数值与语义由代码生成工具（提交信息带 `co-author Claude Code`）自行填入，从未进入任何设计文档。本表把这些"未认领的决定"逐条列出，请回答 **接受 / 改成 X / 说明原意**。答案确认后由我们写进 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`、`docs/参数总表.json`，作为契约冻结。
+> 目的：`src/evogenesis/arena/` 与 `src/evogenesis/api/` 的代码**先于文档**落地。审计发现其中大量数值与语义由代码生成工具（提交信息带 `co-author Claude Code`）自行填入，从未进入任何设计文档。本表把这些"未认领的决定"逐条列出，请回答 **接受 / 改成 X / 说明原意**。答案确认后由我们写进 `arena/Danio_Arena设计与实现说明.md`、`api/API与系统工程.md`、`docs/参数总表.json`，作为契约冻结。
 >
-> 基准：以 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`、`docs/参数总表.json` 对照代码。凡"文档没写、代码自定"的，一律不默认正确。
+> 基准：以 `arena/Danio_Arena设计与实现说明.md`、`api/API与系统工程.md`、`docs/参数总表.json` 对照代码。凡"文档没写、代码自定"的，一律不默认正确。
 
 ## 怎么填
 每条在 `[ ] 接受` / `[ ] 改：____` / `[ ] 说明：____` 上打勾或直接写；不确定写"待定"。
@@ -20,32 +20,32 @@
 
 ### A2 捕食几何 `arena/env.py`
 - 现状：`capture_radius = 1.2`（纯距离判定，无朝向/口部角度）；`capture_size_ratio κ = 1.25`。
-- 文档：`arena/Danio_Arena设计规范.md §8` 只写 `d < r_capture`，未给半径值与角度口径。
+- 文档：`arena/Danio_Arena设计与实现说明.md §8` 只写 `d < r_capture`，未给半径值与角度口径。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A3 能量四系数 `arena/config.py`
 - 现状：`e_max=1.0`、`base_cost_per_step=0.0008`、`movement_cost_scale=0.0015`、`food_reward=0.12`。
-- 文档：`arena/Danio_Arena设计规范.md §6` 给了公式，但系数不在 `docs/参数总表.json`。
+- 文档：`arena/Danio_Arena设计与实现说明.md §6` 给了公式，但系数不在 `docs/参数总表.json`。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A4 生长 `arena/config.py`
 - 现状：`initial_size=1.0`、`max_size=2.5`、`biomass_to_size_gain=0.02`；实现为 `size += gain*prey.size`，`biomass` 是只写不读的镜像量。
-- 文档：`arena/Danio_Arena设计规范.md §7` 只说"缓慢增长并设上限"；`docs/参数总表.json` 无 `biomass_to_size_gain`。实测单局 size 几乎不动（1.00→1.01）。
+- 文档：`arena/Danio_Arena设计与实现说明.md §7` 只说"缓慢增长并设上限"；`docs/参数总表.json` 无 `biomass_to_size_gain`。实测单局 size 几乎不动（1.00→1.01）。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A5 actors 整组 `arena/config.py`
 - 现状：`prey_speed=0.35`、`prey_size 0.30–0.60`、`predator_size=2.0`、`cruise=0.40`、`chase=0.65`、`detect=15`、`release=22`、`obstacle_radius 1.5–3.5`、`wander_turn_std=0.8`。
-- 文档：`arena/Danio_Arena设计规范.md` 说最终值来自 play-test；现全为代码自定，`configs/default_arena.yaml` 里根本没有 `actors` 段。
+- 文档：`arena/Danio_Arena设计与实现说明.md` 说最终值来自 play-test；现全为代码自定，`configs/default_arena.yaml` 里根本没有 `actors` 段。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A6 边界策略 `arena/entities.py:24-25`
 - 现状：clamp 到 `[0,W]×[0,H]`（贴墙卡住、持续耗能）。
-- 文档：`arena/Danio_Arena设计规范.md` 阅读问题说"边界行为未定义"。
+- 文档：`arena/Danio_Arena设计与实现说明.md` 阅读问题说"边界行为未定义"。
 - [ ] 接受 clamp  [ ] 改：反弹 / 出界即死 / 其他：____
 
 ### A7 碰撞语义 `arena/env.py:167-173`
 - 现状：仅"鱼–障碍"，只要重叠就**每步 +1**；无位移、无能量后果；鱼可穿模。prey/predator 有转向避障，鱼没有（鱼由网络驱动）。
-- 文档：`arena/Danio_Arena设计规范.md` 阅读问题说"碰撞后果未定义"。实测（当前默认场景，5 seed × 600 步）均为 **0 次**（见 `Danio_Arena实现说明.md` 附录；旧基线"84 次"已失效，因障碍生成方式变更）。
+- 文档：`arena/Danio_Arena设计与实现说明.md` 阅读问题说"碰撞后果未定义"。实测（当前默认场景，5 seed × 600 步）均为 **0 次**（见 `Danio_Arena设计与实现说明.md` 附录；旧基线"84 次"已失效，因障碍生成方式变更）。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A8 escape 判定 `arena/env.py:233-239`
@@ -54,7 +54,7 @@
 
 ### A9 团灭提前结束 `arena/env.py`
 - 现状：`step_idx>=600` **或** 全部鱼死 → episode 结束。
-- 文档：`arena/Danio_Arena设计规范.md` 未定义；提前结束影响跨 episode 可比性（fitness 的 survival 项）。
+- 文档：`arena/Danio_Arena设计与实现说明.md` 未定义；提前结束影响跨 episode 可比性（fitness 的 survival 项）。
 - [ ] 有意（保留）  [ ] 应固定跑满 600 步  [ ] 其他：____
 
 ### A10 天敌/猎物转向量纲 `arena/env.py:243,265`、`config.py`
