@@ -77,22 +77,37 @@
 
 > `run_chain.py`：`uv run python scripts/run_chain.py --experiment-id <id> --seed <s> [--n N --steps S --generation G]`；实跑 `exp-chain-smoke`（n=12, 30 步）viable 1/12、events 28、events.jsonl 过 schema。
 
-## 六、已冻结、可直接依赖（供对齐）
+## 六、【Demo 闸门】服务层重写 —— 归属待确认，需求清单已备好
 
-- **评价入口**：`scripts/run_arena.py`（落 `metrics.csv`/`population.jsonl`/`episodes.jsonl`/**`events.jsonl`**/`seed_summary.json`）；`--emit-behavior-trace` 落整群行为回放（`genome_id` 已为稳定 ID）；BC 轨迹另见 `scripts/collect_trajectories.py`。
-- **event log**：`schemas/event_log.schema.json`；`experiment/events.py`（header + 8 类事件）。
-- **基线（可重生成、不入库）** `exp_arena_expert_ref_v3`（A14 后重跑）：`survival 0.9188`、`capture_rate 0.0030`、`prey_capture 0.5148`、`escape_success 0.3032`、`energy_efficiency −9.25e−4`、`composite_fitness 0.3828`。
-- **稳定 ID / 世代**：`DanioArena(..., fish_ids, genome_ids, generation)`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均注入。
+**2026-09-26 更正**：本节初稿把归属写成「用户已指定由你（池伟豪）实现」。**该断言不严谨，撤回**：
+`AGENTS.md` **不按人归属 `api/`**（只规定「API 端点 → `api/API接口.md`」，L129）；
+**唯一的人名归属在 `api/API接口.md §6`** —— Arena 10 条 functional 记 **李辰钊**、
+模型/实验 10 条 501 stub 记 **池伟豪**；而用户 2026-09-26 的口头安排是「池伟豪写 api」。
+**三者不一致 ⇒ 请二人先确认归属**：按 §6 的记法，下面 §1/§2 那 6 条（**正是 Demo 必需的**）
+原本是李辰钊的。
 
-`scripts/run_arena.py --emit-behavior-trace` → 每 run 落 `behavior_trace/episode_ep0001.jsonl`（整群 MULTI-FISH，首行 header + 逐 step），字段/格式照 `schemas/behavior_trace.schema.json`（jsonschema 逐条校验）。实跑 `exp_traj_smoke`（1 seed）6601 step，obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全通过。当日唯一缺口 = P0-9（`genome_id` 全为 `"unknown"`）。
-> **【2026-09-26 稍后就地更正】** 该缺口此后已在**代码层**闭合：`scripts/run_arena.py`
-> 经 `core/ids.py::mint_id`（纯函数、确定性）铸造并注入 `genome_id`，
-> `tests/test_collect_trajectories.py` 有断言。**仍存的是**：
-> (a) `evolution/population.py::advance_generation` 无生产调用方 ⇒ id 只是确定性标签，
-> 不对应真实演化出的基因型；(b) 本条记录的 `exp_traj_smoke` 产物采于接线之前，
-> 仍是 `"unknown"`，须重采。详见 `paper/latex/sections/07-reproducibility.tex` §已知缺口。
+### 需求清单已备好（不必重新侦察）
 
----
+`research/notes/前端驱动-API实现清单.md` —— 前端驱动的**最小必要清单 + 审计**：
+
+- **§1 Demo 必需 4 条**、**§2 契约必需 2 条**（合起来**恰好等于 `arena.ts` 导出的 6 个 REST 函数**，不多不少）；
+- **§3 本轮不做但需预留 2 条**（Fish Card / leaderboard —— 面板未做，现在实现无人调用）；
+- **§4 明确不要实现**（`/pause` 前端不调、`/health` 只给启动脚本、**10 个 501 stub 与 Demo 无关**）；
+- **§5 契约未定、禁止现在实现**（`/v1/ws`：`交互与可视化.md` 阅读问题 8 未定采样率与 payload，
+  现在实现等于赌一个会被推翻的契约）；
+- **§7 实现期不变量**（`204` 无体 / `release` 用 query 参数 / 坐标系 / RFC 7807 /
+  `environment` 改了也没用 / 别重复实现前端已做的降级语义 / `make demo` 承诺须兑现）。
+
+**证据底本**：`research/notes/前端对接需求清单.md`（逐行测全调用面，含文件行号）。
+
+### 唯一硬约束
+
+**兼容 `frontend/src/api/arena.ts` 既有调用面 ⇒ `frontend/**` 0 改动。** 前端即契约；
+不一致时改服务层（改前端会同时作废上述两份清单）。
+
+### 交付后
+
+告诉我一声，我接着做前端接线与 Demo 流程。**归属确认前我不动 `src/evogenesis/api/`。**
 
 ## 追加（2026-09-26 晚）：本轮跨 lane 发现（leader 侧，第二轮）
 
