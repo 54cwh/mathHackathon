@@ -35,6 +35,9 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 #: `snapshot.events` 返回的最近事件条数（`API接口.md` §7.4）。
 _EVENTS_TAIL = 200
 
+#: 会话所用 Arena 子种子索引（`core §3` 实体序号 t；单会话取 0，`reset` 亦复现同一随机流）。
+_SESSION_ARENA_INDEX = 0
+
 
 def _resolve(path: str) -> Path:
     """仓库根相对路径解析（`configs/*.yaml`）。"""
@@ -56,7 +59,7 @@ class Session:
         self.generation = 0
         self.running = True
         cfg = load_arena_config(_resolve(create.arena_config_path))
-        spawn_seed, dynamics_seed = arena_seeds_for(create.master_seed, 0)
+        spawn_seed, dynamics_seed = arena_seeds_for(create.master_seed, _SESSION_ARENA_INDEX)
         self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)
         self.expert = expert_policy_from_config(self.arena.cfg)
         # 同步 `def` 路由由 FastAPI 丢进线程池并发执行，单 worker ≠ 单线程；同一会话的

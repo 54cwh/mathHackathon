@@ -349,7 +349,7 @@ class SessionCreate(BaseModel):
 
 | 字段 | 是否生效 | 说明 |
 |---|---|---|
-| `master_seed` | ✅ 生效 | 经 `arena_seeds_for(master_seed, 0)` 派生 `spawn_seed` / `dynamics_seed` 传入 `DanioArena`（`core §3`）；是**唯一的复现开关** |
+| `master_seed` | ✅ 生效 | 经 `arena_seeds_for(master_seed, session._SESSION_ARENA_INDEX)`（`=0`）派生 `spawn_seed` / `dynamics_seed` 传入 `DanioArena`（`core §3`）；是**唯一的复现开关** |
 | `environment` | ⚠️ **仅存储回显** | 写入 `Session.environment` 并在 `SessionSummary` 回显；**不改变任何 Arena 参数** —— `food_rich` / `predator_rich` / `resource_scarce` 三档行为完全一致（实测三档位的 `population` / `prey_remaining` 与初始世界完全相同）。场景布置见 `../arena/Danio_Arena设计与实现说明.md` §12 |
 | `arena_config_path` | ✅ 生效 | `Session.__init__` 经 `arena.config.load_arena_config` 读取（相对路径按仓库根解析），Arena 实际取值以该文件为准 |
 | `model_config_path` | ❌ **未生效** | Demo 用 `ExpertPolicy` 驱动，不加载 DanioNet，故接收但不参与本层行为（`API与系统工程.md` §4.3）；接入模型驱动时生效 |
