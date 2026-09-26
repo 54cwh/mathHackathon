@@ -14,8 +14,8 @@
 | `genome_example.json` | `schemas/genome.schema.json` | schema 已冻结，实例已通过校验 |
 | `fish_example.json` | `schemas/fish.schema.json` | schema 已冻结，实例已通过校验 |
 | `experiment_example.json` | `schemas/experiment.schema.json` | schema 已冻结，实例已通过校验 |
-| `trajectory_example.jsonl` | （草案）data-pipeline.md §4.2 字段表 | draft，待冻结 |
-| `event_log_example.jsonl` | （草案）data-pipeline.md §5.1 事件词表 | draft，待冻结 |
+| `trajectory_example.jsonl` | （草案）core/核心机制与数据流.md §4.2 字段表 | draft，待冻结 |
+| `event_log_example.jsonl` | （草案）core/核心机制与数据流.md §5.1 事件词表 | draft，待冻结 |
 
 ## 生成来源（provenance）
 
