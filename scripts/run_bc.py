@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
@@ -83,8 +84,13 @@ def main(argv: list[str] | None = None) -> None:
     )
     if not list(trajectories_dir.glob(learning_run.TRAJECTORY_GLOB)):
         count = args.trajectories or collect.default_trajectories(model_config)
+        collect_config = (
+            arena_config
+            if args.steps is None
+            else replace(arena_config, world=replace(arena_config.world, episode_steps=args.steps))
+        )
         collect.collect_trajectories(
-            arena_config,
+            collect_config,
             experiment_id=args.experiment_id,
             environment_id=args.environment,
             generation=args.generation,
