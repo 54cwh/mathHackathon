@@ -83,6 +83,7 @@ def test_namespaces_frozen():
         "penetrance_calibration": 11,
         "penetrance_report": 12,
         "baseline_support": 13,
+        "robustness": 14,
     }
 
 

@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/robustness.schema.json",
+  "title": "EvoGenesis Experiment E robustness (drop-edge degradation)",
+  "meta": {
+    "owns": "Experiment E 稳定性产物：删边比例 → behavior/fitness 退化",
+    "status": "草案待确认"
+  },
+  "description": "Experiment E（删边退化）报告，落 results/tables/<experiment_id>_robustness.json。口径见 src/evogenesis/experiment/实验与评价体系.md §3.5：只在活跃支撑边 support=A∧M 上随机清零 5%/10%/20% 的边，不重发育/不重训练；对照（fraction=0.0）与各删除组共用同一底物 W⁰ 与同一 arena 子种子。status=草案待确认 时不得进正式结果。",
+  "type": "object",
+  "required": [
+    "kind",
+    "experiment_id",
+    "generated_by",
+    "status",
+    "seeds",
+    "fractions",
+    "n_danio",
+    "steps",
+    "metrics",
+    "per_seed",
+    "aggregate",
+    "degradation"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "kind": { "const": "robustness" },
+    "experiment_id": { "type": "string", "minLength": 1 },
+    "generated_by": { "type": "string" },
+    "status": { "enum": ["草案待确认", "confirmed"] },
+    "seeds": { "type": "array", "items": { "type": "integer" }, "minItems": 1 },
+    "fractions": {
+      "type": "array",
+      "items": { "type": "number", "minimum": 0, "maximum": 1 },
+      "minItems": 2
+    },
+    "n_danio": { "type": "integer", "minimum": 1 },
+    "steps": { "type": "integer", "minimum": 1 },
+    "metrics": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "per_seed": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["substrate", "n_edges", "conditions"],
+        "additionalProperties": false,
+        "properties": {
+          "substrate": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "required": ["genome_id", "fish_id"],
+                "additionalProperties": false,
+                "properties": {
+                  "genome_id": { "type": "string", "minLength": 1 },
+                  "fish_id": { "type": "string", "minLength": 1 }
+                }
+              }
+            ]
+          },
+          "n_edges": { "anyOf": [{ "type": "null" }, { "type": "integer", "minimum": 0 }] },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["fraction", "n_removed", "metrics"],
+              "additionalProperties": false,
+              "properties": {
+                "fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+                "n_removed": { "type": "integer", "minimum": 0 },
+                "metrics": { "type": "object" }
+              }
+            }
+          },
+          "note": { "anyOf": [{ "type": "null" }, { "type": "string" }] }
+        }
+      }
+    },
+    "aggregate": { "type": "object" },
+    "degradation": { "type": "object" }
+  }
+}
