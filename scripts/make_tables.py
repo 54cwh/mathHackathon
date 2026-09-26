@@ -150,11 +150,11 @@ def diagnostics(metrics: pd.DataFrame) -> str:
             f"本 run 中 {n - eq} 个个体的差额 > 0，来自「判定为太小（`arena.capture_attempt`）」。",
         )
     lines += [
-        "> ℹ️ **常数捕获（知会，非警告）**：`P_capture_success = 1.0` 为占位"
-        "（`arena` §8 待裁决项 a），故 `capture_attempts == captures` 普遍成立。",
+        "> ℹ️ **常数捕获（知会，非警告）**：`growth.capture_success_prob = 1.0`（默认）"
+        "（`arena §8 a`；可配置 <1），故 `capture_attempts == captures` 普遍成立。",
         f"> {gap_note}",
         "> 该事实**不影响** `prey_capture` —— 其分母已是尺寸门之前的 `encounters`；"
-        "若未来引入 `P_capture_success < 1`，公式不变，该指标自动成为标准成功率。",
+        "启用 `growth.capture_success_prob < 1` 后，公式不变，该指标自动成为标准成功率。",
         "",
     ]
     return NL.join(lines) + NL

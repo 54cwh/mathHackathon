@@ -6,7 +6,7 @@
 一律不猜，登记在 `BLOCKED_METRICS` 里，并在返回值中置 `None`（**当前该表为空**）。
 
 `prey_capture` 的分母**曾**取「进过口」口径（每鱼每步至多 1 次判定），但实测 **36/36 个体**
-`capture_attempts == captures`（捕获确定性 `P_capture_success = 1.0`），指标退化为「是否有过机会」。
+`capture_attempts == captures`（默认 `growth.capture_success_prob = 1.0`），退化为「是否有过机会」。
 **2026-09-26 用户裁决改分母**：改用 **`encounters`**（进入 `capture_radius` 的猎物数，
 **尺寸门之前**，S6 距离口径）。`capture_attempts` 仍记录，作为**诊断列**。
 
@@ -27,7 +27,7 @@ from typing import Any
 #: composite fitness 权重：§2.1 的四个原始分量 → 一个标量。
 #:
 #: ⚠️ 键名 `prey_capture` 为**历史名**：其分量按 `experiment §2.3` **条件式口径**供给——
-#: 捕获确定性（`P_capture_success = 1.0`，现状）取**主口径 `capture_rate`**（绝对速率）；
+#: 捕获确定性（`growth.capture_success_prob = 1.0`，默认）取**主口径 `capture_rate`**（绝对速率）；
 #: 若启用捕获随机化（`growth.capture_success_prob < 1`），比值 `prey_capture`（真成功率）更合适。
 COMPOSITE_WEIGHTS: dict[str, float] = {
     "survival": 0.35,
@@ -50,8 +50,9 @@ def composite_fitness(
 ) -> float:
     """§2.3 的加权合成（权重见 `COMPOSITE_WEIGHTS`）。
 
-    `prey_component` 由调用方按 §2.3 **条件式口径**供给：默认（`P_capture_success = 1.0`）
-    取主口径 `capture_rate`；启用捕获随机化后取 `prey_capture`（真成功率）。本函数只做加权。
+    `prey_component` 由调用方按 §2.3 **条件式口径**供给：默认
+    （`growth.capture_success_prob = 1.0`）取主口径 `capture_rate`；启用捕获随机化后取
+    `prey_capture`（真成功率）。本函数只做加权。
     """
     return (
         COMPOSITE_WEIGHTS["survival"] * survival
@@ -64,8 +65,8 @@ def composite_fitness(
 def capture_rate(captures: int, episode_steps: int) -> float:
     """§2.1 **主口径**：`capture_rate = captures / episode_steps`（单位时间捕食数）。
 
-    2026-09-26 用户裁定：确定性捕获（`P_capture_success = 1.0`）下，任何以「接触」为单位的
-    比值口径都会退化/受停留影响，故主指标取绝对速率（无偏、可跨环境比较）。
+    2026-09-26 用户裁定：默认捕获确定性（`growth.capture_success_prob = 1.0`）下，
+    任何以「接触」为单位的比值口径都会退化/受停留影响，故主指标取绝对速率。
     """
     if episode_steps <= 0:
         raise ValueError("episode_steps 必须为正")

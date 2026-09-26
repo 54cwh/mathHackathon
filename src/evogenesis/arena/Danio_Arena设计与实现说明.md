@@ -150,7 +150,7 @@ $encounters$ 语义**不变**（仍为 $d<r_{capture}$ 的近距接触计数，�
 
 **【已定稿】** $r_{capture}=4.61$（方案 B：按 $r_{capture}/sensing.radius=\sqrt{0.16\times0.41}=0.256$ 校准，可接受域 2.88–7.38；见 `research/notes/契约决策记录.md`）。**前向锥（总锥角 120°）已于 2026-09-26 实现**（§17 A2 该项闭合）。
 
-**【已定稿】捕食尝试计数（2026-09-26，用户裁定）**：`capture_attempts` 每鱼每步至多 +1，条件为「猎物进入 `d < r_capture` **且在猎人前向锥内**」并**判定了尺寸口径**；吃到（`size_hunter ≥ κ·size_target`）与判定为太小（`arena.capture_attempt`）**都计**。锥外的猎物不计（§17 S5：命中第一个半径内猎物即 `break`，故每步至多一次判定）；`encounters` 仍是**纯距离**口径（S6），两者不可互替。**【2026-09-26 同日改判】** 该量**不再充当 `实验与评价体系.md` §2.1 `prey_capture` 的分母**，降为**诊断列**：`§2.1 分母 = encounters`（尺寸门之前的纯距离口径，S6）；`capture_attempts − captures` = 「进过口但吃不下」的次数。理由：当前 `P_capture_success = 1.0`（本 § 待裁决项 a）使 `capture_attempts == captures` 恒成立，以之为分母的指标只能取 1.0/0.0，均值退化为「有过机会的个体占比」。
+**【已定稿】捕食尝试计数（2026-09-26，用户裁定）**：`capture_attempts` 每鱼每步至多 +1，条件为「猎物进入 `d < r_capture` **且在猎人前向锥内**」并**判定了尺寸口径**；吃到（`size_hunter ≥ κ·size_target`）与判定为太小（`arena.capture_attempt`）**都计**。锥外的猎物不计（§17 S5：命中第一个半径内猎物即 `break`，故每步至多一次判定）；`encounters` 仍是**纯距离**口径（S6），两者不可互替。**【2026-09-26 同日改判】** 该量**不再充当 `实验与评价体系.md` §2.1 `prey_capture` 的分母**，降为**诊断列**：`§2.1 分母 = encounters`（尺寸门之前的纯距离口径，S6）；`capture_attempts − captures` = 「进过口但吃不下」的次数。理由：默认 `growth.capture_success_prob = 1.0`（本 § a）使 `capture_attempts == captures` 恒成立，以之为分母的指标只能取 1.0/0.0，均值退化为「有过机会的个体占比」。
 
 > **a. 捕食是否引入随机失败——【已定稿】（2026-09-26）**：新增 config 旋钮
 > `growth.capture_success_prob ∈ [0,1]`（`configs/default_arena.yaml`、`docs/参数总表.json` 已登记）。
