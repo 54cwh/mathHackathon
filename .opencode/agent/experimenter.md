@@ -36,7 +36,7 @@ permission:
 - 对比实验同数据、同预算；可用时画 精度-能耗/延迟 的 Pareto 图。
 - 禁止 `rm`；删除用 `trash-put`（trash-cli skill）。
 
-收尾：按 `docs/code-review.md` 自检（ruff format/check、pytest 全绿），再交 reviewer 复核。
+收尾：按 AGENTS.md「代码审查」一节自检（ruff format/check、pytest 全绿），再交 reviewer 复核。
 
 协作：需求来自 modeler 的形式化目标；不擅自改数学定义，口径不明先问。
 

@@ -1,9 +1,10 @@
 # 项目公约
 - 使用uv, 不使用overleaf，latex写作采用本地编译链+github.
 - 如果准备用 AI 写文章，在正式写作前应阅读 `docs/ai-tone-boundaries.md`
-- 每次代码写完或改完，提交前按 `docs/code-review.md` 做审查；阻断项复验关闭后方可提交。
+- 每次代码写完或改完，提交前按本文件「代码审查」一节做审查；阻断项复验关闭后方可提交。
 - 文档修改优先于代码编写，代码不方便审计，文档是审计的硬标准，也是合作与演示的核心，任何超出文档的代码修改，ai应当提醒用户应当修改文档。文档当且仅当用户许可的情况下进行修改，不能”顺便“修改未经许可的文档。
 - 赛题补充说明见 `docs/赛题补充说明.md`：作品须给出「原模型→改后模型→结果对比」的可验证证据（准确率 / 参数量 / 速度 / FLOPs / 稳定性等），不能只停留在架构图或产品界面。
+- push 之前应当 pull 检查
 
 
 # 项目目录结构
@@ -46,7 +47,7 @@ mathHackathon/
 ├── tests/                      # 冒烟 + 单测
 ├── paper/                      # LaTeX 论文
 ├── schemas/                    # JSON Schema（genome / fish / experiment）
-├── docs/                       # 跨模块协作文档（code-review / AI工作流 / 参数总表 / 验收清单 等）
+├── docs/                       # 跨模块协作文档（AI工作流 / 参数总表 / THIRD_PARTY / 赛题补充说明 / 验收清单 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── prompts/                    # AI 角色提示词
 ├── artifacts/                  # 冻结演示资产（入库）
@@ -63,7 +64,9 @@ mathHackathon/
     └── notes/                  # 建模推导、符号表、决策记录
 ```
 
-> 每个目录的职责与"放什么 / 不放什么"见 `docs/directory-structure.md`。
+根文件：`AGENTS.md`（本文件）、`opencode.json`、`README.md`、`LICENSE`、`pyproject.toml`/`uv.lock`/`.python-version`、`Makefile`、`.gitignore`。
+
+`src/evogenesis/` 采用 src-layout：必须 `uv sync`（editable）后才能 `import evogenesis`，导入前缀固定为 `evogenesis.`。依赖方向：`core/` 被所有任务包依赖，任务包彼此尽量不互相依赖，`api/` 是唯一对外服务层。
 
 ## 分层与归属
 
@@ -71,6 +74,56 @@ mathHackathon/
 - `genome/ development/ connectome/ arena/ evolution/ learning/ experiment/ api/` 按任务划分，各模块彼此独立、可单独替换；`viz/` 负责出图。
 - 任务与角色对应：`research/notes/` 归建模，`paper/` 归写作，`research/reference/` 归调研，`frontend/` 归展示，`results/` 归实验。
 - 文档与代码同目录（见上方树）：每个模块文档是该模块的接口/目的/用法与审计基准，代码偏离即缺陷。`docs/` 只放跨模块文档；`schemas/` 存放跨语言数据契约（JSON Schema）。
+
+## 放什么（速查）
+
+| 你要做的事 | 放哪 |
+|---|---|
+| 新的基因组 / motif 逻辑 | `src/evogenesis/genome/` |
+| GRN、发育、RGCD | `src/evogenesis/development/` |
+| 网络结构与神经动力学 | `src/evogenesis/connectome/` |
+| 环境、感官、物理、规则 | `src/evogenesis/arena/` |
+| 繁殖 / 选择 / drift | `src/evogenesis/evolution/` |
+| Behavior Cloning 训练 | `src/evogenesis/learning/` |
+| 指标、run、统计 | `src/evogenesis/experiment/` |
+| 出图 | `src/evogenesis/viz/` |
+| API 路由 / WebSocket | `src/evogenesis/api/` |
+| CLI / 一键脚本 | `scripts/` |
+| 实验参数 | `configs/` |
+| 数据契约 | `schemas/` |
+| 冻结演示资产 | `artifacts/` |
+| 实验产物（图 / 指标 / run 日志） | `results/` |
+| 建模推导 / 符号表 / 决策 | `research/notes/` |
+| 调研 JSON | `research/reference/` |
+| 模块接口/规格文档 | 对应模块目录（如 `arena/Danio_Arena设计规范.md`） |
+| 跨模块文档（工作流 / 排期 / 参数索引 / 验收） | `docs/` |
+| 论文 | `paper/` |
+
+## 契约与配置 / 工具
+
+- `configs/`：实验参数（yaml）。所有数值以 config 为准，报告记录实际版本；`demo_seed.yaml` 与 `experiment_seeds.yaml` 分离 demo 与正式种子。
+- `schemas/`：跨语言 JSON Schema（`genome` / `fish` / `experiment`），Python 后端与 TS 前端共用；改契约必须双方同步。
+- `scripts/`：薄 CLI 入口，只做参数解析与调用包逻辑（`start_demo.sh`、`serve_api.py`、`run_experiment.py`），**不放业务逻辑**。
+- `tests/`：冒烟 + 单测；`TEST_PLAN.md` 是测试计划，`test_*.py` 是现状。
+- `data/`：`raw/`（忽略）、`processed/`、`external/`；`notebooks/` 放探索性分析。
+
+## 数据 / 控制流
+
+```text
+genome ──→ development ──→ connectome ──→ arena ──→ evolution ──┐
+  │            │              │            │            │        │
+DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
+  └──────────────────────── 下一代 ───────────────────────────────┘
+                    ▲                    ▲
+                 learning(BC)        experiment 编排；viz 出图；api 对外
+```
+
+## 约定
+
+- **稳定 ID**：`fish_id` / `genome_id` / `generation_id` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
+- **种子**：所有随机过程由 `core/` 的 seed manager 统一派生（Python `random` / NumPy / PyTorch CPU / PyTorch CUDA）。
+- **空目录**：Git 不跟踪空目录，用 `.gitkeep` 占位；被忽略的目录（`data/raw/`、`results/*/`）长期保留。
+- **前端**：仅 `frontend/`；技术栈与版本锁定见 `frontend/README.md`。
 
 ## 产物分级
 
@@ -95,7 +148,7 @@ make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实
 ## Git 分支策略
 
 - 两人协作，直接在 `main` 上开发并推送（`git push origin main`）。
-- 提交前必须：`make lint && make test` 通过，且按 `docs/code-review.md` 完成审查。
+- 提交前必须：`make lint && make test` 通过，且按本文件「代码审查」一节完成审查。
 - 提交信息遵循 `<type>(<scope>): <summary>`，并保留 `审查：` 留痕行。
 
 
@@ -148,6 +201,43 @@ make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实
 6. **只读角色约束**：采集与评审类子代理只做调查和判断，不改动文件。
 
 7. **数学表述纪律**：符号表标注单位与维度，量纲一致；显式列出假设及其失效后果；推导不跳步。
+
+# 代码审查
+
+每次写完或改完代码，提交前执行。目的是让"代码写完了"有一个统一、可复跑的判据。
+
+## 自动检查（必须全绿）
+
+```bash
+uv run ruff format .
+uv run ruff check .
+uv run pytest -q
+```
+
+## 人工检查清单
+
+逐条对照，命中问题必须修，不得带病提交。
+
+| 维度 | 检查项 |
+|---|---|
+| 规格一致 | 实现符合任务描述或该模块同目录文档（如 `arena/Danio_Arena设计规范.md`）；函数签名、张量形状等接口未被擅自改动 |
+| 可复现 | 随机种子固定；无硬编码绝对路径；给出可复跑命令 |
+| 正确性 | 关键逻辑有对应测试；边界情形（空输入、极值、除零）已处理 |
+| 数值/设备 | CPU/GPU 上 dtype 一致；无隐式类型提升（本机踩过 Float 与 Double 不一致） |
+| 卫生 | 无 `rm`、无明文密钥、无调试残留 `print`、无注释掉的死代码 |
+| 可读 | 命名清晰；单个函数职责单一 |
+
+## 结论与返工
+
+结论分 `阻断 / 重要 / 建议` 三级。**阻断项修复后必须重跑自动检查并复验**，确认关闭后再提交。
+
+## 留痕
+
+在提交信息或 PR 描述里写一行：
+
+```
+审查：自动检查全绿；人工清单已过；遗留：<无 / 具体项>
+```
 
 # 根因修复原则
 
