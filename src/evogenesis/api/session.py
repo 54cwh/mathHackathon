@@ -29,7 +29,6 @@ from evogenesis.arena.policies import expert_policy_from_config
 from evogenesis.pipeline import arena_seeds_for
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_ENV_KEYS = ("food_rich", "predator_rich", "resource_scarce")
 
 
 def _resolve(path: str) -> Path:
