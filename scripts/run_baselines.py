@@ -2,11 +2,17 @@
 
 业务逻辑全在 `evogenesis.experiment.baseline_run`；本脚本只解析参数、建 run 目录、调用与写盘。
 
+评估规模（`n_agents` / `n_episodes` / `n_danio`）**缺省取 `configs/experiment.yaml`** —— 值归配置、
+依据与状态归 `docs/参数总表.json`（`core §7`：不在代码处发明取值）；命令行可显式覆盖，用于
+小规模自检。
+
 用法：
-    uv run python scripts/run_baselines.py --experiment-id expC \\
+    uv run python scripts/run_baselines.py --experiment-id expC \
         --trajectories-dir results/runs/<collect_run>/trajectories
-    uv run python scripts/run_baselines.py --experiment-id expC \\
+    uv run python scripts/run_baselines.py --experiment-id expC \
         --trajectories-dir <dir> --seeds 1103,2207,3301
+    uv run python scripts/run_baselines.py --experiment-id expC \
+        --trajectories-dir <dir> --n-agents 2 --n-episodes 2     # 小规模自检
 """
 
 from __future__ import annotations
@@ -22,7 +28,7 @@ from evogenesis.experiment.baseline_run import (
     run_baseline_comparison,
     table_path,
 )
-from evogenesis.experiment.config import load_formal_seeds
+from evogenesis.experiment.config import load_experiment_config, load_formal_seeds
 from evogenesis.experiment.learning_run import load_learning_config
 from evogenesis.experiment.run_artifacts import dump_json
 from evogenesis.pipeline import load_model_chain_config
@@ -47,7 +53,28 @@ def _parse_args() -> argparse.Namespace:
         help="逗号分隔；缺省取 configs/experiment_seeds.yaml",
     )
     parser.add_argument(
-        "--n-danio", type=int, default=12, help="DanioNet 候选个体数（取首个 viable）"
+        "--n-agents",
+        type=int,
+        default=None,
+        help="每 seed 每模型评估的 agent 数；缺省取 configs/experiment.yaml",
+    )
+    parser.add_argument(
+        "--n-episodes",
+        type=int,
+        default=None,
+        help="每 seed 的 evaluation episode 数；缺省取 configs/experiment.yaml",
+    )
+    parser.add_argument(
+        "--n-danio",
+        type=int,
+        default=None,
+        help="DanioNet 凑 viable 的候选池大小（取最低 index 的 n_agents 个 viable）；"
+        "缺省取 configs/experiment.yaml",
+    )
+    parser.add_argument(
+        "--allow-partial",
+        action="store_true",
+        help="DanioNet viable 数 < n_agents 时按 available 评估（缺省为抛错，见 §3.3 降级语义）",
     )
     parser.add_argument("--steps", type=int, default=None, help="缺省取 world.episode_steps")
     parser.add_argument("--model-config", default=str(DEFAULT_MODEL))
@@ -64,6 +91,11 @@ def main() -> None:
     arena_config = load_arena_config(args.arena_config)
     evolution_config = load_evolution_config(args.evolution_config)
     learning_config = load_learning_config(args.model_config)
+
+    exp_config = load_experiment_config()
+    n_agents = exp_config.n_agents if args.n_agents is None else args.n_agents
+    n_episodes = exp_config.n_episodes if args.n_episodes is None else args.n_episodes
+    n_danio = exp_config.n_danio if args.n_danio is None else args.n_danio
 
     run_dirs: dict[int, Path] = {}
     for seed in seeds:
@@ -83,9 +115,12 @@ def main() -> None:
         learning_config=learning_config,
         evolution_config=evolution_config,
         trajectories_dir=args.trajectories_dir,
+        n_agents=n_agents,
+        n_episodes=n_episodes,
+        n_danio=n_danio,
         run_dir_of=lambda seed: run_dirs[seed],
-        n_danio=args.n_danio,
         steps=args.steps,
+        allow_partial=args.allow_partial,
     )
     for run_dir in run_dirs.values():
         runlayout.update_run_status(run_dir, "completed")
@@ -93,12 +128,18 @@ def main() -> None:
     tables = ROOT / "results" / "tables"
     tables.mkdir(parents=True, exist_ok=True)
     out = table_path(args.experiment_id, ROOT / "results")
-    dump_json(out, comparison_payload(result, n_agents=1), indent=2)
-    print(f"Experiment C 对照表（{len(seeds)} seeds）→ {out.relative_to(ROOT)}")
+    dump_json(out, comparison_payload(result), indent=2)
+    print(
+        f"Experiment C 对照表（{len(seeds)} seeds × {n_agents} agent × {n_episodes} episode）"
+        f"→ {out.relative_to(ROOT)}"
+    )
     for model in result.models:
         metrics = model["metrics"]
-        headline = "—" if metrics is None else f"capture_rate={metrics['capture_rate']['mean']:.6g}"
-        print(f"  {model['model']:16s} {headline}")
+        if metrics is None or metrics["capture_rate"]["mean"] is None:
+            headline = "—"
+        else:
+            headline = f"capture_rate={metrics['capture_rate']['mean']:.6g}"
+        print(f"  {model['model']:16s} n_agents={model['n_agents']:<3d} {headline}")
 
 
 if __name__ == "__main__":

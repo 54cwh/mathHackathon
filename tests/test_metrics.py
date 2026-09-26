@@ -198,3 +198,22 @@ def test_summarise_skips_blocked_columns_and_single_seed_has_no_std():
     single = summarise_over_seeds([{"seed": 1, "survival": 1.0}], metrics=("survival",))
     assert single["survival"]["mean"] == 1.0
     assert single["survival"]["std"] is None  # n < 2
+
+
+def test_episode_metrics_prey_capture_is_none_without_encounters():
+    """§2.1：`encounters == 0`（无出手机会）⇒ `prey_capture` 未定义（`None`，CSV 记空单元）。
+
+    其余指标与 `composite_fitness` 仍须是数值 —— `composite_fitness` 默认走 `capture_rate`
+    （§2.3 条件式），不得因一处未定义而整行退化；下游 `aggregate_by_seed` /
+    `summarise_over_seeds` 跳过 `None`，均值只对有出手机会者取、`n` 反映有效数（不静默补 0）。
+    """
+    row = episode_metrics(_record(captures=0, encounters=0), episode_steps=600, e_max=1.0)
+    assert row["prey_capture"] is None
+    assert row["captures"] == 0
+    assert row["capture_rate"] == 0.0        # 主口径：episode 内 0/600
+    assert row["survival"] == 1.0
+    assert isinstance(row["composite_fitness"], float)
+
+    # 反面：有机会但未得手 ⇒ 真 0.0（与「无机会」是两种不同的失败模式）
+    got = episode_metrics(_record(captures=0, encounters=7), episode_steps=600, e_max=1.0)
+    assert got["prey_capture"] == 0.0

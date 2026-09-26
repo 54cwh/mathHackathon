@@ -30,6 +30,7 @@ from evogenesis.pipeline import (
     ArenaEpisodeResult,
     ChainIndividual,
     ModelChainConfig,
+    arena_eval_seeds_for,
     danionet_of,
     drive_arena_with_net,
     initial_population,
@@ -174,7 +175,11 @@ def run_lifetime_learning(
         raise ValueError(f"{trajectories_dir} 下无 {TRAJECTORY_GLOB} 轨迹，无法训练（§3）")
     dataset = load_trajectories(trajectory_paths)
 
-    # 训练前：同一批 arena 子种子（generation）下评估未训练网络
+    # 训练前：**评估用** Arena 子种子下评估未训练网络（`core §4.2`：
+    # `arena_eval_seeds_for` 的独立命名空间，与采集侧 `arena_seeds_for` 解耦 —— 后者
+    # 与 `collect.episode_seed` 逐字等价，复用会使评估局落在训练数据的环境实例上）。
+    # index 固定 0：本次生命周期只有一次评估，训练前/后必须落在**同一批**评估环境上，
+    # 使两组之间唯一差异是 `Θ`。
     eval_net = danionet_of(
         viable_phenotypes,
         master_seed=master_seed,
@@ -190,6 +195,7 @@ def run_lifetime_learning(
         arena_config=arena_config,
         steps=steps,
         generation=generation,
+            arena_seeds=arena_eval_seeds_for(master_seed, 0),
     )
 
     # 逐个体训练自己的 DanioNet
@@ -237,6 +243,7 @@ def run_lifetime_learning(
         arena_config=arena_config,
         steps=steps,
         generation=generation,
+            arena_seeds=arena_eval_seeds_for(master_seed, 0),
     )
 
     with torch.no_grad():

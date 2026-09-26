@@ -3,6 +3,7 @@
 from evogenesis.pipeline.arena_episode import (
     ArenaEpisodeResult,
     PopulationEvaluation,
+    arena_eval_seeds_for,
     arena_seeds_for,
     drive_arena_with_ids,
     drive_arena_with_net,
@@ -37,5 +38,6 @@ __all__ = [
     "phenotype_of",
     "phenotypes_of",
     "run_arena_episode",
+    "arena_eval_seeds_for",
     "viable_pairs",
 ]
