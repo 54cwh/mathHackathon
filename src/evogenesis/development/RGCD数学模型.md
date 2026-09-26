@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.8 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.8 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H=0.25\) 已定稿（`genome §3`；`docs/参数总表.json` confirmed）。
 
 ## 1. 输入输出
 
