@@ -21,6 +21,7 @@ from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
 from evogenesis.core.config import read_yaml
+from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
@@ -96,6 +97,7 @@ def main() -> None:
         out_root=args.out_root,
     )
     spawn_seed, _ = arena_seeds_for(args.seed)
+    weights = load_evolution_config().fitness_weights.model_dump()
     write_event_log(
         run_dir / "events.jsonl",
         episode_event_header(
@@ -112,7 +114,13 @@ def main() -> None:
         {
             "seed": args.seed,
             "fish_id": fish_id,
-            **episode_metrics(rec, episode_steps=steps, e_max=arena_config.energy.e_max),
+            **episode_metrics(
+                rec,
+                episode_steps=steps,
+                e_max=arena_config.energy.e_max,
+                capture_success_prob=arena_config.growth.capture_success_prob,
+                weights=weights,
+            ),
         }
         for fish_id, rec in sorted(result.per_fish.items())
     ]

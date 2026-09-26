@@ -92,6 +92,7 @@ class DanioNet(torch.nn.Module):
         master_seed: int,
         config: NetworkReadoutConfig = DEFAULT_NETWORK_CONFIG,
         device: str = "cpu",
+        sign_constrained: bool = True,
         priors: NetworkPriors | None = None,
     ) -> None:
         super().__init__()
@@ -101,6 +102,7 @@ class DanioNet(torch.nn.Module):
             raise NotImplementedError(f"未实现 activation={config.activation!r}")
         self.config = config
         self.device = device
+        self.sign_constrained = sign_constrained
         self._phi = _ACTIVATIONS[config.activation]
 
         batch = len(phenotypes)
@@ -175,6 +177,7 @@ class DanioNet(torch.nn.Module):
         self.register_buffer("support", support)
         # 预算 support ⊙ sign(W⁰)（训练期冻结），effective_weights 只需再乘 softplus(Θ)。
         self.register_buffer("support_sign0", support.to(torch.float32) * torch.sign(weights0))
+        self.register_buffer("support_f32", support.to(torch.float32))
         self.register_buffer("tau", tau)
         self.register_buffer("cell_type", cell_type)
         self.register_buffer("positions", positions)
@@ -184,8 +187,12 @@ class DanioNet(torch.nn.Module):
         self.register_buffer("motor_mask", motor_mask)
         self.register_buffer("h", torch.zeros((batch, max_nodes), dtype=dtype, device=device))
 
-        # 初值 Θ = softplus^{-1}(|W⁰|) ⇒ 初始 ΔW = 0（§3）。支撑外由 support 因子置零。
-        self.theta = torch.nn.Parameter(self._softplus_inverse(torch.abs(weights0)))
+        # 约束路径：Θ 初值 = softplus^{-1}(|W⁰|) ⇒ 初始 ΔW = 0（§3）；非约束路径（消融）
+        # 参数直接就是有效权重 W，故初值取 W⁰，使两路径**同一起点**。支撑外均由 support 置零。
+        theta_init = (
+            self._softplus_inverse(torch.abs(weights0)) if sign_constrained else weights0.clone()
+        )
+        self.theta = torch.nn.Parameter(theta_init)
 
         if priors is None:
             priors = build_priors(master_seed, config=config, device=device)
@@ -217,8 +224,15 @@ class DanioNet(torch.nn.Module):
 
     @property
     def effective_weights(self) -> torch.Tensor:
-        """``W = A ⊙ (sign(W⁰) ⊙ softplus(Θ))``（§3）。"""
-        return self.support_sign0 * F.softplus(self.theta)
+        """有效权重（§3）。
+
+        - 约束路径（默认）：``W = A ⊙ (sign(W⁰) ⊙ softplus(Θ))``，符号由突触前类型固定；
+        - 非约束路径（``sign_constrained=False``，消融对照）：``W = A ⊙ Θ``，参数即权重，
+          符号自由可翻转。支撑/非活跃屏蔽两路径相同。
+        """
+        if self.sign_constrained:
+            return self.support_sign0 * F.softplus(self.theta)
+        return self.support_f32 * self.theta
 
     @property
     def delta_weights(self) -> torch.Tensor:

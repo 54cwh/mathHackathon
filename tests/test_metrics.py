@@ -109,6 +109,32 @@ def test_episode_metrics_computes_four_metrics_plus_fitness():
     assert not BLOCKED_METRICS, "prey_capture 已实现，阻断表应为空"
 
 
+def test_episode_metrics_conditional_prey_component_and_weight_injection():
+    """§2.3 条件式：`capture_success_prob < 1` 时捕食分量改用 `prey_capture`；权重可注入。"""
+    rec = _record()
+    stochastic = episode_metrics(rec, episode_steps=600, e_max=1.0, capture_success_prob=0.5)
+    expected = (
+        COMPOSITE_WEIGHTS["survival"] * stochastic["survival"]
+        + COMPOSITE_WEIGHTS["prey_capture"] * stochastic["prey_capture"]
+        + COMPOSITE_WEIGHTS["escape_success"] * stochastic["escape_success"]
+        + COMPOSITE_WEIGHTS["energy_efficiency"] * stochastic["energy_efficiency"]
+    )
+    assert stochastic["composite_fitness"] == pytest.approx(expected)
+    # 确定性口径下两者不同（capture_rate=3/600 ≠ prey_capture=3/40），故确在切换分量
+    assert stochastic["composite_fitness"] != pytest.approx(
+        episode_metrics(rec, episode_steps=600, e_max=1.0)["composite_fitness"]
+    )
+
+    only_survival = {
+        "survival": 1.0,
+        "prey_capture": 0.0,
+        "escape_success": 0.0,
+        "energy_efficiency": 0.0,
+    }
+    injected = episode_metrics(rec, episode_steps=600, e_max=1.0, weights=only_survival)
+    assert injected["composite_fitness"] == pytest.approx(injected["survival"])
+
+
 def test_episode_metrics_reads_only_keys_that_per_fish_log_provides():
     """漂移守护：`episode_metrics` 用到的键必须真的出现在 `per_fish_log()` 里。"""
     arena = DanioArena(ArenaConfig(), spawn_seed=7, dynamics_seed=7)

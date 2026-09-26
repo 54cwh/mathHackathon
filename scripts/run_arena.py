@@ -50,6 +50,7 @@ from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
 from evogenesis.core.ids import mint_id
 from evogenesis.core.seed import SeedManager
+from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.environments import load_environment
 from evogenesis.experiment.events import episode_event_header, write_event_log
@@ -265,6 +266,7 @@ def main() -> None:
     steps = args.steps if args.steps is not None else cfg.world.episode_steps
     seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
     e_max = cfg.energy.e_max
+    weights = load_evolution_config().fitness_weights.model_dump()
 
     all_rows: list[dict] = []
     seed_rows: list[dict] = []
@@ -310,7 +312,13 @@ def main() -> None:
             {
                 "seed": seed,
                 "fish_id": fid,
-                **episode_metrics(rec, episode_steps=steps, e_max=e_max),
+                **episode_metrics(
+                    rec,
+                    episode_steps=steps,
+                    e_max=e_max,
+                    capture_success_prob=cfg.growth.capture_success_prob,
+                    weights=weights,
+                ),
             }
             for fid, rec in sorted(per_fish.items())
         ]

@@ -21,6 +21,7 @@ seeds 取自 `configs/experiment_seeds.yaml`（`[1103, 2207, 3301]`，`minimum_f
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from statistics import fmean, stdev
 from typing import Any
 
@@ -47,18 +48,23 @@ def composite_fitness(
     prey_component: float,
     escape_success: float,
     energy_efficiency: float,
+    *,
+    weights: Mapping[str, float] | None = None,
 ) -> float:
-    """§2.3 的加权合成（权重见 `COMPOSITE_WEIGHTS`）。
+    """§2.3 的加权合成。
 
     `prey_component` 由调用方按 §2.3 **条件式口径**供给：默认
     （`growth.capture_success_prob = 1.0`）取主口径 `capture_rate`；启用捕获随机化后取
-    `prey_capture`（真成功率）。本函数只做加权。
+    `prey_capture`（真成功率）。`weights` 的**唯一来源**是
+    `configs/evolution.yaml::fitness_weights`（生产调用方注入）；缺省用冻结镜像
+    `COMPOSITE_WEIGHTS`（其与配置文件的一致性由 `tests/test_evolution_config.py` 守护）。
     """
+    w = COMPOSITE_WEIGHTS if weights is None else weights
     return (
-        COMPOSITE_WEIGHTS["survival"] * survival
-        + COMPOSITE_WEIGHTS["prey_capture"] * prey_component
-        + COMPOSITE_WEIGHTS["escape_success"] * escape_success
-        + COMPOSITE_WEIGHTS["energy_efficiency"] * energy_efficiency
+        w["survival"] * survival
+        + w["prey_capture"] * prey_component
+        + w["escape_success"] * escape_success
+        + w["energy_efficiency"] * energy_efficiency
     )
 
 
@@ -118,6 +124,8 @@ def episode_metrics(
     *,
     episode_steps: int,
     e_max: float,
+    capture_success_prob: float = 1.0,
+    weights: Mapping[str, float] | None = None,
 ) -> dict[str, Any]:
     """`DanioArena.per_fish_log()` 的一条**每鱼记录** → 该个体的指标行。
 
@@ -126,35 +134,46 @@ def episode_metrics(
     + 主口径 `capture_rate`（§2.1）
     + 四项指标（`survival` / `prey_capture` / `escape_success` / `energy_efficiency`）
     + 由四项合成的 `composite_fitness`。
+
+    `capture_success_prob` 取 `growth.capture_success_prob`：`>= 1.0`（默认确定性捕获）时
+    `composite_fitness` 的捕食分量取主口径 `capture_rate`；`< 1.0`（启用捕获随机化）时改取
+    `prey_capture`（真成功率）——即 `experiment §2.3` 的**条件式口径**。`weights` 见
+    `composite_fitness`。
     """
     survival_steps = int(record["survival_steps"])
+    captures = int(record["captures"])
+    encounters = int(record["encounters"])
+    predator_encounters = int(record["predator_encounters"])
+    escape_successes = int(record["escape_successes"])
     energy_traj = record.get("energy_trajectory") or []
     energy_final = float(energy_traj[-1]) if energy_traj else float("nan")
+    prey_component = (
+        capture_rate(captures, episode_steps)
+        if capture_success_prob >= 1.0
+        else prey_capture_rate(captures, encounters)
+    )
     return {
         "survival_steps": survival_steps,
-        "captures": int(record["captures"]),
-        "encounters": int(record["encounters"]),
-        "predator_encounters": int(record["predator_encounters"]),
-        "escape_successes": int(record["escape_successes"]),
+        "captures": captures,
+        "encounters": encounters,
+        "predator_encounters": predator_encounters,
+        "escape_successes": escape_successes,
         "collisions": int(record.get("collisions", 0)),
         "capture_attempts": int(record["capture_attempts"]),
         "energy_final": energy_final,
         "survival": survival_rate(survival_steps, episode_steps),
-        "capture_rate": capture_rate(int(record["captures"]), episode_steps),
+        "capture_rate": capture_rate(captures, episode_steps),
         "prey_capture": prey_capture_rate(
-            int(record["captures"]), int(record["encounters"])
+            captures, encounters
         ),  # 分母 = encounters（尺寸门之前），见 prey_capture_rate
-        "escape_success": escape_success_rate(
-            int(record["escape_successes"]), int(record["predator_encounters"])
-        ),
+        "escape_success": escape_success_rate(escape_successes, predator_encounters),
         "energy_efficiency": energy_efficiency(energy_final, e_max, survival_steps),
         "composite_fitness": composite_fitness(
             survival_rate(survival_steps, episode_steps),
-            capture_rate(int(record["captures"]), episode_steps),
-            escape_success_rate(
-                int(record["escape_successes"]), int(record["predator_encounters"])
-            ),
+            prey_component,
+            escape_success_rate(escape_successes, predator_encounters),
             energy_efficiency(energy_final, e_max, survival_steps),
+            weights=weights,
         ),
     }
 

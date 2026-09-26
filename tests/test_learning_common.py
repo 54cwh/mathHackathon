@@ -38,8 +38,8 @@ def make_phenotype(n_motor: int = 6) -> ConnectomePhenotype:
     )
 
 
-def make_net(master_seed: int = MASTER_SEED) -> DanioNet:
-    return DanioNet([make_phenotype()], master_seed=master_seed)
+def make_net(master_seed: int = MASTER_SEED, *, sign_constrained: bool = True) -> DanioNet:
+    return DanioNet([make_phenotype()], master_seed=master_seed, sign_constrained=sign_constrained)
 
 
 def make_actions(n: int, *, seed: int = 0) -> np.ndarray:

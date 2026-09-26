@@ -171,8 +171,8 @@ def test_multi_individual_net_rejected():
         _train(net, make_dataset(4, 2), _cfg(mini_batch_updates=1, batch_size=2))
 
 
-def test_sign_constrained_false_raises():
-    with pytest.raises(NotImplementedError, match="sign_constrained"):
+def test_sign_constrained_flag_must_match_net():
+    with pytest.raises(ValueError, match="sign_constrained"):
         train_bc(
             make_net(),
             make_dataset(4, 2),
@@ -181,6 +181,20 @@ def test_sign_constrained_false_raises():
             seed_index=0,
             sign_constrained=False,
         )
+
+
+def test_sign_constrained_false_trains_unconstrained_path():
+    net = make_net(sign_constrained=False)
+    result = train_bc(
+        net,
+        make_dataset(4, 2),
+        _cfg(mini_batch_updates=1, batch_size=2),
+        seed_manager=SeedManager(MASTER_SEED),
+        seed_index=0,
+        sign_constrained=False,
+    )
+    assert result.sign_constrained is False
+    assert all(np.isfinite(loss) for loss in result.loss_history)
 
 
 def test_unsupported_optimizer_raises():

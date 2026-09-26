@@ -169,14 +169,14 @@ def train_bc(
     seed_manager：``core §3`` 种子管理器；episode 采样走 ``bc`` 命名空间。
     seed_index：该个体在 ``bc`` 命名空间内的稳定序号 ``t``（§3：由调用方按 ``genome_id`` 给定）。
     device：训练设备；``float32``。
-    sign_constrained：`learning §4` 消融开关；``False`` 时依赖 `DanioNet §3` 的
-        ``sign_constrained`` 接口（尚未实现），此处显式抛 ``NotImplementedError``。
+    sign_constrained：`learning §4` 消融开关，**必须与传入 ``net`` 的构造设置一致**；
+        无约束路径由 `DanioNet §3` 的 ``sign_constrained=False`` 提供（参数即有效权重）。
     """
-    if not sign_constrained:
-        raise NotImplementedError(
-            "sign_constrained=False 需要 DanioNet 的 sign_constrained 开关（"
-            "`DanioNet设计规范.md` §3 接口约定），connectome 实现尚未落地；"
-            "learning 侧不自行实现无约束路径"
+    if net.sign_constrained != sign_constrained:
+        raise ValueError(
+            "sign_constrained 与 net 构造设置不一致："
+            f"net.sign_constrained={net.sign_constrained}，调用传 {sign_constrained}。"
+            "无约束消融须以 DanioNet(sign_constrained=False) 构造网络。"
         )
     _validate_config(cfg)
     if len(net.n_neurons) != 1:
