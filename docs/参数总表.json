@@ -23,7 +23,7 @@
       "proposed_change": "依据与本项目取值不符，建议改值",
       "missing": "参数总表原缺、实现必须补"
     },
-    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。",
+    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。",
     "workflow": [
       "表 A/B/C 锁定不动",
       "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
@@ -526,6 +526,19 @@
       "suggest": "改用尺度无关的锦标赛/排名选择，或先定归一化再定 β"
     },
     {
+      "name": "generations",
+      "value": "10–20",
+      "unit": "generations",
+      "group": "evolution",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "区间来自 experiment/实验与评价体系.md §7 Experiment F；无外部依据",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §7",
+      "config": "configs/evolution.yaml（待补 generations 键；现有 generation_buttons: [1,5,10,20]）",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
       "name": "crossover_probability",
       "value": 0.5,
       "unit": "per_chromosome",
@@ -649,7 +662,8 @@
       "motor 左/右归属规则（G2）",
       "dynamical viability 判据阈值（RGCD数学模型.md 阅读问题 #8）",
       "位置 p_i 的分布",
-      "BC 损失权重 λ_ω、λ_v（core §4.3）"
+      "BC 损失权重 λ_ω、λ_v（core §4.3）",
+      "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id"
     ]
   },
   "citation_risks": [
