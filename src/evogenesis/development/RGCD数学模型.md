@@ -1,22 +1,27 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.1 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.2 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
-RGCD 输入：
 
-\[
-G,\Theta_D,\xi
-\]
+**输入**
 
-输出：
+| 记号 | 类型 / 形状 | 定义 | 来源 |
+|---|---|---|---|
+| \(G\) | 二倍体 genome：2×`ChromosomePair`，每链 128 bp ∈{A,C,G,T} | 个体基因组；RGCD 只消费其派生量 \(\mathbf q(G)\in[0,1]^8\)（genome §6）与位点表达 \(E_A,E_B\in\{0,0.5,1\}\)（genome §3），不直接读碱基 | `genome` |
+| \(\Theta_D\) | §13 参数集合（各张量形状见表） | 发育参数（\(W_g,B,P,\mathbf b,U,\mathbf c_{domain},\mathbf w_d,b_d,C,\lambda,\gamma,b_A,\mathbf u,b_w,\mathbf a,b_\tau,\epsilon_p,\epsilon_g\) 与 motif 目录 8×6 bp），由 seed 确定性初始化 | §13 / §2 |
+| \(\xi\) | RNG 流（命名空间 `development`） | 发育随机源（分裂 Bernoulli、\(\epsilon_p,\epsilon_g\)）；由 `core` seed manager 派生，**不另立随机源** | `core §3` |
 
-\[
-(A,Z,\tau,W^{(0)},M)
-\]
+**输出**（active \(N\in[24,48]\)；dtype 统一 `float32`，`core §7`；batch 内 padding 到 48 的约定见 `DanioNet §3`）
 
-其中 \(M\) 为 active neuron mask。
+| 记号 | 形状 | 含义 |
+|---|---|---|
+| \(A\) | \(\{0,1\}^{N\times N}\) | 二值邻接；无 self-loop；density ∈ [0.10,0.20] |
+| \(Z\) | \([0,1]^{N\times6}\) | \(z_i=\mathrm{softmax}(l_i)\)（§6） |
+| \(\tau\) | \([1,10]^{N}\) | 时间常数（§11） |
+| \(W^{(0)}\) | \(\mathbb R^{N\times N}\) | 初始有效权重，符号由突触前类型定（§10） |
+| \(M\) | \(\{0,1\}^N\) | active neuron mask（padding 位为 0） |
 
 ## 2. Motif affinity
 对于 motif \(M_k\) 与窗口 \(s\)：
