@@ -18,6 +18,13 @@ Arena 素材优先透明背景。实验图、统计图、network graph 不使用
 
 ## 决策记录
 
+- **2026-09-26（第二次，辰钊）**：**提示词一律按 `gpt-image-prompt` skill 重写**
+  （本机 `~/.claude/skills/gpt-image-prompt/SKILL.md`）。该 skill 的硬规则已成为本目录两条文件的书写依据：
+  **提示词用英文**、**固定标签化结构**、**比例只用网页版认的三种**、**颜色写 hex 不写色名**、
+  首行 **AS-IS** 阻止 ChatGPT 加戏、**一条提示词 = 一次新对话**。
+  逐条改动清单见 `ui_reference_prompts.md` §「本次按 skill 改了什么」。
+  这一轮同时改掉了三个会白做的错：**`16:9` 网页版不认**、**色名不如 hex 可靠**、
+  **一图塞太多主体/太多文字**。
 - **2026-09-26（辰钊）**：**素材尽量全部由 ChatGPT 生成** —— 含 UI 参考图、sprite、logo、
   cell-type icons、neural glow、UI 特效、water background、molecular texture、PPT 封面视觉。
   理由：美工效果显著优于程序化绘制。
@@ -38,9 +45,21 @@ Arena 素材优先透明背景。实验图、统计图、network graph 不使用
 | 文件 | 内容 |
 |---|---|
 | 本文件 | 素材清单（10 项）+ 决策记录 + 两条边界 |
-| `ui_reference_prompts.md` | **3 张 UI 参考图**完整提示词（像素风）+ 自检清单 + 3 条工程约束 + 选定后落地四步 |
+| `ui_reference_prompts.md` | **3 张 UI 参考图**完整提示词（英文/标签化结构/hex/AS-IS）+ **候选色板唯一定义处**（24 色起步候选）+ 自检清单 + 两条操作纪律 + 3 条工程约束 + 选定后落地四步 + DNA 观感口径 |
+| `asset_prompts.md` | **一图一素材的逐张提示词（15 条 / 约 20 张图）**：§0 三条铁律、§1 占位、§2 通用规格（含**四条现实约束**）、A1–A8 Arena 内素材、B1a/B1b/B2–B4 面板视觉、C1–C2 品牌与演示、§6 后处理与尺寸表、§7 自检、**§8 症状→修正表**、§9 清单自查 |
 | `image_prompt_template.md` | 三类早期模板（Fish sprite / Predator / DNA）—— 已被 `asset_prompts.md` 覆盖，保留作沿革 |
-| `asset_prompts.md` | **一图一素材的逐张提示词（14 条）**：A1–A8 Arena 内素材（成鱼摆尾 4 帧、幼鱼、猎物、捕食者、水草、岩石/沉木、地表瓦片、海洋背景）、B1–B4 面板视觉（DNA 纹理+碱基条、细胞图标、神经辉光、UI 特效）、C1–C2（logo、PPT 封面）；另含 §0 占位、§1 通用规格、**§2 三条现实约束**（透明背景/伪像素/鱼大小）、§6 后处理与尺寸表、§7 自检 |
 
-**使用顺序**：先跑 `ui_reference_prompts.md` 的 3 条 → 选定 1 张 → 取色板（不超过 32 色）→ 把它填进 `asset_prompts.md` 的 `{色板}` 占位（并确认 `{色板}` **不含** `{键控色}` 洋红）→ **先只生成 1 张验证抠图链路** → 再按 A→B→C 逐张生成。
-色板未冻结前批量生成 = 全部作废。
+**素材来源是 `asset_prompts.md` 的 A/B/C**。`ui_reference_prompts.md` 的提示词 2（sprite sheet）
+已被 skill 判为「一图塞 7 类素材、违反多主体限制」，只保留作**风格对照图**，不是切图来源。
+
+**使用顺序**：
+
+1. 跑 `ui_reference_prompts.md` 的 3 条提示词（**每条新开一次对话**）→ 选定 1 张；
+2. 从选定图取色板（不超过 32 色），回写 `ui_reference_prompts.md` §候选色板，并填进
+   `asset_prompts.md` 的 `{色板}` 占位（写成「色名 + hex」；并确认 `{色板}` **不含** `{键控色}` 洋红）；
+3. **先只生成 A1 一张**，验证「洋红底 → 抠图 → 最近邻缩小 → 贴到 `#0B1220` 上」这条链路；
+4. A1 合格后它就是**风格锚**：之后每条提示词**新开对话 + 附上 A1 + 加那句
+   `Image 1 is a style reference only: copy its exact pixel size, outline weight, palette and shading technique exactly. Do NOT copy its subject.`**
+   ，再按 A→B→C 逐张生成。
+
+色板未冻结前批量生成 = 全部作废。**一条提示词 = 一次新对话**，否则前面生成过的元素会渗进新图。
