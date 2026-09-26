@@ -100,11 +100,15 @@ if (!radius || !/^0(?:rem|px|em|%)?$/.test(radius[1].trim())) {
 }
 
 // ---- Drift guard: index.css token block must equal what tokens.ts generates ----
-const start = css.indexOf(CSS_TOKENS_BEGIN);
-const stop = css.indexOf(CSS_TOKENS_END);
+// 先去掉所有 CR（String.fromCharCode(13)）再取下标并比较：Windows + core.autocrlf=true
+// 的检出是 CRLF，而 tokens.ts 生成 LF。**下标必须在归一化之后取** —— 用 CRLF 串算出的
+// 下标去切归一化后的串会错位（两串长度不同），这是这个守卫第一版的真实 bug。
+const cssLf = css.split(String.fromCharCode(13)).join("");
+const start = cssLf.indexOf(CSS_TOKENS_BEGIN);
+const stop = cssLf.indexOf(CSS_TOKENS_END);
 if (start === -1 || stop === -1) {
   findings.push("index.css  缺少 token 生成标记（/* @generated:design */ … /* @end:design */）");
-} else if (css.slice(start, stop + CSS_TOKENS_END.length) !== toCssRootBlock()) {
+} else if (cssLf.slice(start, stop + CSS_TOKENS_END.length) !== toCssRootBlock()) {
   findings.push("index.css  token 块与 src/design/tokens.ts 不一致 → 运行 `npm run gen:design`");
 }
 
