@@ -83,8 +83,10 @@ def _minimal() -> dict:
             "batch_size": 64,
             "trajectories": 200,
             "optional_rl": False,
-            "loss_weight_omega": 0.4,
-            "loss_weight_v": 1.6,
+            "loss_weight_normalization": "per_dim_variance",
+            "loss_variance_floor_ratio": 0.05,
+            "loss_weight_fallback_omega": 0.4,
+            "loss_weight_fallback_v": 1.6,
         },
     }
 

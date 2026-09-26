@@ -50,9 +50,12 @@ def main() -> None:
     if raw and set(raw) <= set(ARENA_SECTIONS):
         arena_resolved = arena_config_snapshot(load_arena_config(config_path))
 
-    run_dir = ROOT / "results" / "runs" / args.experiment_id
+    run_dir_name = f"{args.experiment_id}-s{args.seed}"
+    run_dir = ROOT / "results" / "runs" / run_dir_name
     if run_dir.exists():
-        parser.error(f"run 目录已存在（experiment_id 需唯一）: {run_dir.relative_to(ROOT)}")
+        parser.error(
+            f"run 目录已存在（同一 experiment_id+seed 需唯一）: {run_dir.relative_to(ROOT)}"
+        )
     (run_dir / "config_snapshot").mkdir(parents=True)
     (run_dir / "config_snapshot" / config_path.name).write_text(
         config_path.read_text(encoding="utf-8"), encoding="utf-8"
@@ -66,8 +69,8 @@ def main() -> None:
     (run_dir / "git_commit.txt").write_text(git_commit() + "\n", encoding="utf-8")
     metadata = {
         "experiment_id": args.experiment_id,
-        "config": str(config_path.relative_to(ROOT)),
         "seed": args.seed,
+        "config": str(config_path.relative_to(ROOT)),
         "status": "created",
         "arena_config_resolved": arena_resolved is not None,
         "created_at": now_iso(),

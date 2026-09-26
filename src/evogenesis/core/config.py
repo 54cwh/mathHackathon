@@ -105,8 +105,10 @@ class LearningConfig(_Section):
     batch_size: int
     trajectories: int
     optional_rl: bool
-    loss_weight_omega: float
-    loss_weight_v: float
+    loss_weight_normalization: str
+    loss_variance_floor_ratio: float
+    loss_weight_fallback_omega: float
+    loss_weight_fallback_v: float
 
 
 class ModelConfig(_Section):
