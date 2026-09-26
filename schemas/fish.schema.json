@@ -1,6 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/fish.schema.json",
   "title": "FishState",
+  "meta": { "owns": "FishState 快照字段：fish_id/generation/genome_id/viable/energy/size/fitness/cell_counts/metrics", "status": "已冻结" },
   "type": "object",
   "required": [
     "fish_id",

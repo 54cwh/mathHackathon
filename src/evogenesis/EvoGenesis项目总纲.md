@@ -109,7 +109,7 @@ DNA_{parents}
 - Live Demo：12 fish / 24 prey / 3 predators / 6 obstacles
 - Fast Evolution：N=48
 - \(\mu=10^{-3}\) / base / gamete
-- \(\beta=3\)
+- Selection：binary tournament \((k=2)\)
 - Mendel Mode：160 offspring
 - 正式实验至少 3 个随机种子
 

@@ -1,6 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/experiment.schema.json",
   "title": "ExperimentRun",
+  "meta": { "owns": "ExperimentRun 元数据：experiment_id/seed/model_config/arena_config/evolution_config/git_commit/environment", "status": "已冻结" },
   "type": "object",
   "required": [
     "experiment_id",
