@@ -1,4 +1,4 @@
-.PHONY: help env test lint fmt tree experiment frontend
+.PHONY: help env test lint fmt tree experiment frontend demo
 
 help:
 	@echo "make env        - 同步依赖并安装 evogenesis（editable）"
@@ -8,6 +8,7 @@ help:
 	@echo "make tree       - 查看项目目录结构"
 	@echo "make experiment - 创建实验 run，例: make experiment ARGS='--config configs/default_arena.yaml --seed 1 --experiment-id exp-0001'"
 	@echo "make frontend   - 构建前端产物到 frontend/dist"
+	@echo "make demo       - 一键起服（构建前端 + 启动 API），浏览器开 http://127.0.0.1:8000"
 
 env:
 	uv sync
@@ -33,3 +34,6 @@ experiment:
 
 frontend:
 	cd frontend && npm run build
+
+demo:
+	./scripts/start_demo.sh

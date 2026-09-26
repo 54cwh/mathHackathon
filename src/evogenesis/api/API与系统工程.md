@@ -1,6 +1,6 @@
 # 系统工程与接口规范
 
-> **实现状态（2026-09-26）**：`api/` 下的 Python 实现（`app.py` / `schemas.py` / `session.py` / `stubs.py` / `ws.py`）已移除，待重写；本文档保留为契约草案，其中引用的模块路径在重写前不成立。
+> **实现状态（2026-09-26）**：`api/` 已按契约重写并接线（`src/evogenesis/api/`）；`make demo` 与 `scripts/start_demo.sh` / `scripts/serve_api.py` 已恢复。
 
 > **管辖范围**：技术栈、稳定 ID、命名规范、WS/系统约定、Seed Manager、Offline 红线。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
 

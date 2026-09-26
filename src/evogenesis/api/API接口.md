@@ -1,6 +1,6 @@
 # API 接口参考（api/）
 
-> **实现状态（2026-09-26）**：`api/` 下的 Python 实现（`app.py` / `schemas.py` / `session.py` / `stubs.py` / `ws.py`）已移除，待重写；本文档保留为契约草案，其中引用的模块路径在重写前不成立。
+> **实现状态（2026-09-26）**：`api/` 已按本契约**重写并接线**（`app.py` / `schemas.py` / `session.py` / `stubs.py` / `ws.py`；Arena 会话端点 functional、模型/实验端点 501、WS 仅 `sys.hello` / `sys.error`）。§0–§5 为契约，§6–§11 的现状表已按重写后实现回填。
 
 > **管辖范围**：逐端点接口参考（请求/响应/错误/实现细节）。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
 
@@ -27,9 +27,9 @@
 
 ---
 
-## 1. Arena 会话接口（契约；实现层已移除，待重写）
+## 1. Arena 会话接口（契约；已实现）
 
-> 本节 §1.1–§1.10 为**接口契约**（路径/参数/响应/错误），不表示现状：`api/` 实现已于 `d894cbb` 移除，待重写。重写后按本节字段实现即满足前端契约。
+> 本节 §1.1–§1.10 为**接口契约**（路径/参数/响应/错误）；`api/session.py` 已按本节实现（2026-09-26 重写），前端契约满足。
 
 ### 1.1 POST `/v1/sessions` — 创建会话
 
@@ -196,7 +196,7 @@
 
 ---
 
-## 2. 模型与实验接口（契约已定；实现层待重写）
+## 2. 模型与实验接口（契约已定；当前返回 501）
 
 这些端点由 `stubs.py` 定义请求/响应形状（`schemas.py`），在模型与实验管线落地前统一返回：
 
@@ -239,12 +239,12 @@
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
 
-> 下表的「已实现」为 `d894cbb` 移除前的**历史状态**；`api/` 实现层已移除、待重写。业务推送（`arena.*` / `brain.*` / `job.*`）仍未定义（`§5` 阻塞：采样率与推送清单未定）。
+> `sys.hello` 与 `sys.error` 已实现（`ws.py`）；`sys.echo` **未实现**（待认领，`§11` B5）；业务推送（`arena.*` / `brain.*` / `job.*`）仍未定义（阻塞：采样率与推送清单未定）。
 
 | type | 方向 | payload | 触发 | 状态 |
 |---|---|---|---|---|
 | `sys.hello` | 服务端 → 客户端 | `{note}` | 连接建立时一次 | 已实现 |
-| `sys.echo` | 服务端 → 客户端 | `{echo}` | 每收到一条合法消息 | 已实现（契约演示） |
+| `sys.echo` | 服务端 → 客户端 | `{echo}` | 每收到一条合法消息 | **未实现**（B5 待认领） |
 | `sys.error` | 服务端 → 客户端 | `{echo}` | 收到非法信封 | 已实现 |
 | `arena.*` / `brain.*` / `job.*` | 服务端 → 客户端 | 待定 | 实时推送（§5 数据流） | 未实现 |
 
@@ -283,8 +283,8 @@
 
 ## 6. 端点总览：functional / 501 × 归属
 
-> **本表为历史记录（`d894cbb` 移除前的实现）**：状态列（functional / 501）与归属列描述的是**已移除的实现**，非现状；`api/` 实现层待重写，重写后须逐行重填。
-> **归属已裁定（2026-09-26）**：`api/` **全部端点（§1 Arena + §2 模型/实验 + WS）由池伟豪负责实现**；本表「李辰钊」列为移除前的历史记录，作废。
+> **本表已按 2026-09-26 重写回填**：Arena 会话端点（含 WS）**functional**、模型/实验端点 **501 stub**，与 `session.py` / `ws.py` / `stubs.py` 一致；计数仍为 11 functional + 10 stub。
+> **归属（2026-09-26 裁定）**：`api/` **全部端点由池伟豪负责实现**；表内「李辰钊」列为历史协作者记录。
 
 §1 / §2 按端点逐个说明；本表给出**实现状态 × 归属**的一览，用于快速判断"某端点现在归谁、能不能用"。
 
@@ -348,12 +348,12 @@ class SessionCreate(BaseModel):
 
 | 字段 | 是否生效 | 说明 |
 |---|---|---|
-| `master_seed` | ✅ 生效 | 传给 `DanioArena(master_seed=...)`，是**唯一的复现开关** |
+| `master_seed` | ✅ 生效 | 经 `arena_seeds_for(master_seed, 0)` 派生 `spawn_seed` / `dynamics_seed` 传入 `DanioArena`（`core §3`）；是**唯一的复现开关** |
 | `environment` | ⚠️ **仅存储回显** | 写入 `Session.environment` 并在 `SessionSummary` 回显；**不改变任何 Arena 参数** —— `food_rich` / `predator_rich` / `resource_scarce` 三档行为完全一致（实测三档位的 `population` / `prey_remaining` 与初始世界完全相同）。场景布置见 `../arena/Danio_Arena设计与实现说明.md` §12 |
-| `arena_config_path` | ❌ **未生效** | `Session.__init__` **完全不读**该字段，也不读 `configs/default_arena.yaml`；Arena 用 `ArenaConfig()` 的 Python 硬编码默认值（见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射） |
-| `model_config_path` | ❌ **未生效** | 同上；`configs/default_model.yaml` 是否存在于仓库亦无校验 |
+| `arena_config_path` | ✅ 生效 | `Session.__init__` 经 `arena.config.load_arena_config` 读取（相对路径按仓库根解析），Arena 实际取值以该文件为准 |
+| `model_config_path` | ❌ **未生效** | Demo 用 `ExpertPolicy` 驱动，不加载 DanioNet，故接收但不参与本层行为（`API与系统工程.md` §4.3）；接入模型驱动时生效 |
 
-**结论：`SessionCreate` 当前实际只有 `master_seed` 一个有效开关。** 两个 `*_config_path` 是**留给后续接入的占位契约** —— 一旦真正生效，它们即成为对外契约的一部分（改字段集须双方同步）。
+**结论：`master_seed` 与 `arena_config_path` 生效，`model_config_path` 暂不参与（Demo 走 `ExpertPolicy`）。** 前端只发 `master_seed` + `environment`，均兼容。
 
 ### 7.3 `release` 的实现细节
 
@@ -361,7 +361,7 @@ class SessionCreate(BaseModel):
 - **`steps` 无上界校验** —— 实测 `steps=100000` 被接受并同步跑完（止步于 `episode_steps = 600`）。
 - 端点是**同步阻塞**的：`release` 在请求线程内跑完 N 步仿真后才返回；无 `202`、无 job、无后台任务。
 - `pause` 后 `release` 会整段短路（首行 `if not self.running: return`），仍返回 `200` + `SessionSummary`（`step` 不变）—— 调用方无法从状态码区分"推进了"与"被暂停"。
-- episode 因团灭提前结束时 `arena._episode_ended` 已置位，后续 `arena.step()` 立即返回，`step_idx < 600`，`advance()` 的 `break` 条件不成立，故剩余循环体为空转。要区分"跑满 600"与"提前结束"，只能看 snapshot 的 `step` 与 `events` 里 `arena.episode_end.steps`。
+- episode 因团灭提前结束时 `StepResult.done=True`，`advance()` 立即 `break`（无空转）；要区分"跑满 600"与"提前结束"，看 snapshot 的 `step` 与 `events` 里 `arena.episode_end`。
 
 ### 7.4 `snapshot.events` 的口径
 
@@ -384,7 +384,7 @@ class SessionCreate(BaseModel):
 |---|---|
 | 端点 | `@router.websocket("/v1/ws")` |
 | 连接建立 | `await ws.accept()` 后**立即**下发一条 `sys.hello`，payload `{"note": "EvoGenesis WS contract v1 (R11 envelope)"}` |
-| 收消息 | 循环 `receive_text()`；尝试 `WSMessage.model_validate_json(raw)`，成功 → `sys.echo`，失败 → `sys.error` |
+| 收消息 | 循环 `receive_text()`；`WSMessage.model_validate_json(raw)` 失败 → `sys.error`（成功则忽略，无 `sys.echo`） |
 | 回消息 | 无论 echo 还是 error，**都回同一条** `WSMessage`，`payload` 恒为 `{"echo": <原始字符串>}` |
 | `sys.error` 不回原因 | `except Exception:` 只改 `reply_type`，`payload` 仍是 `{"echo": raw}`。违规**原因**（缺 `v` / 缺 `seq` / 非 JSON / `type` 非字符串）既**不回给客户端**，也**不写日志**（无 `logger`、无 `print`）⇒ 服务端无痕迹，客户端只能自行回读 `payload.echo` 猜 |
 | `seq` | 模块级全局 `_ws_seq` 自增（`global`），**按进程而非按连接**计数；跨连接共享，且**与 `Event.seq`（arena 事件序）无关** |
@@ -406,7 +406,7 @@ class SessionCreate(BaseModel):
 | `type` 点分层命名 | ✅ `sys.hello` / `sys.echo` / `sys.error` 遵守 R11 | ✅ |
 | 信封 `{v,type,seq,ts,payload}` | ✅ 已实现并被 `test_ws_envelope_contract` 守护 | ✅ |
 
-**现状只有 `sys.hello` / `sys.echo` / `sys.error` 三条系统消息，没有任何业务广播，也没有广播机制**（无连接注册表、无 `broadcast()` 函数）。§5 的 5 类业务推送一条都还没有。
+**现状只有 `sys.hello` / `sys.error` 两条系统消息，没有任何业务广播，也没有广播机制**（无连接注册表、无 `broadcast()` 函数）。§5 的 5 类业务推送一条都还没有。
 
 ---
 
@@ -429,9 +429,9 @@ class SessionCreate(BaseModel):
 
 ## 10. 测试覆盖（`tests/test_api_contract.py`）
 
-> ⚠️ `tests/test_api_contract.py` 已随 `d894cbb` 删除；下表为**历史记录**（移除前的 9 项）。重写后须重建等价契约测试。
+> ✅ `tests/test_api_contract.py` 已随 2026-09-26 重写重建（10 项，`pytest tests/test_api_contract.py` → 10 passed）；下表为**旧实现的历史记录（9 项）**，保留以对照。
 
-**当前 9 项**（`pytest tests/test_api_contract.py` → 9 passed）。
+**旧实现 9 项**（`d894cbb` 移除前；`pytest tests/test_api_contract.py` → 9 passed）。
 
 | # | 测试 | 覆盖的契约 |
 |---|---|---|
@@ -442,7 +442,7 @@ class SessionCreate(BaseModel):
 | 5 | `test_reset_session` | 推进 50 步后 `reset` → 200，snapshot 的 `step == 0` |
 | 6 | `test_missing_session_404` | 未知 `session_id` → 404，body 为 **RFC 7807 五字段**（`type` / `title` / `status` / `detail` / `instance`） |
 | 7 | `test_stubs_return_501` | `POST /v1/developments`、`POST /v1/breedings` → 501（10 个 stub 中抽 2 个代表） |
-| 8 | `test_ws_envelope_contract` | WS 连上收到 `v==1`、`type=="sys.hello"`、含 `ts` / `seq`；发一条合法 `WSMessage` → 收到 `sys.echo` |
+| 8 | `test_ws_envelope_contract` | WS 连上收到 `v==1`、`type=="sys.hello"`、含 `ts` / `seq`（新实现另测非法消息 → `sys.error`） |
 | 9 | `test_pause_blocks_advance` | `pause` → `running is False`；`release(steps=5)` 后 `step` 仍为 0；再 `pause` → `running is True`；`release(steps=5)` 后 `step == 5` |
 
 **未覆盖（已知缺口）**：
@@ -466,7 +466,7 @@ class SessionCreate(BaseModel):
 | **B2** | 暂停 / 恢复语义：`pause` 是 **toggle**（兼作 resume），已真正阻塞 `release`；上游无 resume 端点 | ✅ **已闭合（2026-09-26）**：保留 toggle，不另开 `resume`；上游 §4.3 已同步 |
 | **B3** | `generation` / `environment` 是"稳定 ID"还是标量：上游 §3 列为稳定 ID，代码是 `int` / 字符串枚举 | 实现为标量；改文档还是改代码待认领 |
 | **B4** | 未实现模块的统一约定：501 + "owned by 池伟豪 …" 是否正式写进上游文档 | 已实现共享 `_NOT_IMPL` 单例；响应体已是 RFC 7807 |
-| **B5** | WS 词表：`sys.hello` / `sys.echo`（后者仅为契约演示）是否正式纳入 R11 词表 | 已实现；`sys.echo` 的去留待认领 |
+| **B5** | WS 词表：`sys.hello` / `sys.echo`（后者仅为契约演示）是否正式纳入 R11 词表 | `sys.hello` / `sys.error` 已实现；`sys.echo` **未实现**，去留待认领 |
 | **B6** | experiment 契约分裂：`schemas/experiment.schema.json`（`seed:int` + `*_config` 路径）与 `api/schemas.py`（`seeds:list[int]` + `name/generations`）字段不相交 | 未变；以哪套为准待认领 |
 | **B7** | config 未接线：无 loader 读 yaml；`arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors` / `biomass_to_size_gain`）与 dataclass 不匹配 | 未变；见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射 |
 
