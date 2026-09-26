@@ -11,8 +11,9 @@ owner：`pipeline/模型链装配.md`。上游：`core`（seed / ids）、`genom
 from __future__ import annotations
 
 import os
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from typing import Any
 
 from evogenesis.connectome.config import (
     DEFAULT_NETWORK_CONFIG,
@@ -41,12 +42,20 @@ class ModelChainConfig:
 
 def load_model_chain_config(
     path: str | os.PathLike[str] | None = None,
+    *,
+    overrides: Mapping[str, Any] | None = None,
+    environ: Mapping[str, str] | None = None,
 ) -> ModelChainConfig:
-    """读 `configs/default_model.yaml`；`path=None` 时取各模块的冻结镜像默认值。"""
+    """读 `configs/default_model.yaml`；`path=None` 时取各模块的冻结镜像默认值。
+
+    ``overrides``：段级覆盖（形如 ``{"connectome": {"tau_min": 5.5}}``，优先级 CLI > env >
+    file > default），供 Experiment D 消融臂（`experiment §3.4` / `connectome §9`）不改
+    YAML 即换配置。
+    """
     return ModelChainConfig(
-        layout=load_genome_config(path),
-        rgcd=load_development_config(path),
-        network=load_network_config(path),
+        layout=load_genome_config(path, overrides=overrides, environ=environ),
+        rgcd=load_development_config(path, overrides=overrides, environ=environ),
+        network=load_network_config(path, overrides=overrides, environ=environ),
     )
 
 

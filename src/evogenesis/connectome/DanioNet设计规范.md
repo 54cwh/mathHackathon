@@ -158,14 +158,16 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 依据与量化：发育编码网络的对照基线取 NEAT / HyperNEAT / ES-HyperNEAT（Stanley & Miikkulainen 2002；Stanley et al. 2009；Risi & Stanley 2012）。出处：`research/reference/design-basis-connectome.md`。
 
 ## 9. Ablations
-- `w/o GRN`：关闭 GRN 发育步，`A` 改按 `Bernoulli(0.15)` 独立采样（禁 self-loop），保留同 `N`、同 \(\tau\)、同 `W⁰` 幅度与 Dale 符号——只隔离"GRN 发育"变量（同密度、同尺度）
-- allele 聚合：加性（mean）vs 完全显性（max）
-- homogeneous tau（基线取异质 τ 的均值；另做 τ 网格扫描防选值偏袒）`[bib#27][bib#28]`
-- w/o spatial wiring cost（\(\lambda=0\)）
-- BC 有 / 无 Dale 符号约束 `[bib#30][bib#31]`
-- P1：w/o epistasis
+实现口径（定稿 2026-09-26；三臂经 `--override` 零代码可跑）：
 
-> H3 的“异质 vs 同质 τ”对比以**性能—效率 Pareto 前沿**为判据 `[bib#23]`。
+- **homogeneous τ**：令 `connectome.tau_min = connectome.tau_max = τ*`，`RGCD §11` 的 `τ_i = τ_min + (τ_max−τ_min)·σ(·)` 退化为常数 `τ*`；τ* 网格 `{τ_min, (τ_min+τ_max)/2, τ_max}`（由 config 派生）。**校验口径**：`DanioNet` 对 **τ 的下限只校验活跃神经元**（`M=True`）——padding 槽位 `τ` 恒为构造初值 `1.0`、与动力学无关，否则 `τ* > 1` 的臂会被 padding 误报越界（2026-09-26 修正）。
+- **w/o spatial wiring cost**：`connectome.distance_lambda = 0`（`RGCD §8` 的 `−λd_ij` 项消失）。
+- **BC 有 / 无 Dale 符号约束**：`DanioNet(sign_constrained=False)`（§3 开关；无约束路径 `W = A ⊙ Θ`），由 `scripts/run_bc.py --no-sign-constrained` 驱动 `[bib#30][bib#31]`。
+- `w/o GRN`（`connectome.ablation_random_density`）：**未接线**（`development` 声明），按声明处理。
+- allele 聚合：加性（mean）vs 完全显性（max）
+- P1：w/o epistasis（未实现）
+
+> H3 的“异质 vs 同质 τ”对比以**性能—效率 Pareto 前沿**为判据 `[bib#23]`。臂清单与命令见 `experiment/实验与评价体系.md` §3.4。
 
 ## 阅读问题（待确认）
 

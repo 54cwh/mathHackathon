@@ -69,12 +69,12 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 ### 4.1 12 维 observation 编码（本文件为编码 owner）
 > **值域契约**：12 维的语义 / 顺序 / **值域 `[0,1]`** / dtype（`float32`）由 `../connectome/DanioNet设计规范.md` §2（v1.8，2026-09-26 冻结）own；本节职责是**编码规则**，其结果须映射到该区间。
 > ⚠️ **dtype 现状（对齐缺口）**：`sensing.observe()` 返回 **`float64`**（`sensing.py:162` `dtype=float`），而 DanioNet §2 契约是 `float32`。当前由下游转换为 `float32`（`pipeline/arena_episode.py` 写入 `np.float32` 数组；`core §7` 定「消费方转换」），故**契约未被违反**；但若未来直接把 `arena.observe()` 输出喂给 DanioNet，须先转 `float32`。改 Arena 内部 dtype 会轻微改变 `ExpertPolicy` 动作（float64→float32 舍入）从而作废 §18.11 基线，故**暂不改**。
-本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。**【已定稿】**（2026-09-26；12 维公式与截断口径已认领，唯一遗留 `looming_norm`=R_loom 为标定占位）
+本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。**【已定稿】**（2026-09-26；12 维公式与截断口径已认领，唯一遗留 `looming_norm`=R_loom 为设计选择（D））
 
 现状（代码）：
 - `prey` / `threat` / `obstacle` 的 `_{left,right}_signal`：对 FOV 内该类目标按方位角以朝向为界分左右 —— **左右按 \(\mathrm{sign}(\sin(\text{rel\_bearing}))\) 划分**；强度取距离核 \((1-d/r)_{+}\)，**每通道求和后截断到 1.0**。
 - `prey_relative_size`：\(\min(size_{prey}/size_{fish},1)\)；`predator_relative_size`：\(\min(size_{pred}/size_{fish}/\texttt{predator\_size\_ref},1)\)（`sensing.predator_size_ref`，现 2.5）。
-- `looming_rate`：**角尺寸扩张率**。角尺寸 \(\theta=2\arctan((size/2)/r)\)，取"视野半径 + FOV 内**所有**可见天敌的 **max** \(\theta\)"（多天敌以最著者为准，依据 `research/reference/looming-and-growth.md`）；相对扩张率 \(1/\tau=(\theta_{after}-\theta_{before})/(\theta_{after}\,\Delta t)\)（**分母 \(\theta_t=\theta_{after}\)**，同所引依据）；编码 \(\mathrm{clip}((1/\tau)/R_{loom},0,1)\)，\(R_{loom}=\texttt{sensing.looming\_norm}\)（现 3.5，**标定占位** \([2,5]\,\mathrm{s^{-1}}\)）。**相位（修复 M13/F1）**：步首采样 \(\theta_{before}\)、步尾（全部实体移动后）采样 \(\theta_{after}\)，结算本步扩张率并缓存到 `Fish._looming_rate`；`observe()` 只读该已结算值（= 最近一步扩张率，与其余各维同为「当前状态」相位）。任一端不可见（\(\theta=0\)）即记 0。
+- `looming_rate`：**角尺寸扩张率**。角尺寸 \(\theta=2\arctan((size/2)/r)\)，取"视野半径 + FOV 内**所有**可见天敌的 **max** \(\theta\)"（多天敌以最著者为准，依据 `research/reference/looming-and-growth.md`）；相对扩张率 \(1/\tau=(\theta_{after}-\theta_{before})/(\theta_{after}\,\Delta t)\)（**分母 \(\theta_t=\theta_{after}\)**，同所引依据）；编码 \(\mathrm{clip}((1/\tau)/R_{loom},0,1)\)，\(R_{loom}=\texttt{sensing.looming\_norm}\)（现 3.5，**设计选择（D）** \([2,5]\,\mathrm{s^{-1}}\)）。**相位（修复 M13/F1）**：步首采样 \(\theta_{before}\)、步尾（全部实体移动后）采样 \(\theta_{after}\)，结算本步扩张率并缓存到 `Fish._looming_rate`；`observe()` 只读该已结算值（= 最近一步扩张率，与其余各维同为「当前状态」相位）。任一端不可见（\(\theta=0\)）即记 0。
 - `current_speed`：取自身上一步推进 \(v_{t-1}\)（决策见 `research/notes/契约决策记录.md`）。
 - `energy` / `hunger`：直接取 Arena 生理状态（口径见 §6）。
 
@@ -82,7 +82,7 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 - `looming_rate` 采用**角尺寸扩张率**（Gabbiani 1999 视觉角的离散形式）：\(\theta=2\arctan((size/2)/r)\)、max 聚合、\(R_{loom}\) 归一、步首-步尾差分。
 - 每通道"求和后截断"口径已与实现统一（`_split_channels` 每通道 `min(...,1.0)`）。
 
-> ✅ **已修（2026-09-26，M13/F1）**：`looming_rate` 步首/步尾采样结算并缓存，携带信息；`R_loom` 为标定占位，待 play-test 在 \([2,5]\) 内标定后转 `confirmed`（`docs/参数总表.json` `looming_norm`）。
+> ✅ **已修（2026-09-26，M13/F1）**：`looming_rate` 步首/步尾采样结算并缓存，携带信息；`R_loom` 为设计选择（D），待 play-test 在 \([2,5]\) 内标定后转 `confirmed`（`docs/参数总表.json` `looming_norm`）。
 
 依据：prey/threat 通道分离 `[bib#58][bib#60]`；详见 `research/reference/sensory-encoding-12d.md`。
 
@@ -118,7 +118,7 @@ E_{t+1}=\mathrm{clip}\!\left(E_t-C_{base}-C_{move}v_t^2-C_{pen}p_t+R_{food}\cdot
 energy `=0` 时死亡。【已定稿】公式。**四系数取值**（`E_max=1.0`、`C_base=0.0008`、`C_move=0.0015`、`R_food=0.12`）认领表 A3 已签「接受并登记」，待补 `docs/参数总表.json`。
 
 **2026-09-26 新增两项**：
-- `C_pen`（`energy.collision_penalty`，**标定占位**）：碰撞软惩罚系数，与「硬不穿透」配合，见 §18.7 A7。
+- `C_pen`（`energy.collision_penalty`，**设计选择（D）**）：碰撞软惩罚系数，与「硬不穿透」配合，见 §18.7 A7。
 - `f`：能量回报随猎物体型的归一化函数。取 `f(s)=s/s̄`、`s̄=0.45`（= prey 尺寸区间 `[0.30,0.60]` 的中点），使**均值回报 ≈ R_food = 0.12**，**不破坏 A3 已完成的能量预算**（否则「每局至少吃 ~4 条才能活到 600 步」的结论作废）。`s̄` 属归一化约定（设计选择，非生物学量）。
 
 ## 7. Growth
@@ -128,7 +128,7 @@ energy `=0` 时死亡。【已定稿】公式。**四系数取值**（`E_max=1.0
 size\leftarrow\min\big(size_{max},\ sqrt{size^2+g\cdot size_{prey}^2}\big)
 \]
 
-- `g`（`growth.prey_area_gain`，**标定占位**）：开源机制对照报告区间 0.1–0.35（[bib#215] 实取 0.35），本仓库占位 **0.2**；须 play-test 标定后才可冻结。**依据性质【已定稿·声明】**：该区间来自开源游戏实现（[bib#215]，**非同行评审**），本仓库只**借鉴机制、自行重写**，未复制代码或素材；论文引用时必须声明其为工程对照而非学术依据。
+- `g`（`growth.prey_area_gain`，**设计选择（D）**）：开源机制对照报告区间 0.1–0.35（[bib#215] 实取 0.35），本仓库占位 **0.2**；须 play-test 标定后才可冻结。**依据性质【已定稿·声明】**：该区间来自开源游戏实现（[bib#215]，**非同行评审**），本仓库只**借鉴机制、自行重写**，未复制代码或素材；论文引用时必须声明其为工程对照而非学术依据。
 - **边际递减内生**：自身越大，同一 prey 带来的**相对**增幅越小，无需额外调参；`size_max` 退化为**硬上限**（不再依赖公式自然收敛）。
 - `Fish.biomass` **字段删除**：面积式下 `size` 已完整编码生长，该字段无角色，同时消除原「只写不读」缺陷。原线性系数 `biomass_to_size_gain` 由 `prey_area_gain` 取代。
 - 【已定稿·声明】**与真实斑马鱼时间尺度不符**：30 s 内真实鱼质量变化仅 ~1e−5 量级，故**局内可见生长属游戏化抽象**（`问题定义与研究假设.md` §4 建模假设 7「growth 是生态游戏化抽象」）。论文中须显式声明，**不得**表述为生物学实测；生物学校准的生长应放到跨 episode / 世代尺度讨论。
@@ -249,12 +249,12 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 【已定稿】**逃脱判定（A8）——威胁结局制**：一次 escape 成立需**同时**满足
 1. 该鱼**曾被某捕食者锁定**；
 2. 该锁定被**放弃**（换目标 / 限时追击超时 / 丢失）；
-3. 放弃后该鱼**继续存活 ≥ `actors.escape_hold_steps` 步**（默认 20 步 = 1 s @20 Hz，**标定占位**）。
+3. 放弃后该鱼**继续存活 ≥ `actors.escape_hold_steps` 步**（默认 20 步 = 1 s @20 Hz，**设计选择（D）**）。
 
 仅「换目标」而未通过存活窗口者**不计**；旧目标已死亡（饿死 / 被吃）**不计**。
 > 理由：原「换目标即算逃脱」会把「捕食者只是看到更近的鱼」这一**捕食者侧重决策**记成猎物功劳，上偏最大（dossier T1 `avoid` / `do_not_add`）。
 
-【已定稿】**限时追击**：捕食者新增 `actors.predator_max_chase_steps`（默认 80 步，**标定占位**；@20 Hz 对应开源对照报告 3–5 s @60 fps，[bib#218] `fish.py:124,205-208`）。**依据性质**：开源游戏实现（[bib#218] `MonkWarrior08/Interactive_Fish_Eating_Game`，MIT，**非同行评审**；仅借鉴机制、自行重写）。连续追击超过该步数即放弃当前目标、恢复巡游——使「放弃」有明确因果，而非仅由换目标触发。
+【已定稿】**限时追击**：捕食者新增 `actors.predator_max_chase_steps`（默认 80 步，**设计选择（D）**；@20 Hz 对应开源对照报告 3–5 s @60 fps，[bib#218] `fish.py:124,205-208`）。**依据性质**：开源游戏实现（[bib#218] `MonkWarrior08/Interactive_Fish_Eating_Game`，MIT，**非同行评审**；仅借鉴机制、自行重写）。连续追击超过该步数即放弃当前目标、恢复巡游——使「放弃」有明确因果，而非仅由换目标触发。
 
 【已定稿】**survival 定义与归一化**：`S = survival_steps / 600`（固定分母、线性；满局存活 `S=1.0`，饿死 / 被捕食按实际存活步数取值）。加权合成 fitness 前，各分量须**显式尺度归一化**，并诊断分量间相关。
 
@@ -270,31 +270,31 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | Fast Evolution | 48 | 个 | 已定稿 |
 | `world.boundary` | reflect | — | 已定稿（2026-09-26，A6） |
 | sensing.predator_size_ref | 2.5 | — | 已定稿（设计选择；相对尺寸归一参考） |
-| sensing.looming_norm | 3.5 | s^-1 | **标定占位** \([2,5]\)（play-test 前不得冻结） |
+| sensing.looming_norm | 3.5 | s^-1 | **设计选择（D）** \([2,5]\) |
 | sensing.radius / fov | 18.0 / 220.0 | world unit / ° | 已定稿（**2026-09-26 按审计 A12 更正**：`proposed_change` 已不在参数总表的允许词表内、且无任何条目使用该档，已从 legend 移除；若需「建议改值」请用该表的 `changes_pending`） |
 | κ（capture_size_ratio） | 1.25 | — | 已定稿（设计选择） |
 | r_capture | 4.61 | world unit | 已定稿（方案 B） |
 | θ_cone（capture_cone_degrees） | 120 | °（**总**锥角） | 已定稿（设计选择） |
 | k_turn | 0.35 | — | 草案待确认 |
 | energy 四系数 | 1.0 / 0.0008 / 0.0015 / 0.12 | — | 已定稿（A3 已签；依据 D，已进参数总表） |
-| C_pen（collision_penalty） | 见 config | — | **标定占位** |
-| growth | 1.0 / 2.5 / g=0.2（prey_area_gain） | — | **标定占位**（A4 面积式） |
+| C_pen（collision_penalty） | 见 config | — | **设计选择（D）** |
+| growth | 1.0 / 2.5 / g=0.2（prey_area_gain） | — | **设计选择（D）**（A4 面积式） |
 | `capture_success_prob`（鱼捕食成功率） | 1.0（默认=确定性） | — | 已定稿（2026-09-26；§8 a） |
-| prey 再生间隔（prey_regrowth_steps） | 25 | step | **标定占位**（派生 600/24） |
-| 逃脱存活窗口（escape_hold_steps） | 20 | step | **标定占位** |
-| 限时追击（predator_max_chase_steps） | 80 | step | **标定占位** |
+| prey 再生间隔（prey_regrowth_steps） | 25 | step | **设计选择（D）**（派生 600/24） |
+| 逃脱存活窗口（escape_hold_steps） | 20 | step | **设计选择（D）** |
+| 限时追击（predator_max_chase_steps） | 80 | step | **设计选择（D）** |
 | prey：speed / size / wander | 0.35 / [0.30,0.60] / 0.8 | — | 草案待确认（A5） |
 | predator：cruise / chase / detect / release / turn | 0.40 / 0.65 / 15 / 22 / 5.0 | — / — / wu / wu / rad/s | 草案待确认（A5/A10） |
 | obstacle 半径 | [1.5, 3.5] | world unit | 已定稿 |
 
 ## 17. 待裁决条款（认领清单）
-以下条款为 `【草案待确认】`，须在 `research/notes/arena-api-决策认领表.md` 认领后转已定稿。**2026-09-26 已认领 9 项**（见 `research/notes/契约决策记录.md`「A3 签署结果」）。
+本条清单已按 2026-09-26 裁决闭合：A1–A10/§12/§15/§11 均转已定稿，24 个原「标定占位」按**设计选择（D）**冻结。仍开放：**api 语义 B1–B6**（`research/notes/arena-api-决策认领表.md`，属 api lane）与 §18 实例事件（重生成 vs 降级）。
 
 | 组 | 条款 |
 |---|---|
 | 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）。**余**：M4 环境三组仍不改变任何参数 |
-| 编码接口 | ✅ A1 12 维归一化**已定**（含 looming 角尺寸扩张率、每通道截断口径）；仅余 `looming_norm`（R_loom）标定占位 |
-| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，已进参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors **14 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（已落 config，§11） |
+| 编码接口 | ✅ A1 12 维归一化**已定稿**（含 looming 角尺寸扩张率、每通道截断口径）；`looming_norm`（R_loom）已冻结为设计选择（D） |
+| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，已进参数总表）；✅ A4 growth/biomass（面积式；g 为设计选择（D））；A5 actors **17 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（已落 config，§11） |
 | 契约/工程 | §18 实例事件（重生成 vs 降级）；~~config 接线~~ ✅ 已闭合（loader + Arena 映射 + 调用方接线，2026-09-26）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 ## 18. 实现映射（原 Danio Arena 实现说明）
@@ -360,7 +360,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `population.prey_regrowth_steps` | 25 | `population.prey_regrowth_steps` | 25 | ✅ | ✅ `prey_regrowth_steps` |
 | `sensing.radius` | 18.0 | `sensing.radius` | 18.0 | ✅ | ✅ `sensing_radius` |
 | `sensing.predator_size_ref` | 2.5 | `sensing.predator_size_ref` | 2.5 | ✅ | ✅ `predator_size_ref` |
-| `sensing.looming_norm` | 3.5 | `sensing.looming_norm` | 3.5 | ✅ | ✅ `looming_norm`（标定占位） |
+| `sensing.looming_norm` | 3.5 | `sensing.looming_norm` | 3.5 | ✅ | ✅ `looming_norm`（设计选择（D）） |
 | `sensing.fov_degrees` | 220.0 | `sensing.fov_degrees` | 220.0 | ✅ | ✅ `sensing_fov_degrees` |
 | `energy.e_max` | 1.0 | `energy.e_max` | 1.0 | ✅ | ✅ `e_max` |
 | `energy.base_cost_per_step` | 0.0008 | `energy.base_cost_per_step` | 0.0008 | ✅ | ✅ `base_cost_per_step` |
@@ -579,10 +579,10 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | 认领编号 | 未认领的内容 | 本文档对应节 | 实现现状 |
 |---|---|---|---|
-| **A1** | 12 维感官编码的归一化公式（线性衰减、$rel$ 尺寸、looming 角扩张率、左右分侧规则） | §4、S20 | **大部分已定稿、已固化**；looming 已改角尺寸扩张率并修复恒 0（2026-09-26）；**仅余 `looming_norm`（R_loom）为标定占位**，play-test 标定后本项转已定稿 |
+| **A1** | 12 维感官编码的归一化公式（线性衰减、$rel$ 尺寸、looming 角扩张率、左右分侧规则） | §4、S20 | **大部分已定稿、已固化**；looming 已改角尺寸扩张率并修复恒 0（2026-09-26）；**仅余 `looming_norm`（R_loom）为设计选择（D）**，play-test 标定后本项转已定稿 |
 | **A2** ✅ | 捕食几何：`capture_radius = 4.61`、$\kappa = 1.25$（判据含边界）、**前向锥 120°（总锥角）** | §2.1、§2.2、§3.1 §8 | **2026-09-26 已裁决并全部落地**：半径与 κ 已进参数总表；**前向锥已实现**（`growth.capture_cone_degrees`）。未采纳「半径和」口径（§8 已知局限） |
 | **A3** ✅ | 能量四系数 + 新增 $C_{pen}$（`collision_penalty`）与回报函数 $f$ | §2.1、§6 | 已实现；**四系数与 `collision_penalty` 均已进参数总表**（2026-09-26；表内 `status=no_basis`，依据 D＝设计选择）。`food_reward` 现为**均值**（按 `prey.size` 缩放、中点归一），A3 预算不变 |
-| **A4** ✅ | 生长：改为**面积守恒式** `size ← min(size_max, sqrt(size^2 + g*prey_size^2))`，$g$ = `prey_area_gain` | §2.2、§3.1 §7 | **2026-09-26 已改**（用户裁决「面积式」）：局内生长可见、边际递减内生；`Fish.biomass` **字段删除**（消除「只写不读」）；`prey_area_gain` 已进参数总表（**标定占位** 0.2） |
+| **A4** ✅ | 生长：改为**面积守恒式** `size ← min(size_max, sqrt(size^2 + g*prey_size^2))`，$g$ = `prey_area_gain` | §2.2、§3.1 §7 | **2026-09-26 已改**（用户裁决「面积式」）：局内生长可见、边际递减内生；`Fish.biomass` **字段删除**（消除「只写不读」）；`prey_area_gain` 已进参数总表（**设计选择（D）** 0.2） |
 | **A5** ✅ | `actors` 整组 14 项（含 `predator_turn_rate`、`escape_hold_steps`、`predator_max_chase_steps`） | §2.2 | 已实现；**已进 `configs/default_arena.yaml` 的 `actors:` 段与参数总表**（2026-09-26，登记为 play-test 旋钮） |
 | **A6** ✅ | 边界策略：新增 `world.boundary`，默认 **`reflect`**（镜面反射） | §2.1、§3.1 §2 | **2026-09-26 已改**：`reflect` 确定性、不消耗随机数；旧 `clamp` 降为对照选项（隐性能耗使跨 seed 能量不可比） |
 | **A7** ✅ | 碰撞语义：**硬不穿透**（投影回障碍表面、零反弹）+ **软惩罚**（按穿透深度扣能量 `collision_penalty`） | S4、§6 | **2026-09-26 已改**。事件 payload **未改动**（惩罚经 `energy_trace` 可观测）。⚠️ 计数仍近乎不触发（0 次/5 seed×600 步），故仍**不作 headline 指标** |
@@ -617,7 +617,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M10 | 流体动力学 | 规范 §1 已明确排除，非遗漏 |
 | M11 | ~~episode 内重生成猎物~~ | ✅ **已实现**（2026-09-26，§12 R2）：每 `prey_regrowth_steps`（占位 25）补 1 只至 `n_prey`；新个体以 `arena.spawn` 事件落盘 |
 | M12 | 手动控制通路 | 原 `api/session.py` 的 `advance(use_expert=False)` 未暴露手动 action 端点；**该服务层已按用户决定移除**，手动 action 通路待随 `api/` 重写落地 |
-| ✅ M13 | ~~looming 通道无信息~~ | 已修（2026-09-26）：`nearest_predator_angular_size` + 步前缓存；回归 `tests/test_sensing_looming.py`。剩余：`looming_norm` 标定占位（A1） |
+| ✅ M13 | ~~looming 通道无信息~~ | 已修（2026-09-26）：`nearest_predator_angular_size` + 步前缓存；回归 `tests/test_sensing_looming.py`。剩余：`looming_norm` 设计选择（D）（A1） |
 | M14 | `world.episode_seconds` 未进代码 | YAML 有 `world.episode_seconds: 30`，`WorldConfig` 无对应字段（§2.1 的 ⚠️ 行），故 `dt`/步数与它无关 |
 
 ---
@@ -671,7 +671,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 |---|---|
 | **事件词表**（增删 `type`、改 payload 字段名/含义） | ① `src/evogenesis/arena/env.py` 的发射点；② `tests/test_arena.py::KNOWN_EVENTS`；③ 本文档 §4.2；④ `../core/核心机制与数据流.md` §5.1 摘要表；⑤ `schemas/examples/event_log_example.jsonl`（重生成，见 §4.4）；⑥ 若涉及前端消费：`frontend/src/api/arena.ts` 的 `ArenaEvent`；⑦ 若涉及 WS 推送：`../api/API与系统工程.md` §4.1 R11 |
 | **冻结参数值**（`capture_size_ratio` / 世界尺寸 / Hz / 步数 / 种群数） | ① `configs/default_arena.yaml`（**唯一事实来源**）；② `src/evogenesis/arena/config.py` 默认值；③ `../../../docs/参数总表.json`；④ `tests/test_arena.py::test_population_counts_match_frozen_defaults`（种群数）；⑤ 本文档 §2；⑥ 报告中的参数表快照 |
-| **标定占位 / play-test 旋钮**（`prey_area_gain`、`collision_penalty`、`prey_regrowth_steps`、`escape_hold_steps`、`predator_max_chase_steps`、`capture_cone_degrees`、`world.boundary`、`sensing.looming_norm`、`energy.*` 4 项、`growth` 余项、`actors` 余项） | ① `configs/default_arena.yaml`（**唯一事实来源**；`actors:` 段与全部新键已就位）；② `config.py` 默认值；③ 本文档 §2/§16；④ `../../../docs/参数总表.json`（**2026-09-26 已全部登记**）；⑤ `tests/test_arena_config.py` 的 YAML↔dataclass 漂移守护 |
+| **设计选择（D，2026-09-26 已定稿）**（`prey_area_gain`、`collision_penalty`、`prey_regrowth_steps`、`escape_hold_steps`、`predator_max_chase_steps`、`capture_cone_degrees`、`world.boundary`、`sensing.looming_norm`、`energy.*` 4 项、`growth` 余项、`actors` 余项） | ① `configs/default_arena.yaml`（**唯一事实来源**；`actors:` 段与全部新键已就位）；② `config.py` 默认值；③ 本文档 §2/§16；④ `../../../docs/参数总表.json`（**2026-09-26 已全部登记**）；⑤ `tests/test_arena_config.py` 的 YAML↔dataclass 漂移守护 |
 | ⚠️ **障碍生成方式 / `n_obstacles` / 半径范围 / clearance** | ① `env.py::_spawn_obstacles()` 与 `reset()`（必须保持"先清空、再就地逐个生成"）；② 本文档 §3.2 S9、§5 D2/D5；③ `test_reset_idempotent_on_same_instance`；④ **一切历史冒烟基线作废**（RNG 流全局平移） |
 | **12 维感知顺序**（`sensing.DIM_NAMES` / `observe()` 返回顺序） | ① `src/evogenesis/arena/sensing.py`（docstring 与 `DIM_NAMES`）；② `schemas/examples/README.md` 的 12 维语义表；③ `schemas/examples/trajectory_example.jsonl`（观测向量列序）；④ `../core/核心机制与数据流.md` §4.2 的 `observation` 行；⑤ `../connectome/DanioNet设计规范.md` §2；⑥ `../../../docs/参数总表.json` `sensory_dim`；⑦ **顺序冻结是验收清单硬性要求，改动需双方同步** |
 | **looming 口径**（`sensing.max_predator_angular_size` + `env.py` 步首/步尾采样、`Fish._looming_rate`） | ① `sensing.py`（角度定义/聚合）与 `env.py`（相位/结算/归一）；② 本文档 §4.1 / S20 / F1 / M13；③ 认领表 A1；④ `tests/test_sensing_looming.py` |
@@ -696,6 +696,8 @@ uv run python scripts/smoke_arena.py
 | `arena.spawn` | 52（24 初始猎物 + 12 鱼 + 3 捕食者 = 39，另加 13 条再生猎物） |
 | 逃生 `arena.escape` | 1 |
 | 吞吐 | 约 311 steps/s（单进程、CPU） |
+
+> ✅ **正式基线已冻结（2026-09-26）**：`exp_arena_expert_ref_v3`（seeds 1103/2207/3301 × 600 步 × 12 鱼，ExpertPolicy）摘要入库 `artifacts/baseline/`；口径与命令见 `experiment/实验与评价体系.md` §4 与 `artifacts/baseline/README.md`。
 
 **多 seed 实测（600 步，默认配置）**：
 
@@ -723,7 +725,7 @@ uv run python scripts/smoke_arena.py
 ### P0：冻结前必须闭合
 
 1. ~~**配置单一事实源（B7/M8）**~~ ✅ **已闭合（2026-09-26）**：通用 loader（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`）；Arena 侧键名对齐（`live_demo.*` → `population.*`，补 `actors:` 段，由 `tests/test_arena_config.py` 漂移守护）；**调用方接线** —— `experiment/runlayout.py` 加载 Arena 配置并落盘 `arena_config_resolved.json`。参数表与实验配置现已可复现。
-2. ~~**12 维 observation（A1）**~~ ✅ **已闭合（2026-09-26）**：`looming_rate` 已改**角尺寸扩张率**（公式/相位/分母/max 聚合/不可见置 0 均写入 §4.1），回归 `tests/test_sensing_looming.py`；仅余 `R_loom` 标定占位。**残留（P1）**：观测输入统计与回归基线尚未补。
+2. ~~**12 维 observation（A1）**~~ ✅ **已闭合（2026-09-26）**：`looming_rate` 已改**角尺寸扩张率**（公式/相位/分母/max 聚合/不可见置 0 均写入 §4.1），回归 `tests/test_sensing_looming.py`；仅余 `R_loom` 设计选择（D）。**残留（P1）**：观测输入统计与回归基线尚未补。
 3. **世界尺度与捕食几何**：**已闭合**（2026-09-26，方案 B）——wu 不与 BL 固定换算（§2 尺度声明），`capture_radius = 4.61`、`sensing.radius = 18`、`κ = 1.25`（判据含边界 `≥`、耦合约束 `predator_size ≥ κ·max_size`）均已定稿。**余**：~~捕获成功率是否引入随机失败~~ ✅ 已闭合（2026-09-26，见 §8 a：新增 `growth.capture_success_prob`，默认 1.0）。
 
 ### P1：正式实验前必须明确

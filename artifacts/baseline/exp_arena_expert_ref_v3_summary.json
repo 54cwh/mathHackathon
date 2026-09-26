@@ -1,0 +1,44 @@
+{
+  "experiment_id": "exp_arena_expert_ref_v3",
+  "environment": "default",
+  "emit_trajectories": false,
+  "seeds": [
+    1103,
+    2207,
+    3301
+  ],
+  "steps": 600,
+  "n_individuals": 36,
+  "per_metric": {
+    "survival": {
+      "mean": 0.9187500000000001,
+      "std": 0.13618400825698396,
+      "n": 3
+    },
+    "capture_rate": {
+      "mean": 0.002962962962962963,
+      "std": 0.0014186623561152371,
+      "n": 3
+    },
+    "prey_capture": {
+      "mean": 0.5148226502549167,
+      "std": 0.29717606048748346,
+      "n": 3
+    },
+    "escape_success": {
+      "mean": 0.30324074074074076,
+      "std": 0.13543150441027846,
+      "n": 3
+    },
+    "energy_efficiency": {
+      "mean": -0.0009251300476764918,
+      "std": 0.00016204874551467826,
+      "n": 3
+    },
+    "composite_fitness": {
+      "mean": 0.38276636287935356,
+      "std": 0.07253648316300544,
+      "n": 3
+    }
+  }
+}

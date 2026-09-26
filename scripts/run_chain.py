@@ -23,6 +23,7 @@ from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
+from evogenesis.experiment.overrides import parse_overrides
 from evogenesis.experiment.run_artifacts import dump_json, write_metrics_csv
 from evogenesis.pipeline import (
     arena_seeds_for,
@@ -56,12 +57,19 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--model-config", default=str(DEFAULT_MODEL))
     parser.add_argument("--arena-config", default=str(DEFAULT_ARENA))
     parser.add_argument("--out-root", default=str(ROOT / "results" / "runs"))
+    parser.add_argument(
+        "--override",
+        action="append",
+        default=[],
+        help="段级覆盖 section.key=value（可重复）；Experiment D 消融臂，见 experiment §3.4",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = _parse_args()
-    chain = load_model_chain_config(args.model_config)
+    overrides = parse_overrides(args.override) or None
+    chain = load_model_chain_config(args.model_config, overrides=overrides)
     arena_config = load_arena_config(args.arena_config)
     steps = arena_config.world.episode_steps if args.steps is None else args.steps
     n = _default_population_size() if args.n is None else args.n
@@ -87,6 +95,8 @@ def main() -> None:
         config_path=args.arena_config,
         out_root=args.out_root,
     )
+    if overrides:
+        dump_json(run_dir / "model_overrides.json", overrides, indent=2)
     spawn_seed, _ = arena_seeds_for(args.seed, args.generation)
     weights = load_evolution_config().fitness_weights.model_dump()
     write_event_log(

@@ -163,9 +163,14 @@ class DanioNet(torch.nn.Module):
             motor_mask[b, motor_local] = True
 
         tau_min = self.config.tau_min
-        if not bool((tau >= tau_min).all() and torch.isfinite(tau).all()):
+        # 只校验活跃神经元（M）；padding 槽位 tau 恒为构造初值 1.0，与动力学无关
+        # （非活跃行列在 §3 被 `neuron_mask` 置零）。否则任何 `tau_min > 1` 的同质 τ
+        # 消融臂（`connectome §9` homogeneous tau）会被 padding 误报为越界。
+        active_tau = tau[neuron_mask]
+        if not bool((active_tau >= tau_min).all() and torch.isfinite(active_tau).all()):
             raise ValueError(
-                f"tau 必须 ≥ {tau_min}（`connectome.tau_min`，RGCD §11）且有限；§3 按 1/τ 更新"
+                f"活跃神经元的 tau 必须 ≥ {tau_min}（`connectome.tau_min`，RGCD §11）且有限；"
+                "§3 按 1/τ 更新"
             )
         # §3：非活跃神经元（M=False）的行/列恒 0 —— W⁰ 亦按 M 屏蔽，
         # 使 sign(W⁰)、Θ 初值与 ΔW 在非活跃处天然为 0（初始 ΔW=0 全局成立）。

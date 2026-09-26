@@ -17,10 +17,11 @@ from dataclasses import replace
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
-from evogenesis.core.config import ModelConfig, load_config
+from evogenesis.core.config import ModelConfig, deep_update, load_config
 from evogenesis.experiment import collect, learning_run, runlayout
 from evogenesis.experiment.environments import BASELINE, load_environment
 from evogenesis.experiment.metrics import aggregate_by_seed
+from evogenesis.experiment.overrides import parse_overrides
 from evogenesis.experiment.run_artifacts import write_metrics_csv
 from evogenesis.pipeline import load_model_chain_config
 
@@ -58,6 +59,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=True,
         help="Dale 符号约束（默认开；--no-sign-constrained 为消融对照，learning §4）",
     )
+    parser.add_argument(
+        "--override",
+        action="append",
+        default=[],
+        help="段级覆盖 section.key=value（可重复）；Experiment D 消融臂，见 experiment §3.4",
+    )
     parser.add_argument("--out-root", default=str(ROOT / "results" / "runs"))
     return parser.parse_args(argv)
 
@@ -67,15 +74,16 @@ def main(argv: list[str] | None = None) -> None:
     model_config = Path(args.model_config)
     arena_config_path = Path(args.arena_config)
     learning_cfg = load_config(model_config, model=ModelConfig).learning
-    overrides = None if args.environment == BASELINE else load_environment(args.environment)
+    env_overrides = None if args.environment == BASELINE else load_environment(args.environment)
+    overrides = deep_update(dict(env_overrides or {}), parse_overrides(args.override)) or None
     arena_config = load_arena_config(arena_config_path, overrides=overrides)
-    chain = load_model_chain_config(model_config)
+    chain = load_model_chain_config(model_config, overrides=overrides)
 
     run_dir = runlayout.create_run_dir(
         experiment_id=args.experiment_id,
         seed=args.seed,
         config_path=arena_config_path,
-        overrides=overrides,
+        overrides=env_overrides,
         out_root=args.out_root,
     )
 
