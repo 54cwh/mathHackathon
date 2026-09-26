@@ -1,21 +1,50 @@
 /** Arena REST client — the single REST entry point (`api/API接口.md` §1). */
 
 import { req } from "./http";
-import type { ArenaSnapshot, Environment, SessionSummary } from "./types";
+import type {
+  ArenaSnapshot,
+  Environment,
+  FishCard,
+  Leaderboard,
+  SessionCreate,
+  SessionSummary,
+} from "./types";
 
-export type { ArenaEvent, ArenaSnapshot, Environment, FishState, ObstacleState, PredatorState, PreyState, SessionSummary } from "./types";
+export type {
+  ArenaEvent,
+  ArenaSnapshot,
+  Environment,
+  FishCard,
+  FishState,
+  JobStatus,
+  Leaderboard,
+  LeaderboardEntry,
+  ObstacleState,
+  PredatorState,
+  PreyState,
+  SessionSummary,
+} from "./types";
 
 /** Frozen demo master seed -- one source of truth for the whole live demo. */
 export const MASTER_SEED = 250927;
 
+/** Session options that are only meaningful for model-driven sessions. */
+export type SessionDriving =
+  | { model_driven?: false; checkpoint_path?: null }
+  | { model_driven: true; checkpoint_path?: string | null };
+
 export function createSession(
   masterSeed = MASTER_SEED,
   environment: Environment = "food_rich",
+  driving: SessionDriving = {},
 ): Promise<SessionSummary> {
-  return req<SessionSummary>("/v1/sessions", {
-    method: "POST",
-    body: JSON.stringify({ master_seed: masterSeed, environment }),
-  });
+  const body: Partial<SessionCreate> = {
+    master_seed: masterSeed,
+    environment,
+    model_driven: driving.model_driven ?? false,
+    checkpoint_path: driving.checkpoint_path ?? null,
+  };
+  return req<SessionSummary>("/v1/sessions", { method: "POST", body: JSON.stringify(body) });
 }
 
 export function getSession(sessionId: string): Promise<SessionSummary> {
@@ -37,6 +66,21 @@ export function release(sessionId: string, steps = 1, useExpert = true): Promise
   );
 }
 
+/** Toggle pause/resume (`API接口.md` §1.7: one endpoint, not pause+resume). */
+export function pauseSession(sessionId: string): Promise<SessionSummary> {
+  return req<SessionSummary>(`/v1/sessions/${sessionId}/pause`, { method: "POST" });
+}
+
 export function getSnapshot(sessionId: string): Promise<ArenaSnapshot> {
   return req<ArenaSnapshot>(`/v1/sessions/${sessionId}/snapshot`);
+}
+
+export function getFishCard(sessionId: string, fishId: string): Promise<FishCard> {
+  return req<FishCard>(
+    `/v1/sessions/${sessionId}/fish/${encodeURIComponent(fishId)}`,
+  );
+}
+
+export function getLeaderboard(sessionId: string): Promise<Leaderboard> {
+  return req<Leaderboard>(`/v1/sessions/${sessionId}/leaderboard`);
 }
