@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Fish } from "lucide-react";
-import { Panel } from "@/components/panel";
+import { Panel } from "@/components/Panel";
 import { useUiStore } from "@/store/ui";
+import { ARENA } from "@/design/palette";
+import { CANVAS, arenaAspect, sr, sx, sy } from "@/design/geometry";
 import {
   MASTER_SEED,
   createSession,
@@ -10,23 +12,8 @@ import {
   release,
   type ArenaSnapshot,
 } from "@/api/arena";
-import { ARENA } from "@/design/palette";
 
-const WORLD_W = 100;
-const WORLD_H = 60;
-const CANVAS_W = 640;
-const CANVAS_H = 384;
 const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
-
-function sx(x: number): number {
-  return (x / WORLD_W) * CANVAS_W;
-}
-function sy(y: number): number {
-  return (y / WORLD_H) * CANVAS_H;
-}
-function sr(r: number): number {
-  return (r / WORLD_W) * CANVAS_W;
-}
 
 export function DanioArenaPanel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -110,9 +97,10 @@ export function DanioArenaPanel() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.imageSmoothingEnabled = false; // hard pixel edges (rule 9(b))
+    ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
     ctx.fillStyle = ARENA.canvas;
-    ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+    ctx.fillRect(0, 0, CANVAS.w, CANVAS.h);
 
     if (!snap) return;
 
@@ -173,12 +161,6 @@ export function DanioArenaPanel() {
         ctx.stroke();
       }
     }
-
-    ctx.fillStyle = ARENA.hudText;
-    // 注：Canvas 要用自托管 webfont 必须先 await document.fonts.ready，
-    // 否则静默回退到系统等宽 —— 故此处仍用 monospace（Q4：数值走清晰等宽）。
-    ctx.font = "12px monospace";
-    ctx.fillText(`step ${snap.step}`, 8, 16);
   }, [snap, selectedFishId]);
 
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
@@ -187,8 +169,8 @@ export function DanioArenaPanel() {
   function handleClick(e: React.MouseEvent<HTMLCanvasElement>) {
     if (!snap) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const mx = ((e.clientX - rect.left) / rect.width) * CANVAS_W;
-    const my = ((e.clientY - rect.top) / rect.height) * CANVAS_H;
+    const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
+    const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
     let best: string | null = null;
     let bestDist = Infinity;
     for (const [fid, f] of Object.entries(snap.fish)) {
@@ -206,16 +188,18 @@ export function DanioArenaPanel() {
   return (
     <Panel title="Danio Arena" icon={<Fish className="size-4 text-primary" />}>
       <div className="flex h-full flex-col gap-2">
-        {/* The canvas bitmap carries the arena's 100:60 intrinsic ratio; letting
-            it fill the column non-uniformly would stretch every fish vertically. */}
+        {/* Explicit 5:3 contract (rule 3); the bitmap ratio must equal it, or
+            the click hit-test below drifts. */}
         <div className="flex min-h-0 flex-1 items-center justify-center">
-          <canvas
-            ref={canvasRef}
-            width={CANVAS_W}
-            height={CANVAS_H}
-            onClick={handleClick}
-            className="max-h-full max-w-full cursor-crosshair"
-          />
+          <div className="w-full" style={{ aspectRatio: arenaAspect() }}>
+            <canvas
+              ref={canvasRef}
+              width={CANVAS.w}
+              height={CANVAS.h}
+              onClick={handleClick}
+              className="h-full w-full cursor-crosshair"
+            />
+          </div>
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">
           <span>{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>

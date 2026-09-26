@@ -1,5 +1,5 @@
 import { Dna } from "lucide-react";
-import { Panel } from "@/components/panel";
+import { Panel } from "@/components/Panel";
 
 export function DNA2BrainPanel() {
   return (

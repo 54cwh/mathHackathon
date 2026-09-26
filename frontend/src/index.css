@@ -5,44 +5,11 @@
 @tailwind utilities;
 
 @layer base {
-  /* 外壳 token 的唯一 owner（owner：李辰钊）。
-     品牌 24 色在 src/design/palette.ts —— 两边互不重叠，勿互相复制。 */
+  /* 外壳 token 的唯一 owner（owner：李辰钊）；生成块的值由 src/design/tokens.ts 生成
+     （npm run gen:design），勿手改。品牌 24 色在 src/design/palette.ts，两边互不复制。 */
   :root {
-    --background: 213 29% 6%;
-    --foreground: 208 35% 93%;
-
-    --card: 217 9% 10%;
-    --card-foreground: 208 35% 93%;
-
-    --popover: 217 9% 10%;
-    --popover-foreground: 208 35% 93%;
-
-    --primary: 188 86% 53%;
-    --primary-foreground: 213 29% 6%;
-
-    --secondary: 217 9% 16%;
-    --secondary-foreground: 208 35% 93%;
-
-    --muted: 217 9% 16%;
-    --muted-foreground: 214 15% 60%;
-
-    --accent: 217 9% 18%;
-    --accent-foreground: 208 35% 93%;
-
-    --destructive: 0 91% 71%;
-    --destructive-foreground: 213 29% 6%;
-
-    --border: 213 28% 17%;
-    --input: 213 28% 17%;
-    --ring: 188 86% 53%;
-
-    --success: 158 64% 52%;
-    --warning: 43 96% 56%;
-    --violet: 255 92% 76%;
-
-    /* R2-4 无圆角：原 0.625rem(=10px) 已废止。
-       本条覆盖 frontend/README.md 的『圆角 10px』那一行。 */
-    --radius: 0rem;
+/* @generated:design */
+/* @end:design */
   }
 
   * {
@@ -61,10 +28,9 @@
 }
 
 @layer utilities {
-  /* 像素字体作用域（Q4(b)）。**唯一 owner = 本文件**：
-     .font-pixel 除 font-family 外还带 -webkit-font-smoothing: none，
-     Tailwind config 的 fontFamily 表达不了这个副作用，故不拆两处。
-     用法：只加在**英文**标签/标题上；数值走 font-mono，中文走默认 font-sans。 */
+  /* 像素字体作用域（Q4(b)）。唯一 owner = 本文件：.font-pixel 除 font-family 外还带
+     -webkit-font-smoothing: none，Tailwind fontFamily 表达不了，故不拆两处。
+     用法：只加在英文标签/标题上；数值走 font-mono，中文走默认 font-sans。 */
   .font-pixel {
     font-family: "Press Start 2P", ui-monospace, monospace;
     -webkit-font-smoothing: none;

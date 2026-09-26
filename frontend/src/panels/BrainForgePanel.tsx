@@ -1,5 +1,5 @@
 import { Brain } from "lucide-react";
-import { Panel } from "@/components/panel";
+import { Panel } from "@/components/Panel";
 
 export function BrainForgePanel() {
   return (

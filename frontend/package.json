@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "lint:design": "node scripts/lint-design.mjs",
+    "gen:design": "node scripts/gen-design.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

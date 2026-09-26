@@ -8,14 +8,14 @@ interface PanelProps {
   children?: ReactNode;
 }
 
+/**
+ * Panel shell: no radius (rule 4) and no outer/inter-column border — the grid
+ * parent owns every dividing line (rule 5). Only the internal title separator
+ * is drawn here.
+ */
 export function Panel({ title, icon, className, children }: PanelProps) {
   return (
-    <section
-      className={cn(
-        "flex min-h-0 flex-col overflow-hidden border border-border bg-card",
-        className,
-      )}
-    >
+    <section className={cn("flex min-h-0 flex-col overflow-hidden bg-card", className)}>
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         {icon}
         <span className="text-sm font-medium">{title}</span>
