@@ -50,7 +50,7 @@ def load_model_chain_config(
 
     ``overrides``：段级覆盖（形如 ``{"connectome": {"tau_min": 5.5}}``，优先级 CLI > env >
     file > default），供 Experiment D 消融臂（`experiment §3.4` / `connectome §9`）不改
-    YAML 即换配置。
+    YAML 即换配置；**仅对文件加载的配置生效**（``path=None`` 时各 loader 直接取冻结默认值）。
     """
     return ModelChainConfig(
         layout=load_genome_config(path, overrides=overrides, environ=environ),

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from evogenesis.development.config import load_development_config
@@ -40,7 +42,8 @@ def test_parse_overrides_rejects_malformed(bad):
 
 def test_model_chain_config_plumbs_overrides_to_rgcd_and_network():
     overrides = {"connectome": {"tau_min": 5.5, "tau_max": 5.5, "distance_lambda": 0.0}}
-    chain = load_model_chain_config(overrides=overrides)
+    model_config = Path(__file__).resolve().parents[1] / "configs" / "default_model.yaml"
+    chain = load_model_chain_config(model_config, overrides=overrides)
     assert chain.rgcd.tau_min == 5.5 and chain.rgcd.tau_max == 5.5
     assert chain.rgcd.distance_lambda == 0.0
     assert chain.network.tau_min == 5.5  # DanioNet 侧同源
