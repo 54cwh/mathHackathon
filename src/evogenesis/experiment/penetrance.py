@@ -550,6 +550,7 @@ class PenetranceConfig:
 
     theta_N_obs: float | None
     theta_H_obs: float | None
+    threshold_status: str
     calibration_master_seeds: tuple[int, ...]
     calibration_per_class: int
     calibration_max_offspring: int | None
@@ -565,6 +566,7 @@ class PenetranceConfig:
         return cls(
             theta_N_obs=data.get("theta_N_obs"),
             theta_H_obs=data.get("theta_H_obs"),
+            threshold_status=str(data.get("threshold_status", "unset")),
             calibration_master_seeds=tuple(int(s) for s in calibration.get("master_seeds", ())),
             calibration_per_class=int(calibration.get("per_class", 0)),
             calibration_max_offspring=calibration.get("max_offspring"),
@@ -709,8 +711,13 @@ def run_report(
     theta_H_obs = penetrance_config.theta_H_obs
     if theta_N_obs is None or theta_H_obs is None:
         raise ValueError(
-            "报告模式要求 configs/penetrance.yaml 已冻结 theta_N_obs/theta_H_obs"
-            "（先跑校准并在文档签署后写入）"
+            "报告模式要求 configs/penetrance.yaml 给出 theta_N_obs/theta_H_obs"
+            "（先跑校准）；观测轴不可分离时可显式设 threshold_status=placeholder 出演示表"
+        )
+    if penetrance_config.threshold_status not in {"confirmed", "placeholder"}:
+        raise ValueError(
+            "报告要求显式声明 threshold_status ∈ {confirmed, placeholder}，"
+            f"当前 {penetrance_config.threshold_status!r}（避免误把占位值当已标定值）"
         )
     if penetrance_config.report_per_class < 1 or not penetrance_config.report_master_seeds:
         raise ValueError("报告配置不完整（master_seeds / per_class）")
@@ -782,7 +789,11 @@ def run_report(
         "theta_N": theta_N,
         "theta_H": theta_H,
         "tau_statistic": TAU_STATISTIC,
-        "observation_thresholds": {"theta_N_obs": theta_N_obs, "theta_H_obs": theta_H_obs},
+        "observation_thresholds": {
+            "theta_N_obs": theta_N_obs,
+            "theta_H_obs": theta_H_obs,
+            "status": penetrance_config.threshold_status,
+        },
         "report": {
             "master_seeds": list(penetrance_config.report_master_seeds),
             "per_class": penetrance_config.report_per_class,

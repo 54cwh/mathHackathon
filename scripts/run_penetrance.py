@@ -93,6 +93,11 @@ def main(argv: list[str] | None = None) -> int:
             f"  median-midpoint={cal['theta_H_obs_median_midpoint']:.4g}"
             f"  misclass={cal['misclass_rate_H']:.3f}"
         )
+        if not (cal["separation_N"]["separable"] and cal["separation_H"]["separable"]):
+            print(
+                "  提示：存在不可分离轴 → θ 不可辨识，不可置 confirmed；"
+                "仅演示可设 threshold_status=placeholder。"
+            )
     else:
         payload = P.run_report(
             args.experiment_id,

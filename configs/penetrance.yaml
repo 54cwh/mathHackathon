@@ -7,7 +7,9 @@
 # 分层对它是无偏估计，且能让最小类 `aabb`（9:3:3:1 下 1/16）的 Wilson CI 可控。
 # 「9:3:3:1 计数演示」另用**未分层**样本 `demo_offspring`（与 pen 估计分开，delta-B §2.4）。
 # 校准/报告用不同命名空间（core §3），报告集不得调阈值。
-theta_N_obs: null  # 观测量阈值（作用于 N=|M|）；由 run_calibration 产出后人工签署写入
+# threshold_status: unset（默认，报告拒绝）| placeholder（演示用占位值）| confirmed（separable=true 后才可）
+threshold_status: unset
+theta_N_obs: null  # 观测量阈值（作用于 N=|M|）；校准产出后人工签署写入
 theta_H_obs: null  # 观测量阈值（作用于 CV_τ）；同上
 calibration:
   # 独立校准集：`AaBb × AaBb` 自交（genome §3）；种子与报告集不同（独立性）

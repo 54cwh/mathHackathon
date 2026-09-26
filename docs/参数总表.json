@@ -184,7 +184,7 @@
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
       "config": "configs/penetrance.yaml → theta_N_obs",
       "sensitivity": null,
-      "suggest": "校准器已实现（`experiment/penetrance.py` + `scripts/run_penetrance.py --mode calibrate`；实验登记 `experiment §3.9`）；跑校准后由人签署写入；**须先看 separation_N.separable=true 才可冻结**（不可分离则阈值不可辨识）"
+      "suggest": "校准器已实现（`experiment/penetrance.py` + `scripts/run_penetrance.py --mode calibrate`；实验登记 `experiment §3.9`）；跑校准后由人签署写入；**须先看 separation_N.separable=true 才可置 threshold_status=confirmed**；否则只能 threshold_status=placeholder 出演示表"
     },
     {
       "name": "theta_H_obs",
@@ -197,7 +197,7 @@
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
       "config": "configs/penetrance.yaml → theta_H_obs",
       "sensitivity": null,
-      "suggest": "校准器已实现（同 theta_N_obs；`scripts/run_penetrance.py --mode calibrate`）；同 theta_N_obs：须 separation_H.separable=true 才可冻结"
+      "suggest": "校准器已实现（同 theta_N_obs；`scripts/run_penetrance.py --mode calibrate`）；同 theta_N_obs：须 separation_H.separable=true 才可置 confirmed"
     },
     {
       "name": "penetrance_calibration_per_class",

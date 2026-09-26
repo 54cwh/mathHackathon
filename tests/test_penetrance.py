@@ -186,7 +186,7 @@ def test_calibration_payload_is_deterministic_and_reports_separation():
 
 
 def test_report_requires_frozen_thresholds():
-    with pytest.raises(ValueError, match="已冻结"):
+    with pytest.raises(ValueError, match="报告模式要求"):
         P.run_report("pen-test", penetrance_config=_small_config())
 
 
@@ -197,6 +197,7 @@ def test_report_payload_matches_schema():
         cfg,
         theta_N_obs=cal["theta_N_obs_min_misclass"],
         theta_H_obs=cal["theta_H_obs_min_misclass"],
+        threshold_status="placeholder",
     )
     payload = P.run_report("pen-test", penetrance_config=frozen)
     schema = json.loads((ROOT / "schemas" / "penetrance.schema.json").read_text("utf-8"))

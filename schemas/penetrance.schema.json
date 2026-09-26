@@ -33,10 +33,11 @@
     "observation_thresholds": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["theta_N_obs", "theta_H_obs"],
+      "required": ["theta_N_obs", "theta_H_obs", "status"],
       "properties": {
         "theta_N_obs": { "type": "number" },
-        "theta_H_obs": { "type": "number" }
+        "theta_H_obs": { "type": "number" },
+        "status": { "enum": ["confirmed", "placeholder"] }
       }
     },
     "report": {
