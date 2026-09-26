@@ -24,6 +24,7 @@ from evogenesis.experiment.collect import (
     collect_trajectories,
     default_trajectories,
 )
+from evogenesis.experiment.console import force_utf8_stdout
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ARENA_CONFIG = "configs/default_arena.yaml"
@@ -61,6 +62,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def main(argv: list[str] | None = None) -> None:
+    # 打印含“→”；被重定向时 stdout 回落 GBK，先切 UTF-8 以免崩溃。
+    force_utf8_stdout()
     args = _parse_args(argv)
 
     arena_config_path = Path(args.arena_config)

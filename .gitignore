@@ -37,6 +37,8 @@ htmlcov/
 *.bcf
 *.run.xml
 paper/**/*.pdf
+# 视觉抽查用的栅格化页面（`pdftoppm` 产物），非交付物
+paper/**/_*.png
 
 # --- Node（app/ 前端与演示 UI）---
 node_modules/

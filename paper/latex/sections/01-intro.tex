@@ -1,12 +1,94 @@
 \section{引言}\label{sec:intro}
 
 \subsection{问题与动机}
-\todo{一句问题陈述：自然系统的网络拓扑由 genome $\to$ development $\to$ circuit 逐级生成，}
-\todo{而主流 ANN 直接指定 architecture。把「生成过程」本身作为可演化对象会怎样？}
 
-\subsection{可检验的假设}
-\todo{H1 / H2 / H3，与 \texttt{问题定义与研究假设.md} 一致；未定稿的不要写进来。}
+当代深度网络的能力主要由两件事决定：\textbf{人工指定的架构}与大数据上的参数拟合。
+生物智能体则不同：它的网络拓扑由一段紧凑的基因组经\textbf{发育过程}生成，
+而个体一生中由经验造成的突触改变\textbf{不会写回基因组}——
+即所谓 genomic bottleneck：遗传信息必须先于网络结构，后天学习不得遗传
+\citep{bib1_zador2019,bib2_barabasi2023,bib3_shuvaev2024}。
 
-\subsection{与已有工作的差异}
-\todo{只引 \texttt{research/notes/bibliography.md} 已登记条目；正文用 \textbackslash cite\{bibN\_...\}，}
-\todo{对应 md 里的 [bib\#N]。未登记的引用＝缺陷。}
+由此产生两个可检验的问题，它们构成本文的主线：
+
+\begin{enumerate}
+  \item 若让\textbf{网络架构本身}也由「基因组 $\to$ 发育 $\to$ 连接组」生成，
+        能否得到既\textbf{可用}（可完成任务）又\textbf{多样}（不同基因型给出系统性不同的结构）的网络？
+  \item 若把「学习」严格限制为\textbf{当代权重的有界扰动}且\textbf{不接受其遗传}，
+        要为此付出什么代价？这一限制究竟是负担，还是塑造了可演化的结构？
+\end{enumerate}
+
+我们构建 \textsc{EvoGenesis} 作为回答上述问题的\textbf{可复现计算实验平台}。
+其数据流为（各算子的数学定义见 \S\ref{sec:method} 与 \texttt{问题定义与研究假设.md}）：
+\begin{equation}\label{eq:pipeline}
+G \;\xrightarrow{\;D_{\Theta}\;}\; (A,Z,\tau,W^{(0)},M)
+\;\xrightarrow{\;\text{DanioNet}\;}\; \mathcal{T}
+\;\xrightarrow{\;\mathcal{F}\;}\; F
+\;\xrightarrow{\;\mathcal{R}\;}\; \mathcal{P}_{t+1},
+\end{equation}
+其中 $G$ 为人工二倍体基因组，$D_\Theta$ 为发育算子（GRN $\to$ 细胞命运 $\to$ 连接组），
+$A,Z,\tau,W^{(0)},M$ 分别为连接矩阵、细胞身份、时间常数、发育初始权重与活跃神经元掩码，
+$\mathcal{T}$ 为个体在环境 $E$ 中的行为轨迹，$F$ 为适应度，$\mathcal R$ 为代际更新。
+\textbf{当代学习}发生在 $\mathcal{T}$ 之前：$W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，
+$L$ 只更新连接权重的幅度，且产生的增量 $\Delta W$ 不进入下一代（\S\ref{sec:method}）。
+
+本文的定位是\textbf{机制研究}而非刷榜：我们的贡献是一组互相约束的、
+关于「生成式编码 + 演化 + 有限当代学习」的系统性结论，
+而不是某个基准上的单点最优。
+
+\subsection{研究问题与假设}\label{sec:rq}
+
+我们把上述动机拆成五个研究问题（RQ）与五个可证伪假设（H）：
+
+\begin{itemize}
+  \item \textbf{RQ1}：紧凑基因组能否经发育算子生成\textbf{多样且可运行}的网络？\quad 对应 \textbf{H1}：
+        不同基因组在相同随机种子控制下产生\textbf{系统性}的连接组差异。
+  \item \textbf{RQ2}：单碱基变化能否经 motif $\to$ GRN $\to$ 连接组产生连续或突变式的结构变化？
+  \item \textbf{RQ3}：异质时间常数 $\tau_i$ 与发育生成的稀疏拓扑，是否改变性能、效率或鲁棒性？
+        \quad 对应 \textbf{H3}（异质 $\tau_i$ 形成与同质 $\tau$ 不同的\textbf{性能—效率权衡}）
+        与 \textbf{H4}（空间布线代价改变网络的局部性、稀疏性与有效边效率）。
+  \item \textbf{RQ4}：不同环境是否改变基因型、网络表型与行为的\textbf{选择结果}？\quad 对应 \textbf{H5}：
+        $F=F(G,E)$，\textbf{不存在对所有环境都占优的基因型}。
+  \item \textbf{RQ5}：孟德尔分离能否映射为\textbf{结构分离}与\textbf{行为分离}？
+  \item 另有 \textbf{H2}：连接组与神经元动力学的差异导致行为差异（当前\textbf{尚无专门实验}，
+        建议以连接组—行为矩阵的相关检验补足）。
+\end{itemize}
+
+\textbf{量化判据}（阈值属独立标定任务，不在本文主张内）：
+H1 用 within-ensemble 图距离（以重连零模型为基线）\citep{bib20_hartle2020}；
+H2 用 Mantel 检验 \citep{bib21_smouse1986}；
+H3 用性能—效率 Pareto 前沿 \citep{bib23_deb2002}；
+H4 以平均连接距离度量局部性、并与图论 efficiency 区分命名 \citep{bib22_latora2001}；
+H5 用 reaction norm / AMMI 检验基因型$\times$环境的秩反转
+\citep{bib24_via1985,bib25_malosetti2013}。
+
+\textbf{注意（统计能力）}：正式实验的独立随机种子数为 3，
+此时「3 对 3」标签置换检验的双侧最小 $p\approx0.10$，
+\textbf{不足以支持逐假设的置换检验}。因此 H1 采用 within-ensemble 口径、
+H2 采用 Mantel 检验，二者均不依赖 3 对 3 置换；其余结论以效应量与跨种子波动并列报告
+（见 \S\ref{sec:experiment}）。
+
+\subsection{与已有工作的差异}\label{sec:related}
+
+\textbf{与神经演化（neuroevolution）}：神经演化的经典路线是在\textbf{网络结构或权重空间}上直接搜索，
+其与生物神经计算的对应关系近年被系统梳理 \citep{bib5_miikkulainen2025}。
+本文把可演化的对象\textbf{上移一层}：搜索空间是\textbf{生成网络结构的基因组}，
+网络结构是发育的产物而非被直接编码的量。这一上移使「同源基因组 + 不同随机种子」
+与「单碱基扰动」都成为可测量的结构变异来源（RQ1/RQ2）。
+
+\textbf{与发育式编码 / genomic bottleneck}：已有工作已经证明紧凑基因组可以编码先天能力
+\citep{bib1_zador2019,bib3_shuvaev2024}，并以发育先验生成权重矩阵
+\citep{bib2_barabasi2023}，或用简单随机发育生成模型重建小脑连接组 \citep{bib4_richter2025}。
+本文的差别在三处：(i) 评价场景是\textbf{闭环生态仿真}（觅食、避敌、能量与生长），
+行为通过感知—动作回路与环境耦合，而非静态分类任务；
+(ii) 同时检验结构多样性、结构—行为联系、时间常数异质性、空间代价与环境依赖这五组问题，
+使各机制之间互相约束；
+(iii) 显式测量\textbf{「后天权重的当代扰动不遗传」}这一边界的代价，而不只展示先天编码的能力上限。
+
+\textbf{与神经架构搜索（NAS）}：\todo{此处需要与 NAS / HyperNEAT 类方法的对比引用，
+但当前 \texttt{research/notes/bibliography.md} 中\textbf{尚未登记} NEAT/HyperNEAT/NAS 相关文献——
+按仓库硬约束「未登记即引用＝缺陷」，\textbf{不得先写引用再补}。
+需先完成文献登记（OpenAlex 核验）再补写本段。}
+
+\textbf{本文不主张}：我们不主张所提架构在任一基准上取得最优性能；
+也不主张人工基因组与真实斑马鱼基因组同构。相关建模假设的完整列表见
+\texttt{问题定义与研究假设.md} \S4。
