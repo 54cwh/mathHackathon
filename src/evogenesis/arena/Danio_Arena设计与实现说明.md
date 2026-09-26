@@ -55,7 +55,7 @@ Danio Arena 是 DanioNet 的行为测量环境，同时承担现场 Demo。目�
 - 3 predators
 - 6 obstacles
 
-Fast Evolution 使用 48 个 Danio 个体，不渲染所有轨迹。【已定稿】
+**两种规模，勿混用【已定稿】**：`Live`/Demo 与 `ExpertPolicy` 基线用 **12** 鱼（本节默认，`population.n_fish=12`）；**Fast Evolution / Experiment F** 用 **48** 个 Danio 个体（`configs/evolution.yaml::population_size`），由编排层按实际 viable 数覆盖 `population.n_fish`（`pipeline/arena_episode.py`）后传入 Arena，不渲染全部轨迹。`experiment §4` 的 12 鱼前置区分力检查属前者。
 
 ## 4. 视野
 鱼不拥有全图信息。每条鱼具有：
@@ -68,6 +68,7 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 
 ### 4.1 12 维 observation 编码（本文件为编码 owner）
 > **值域契约**：12 维的语义 / 顺序 / **值域 `[0,1]`** / dtype（`float32`）由 `../connectome/DanioNet设计规范.md` §2（v1.8，2026-09-26 冻结）own；本节职责是**编码规则**，其结果须映射到该区间。
+> ⚠️ **dtype 现状（对齐缺口）**：`sensing.observe()` 返回 **`float64`**（`sensing.py:162` `dtype=float`），而 DanioNet §2 契约是 `float32`。当前由下游转换为 `float32`（`pipeline/arena_episode.py` 写入 `np.float32` 数组；`core §7` 定「消费方转换」），故**契约未被违反**；但若未来直接把 `arena.observe()` 输出喂给 DanioNet，须先转 `float32`。改 Arena 内部 dtype 会轻微改变 `ExpertPolicy` 动作（float64→float32 舍入）从而作废 §18.11 基线，故**暂不改**。
 本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。【草案待确认】（公式由实现先行落地，待认领表 A1）
 
 现状（代码）：
