@@ -5,7 +5,7 @@ owner：`pipeline/模型链装配.md` §4。上游：`development`（发育/viab
 
 **范围与约定**：只把通过 `RGCD §7` viability 的个体放进 Arena（其保证 motor 左右池非空
 ⇒ DanioNet 可构造），`population.n_fish` 按实际数覆盖。Arena 实体 id 直接用 `core §3.1`
-的稳定 `fish_id`（`Individual.fish_id`，本模块传入 `DanioArena(fish_ids=...)`）。
+的稳定 `fish_id`（`ChainIndividual.fish_id`，本模块传入 `DanioArena(fish_ids=...)`）。
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from evogenesis.development.config import DEFAULT_CONFIG as DEFAULT_RGCD_CONFIG
 from evogenesis.development.config import RGCDConfig
 from evogenesis.development.rgcd import ConnectomePhenotype
 from evogenesis.pipeline.model_chain import (
-    Individual,
+    ChainIndividual,
     ModelChainConfig,
     danionet_of,
     motif_catalog,
@@ -41,13 +41,13 @@ class ArenaEpisodeResult:
 
 
 def viable_pairs(
-    individuals: Sequence[Individual],
+    individuals: Sequence[ChainIndividual],
     motifs: Sequence[str],
     *,
     master_seed: int,
     config: RGCDConfig = DEFAULT_RGCD_CONFIG,
     device: str = "cpu",
-) -> list[tuple[Individual, ConnectomePhenotype]]:
+) -> list[tuple[ChainIndividual, ConnectomePhenotype]]:
     """发育并保留 `viable` 个体（`RGCD §7`）；其余不入 Arena。"""
     phenotypes = phenotypes_of(
         individuals, motifs, master_seed=master_seed, config=config, device=device
@@ -60,7 +60,7 @@ def viable_pairs(
 
 
 def run_arena_episode(
-    individuals: Sequence[Individual],
+    individuals: Sequence[ChainIndividual],
     *,
     master_seed: int,
     chain: ModelChainConfig,

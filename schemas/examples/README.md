@@ -1,8 +1,8 @@
 # Schema Examples（契约示例）
 
 > 状态：示例数据。`genome/fish/experiment` 实例已通过各自 schema 校验；
-> `trajectory_example.jsonl` 与 `event_log_example.jsonl` 为**旧草案**，与已定稿契约不一致（见下表），
-> **不得被代码依赖**，待重生成。
+> `trajectory_example.jsonl` 仍为**旧草案**，与已定稿契约不一致（见下表），**不得被代码依赖**，待重生成；
+> `event_log_example.jsonl` 已按事件词表 v1 重生成（见下）。
 >
 > 本目录是**契约示例**，不是仿真运行产物——真实 run 数据属于
 > `results/runs/`（不入库）。
@@ -15,7 +15,7 @@
 | `fish_example.json` | `schemas/fish.schema.json` | schema 已冻结，实例已通过校验 |
 | `experiment_example.json` | `schemas/experiment.schema.json` | schema 已冻结，实例已通过校验 |
 | `trajectory_example.jsonl` | 已定稿 `schemas/trajectory.schema.json` | ⚠️ 陈旧：8 行仅 4 键、无 header，未通过校验（`research/notes/评估指标与事件映射-草案.md` S-09）；待重生成 |
-| `event_log_example.jsonl` | 事件词表 v1（`arena/Danio_Arena设计与实现说明.md` §18.4.2） | ⚠️ 陈旧：4 行、payload/result 与实现不符、缺 4 类（§18.4.4）；待重生成 |
+| `event_log_example.jsonl` | 事件词表 v1（`arena/Danio_Arena设计与实现说明.md` §18.4.2） | ✅ 已重生成：8 类各 1 条、payload 与实现逐字段一致（§18.4.4 闭合） |
 
 ## 生成来源（provenance）
 
@@ -30,6 +30,14 @@
     `(ω, v)` 由该策略对观测向量直接计算，非手工编造
 - `experiment_example.json` 中的 `seed: 1103` 取自
   `configs/experiment_seeds.yaml` 的第一个正式种子。
+
+### event_log_example.jsonl 重生成（2026-09-26）
+
+- **来源一（6 类，真实 episode 摘录）**：默认 `ArenaConfig()`、示例种子 `20260925`、600 步、`ExpertPolicy` 驱动；取各类**首次出现**的一条：`arena.spawn` / `arena.prey_captured` / `arena.collision` / `arena.escape` / `arena.fish_captured` / `arena.episode_end`。
+- **来源二（2 类，受控场景）**：`arena.capture_attempt` 与 `arena.energy_depleted` 在默认配置下**不可自然观测**（能量不会耗尽；前向锥内出现"过大猎物"罕见），故由受控场景触发（均为 arena 真实代码路径产出）：
+  - `capture_attempt`：鱼正前方 2.0 处放置 `size=5.0` 的猎物（`size_ratio=0.2 < κ=1.25` → `too_small_to_eat`）。
+  - `energy_depleted`：将某鱼能量置 0 后结算一步。
+- 摘录行保留原始 `seq` / `step`；受控场景行的 `seq` 为示例内编号。**本文件是契约示例，不是仿真运行产物。**
 
 ## trajectory 观测向量的 12 维语义（connectome/DanioNet设计规范.md §2）
 

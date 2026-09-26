@@ -1,4 +1,8 @@
-{"seq": 1, "type": "arena.spawn", "step": 0, "payload": {"entity_id": "prey_07"}}
-{"seq": 2, "type": "arena.capture_attempt", "step": 302, "payload": {"fish_id": "fish_g000_ex01", "prey_id": "prey_07", "distance": 1.6, "size_ratio": 1.28, "threshold": 1.25, "capture_radius": 1.2, "result": "too_small_to_eat"}}
-{"seq": 3, "type": "arena.prey_captured", "step": 304, "payload": {"fish_id": "fish_g000_ex01", "prey_id": "prey_07", "distance": 0.9, "size_ratio": 1.32, "food_reward": 0.12}}
-{"seq": 4, "type": "arena.escape", "step": 306, "payload": {"fish_id": "fish_g000_ex01", "threat_source": "predator_03"}}
+{"seq": 1, "type": "arena.spawn", "step": 0, "payload": {"entity_id": "fish_00"}}
+{"seq": 2, "type": "arena.capture_attempt", "step": 0, "payload": {"fish_id": "fish_00", "prey_id": "prey_00", "distance": 2.0, "size_ratio": 0.2, "threshold": 1.25, "capture_radius": 4.61, "result": "too_small_to_eat"}}
+{"seq": 3, "type": "arena.prey_captured", "step": 21, "payload": {"fish_id": "fish_10", "prey_id": "prey_17", "distance": 4.595, "size_ratio": 1.76, "food_reward": 0.15153}}
+{"seq": 4, "type": "arena.collision", "step": 258, "payload": {"fish_id": "fish_04", "obstacle_id": "obstacle_03"}}
+{"seq": 5, "type": "arena.escape", "step": 101, "payload": {"fish_id": "fish_01", "threat_source": "predator_00"}}
+{"seq": 6, "type": "arena.energy_depleted", "step": 0, "payload": {"fish_id": "fish_00", "survival_steps": 0}}
+{"seq": 7, "type": "arena.fish_captured", "step": 344, "payload": {"fish_id": "fish_09", "predator_id": "predator_01", "survival_steps": 345}}
+{"seq": 8, "type": "arena.episode_end", "step": 600, "payload": {"steps": 600, "fish_alive": 11, "prey_remaining": 24}}

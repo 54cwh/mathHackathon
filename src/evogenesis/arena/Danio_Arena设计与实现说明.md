@@ -486,22 +486,11 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 #### 18.4.4 与草案实例 `schemas/examples/event_log_example.jsonl` 的差异
 
-该实例按 §5.1 **草案**生成，早于当前实现。**现状核对（已部分对齐，但未闭环）**：
+**现状核对（2026-09-26：已重生成并闭环）**：`schemas/examples/event_log_example.jsonl` 已按 v1 词表重生成，覆盖 **8 类事件各一条**，payload 与实现逐字段一致（信封 `{seq, type, step, payload}` 与 §18.4.1 同源）。原第 2 行判据矛盾已消除（现为 `size_ratio=0.2 < κ=1.25` 的 `too_small_to_eat`）。
 
-| 实例行 | 实例现状 | 实现口径 | 状态 |
-|---|---|---|---|
-| 1 | `arena.spawn`, payload `{entity_id}` | `{entity_id}`（无坐标/尺寸；位置尺寸走 snapshot） | ✅ 键名已对齐 |
-| 2 | `arena.capture_attempt`, `result: "too_small_to_eat"`, `size_ratio: 1.28`, `threshold: 1.25` | `capture_attempt` 仅在 `size_ratio ≤ κ` 时发射 | ❌ **判据自相矛盾**：`1.28 > 1.25` 应走 `prey_captured`，该行非法 |
-| 3 | `arena.prey_captured`, `{fish_id, prey_id, distance, size_ratio, food_reward}` | 同字段 | ✅ 逐字对齐 |
-| 4 | `arena.escape`, `{fish_id, threat_source}` | `{fish_id, threat_source}` | ✅ 字段已对齐（`reaction_latency_steps` 已移除） |
-| — | 共 4 行 | 实现有 8 类 | ❌ **缺** `arena.collision` / `arena.energy_depleted` / `arena.fish_captured` / `arena.episode_end` |
-
-**动作（二选一，尚未执行；责任人李辰钊）**：
-
-- **首选**：依 v1 词表**重生成** `schemas/examples/event_log_example.jsonl`，覆盖 8 类事件并与 `tests/test_arena.py::KNOWN_EVENTS` 同源；同步更新 `schemas/examples/README.md` 的 provenance 段。**现状：未重生成**（仍 4 行，第 2 行判据矛盾未除）。
-- **备选**：**降级**为"字段形状示意"，在文件头（或 README）显式标注"该实例仅示意信封形状，**字段名与取值不以本文为准**，以 `src/evogenesis/arena/Danio_Arena设计与实现说明.md` §18.4.2 为准"，并保留"待重生成"标记。**现状：未降级。**
-
-在该实例闭环（重生成或降级）前，**不得被代码依赖**（`schemas/examples/README.md` 已声明"冻结前不可被代码依赖"）。
+- 6 类取自默认 `ArenaConfig()`、示例种子 `20260925` 的真实 600 步 episode（首次出现）；
+- `arena.capture_attempt` 与 `arena.energy_depleted` 在默认配置下不可自然观测，由受控场景触发（arena 真实代码路径产出）。
+- provenance 明细见 `schemas/examples/README.md`。该实例现**可被代码依赖**（与 `tests/test_arena.py::KNOWN_EVENTS` 同词表）。
 
 ---
 

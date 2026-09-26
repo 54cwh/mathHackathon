@@ -6,7 +6,7 @@ from evogenesis.pipeline.arena_episode import (
     viable_pairs,
 )
 from evogenesis.pipeline.model_chain import (
-    Individual,
+    ChainIndividual,
     ModelChainConfig,
     danionet_of,
     initial_population,
@@ -18,7 +18,7 @@ from evogenesis.pipeline.model_chain import (
 
 __all__ = [
     "ArenaEpisodeResult",
-    "Individual",
+    "ChainIndividual",
     "ModelChainConfig",
     "danionet_of",
     "initial_population",

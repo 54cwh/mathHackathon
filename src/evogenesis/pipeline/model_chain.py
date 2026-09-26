@@ -50,7 +50,7 @@ def load_model_chain_config(
 
 
 @dataclass(frozen=True)
-class Individual:
+class ChainIndividual:
     """generation 0 个体：稳定 `genome_id` / `fish_id`（`core §3.1`）+ 二倍体 genome。
 
     `fish_id` 为个体在本代 Arena 的稳定身份（`mint_id(..., "fish", 0, index)`），
@@ -68,19 +68,19 @@ def initial_population(
     experiment_id: str,
     n: int,
     layout: GenomeLayout = DEFAULT_LAYOUT,
-) -> tuple[Individual, ...]:
+) -> tuple[ChainIndividual, ...]:
     """generation 0 种群：均匀 i.i.d. 基因组（`genome §2`；`initial_population` 命名空间）。"""
     if n < 1:
         raise ValueError("n 必须 ≥ 1")
     manager = SeedManager(master_seed)
-    individuals: list[Individual] = []
+    individuals: list[ChainIndividual] = []
     for index in range(n):
         genome_id = mint_id(experiment_id, "genome", 0, index)
         fish_id = mint_id(experiment_id, "fish", 0, index)
         genome = random_genome(
             layout, rng=manager.spawn_rng("initial_population", index), genome_id=genome_id
         )
-        individuals.append(Individual(genome_id=genome_id, fish_id=fish_id, genome=genome))
+        individuals.append(ChainIndividual(genome_id=genome_id, fish_id=fish_id, genome=genome))
     return tuple(individuals)
 
 
@@ -104,7 +104,7 @@ def phenotype_of(
 
 
 def phenotypes_of(
-    individuals: Sequence[Individual],
+    individuals: Sequence[ChainIndividual],
     motifs: Sequence[str],
     *,
     master_seed: int,
