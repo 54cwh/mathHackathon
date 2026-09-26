@@ -1,6 +1,6 @@
 """Arena config loader tests (arena/Danio_Arena设计与实现说明.md section 18.2)."""
 
-from dataclasses import asdict, fields
+from dataclasses import asdict, fields, replace
 from pathlib import Path
 
 import pytest
@@ -9,10 +9,12 @@ import yaml
 from evogenesis.arena.config import (
     ARENA_SECTIONS,
     DERIVED_READONLY_KEYS,
+    ActorDefaults,
     ArenaConfig,
     arena_config_snapshot,
     load_arena_config,
 )
+from evogenesis.arena.env import DanioArena
 
 REPO = Path(__file__).resolve().parents[1]
 ARENA_YAML = REPO / "configs" / "default_arena.yaml"
@@ -83,3 +85,33 @@ def test_env_section_and_field_names_are_case_insensitive():
 def test_missing_file_raises():
     with pytest.raises(FileNotFoundError):
         load_arena_config(REPO / "configs" / "does_not_exist.yaml")
+
+
+DERIVED_ONLY: dict[str, str] = {
+    "world.hz": "经 `WorldConfig.dt`（= 1/hz）消费；因此源码里出现的是 `cfg.world.dt`。",
+}
+
+
+def test_every_arena_config_field_is_actually_consumed():
+    """死旋钮守卫：每个字段都必须有消费点，否则改 config 不影响行为（审计 A7）。"""
+    src_dir = REPO / "src" / "evogenesis" / "arena"
+    src = ""
+    for f in sorted(src_dir.glob("*.py")):
+        src += f.read_text(encoding="utf-8")
+    dead = []
+    for section in fields(ArenaConfig):
+        for field in fields(section.type):
+            key = f"{section.name}.{field.name}"
+            if key in DERIVED_ONLY:
+                continue
+            if f"cfg.{key}" not in src:
+                dead.append(key)
+    assert not dead, f"未被代码消费的 Arena 配置字段（死旋钮）: {dead}"
+
+
+def test_predator_policy_gets_max_chase_steps_from_config():
+    """A7 回归：`actors.predator_max_chase_steps` 必须真的注入策略，而不是用策略自带的默认值。"""
+    # 冻结 dataclass：用 replace 造一个与 policies.py 默认值 80 不同的 cfg，未注入即会暴露
+    cfg = replace(ArenaConfig(), actors=replace(ActorDefaults(), predator_max_chase_steps=7))
+    arena = DanioArena(cfg, master_seed=1)
+    assert arena._pred_policy.max_chase_steps == 7

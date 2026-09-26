@@ -1015,3 +1015,28 @@
 
 
    用途：机制对照：时间驱动生精灵调度器（定时 + 保底数量双触发，`src/game_main.py:310-334`）；障碍物为伤害性事件（`game_settings.py`）——后者支持「障碍=负奖励事件」而非改 Arena 的接法。对照认领表 A7 与 §12。
+
+---
+
+## 待登记（未核验；**P0 债**，2026-09-26 由只读审计 `research/notes/引用登记缺口.md` 提出）
+
+> 本节条目**尚未**按本文件开头第 1–3 条规则完成核验（离线环境无法做 OpenAlex 核验），因此**不占正式编号、
+> 不得按 `[bib#n]` 引用**。补完核验后移入正式序列。
+
+**（待登记-1）Mihalitsis & Bellwood 2017** —— PLOS ONE，DOI `10.1371/journal.pone.0184679`（同行评议，待核验）
+
+    用途：**替代物种**最大可吞咽猎物体高 = SL 的 20–27%。**限定条件必须随引**：度量对象是**猎物体高**、物种为替代物种，
+    **不可**倒数为本项目的 `capture_size_ratio κ=1.25`（本项目 κ 属**设计选择**，见 `arena/Danio_Arena设计与实现说明.md` §8）。
+    首次出现处：`research/reference/zebrafish-escape-capture.md:71,94,101`（该处亦写明不可直接用于斑马鱼）。
+
+**（待登记-2）Arena 生物学调研共 5 组** —— `research/reference/` 下 `zebrafish-escape-capture.md`、`param-basis-biology.md`、
+`looming-and-growth.md`、`arena-boundary-collision.md`、`episode-termination-fitness.md` 所引文献**一条都未登记**
+（挂账最早见 `research/notes/arena-设计意见-给李辰钊.md`）。**影响**：凡据其取值的**冻结参数**，其依据目前不可核。
+
+**（待登记-3）`docs/参数总表.json` 的 `reference_magnitudes`** —— 其中 6 条来源（Fuiman & Webb 1988 / Plaut 2000 /
+Fuiman 1986 / Budick & O Malley 2000 / Patterson 2013 / McKee & McHenry 2020）未登记。
+
+**（待登记-4）License 复核** —— `[bib#217]` `tghbrk/fish-eat-fish` **未声明许可证**，其机制曾在
+`research/notes/契约决策记录.md`「开源机制对照的采纳」中被列为可借鉴项。**已核实未被实现**：
+`arena/policies.py` 无状态机（ExpertPolicy 仍是简单加权规则），故未复制代码；仍须补声明，
+见 `docs/declaration/THIRD_PARTY.md`（现为空表）。
