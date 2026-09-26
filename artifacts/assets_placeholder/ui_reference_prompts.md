@@ -309,6 +309,54 @@ Avoid: a dark background, antialiasing, gradients, rounded corners, glassmorphis
 
 ---
 
+## 步骤 1.5 —— 让 ChatGPT 自检这张图（出图后立刻用）
+
+**为什么要它检而不是你检**：它看得到图，我们看不到。但**「合格」必须由我们把话说死** ——
+否则它会给你一句「看起来很棒」。所以这一段做三件事：**把判据逐条写死**、**逼它逐条给证据**、
+**把「不确定」设成 Allow 的答案**（假 PASS 比假 FAIL 贵）。
+
+**用在出图之后、取色之前。** 不合格就先追问，合格了再进取色。
+
+```text
+Do not regenerate the image. Do not draw anything. Your task is ONLY to audit the image you just generated against a fixed checklist, and report.
+
+You are auditing strictly. Your job is to FIND FAILURES, not to reassure me. If you are unsure about an item, mark it UNSURE rather than PASS. A false PASS costs me far more than a false FAIL.
+
+For each item below, answer PASS / FAIL / UNSURE, and in one short sentence state exactly what in the image made you decide that. Refer to concrete locations: top bar, bottom bar, left column, middle column, right column.
+
+1. Aspect ratio: the image is landscape and close to 3:2 (about 1.5 wide to 1 tall). Not square, not 16:9.
+2. The three middle columns are exactly EQUAL in width.
+3. The right column's arena panel has a width-to-height ratio of about 5:3 - clearly wider than tall, about 1.67 to 1. Not tall, not square.
+4. There are NO rounded corners anywhere: not on panels, not on buttons, not on frames.
+5. The boundary between the dark arena and the light panels is a single HARD divider line of 1 to 2 pixels. There is no fade, blur, glow or gradient across it.
+6. There are NO readable numbers anywhere, and no axes, curves, charts, statistics, units or legends. All data areas are plain uniform placeholder blocks.
+7. The status item "Env" shows the value "Food Rich". The other five status items - "Gen", "Fish", "Prey", "Step", "Seed" - each show a plain uniform placeholder block, NOT a number.
+8. The bottom-right three items read "Evolution", "Experiment", "Playback" and are drawn as buttons or tabs, not as plain grey text, with "Experiment" appearing active or highlighted. The bottom-left has a button "Pause" and a button "Reset".
+9. Every edge is a HARD square pixel edge. No antialiasing, no blur, no soft or smooth edge anywhere.
+10. The middle column shows an abstract connection pattern that CANNOT be read as a network topology: no legible node or edge count, no labels, no axes, no progression from sparse to dense.
+
+Then state separately:
+- Any text in the image that is misspelled, garbled, invented, or that I did not ask for.
+- Any colour used that is not close to one of these hex values: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8.
+- Whether the image resembles any specific existing game's characters or interface. If yes, say what it resembles.
+
+Finally output exactly three things:
+A) A table of items 1-10 with your PASS / FAIL / UNSURE verdicts.
+B) One verdict line: QUALIFIED if all ten are PASS, otherwise NOT QUALIFIED followed by the failing item numbers.
+C) The single most important fix, written as one sentence I can paste back to you as an instruction.
+
+Write the whole report in Chinese. Do not regenerate the image unless I explicitly ask for it.
+```
+
+**拿到报告后怎么用**：
+
+- **QUALIFIED** → 存图到 `ref/ref_ui_p3.png`，进 §步骤 2 取色（**同一对话**，别关掉）。
+- **NOT QUALIFIED** → 优先用报告里 **C）那一句**去追问（它自己开出的药方，最贴症状）；
+  若 C）不对症，用 §步骤 3 的症状表。
+- **它把某条标 UNSURE** → 追问一句 `For item N, look again and tell me exactly what you see in that area.`
+- **它全部 PASS 但你觉得不对** → 以你的判断为准，直接说哪一条不对 —— 它有时会过度宽容。
+
+
 ## 步骤 2 —— 取色板提示词（在**同一对话**里追问，交给 ChatGPT）
 
 **为什么要 ChatGPT 做而不是我做**：取色板本质是**看图**判断——哪些色是主色群、哪些是同一色的明暗档、
