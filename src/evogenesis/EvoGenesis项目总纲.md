@@ -1,6 +1,7 @@
 # EvoGenesis 项目总交接稿
 
 > **管辖范围**：项目目标、系统层级、核心区别、默认规模、MVP 判据与现场交互闭环——总纲/导航。不拥有：模块内算法、参数取值。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+> 状态：**v1.0 已定稿（冻结 2026-09-26）**。§6 默认规模为导航用途的展示值，**取值 owner 是 `configs/` + `docs/参数总表.json`**。
 
 ## 1. 项目目标
 EvoGenesis 建立一个统一的数学—计算系统，使一段可编辑、可遗传的人工 DNA 真正进入神经网络生成过程，并沿以下链路影响行为：
@@ -123,14 +124,14 @@ Parent A → Parent B → meiosis/recombination → offspring → development �
 切换环境 → Evolve 1/5/10/20 Generations → allele / phenotype / fitness trajectory。
 
 ### Mendel Mode
-AaBb × AaBb → gametes → theoretical 9:3:3:1 → empirical finite-sample ratio → 四类 neural phenotype。
+AaBb × AaBb → gametes → theoretical 9:3:3:1 → empirical finite-sample ratio → 四类 neural phenotype（定义见 `genome/生物学与进化遗传学基础.md` §3）。
 
 ## 8. MVP 成功标准
 1. genome 能稳定解析。
 2. DNA 改变通过真实调控链改变发育结果。
 3. DanioNet 控制鱼连续转向和推进。
 4. Arena 产生可观察捕食和逃逸行为。
-5. 两个亲本生成遗传合理的 offspring。
+5. 两个亲本生成遗传合理的 offspring（判据：4 类计数对 9:3:3:1 的 χ² 拟合不拒绝，df=3、临界 7.8147；160 例为**演示**、非统计验证——功效不足，见 `research/reference/phenotype-threshold-mendel.md`）。
 6. 多代仿真更新 allele/genotype/phenotype/fitness。
 7. 同 seed 可复现。
 8. research seeds 与 demo seed 分离。
@@ -144,5 +145,4 @@ EvoGenesis 不是把遗传算法套在一个现成神经网络外面，而是把
 
 > 逐份阅读本文时发现的未定义点，需与 04 / 05 / 07 / 16 对齐后确认。
 
-1. **“四类 neural phenotype”未定义**：§7 Mendel Mode 输出“四类 neural phenotype”，但四类指什么、如何由 genotype 判定未写（G12）。
-2. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
+（无遗留：四类 phenotype 定义见 `genome/生物学与进化遗传学基础.md` §3；MVP 判据见 §8。）

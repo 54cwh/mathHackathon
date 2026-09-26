@@ -1,6 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
+> 状态：**v1.0 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 RGCD 输入：
@@ -38,6 +39,12 @@ q_k(S)=TopKMean_{s\subset S}a(M_k,s)
 
 说明：\(a=1-d_H/|M_k|\) 等价于"每列 one-hot、失配等权"的退化 PWM。标准 motif 表示是 PWM/PSSM（Stormo 2000），本项目采用简化式以提高可解释性与可编辑性，须在报告中声明为简化并配 PWM 对照。出处：`research/reference/design-basis-genome.md`。
 
+**参数（定稿）**：
+- motif 长度 \(|M_k|=6\) bp；滑窗 \(|s|=6\) bp、步长 1；`TopK` 的 \(K=3\)。
+- 8 条 motif 目录由 \(\Theta_D\) 的 seed 从 \(\{A,C,G,T\}^6\) 一次抽样后固定（不随个体或代变化）。
+- 扫描范围：每个 haplotype 有 **2 条染色体**（各 `bp_per_haplotype_chromosome`=128 bp，合计 haploid 256 bp）；窗口在**各染色体内**滑动、**不跨染色体边界**，`TopKMean` 在两条染色体的**窗口并集**上取 top-\(K\)。实现侧须按 2 条染色体存储（不塌成单串）。
+- 依据与定位：长度 6 bp 落在真实 TF motif 6–12 bp 区间下沿，属 A-life 尺度（`docs/设计依据审计.md` R5：Stormo 2000；Lambert et al. 2018）；\(K=3\) 与 motif 条数为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
+
 ## 3. Developmental domains
 初始 precursor：
 
@@ -63,6 +70,16 @@ D_S,D_P,D_T,D_M,D_I,D_O
 
 和 domain bias \(\mathbf d_i\)。
 
+**放置（定稿）**：24 个 precursor 在六个 domain 间**均匀分配**（每域 4 个）。位置取 **domain-blocked 均匀随机**：把归一化发育单位方域 \([0,1]^2\) 划为 \(3\times2=6\) 个 block（尺寸 \(1/3\times1/2\)），domain 按 \([S,P,T,M,I,O]\) 顺序映射到 block；每个 precursor
+
+\[
+\mathbf p_i=\mathbf{origin}_{domain(i)}+(u_1/3,\;u_2/2),\qquad u\sim U[0,1]^2 .
+\]
+
+位置空间为**归一化发育单位方域**（非 Arena 坐标）；§8 的距离项 \(\lambda\) 绑定此口径。\(\mathbf d_i=\mathbf c_{domain(i)}\) 为 one-hot 域偏置。
+
+依据与限定：随机放置足以复现特异功能连接（Hill et al. 2012 *PNAS* `[bib#123]`）；domain-blocked 为**工程选择**——给 \(-\lambda d_{ij}\) 非平凡空间结构，避免位置-命运硬耦合。
+
 ## 4. 唯一正式离散 GRN
 \[
 \boxed{
@@ -86,6 +103,12 @@ P\mathbf p_i+
 - sigmoid
 
 报告、代码、可视化均使用这一式。
+
+**形状（定稿）**：\(\mathbf g_i\in\mathbb R^8\)（`grn.dim=8`）、\(\mathbf q(G)\in\mathbb R^8\)、\(\mathbf p_i\in\mathbb R^2\) 原样输入（不做 embedding）；\(W_g\in\mathbb R^{8\times8}\)、\(B\in\mathbb R^{8\times8}\)、\(P\in\mathbb R^{8\times2}\)、\(\mathbf b\in\mathbb R^8\)。
+
+**初始化（定稿）**：\(W_g\) 取 Glorot/Xavier `[bib#126]` 后重标定谱半径 \(\rho(W_g)=0.9\)；\(B,P\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf b\sim\mathcal N(0,0.1^2)\)。全部由 seed manager 派生。
+
+依据与限定："谱半径 \(<1\Rightarrow\) echo-state property"是**经验条件**（Yildiz et al. 2012 `[bib#127]` 给出反例），故按稳定性启发式使用、并记录 \(\rho(W_g)\)；未找到阻尼 sigmoid GRN 的专属初始化惯例，其余尺度为**设计选择**。
 
 ## 5. Proliferation
 \[
@@ -112,6 +135,8 @@ daughter：
 24\le N\le48
 \]
 
+**参数与初始化（定稿）**：\(\mathbf w_d\in\mathbb R^8\)、\(b_d\in\mathbb R\)；\(\mathbf w_d\sim\mathcal N(0,(1/\sqrt8)^2)\)、\(b_d=0\)（分裂概率约 0.5）。分裂扰动 \(\epsilon_p\sim\mathcal N(0,0.05^2)\)（单位方域）、\(\epsilon_g\sim\mathcal N(0,0.1^2)\)；\(\mathbf p_{daughter}\) 裁剪回 \([0,1]^2\)。尺度均为**设计选择**（无外部依据，登记 `docs/参数总表.json`）。
+
 ## 6. Cell identity
 \[
 \mathbf l_i=U\mathbf g_i+\mathbf c_{domain(i)}
@@ -126,6 +151,8 @@ type_i=\arg\max_k z_{ik}
 \]
 
 domain bias 保证六个基础谱系有 developmental competence，DNA/GRN 决定各谱系扩张和属性。
+
+**参数与初始化（定稿）**：\(U\in\mathbb R^{6\times8}\)、\(\mathbf c_{domain}\in\mathbb R^6\)；\(U\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf c_{domain}\) 为 one-hot（本域位 \(+1.5\)，余为 0），给六个基础谱系 developmental competence。
 
 **owner**：`type_i` 如何由 GRN **产出**（本式）归本文件；六类**功能语义**与 left/right motor 标记归 `connectome/DanioNet设计规范.md` §1/§5。`argmax` 为离散化理想化（真实 fate 为连续谱 `[bib#75]`），建议同时记录 `z_i` 分布/熵。
 
@@ -149,11 +176,13 @@ Sensory\rightsquigarrow Motor
 有向路径。
 
 ### Dynamical viability
-zero-input 运行 50 steps：
-- 无 NaN
-- 无 Inf
-- state norm 不爆炸
-- 不永久全饱和
+zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps，\(\phi=\tanh\)。判据与阈值（**定稿**）：
+- (i) 无 NaN、无 Inf；
+- (ii) \(|h_i^t|<1\) 对所有 \(i,t\) 成立（**解析保证**：更新是 \(h_i^t\) 与 \(\tanh(\cdot)\in(-1,1)\) 的凸组合，权重 \((1-1/\tau_i),\,1/\tau_i\ge0\) 且和为 1，由 \(h^0=0\) 归纳即得——非工程阈值）；
+- (iii) 不永久全饱和：尾 10 步（\(t=40..49\)）平均饱和比例 \(<0.9\)，饱和定义为 \(|h_i^t|>1-10^{-3}\)；
+- (iv) \(\rho(W_g)<1\)（tanh 稳定性启发式，`[bib#127]`）。
+
+(iii)(iv) 为**工程判据**（设计选择）；(ii) 是模型的数学性质，报告可直接引用。
 
 ## 8. Connection probability
 \[
@@ -175,7 +204,23 @@ d_{ij}=\|\mathbf p_i-\mathbf p_j\|_2
 
 不允许 self-loop。通过 bias calibration 使平均 density 约 10%–20%。
 
-依据：空间布线代价项 \(-\lambda d_{ij}\) 有充分文献支撑——在 logit 中加入线性距离项等价于指数距离规则 \(P\propto e^{-\lambda d}\)（Ercsey-Ravasz et al. 2013 *Neuron*；Waxman 1988；Kaiser & Hilgetag 2004；综述 Bullmore & Sporns 2012）；cell-type 兼容项 \(z_i^T C z_j\) 对应 `[bib#4]`。注意 \(\lambda\) 有量纲，Arena 为无量纲坐标，须重标定而非照搬文献值。\(R(\cdot)\) 的具体形式待定（G1，见 `docs/设计依据审计.md`）。出处：`research/reference/design-basis-connectome.md`。
+依据：空间布线代价项 \(-\lambda d_{ij}\) 有充分文献支撑——在 logit 中加入线性距离项等价于指数距离规则 \(P\propto e^{-\lambda d}\)（Ercsey-Ravasz et al. 2013 *Neuron*；Waxman 1988；Kaiser & Hilgetag 2004；综述 Bullmore & Sporns 2012）；cell-type 兼容项 \(z_i^T C z_j\) 对应 `[bib#4]`。注意 \(\lambda\) 有量纲，本项目在**归一化发育单位方域**上取值（见下），不照搬文献的 mm 口径值。出处：`research/reference/design-basis-connectome.md`。
+
+**\(\gamma R(\cdot)\) 形式（定稿）**：取**中心化双线性 / Pearson 相关**。令 \(\bar g,\hat\sigma\) 为本代 \(N\) 个神经元在各分量上的均值与标准差，\(\hat{\mathbf g}_i=(\mathbf g_i-\bar g)\oslash\hat\sigma\)，则
+
+\[
+R_{ij}=\frac{1}{8}\sum_{k=1}^{8}\hat g_{ik}\hat g_{jk}\in[-1,1],\qquad M=I\ (\text{零参数}).
+\]
+
+中心化**只用于 \(R\) 项**，§4 的 \(\mathbf g\) 语义不变。依据：转录组/细胞类型相似度预测连线的双线性模型（Qiao et al. 2024 *eLife* `[bib#111]`；Kovács et al. 2020 *PNAS* `[bib#112]`；识别分子为异源、\(M\) 可非对角但 \(I\) 为可解释 MVP，Sanes & Zipursky 2020 `[bib#119]`）。**限定**：单用表达相似度预测连线的证据仅 AUC≈0.64（`[bib#111]`；Hayashi et al. 2022 反 Hebbian `[bib#121]`），故 \(R\) 按**弱偏置**使用并须报 \(\gamma=0\) 消融。
+
+**系数（定稿）**：\(\gamma=1.0\) 固定（属 \(\Theta_D\)，不演化；敏感性搜索 \(\{0.5,1,2\}\)）；\(\lambda=2.0\)（单位方域，\(E[d]\approx0.521\Rightarrow\lambda d\approx1.04\)，与 \(z_i^\top Cz_j\in[-2,2]\) 配平）。\(b_A\) 用**二分反解**到实测 off-diagonal density 落在 \([0.10,0.20]\)（目标 0.15）：
+
+\[
+b_A=\mathrm{logit}(p_{target})-E[z_i^\top Cz_j]+\lambda E[d]-\gamma E[R].
+\]
+
+\(\gamma,\lambda,b_A\) 均为项目标定/设计选择（\(\lambda\) 的量纲由单位方域归一化定义）。出处：`research/reference/rgcd-wiring-and-placement.md`。
 
 ## 9. Fixed compatibility prior
 | pre \\ post | S | P | T | M | I | O |
@@ -210,6 +255,8 @@ sign(w_{ij})=
 
 依据：Dale's principle（Dale 1935；Eccles, Fatt & Koketsu 1954 形式化），符号由**突触前**神经元类型决定，与突触后无关。建模实现可参见 Parisien et al. 2008、Cornford et al. 2021。注意共释放反例（Saunders 2015）存在，本项目按简化处理。出处：`research/reference/design-basis-neuro.md`。
 
+**参数与初始化（定稿）**：\(\mathbf u\in\mathbb R^{28}\)（\([\mathbf g_i;\mathbf g_j;\mathbf z_i;\mathbf z_j]\) 为 \(8+8+6+6\)）、\(b_w\in\mathbb R\)；\(\mathbf u\sim\mathcal N(0,(1/\sqrt{28})^2)\)，\(b_w=\mathrm{softplus}^{-1}(\bar w)\) 取稳态权重均值 \(\bar w=0.5\)。
+
 ## 11. Time constant
 \[
 \tau_i
@@ -227,6 +274,8 @@ sign(w_{ij})=
 \]
 
 依据与限定：在 \(hz=20\)（\(\Delta t=50\) ms）下，\(\tau_i\) 步等效于 \(50\text{–}500\) ms 的网络级整合时间常数——与 NMDA / GABA_B 及数百 ms 决策整合同量级，可辩护；但作为单神经元膜时间常数偏大（皮层约 20 ms）。文档须写明此处 \(\tau\) 的语义为"网络级整合"，且 \(\tau=1\) 退化为无记忆。出处：`research/reference/design-basis-neuro.md`。
+
+**参数与初始化（定稿）**：\(\mathbf a\in\mathbb R^8\)、\(b_\tau\in\mathbb R\)；\(\mathbf a\sim\mathcal N(0,(1/\sqrt8)^2)\)、\(b_\tau=0\)（\(\tau\) 均值约 5.5，展布由 \(\mathbf g\) 驱动）。
 
 ## 12. Genome Sensitivity
 单 base mutation：
@@ -252,28 +301,41 @@ d_{\tau}^{(l)}
 \sum_i|\tau_i(G)-\tau_i(G^{(l)})|
 \]
 
-behavior effect：
+behavior effect（四维向量，不合成标量）：
 
 \[
-\Delta B_l=
-w_1\Delta Capture+
-w_2\Delta Escape+
-w_3\Delta Survival+
-w_4\Delta Energy
+\Delta \mathbf B_l=
+(\Delta Capture,\ \Delta Escape,\ \Delta Survival,\ \Delta Energy)
 \]
 
-三个量并列展示，不强行混成单一总分。
+三个量——\(d_{edge}^{(l)}\)、\(d_{\tau}^{(l)}\)、\(\Delta \mathbf B_l\)——并列展示，不合成单一总分；权重 \(w_1\ldots w_4\) 不使用。
+
+## 13. 参数形状与初始化总表（定稿）
+
+| 参数 | 形状 / 取值 | 初始化 / 校准 | 依据或状态 |
+|---|---|---|---|
+| \(W_g\) | \(\mathbb R^{8\times8}\) | Glorot/Xavier → 谱半径 \(\rho=0.9\) | `[bib#126]`；稳定性启发式 `[bib#127]` |
+| \(B\) | \(\mathbb R^{8\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | 设计选择 |
+| \(P\) | \(\mathbb R^{8\times2}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | \(\mathbf p_i\) 原样输入（不 embedding） |
+| \(\mathbf b\) | \(\mathbb R^8\) | \(\mathcal N(0,0.1^2)\) | 设计选择 |
+| \(U\) | \(\mathbb R^{6\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | 设计选择 |
+| \(\mathbf c_{domain}\) | \(\mathbb R^6\) | one-hot，本域 \(+1.5\) | 保证六谱系 competence |
+| \(\mathbf w_d,b_d\) | \(\mathbb R^8,\mathbb R\) | \(\mathcal N(0,(1/\sqrt8)^2),\,0\) | 分裂率约 0.5 |
+| \(C\) | \(\mathbb R^{6\times6}\) | §9 固定 prior | 人工 prior |
+| \(\lambda\) | \(2.0\) | 单位方域归一 | 设计选择（量纲随坐标归一） |
+| \(\gamma\) | \(1.0\) | 固定（敏感性 {0.5,1,2}） | 弱偏置 `[bib#111]` |
+| \(b_A\) | 标量 | 二分反解到 density 0.15 | §8 校准流程 |
+| \(\mathbf u,b_w\) | \(\mathbb R^{28},\mathbb R\) | \(\mathcal N(0,(1/\sqrt{28})^2),\,b_w=\mathrm{softplus}^{-1}(0.5)\) | 设计选择 |
+| \(\mathbf a,b_\tau\) | \(\mathbb R^8,\mathbb R\) | \(\mathcal N(0,(1/\sqrt8)^2),\,0\) | 设计选择 |
+| \(\epsilon_p\) | \(\mathcal N(0,0.05^2)\) | — | 设计选择 |
+| \(\epsilon_g\) | \(\mathcal N(0,0.1^2)\) | — | 设计选择 |
+| motif 长度 / 窗口 / \(K\) | 6 bp / 6 bp / 3 | — | 审计 R5；\(K\) 为设计选择 |
 
 ## 阅读问题（待确认）
 
-> 逐份阅读本文时发现的未定义点，需与 01 / 02 / 03 / 05 / 16 对齐后确认。
+> 逐份阅读本文时发现的未定义点；§2–§8、§10–§11 各项已随本文件定稿（见 §13 总表）。
 
-1. **全部参数初始化未定义（G1）**：`W_g,B,P,b,U,c,w_d,b_d,ε_p,ε_g,γ,C,u,b_w,a,b_τ` 的形状与初始化方式未给；`b_A` 的 10%–20% density 校准流程未写。
-2. **`R(g_i,g_j,p_i,p_j)` 仅给出函数名（§8）**：连接概率中的 interaction 项具体形式未定义，无法实现。
-3. **motor 的 left/right 归属规则未定义（G2）**：§7 要求“至少一个 left-associated 与一个 right-associated motor”，但哪些细胞算 left/right、如何分配未写。
-4. **动作输出来源未指定（G3）**：connectome/DanioNet设计规范.md 的 `y_ω,y_v` 取自哪些 motor 细胞、左右两池如何合成未写。
-5. **motif 参数未给**：§2 的窗口长度 `|s|`、motif 长度、`TopK` 的 K 值未定义。
-6. **GRN 张量维度未给**：§4 的 `W_g / B / P / b` 维度、位置 `p_i` 如何嵌入（P 的编码方式）未写。
-7. **前体 domain 分配未定义**：§3 的 24 个前体如何分到 6 个 domain（是否均匀 4/domain）未写。
-8. **dynamical viability 阈值未给**：§7 “state norm 不爆炸”“不永久全饱和”的判据与阈值未写。
-9. **§12 ΔB 与“不混成单一总分”表述冲突**：§12 说三个量并列展示、不强行合成单一总分，但 `ΔB` 本身是 `w_1ΔCapture+…` 的加权总分；且权重 `w_1..w_4` 未给。
+（无遗留：
+- G2 left/right 标记归 `connectome/DanioNet设计规范.md` §5、G3 动作合成 \(y_\omega,y_v\) 归其 §4；§7 developmental viability 只**引用**该标记，属**范围外**，待 DanioNet 冻结时闭合。
+- \(\theta_N,\theta_H\) 数值（genome §6，G12）为**标定任务**，登记 `docs/参数总表.json`；本文件 §7 只引用其规则。
+- bp 口径（已定）：haploid \(=2\times128=256\) bp，motif 窗口逐染色体、不跨界，见 §2。）

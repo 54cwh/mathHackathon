@@ -392,3 +392,204 @@
   > 上述规范/文档若后续作为工程契约依据被正文引用，应另行登记到本文件或对应模块文档，不属本表「文献」范围。
 
 > 登记口径说明：#37 Stephens & Krebs (1986) 为学术专著，检索产物 peer_review=false，本表按硬约束可选项标 `未标注`；正文引用时须注明其为专著而非期刊同行评审文献。
+
+---
+
+## 依据新增（genome #1–#3，2026-09-26）
+
+> 来源：`research/reference/genotype-grn-aggregation.json`、`research/reference/phenotype-threshold-mendel.json` 的 `items`。
+> 登记范围：与 genome 未决项 #1（allele 聚合 / GRN 输入）、#2（dominance 阈值）、#3（四类 phenotype / Mendel）直接相关且预期会被引用的正式文献（论文 / 专著 / 开放教科书）。
+> 去重：已与 #1–#85 按 DOI / 标题比对；重复者不重登，见 `research/reference/bibliography-registration-genome.md`。
+> 核验：#86–#107 的 DOI 于 2026-09-26 经 OpenAlex `batch_resolve_references` 解析、卷期页经 OpenAlex/Crossref 二次核取；#108–#110 为开放教科书（稳定链接，非同行评审）。凡源未提供卷末页者在该条 `⚠️` 注明，未杜撰。
+
+### genome #1 allele 聚合 / GRN 输入（新增）
+
+86. Omholt SW, Plahte E, Øyehaug L, Xiang K. **Gene Regulatory Networks Generating the Phenomena of Additivity, Dominance and Epistasis.** *Genetics* 155(2), 969–980 (2000). `peer-reviewed`.
+    DOI: https://doi.org/10.1093/genetics/155.2.969
+    用途：genome #1——diploid GRN 中 additivity/dominance/overdominance/epistasis 由两条 allele 的 gene dosage 与下游非线性调控涌现；支撑「聚合算子 + 下游 σ/阈值共同决定显性」。⚠️ 具体 allele 合并方程本次未逐字取得（PMC PDF 解析失败），正式引用前须核对原文。
+
+87. Gjuvsland AB, Hayes BJ, Omholt SW, Carlborg Ö. **Statistical Epistasis Is a Generic Feature of Gene Regulatory Networks.** *Genetics* 175(1), 411–420 (2006). `peer-reviewed`.
+    DOI: https://doi.org/10.1534/genetics.106.058859
+    用途：genome #1——定量遗传模型结合 diploid 表达剂量网络，证明网络层产生统计非加性效应（Omholt 2000 的方法学后续）。
+
+88. Emmrich PMF, Roberts HE, Pancaldi V. **A Boolean gene regulatory model of heterosis and speciation.** *BMC Evolutionary Biology* 15, 24 (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1186/s12862-015-0298-0
+    用途：genome #1——diploid Boolean GRN 把双亲全部 allele 放入同一网络、由网络动态产生显性；证明「先合并成单一算子」并非唯一路线。
+
+89. Kacser H, Burns JA. **The molecular basis of dominance.** *Genetics* 97(3–4), 639–666 (1981). `peer-reviewed`.
+    DOI: https://doi.org/10.1093/genetics/97.3-4.639
+    用途：genome #1/#2——酶网络饱和非线性使单个 functional allele 通常已接近通路饱和；支撑 dominance 由下游非线性涌现、聚合算子不必取 max。
+
+90. Crombach A, Hogeweg P. **Evolution of Evolvability in Gene Regulatory Networks.** *PLoS Computational Biology* 4(7), e1000112 (2008). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pcbi.1000112
+    用途：genome #1——genotype（调控矩阵/阈值）→连续表达动力学的标准编码参照（单倍体，无两条 homolog 聚合）。
+
+91. Banzhaf W. **Artificial Regulatory Networks and Genetic Programming.** In *Genetic Programming Theory and Practice*, ch.4, 43–61, Kluwer (2003). `未标注`（专著章节，非期刊同行评审）.
+    DOI: https://doi.org/10.1007/978-1-4419-8983-3_4
+    用途：genome #1——ARN：promoter/coding bit 串经 XOR 匹配度→连续调控强度；「motif affinity→GRN 输入」最同构的人工编码（单倍体）。
+
+92. Kuo D, Banzhaf W, Leier A. **Network topology and the evolution of dynamics in an artificial genetic regulatory network model created by whole genome duplication and divergence.** *BioSystems* 85(3), 177–200 (2006). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.biosystems.2006.01.004
+    用途：genome #1——ARN 的「bit-match→调控强度」可核实细节与全基因组复制研究（单倍体，未定义两条 homolog 聚合）。
+
+93. Cussat-Blanc S, Harrington K, Banzhaf W. **Artificial Gene Regulatory Networks—A Review.** *Artificial Life* 24(4), 296–328 (2019). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/artl_a_00267
+    用途：genome #1——人工 GRN 的 genotype→GRN→phenotype 建模谱系总览；未给出统一的 allele 合并算子。
+
+94. Yan J, Qiu Y, Santos AMR, et al. **Systematic analysis of binding of transcription factors to noncoding variants.** *Nature* 591(7848), 147–151 (2021). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41586-021-03211-0
+    用途：genome #1——SNP-SELEX：对 reference/alternative 两条 allele 分别计算 PWM 打分、以 ΔPWM 表达效应；「两条 homolog 各算一次 affinity」有据，合并惯例不存在。
+
+95. Abramov S, Boytsov A, Bykova D, et al. **Landscape of allele-specific transcription factor binding in the human genome.** *Nature Communications* 12, 2751 (2021). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41467-021-23007-0
+    用途：genome #1——ASB：两条 allele 分别打分、以 P 值 log ratio 作 affinity fold-change；支持先分 haplotype 打分，合并算子须项目自定并显式声明。
+
+### genome #2 dominance 阈值（新增）
+
+96. Wilkie AOM. **The molecular basis of genetic dominance.** *Journal of Medical Genetics* 31(2), 89–98 (1994). `peer-reviewed`.
+    DOI: https://doi.org/10.1136/jmg.31.2.89
+    用途：genome #2——显性分子机制清单（haploinsufficiency / 剂量增加 / dominant negative 等）；显性取决于剂量与阈值而非固定规则。
+
+97. Billiard S, Castric V, Llaurens V. **The integrative biology of genetic dominance.** *Biological Reviews* 96(6), 2925–2942 (2021). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/brv.12786
+    用途：genome #2——统一 Fisher 与 Wright 两派：显性是 diploid genotype 与 phenotype 之间非线性映射的产物；为「聚合算子 + 下游非线性」提供权威综述口径。
+
+98. Veitia RA, Caburet S, Birchler JA. **Mechanisms of Mendelian dominance.** *Clinical Genetics* 93(3), 419–428 (2017). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/cge.13107
+    用途：genome #2——「剂量 + 阈值」框架下 haploinsufficiency 与 dominant negative 产生显性；直接支撑阈值型 dominance 建模。
+
+99. Agrawal AF, Whitlock MC. **Inferences About the Distribution of Dominance Drawn From Yeast Gene Knockout Data.** *Genetics* 187(2), 553–566 (2010). `peer-reviewed`.
+    DOI: https://doi.org/10.1534/genetics.110.124560
+    用途：genome #2——显性系数均值约 0.2、呈连续分布；用于论证 max（完全显性）是极端特例而非默认。
+
+100. Green RM, Fish JL, Young NM, et al. **Developmental nonlinearity drives phenotypic robustness.** *Nature Communications* 8, 1970 (2017). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41467-017-02037-7
+    用途：genome #2——Fgf8 剂量与表型间的非线性（饱和/阈值）压缩；实验证据支撑「一个 functional allele 足够」。
+
+101. Curnow RN. **The Multifactorial Model for the Inheritance of Liability to Disease and Its Implications for Relatives at Risk.** *Biometrics* 28(4), 931 (1972). `peer-reviewed`.
+    DOI: https://doi.org/10.2307/2528630
+    用途：genome #2/#3——Falconer liability-threshold 模型的形式化：连续潜在量超过阈值才发病；支撑「表达越阈→dominance-like」。⚠️ 末页未由 OpenAlex/Crossref 提供（仅首页面 931），正式 BibTeX 前须补全。
+
+102. Falconer DS. **The inheritance of liability to certain diseases, estimated from the incidence among relatives.** *Annals of Human Genetics* 29(1), 51–76 (1965). `peer-reviewed`.
+    DOI: https://doi.org/10.1111/j.1469-1809.1965.tb00500.x
+    用途：genome #2/#3——liability-threshold 模型奠基文献（连续 liability 超阈值→离散疾病/表型）。⚠️ 注：`genotype-grn-aggregation.json` 记为「未取得可核实 DOI」，本文件以 OpenAlex 解析该 DOI（Ann Hum Genet 29(1):51–76，引 1691）确认可核实，故登记；正式引用前建议再核原文可获取性。
+
+103. Falconer DS, Mackay TFC. **Introduction to Quantitative Genetics, 4th edition — Ch.18 Threshold characters.** *Addison Wesley Longman*, Harlow (1996). `未标注`（教材，非期刊同行评审）.
+    链接: https://archive.org/details/IntroductionToQuantitativeGenetics
+    用途：genome #3——「一个/多个阈值→二类/多类离散表型」（含三表型类、双阈值示例），四类 phenotype 合法化的直接依据。⚠️ 第18章具体页码（约 pp.306–310）与版次依 Internet Archive 第4版扫描与检索片段，正式 BibTeX 前须核对。ISBN 9780582243026。
+
+### genome #3 四类 phenotype / Mendel（新增）
+
+104. Gianola D, Foulley JL. **Sire evaluation for ordered categorical data with a threshold model.** *Genetics Selection Evolution* 15(2), 201 (1983). `peer-reviewed`.
+    DOI: https://doi.org/10.1186/1297-9686-15-2-201
+    用途：genome #3——有序分类表型的「潜变量 + 阈值」统计模型（probit/threshold）；Falconer 概念在统计实现层面的经典锚点。⚠️ 末页未由 OpenAlex/Crossref 提供（仅首页面 201），正式 BibTeX 前须补全。
+
+105. Kicheva A, Briscoe J. **Control of Tissue Development by Morphogens.** *Annual Review of Cell and Developmental Biology* 39, 91–121 (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.1146/annurev-cellbio-020823-011522
+    用途：genome #3——连续 morphogen 剖面经下游 GRN/信号阈值转为离散 cell fate；「连续表达→阈值→离散表型」的发育生物学依据。
+
+106. Simsek MF, Özbudak EM. **Patterning principles of morphogen gradients.** *Open Biology* 12(10), 220224 (2022). `peer-reviewed`.
+    DOI: https://doi.org/10.1098/rsob.220224
+    用途：genome #3——阈值解读 morphogen 梯度（French-flag）为离散表达域；阈值化离散化的标准范式。⚠️ `phenotype-threshold-mendel.json` 注明其 CC 具体版本未核，引用时须补核。
+
+107. Abdul Rahman H, Noraidi AA, Khalid ANH, et al. **Practical guide to calculate sample size for chi-square test in biomedical research.** *BMC Medical Research Methodology* 25, 144 (2025). `peer-reviewed`.
+    DOI: https://doi.org/10.1186/s12874-025-02584-4
+    用途：genome #3——χ² 拟合优度检验的功效/样本量口径（非中心 χ²，Cohen's w 经验界）；支撑 n=160 对 9:3:3:1 只称「演示」而非「验证」的判据。
+
+108. Iowa State University Digital Press. **Chapter 5: Gene Effects — Quantitative Genetics for Plant Breeding.** *Iowa State University Digital Press*（开放教科书）. `未标注`（开放教科书，非同行评审）.
+    链接: https://iastate.pressbooks.pub/quantitativegenetics/chapter/gene-effects
+    用途：genome #2——定量遗传标准编码 AA=+a, Aa=d, aa=−a；d=+a 或 −a 为完全显性；是把 max 算子解读为完全显性的定义依据来源。
+
+109. OpenStax / LibreTexts. **Alternatives to Dominance and Recessiveness (incomplete dominance).** *LibreTexts*（改编自 OpenStax Biology 2e），CC BY. `未标注`（开放教科书，非同行评审）.
+    链接: https://bio.libretexts.org/Bookshelves/Introductory_and_General_Biology/General_Biology_(Boundless)/12%3A_Mendel's_Experiments_and_Heredity/12.02%3A__Patterns_of_Inheritance/12.2D%3A_Alternatives_to_Dominance_and_Recessiveness
+    用途：genome #2/#3——完全显性（Aa 等同 AA→3:1）与不完全显性（杂合为中间表型→1:2:1）的定义；用于固定 Mendel Mode「完全显性」前提。
+
+110. Thompson Rivers University. **A Dihybrid Cross Showing Mendel's Second Law (Introduction to Genetics, open textbook).** *TRU Pressbooks*（开放教科书）. `未标注`（开放教科书，非同行评审）.
+    链接: https://opengenetics.pressbooks.tru.ca/chapter/a-dihybrid-cross-showing-mendels-second-law-independent-assortment
+    用途：genome #3——两独立位点、每基因完全显性时 AaBb×AaBb 后代 A_B_/A_bb/aaB_/aabb = 9/16:3/16:3/16:1/16；四类 phenotype 的孟德尔推导来源。
+
+---
+
+## 依据新增（RGCD 布线/放置/初始化，2026-09-26）
+
+> 来源：`research/reference/rgcd-wiring-and-placement.json`（OpenAlex 标题/DOI 核验 + 本次全量 OpenAlex `biblio` 复核）。登记记录见 `research/reference/bibliography-registration-rgcd.md`。
+
+111. Qiao M. **Deciphering the genetic code of neuronal type connectivity through bilinear modeling.** *eLife* 12, e91532 (2024). `peer-reviewed`.
+    DOI: https://doi.org/10.7554/eLife.91532
+    用途：RGCD §8——gene-expression 布线项 R 的双线性形式直接依据：预测连接矩阵 = X̂ Â (Ŷ B̂)^T ≡ X̂ (Â B̂^T) Ŷ^T，即 gene_i^T M gene_j（低秩 M=AB^T）；小鼠视网膜重建 r=0.83、隐维 2；C. elegans innexin→电突触 AUC≈0.64。⚠️ OpenAlex 记 publication_year 2023（reviewed preprint 版），电子正式版 2024-06-10（JSON）。
+
+112. Kovács IA, Barabási DL, Barabási AL. **Uncovering the genetic blueprint of the C. elegans nervous system.** *PNAS* 117(52), 33570–33577 (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.1073/pnas.2009093117
+    用途：RGCD §8——Spatial Connectome Model：B = X O X^T（对称双线性规则矩阵）+ 空间接触约束；支撑 R 用共享规则矩阵并与 -λd 联合使用（缺失接触当 0 会估错规则）。
+
+113. Kurmangaliyev YZ, Yoo J, LoCascio SA, Zipursky SL. **Modular transcriptional programs separately define axon and dendrite connectivity.** *eLife* 8, e50822 (2019). `peer-reviewed`.
+    DOI: https://doi.org/10.7554/eLife.50822
+    用途：RGCD §3/§8——果蝇 T4/T5 轴突/树突布线模块化转录程序；提示单一 g_i^T g_j 只捕捉汇总相似度，M=I 忽略轴突/树突规则分离。
+
+114. Arnatkevičiūtė A, Fulcher B, Pocock R, Fornito A. **Hub connectivity, neuronal diversity, and gene expression in the Caenorhabditis elegans connectome.** *PLoS Computational Biology* 14(2), e1005989 (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pcbi.1005989
+    用途：RGCD §8——表达↔连接统计关联的独立物种证据；关联非均匀，存在 hub 特异转录特征，R 不应当作均匀强预测器。
+
+115. Patiño M, Rossa M, Lagos WN, Patne NS, Callaway EM. **Transcriptomic cell-type specificity of local cortical circuits.** *Neuron* 112(23), 3851–3866.e4 (2024). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neuron.2024.09.003
+    用途：RGCD §3/§8——START（单突触狂犬病毒示踪 + snRNA-seq）：小鼠 V1 转录组亚型有特异局部输入连接；证据为亚型层级，非单细胞级精确可预测。
+
+116. Gamlin CR, Schneider-Mizell CM, Mallory M, Elabbady L, Gouwens NW, et al. **Connectomics of predicted Sst transcriptomic types in mouse visual cortex.** *Nature* 640(8058), 497–505 (2025). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41586-025-08805-6
+    用途：RGCD §3/§8——Patch-seq + EM：Sst 转录组类型参与不同皮层回路、各有连接规则；转录组类型携带连接规则信息（近期正向证据）。本次 OpenAlex 已补齐（W4409283541，引 23），修正 JSON「OpenAlex 未取到」。
+
+117. Tasic B, Yao Z, Graybuck LT, Smith KA, Nguyen TN, et al. **Shared and distinct transcriptomic cell types across neocortical areas.** *Nature* 563(7729), 72–78 (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41586-018-0654-5
+    用途：RGCD §3/§8——23,822 细胞 / 133 转录组细胞类型 ↔ 投射特异性分类学；只建立「类型↔投射特异」分类，不得据此声称给出 R 的函数形式。
+
+118. Sperry RW. **Chemoaffinity in the orderly growth of nerve fiber patterns and connections.** *PNAS* 50(4), 703–710 (1963). `peer-reviewed`.
+    DOI: https://doi.org/10.1073/pnas.50.4.703
+    用途：RGCD §8——chemoaffinity 假说：分子化学标记匹配靶点，是「分子匹配决定布线」的定性奠基；未给函数形式或量级，不能据此选定双线性/余弦。
+
+119. Sanes JR, Zipursky SL. **Synaptic Specificity, Recognition Molecules, and Assembly of Neural Circuits.** *Cell* 181(3), 536–556 (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cell.2020.04.008
+    用途：RGCD §8——识别分子（cadherin/neurexin/LRR/Ig）为异源相互作用 ⇒ 支持 M 非单位阵（低秩 M=AB^T）；M=I 是可解释简化而非文献必然。
+
+120. Caron SJC, Ruta V, Abbott LF, Axel R. **Random convergence of olfactory inputs in the Drosophila mushroom body.** *Nature* 497(7447), 113–117 (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nature12063
+    用途：RGCD §8 边界——单神经元层级强随机性（约 2000 KC 采样约 50 类 PN，n=200 KC 无重复输入组合）；R 只宜作概率偏置，不能决定单细胞级精确连接。
+
+121. Hayashi T, MacKenzie AJ, Ganguly I, Ellis KE, Smihula HM, et al. **Mushroom body input connections form independently of sensory activity in Drosophila melanogaster.** *Current Biology* 32(18), 4000–4012.e5 (2022). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cub.2022.07.055
+    用途：RGCD §8——布线不依赖感觉活动的反例：R 不应默认采用 Hebbian/共激活形式；若用活动依赖项须另立机制并声明适用范围。
+
+122. Rosenbaum R, Smith MA, Kohn A, Rubin JE, Doiron B. **The spatial structure of correlated neuronal variability.** *Nature Neuroscience* 20(1), 107–114 (2016). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nn.4433
+    用途：RGCD §2——单位正方形域、距离以域边长归一、连接概率随距离衰减；为 -λd 的坐标归一化与 λ 标定提供范式。
+
+123. Hill S, Wang Y, Riachi I, Schürmann F, Markram H. **Statistical connectivity provides a sufficient foundation for specific functional connectivity in neocortical neural microcircuits.** *PNAS* 109(42), E2885–E2894 (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1073/pnas.1202128109
+    用途：RGCD §2——298 细胞独立随机放置 + 轴突-树突统计重叠即可复现特异功能连接；直接支持 p_i ~ U(域) 而非规则网格。⚠️ OpenAlex 末页记作「94」（截断），E2894 依 PNAS 页面；正式 BibTeX 前复核。
+
+124. Risi S, Stanley KO. **An Enhanced Hypercube-Based Encoding for Evolving the Placement, Density, and Connectivity of Neurons.** *Artificial Life* 18(4), 331–363 (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/artl_a_00071
+    用途：RGCD §2——ES-HyperNEAT：固定几何 substrate + CPPN 按 (源坐标,目标坐标) 查询连接；规则网格是 neuroevolution 工程惯例（仅作参考，非生物机制证据）。详见 `research/reference/design-basis-connectome.md` R6。
+
+125. Ercsey-Ravasz M, Markov NT, Lamy C, Van Essen DC, Knoblauch K, et al. **A Predictive Network Model of Cerebral Cortical Connectivity Based on a Distance Rule.** *Neuron* 80(1), 184–197 (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neuron.2013.07.036
+    用途：RGCD §2——P ∝ exp(-λd) 距离依赖连接的最强实证规律；猕猴皮层 λ=0.188 mm^-1（二值密度约 66%），须按本项目无量纲尺度重标定，禁照搬。证据表另见 `research/reference/design-basis-connectome.md` R3。注：JSON 将其与 Waxman 1988、Kaiser & Hilgetag 2004 合并，后两者的独立链接见登记记录「未登记」。
+
+126. Glorot X, Bengio Y. **Understanding the difficulty of training deep feedforward neural networks.** *Proceedings of the 13th International Conference on Artificial Intelligence and Statistics (AISTATS), PMLR* 9, 249–256 (2010). `peer-reviewed`.
+    链接: https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf
+    用途：RGCD §10——Xavier/Glorot 初始化 Var(w)=2/(n_in+n_out)（uniform 上限 √(6/(n_in+n_out))）；用于 GRN 的 B、P、U、u 等非递归权重。⚠️ 无 DOI；页码 249–256 经 PMLR 官方页面核验。
+
+127. Yildiz IB, Jaeger H, Kiebel SJ. **Re-visiting the echo state property.** *Neural Networks* 35, 1–9 (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neunet.2012.07.005
+    用途：RGCD §10——谱半径 ρ(W)<1 与 echo state property；为 W_g 重标定到 ρ≈0.9 的「经验充分条件/稳定性启发式」提供依据（非定理，原文给出反例）。
+
+128. Bertschinger N, Natschläger T. **Real-Time Computation at the Edge of Chaos in Recurrent Neural Networks.** *Neural Computation* 16(7), 1413–1436 (2004). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/089976604323057443
+    用途：RGCD §10——随机递归网络的 ordered→chaotic 临界边界与「混沌边缘计算能力最高」；支持递归权重谱半径置于 ≈1 附近（对 D_M integrator-memory 相关）。
+
+129. Saxe AM, McClelland JL, Ganguli S. **Exact solutions to the nonlinear dynamics of learning in deep linear neural networks.** *arXiv* 1312.6120 (2013); ICLR 2014. `preprint`.
+    DOI: https://doi.org/10.48550/arXiv.1312.6120
+    用途：RGCD §10 备选——正交初始化（dynamical isometry）使奇异值均匀，缓解梯度爆炸/消失；仅作相关工作/现状，不作设计依据。⚠️ OpenAlex 记为 preprint（ICLR 2014 无正式 proceedings），JSON 的「peer-reviewed conference」标注不予采用。
+
+130. Weaver DC, Workman CT, Stormo GD. **Modeling Regulatory Networks with Weight Matrices.** *Pacific Symposium on Biocomputing (PSB)* 4, 112–123 (1999). `peer-reviewed`.
+    链接: https://psb.stanford.edu/psb-online/proceedings/psb99/Weaver.pdf
+    用途：RGCD §10——GRN 线性权重矩阵建模传统：随机权重矩阵 + 参数化非零比例/权值上下限 + 每基因至少一正一负输入；说明 GRN 历史上用「小随机+稀疏+有界」而非 Xavier，但稳定性判据与递归网络一致。

@@ -1,0 +1,178 @@
+{
+  "meta": {
+    "search_time": "2026-09-26",
+    "topic": "阈值/易患性模型、双基因位点表型映射、9:3:3:1 在 n=160 下的统计功效",
+    "scope": "为 EvoGenesis Mendel Mode 的未决点提供外部依据：(a) '四类 neural phenotype' 的推荐定义与阈值判定规则；(b) MVP '遗传合理' 判据；(c) 160 offspring 对 9:3:3:1 是'演示'还是'验证'。检索理论锚点（liability-threshold / threshold characters / 阈值化离散表型）与统计功效口径；不修改任何代码或上游文档。",
+    "sources_summary": "OpenAlex（引用网络与元数据）、tavily 网络检索、GitHub gh CLI、PMC/BMC 全文、Internet Archive（Falconer & Mackay 第4版全文片段）。统计功效部分为本报告用 scipy 对 n=160、4 类多项分布做的精确/非中心 χ² 计算（非文献数值，见 conclusions）。",
+    "notes": "所有引用数与日期以检索日 2026-09-26 的 OpenAlex/Google Scholar 页面为准。'四类 phenotype 绑定哪两个架构参数、阈值具体数值'属于项目自定义，无外部文献定义，标注为'待反解/需校准'。"
+  },
+  "items": [
+    {
+      "name": "The inheritance of liability to certain diseases, estimated from the incidence among relatives (Falconer 1965)",
+      "type": "paper",
+      "url": "https://doi.org/10.1111/j.1469-1809.1965.tb00500.x",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W1997887791",
+      "date": "1965-08-01",
+      "metrics": "OpenAlex cited_by_count=1691 (2026-09-26)",
+      "license": null,
+      "summary": "liability-threshold（易患性—阈值）模型的奠基文献：连续隐变量（liability）超过阈值即表现为离散疾病/表型。",
+      "relevance": 5,
+      "peer_review": true,
+      "notes": "Annals of Human Genetics（Wiley），closed access；正式引用前不可再分发原文。required 字段 metrics 有值；license 未公开 OA 许可，置 null。"
+    },
+    {
+      "name": "Introduction to Quantitative Genetics, 4th edition — Ch.18 Threshold characters (Falconer & Mackay 1996)",
+      "type": "other",
+      "url": "https://archive.org/details/IntroductionToQuantitativeGenetics",
+      "source": "Internet Archive / Addison Wesley Longman",
+      "source_url": "https://archive.org/details/IntroductionToQuantitativeGenetics",
+      "date": "1996",
+      "metrics": "无 OpenAlex 引用计数（图书）；为定量遗传学标准教材，被广泛引用（具体被引数未取，置 null）",
+      "license": "版权书（不可再分发）；Internet Archive 为借阅/扫描件",
+      "summary": "定量遗传学标准教材，第 18 章 'Threshold characters' 明确给出连续 liability + 一个/多个阈值 → 二类或多类离散表型；Fig 18.2 展示'三表型类、双阈值'。",
+      "relevance": 5,
+      "peer_review": false,
+      "notes": "教材无同行评审（置 false）。第 18 章约 pp.306–310，正文原句提及 'A threshold character with three phenotypic classes and two thresholds'。正式引用前建议核对具体页码与版次（本报告依据 Internet Archive 第4版扫描与检索片段）。ISBN 9780582243026，Addison Wesley Longman, Harlow。"
+    },
+    {
+      "name": "Sire evaluation for ordered categorical data with a threshold model (Gianola & Foulley 1983)",
+      "type": "paper",
+      "url": "https://doi.org/10.1186/1297-9686-15-2-201",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W2003087146",
+      "date": "1983-01-01",
+      "metrics": "OpenAlex cited_by_count=598；Google Scholar 页面显示 ~844 (2026-09-26)",
+      "license": "OA bronze (Genetics Selection Evolution)",
+      "summary": "把有序分类表型写成'潜在连续变量 + 阈值'的统计模型（probit/threshold model），并给出可计算的似然；是 Falconer 概念在统计实现层面的经典锚点。",
+      "relevance": 4,
+      "peer_review": true,
+      "notes": "OpenAlex 与 Google Scholar 引用数口径不同（598 vs 844），勿混用。"
+    },
+    {
+      "name": "Control of Tissue Development by Morphogens (Kicheva & Briscoe 2023)",
+      "type": "paper",
+      "url": "https://doi.org/10.1146/annurev-cellbio-020823-011522",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W4383500681",
+      "date": "2023-07-07",
+      "metrics": "OpenAlex cited_by_count=137 (2026-09-26)",
+      "license": "OA hybrid (Annual Review of Cell and Developmental Biology)",
+      "summary": "综述：连续的 morphogen 浓度剖面经下游 GRN/信号阈值被转成离散的 cell fate 与边界；为'连续表达 → 阈值 → 离散表型'提供发育生物学依据。",
+      "relevance": 4,
+      "peer_review": true,
+      "notes": "用于支撑项目把'聚合表达'阈值化为离散 phenotype 档的一般机制，而非某种具体数值。"
+    },
+    {
+      "name": "Patterning principles of morphogen gradients (Simsek & Özbudak 2022)",
+      "type": "paper",
+      "url": "https://doi.org/10.1098/rsob.220224",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W4306773899",
+      "date": "2022-10-01",
+      "metrics": "OpenAlex cited_by_count=53 (2026-09-26)",
+      "license": "OA gold (Open Biology)；具体 CC 版本未核",
+      "summary": "综述 morphogen 梯度与 French-flag/阈值解读：连续梯度被少数几个阈值读成离散表达域，是阈值化离散化的标准范式。",
+      "relevance": 3,
+      "peer_review": true,
+      "notes": "license 字段只确认 OA gold，CC 具体版本未逐字核，置说明而非断言。"
+    },
+    {
+      "name": "Practical guide to calculate sample size for chi-square test in biomedical research (Abdul Rahman et al. 2025)",
+      "type": "paper",
+      "url": "https://doi.org/10.1186/s12874-025-02584-4",
+      "source": "OpenAlex / PMC",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12107878",
+      "date": "2025-05-26",
+      "metrics": "OpenAlex cited_by_count=23 (2026-09-26)",
+      "license": "CC BY-NC-ND 4.0",
+      "summary": "给出 χ² 检验的样本量/功效公式：1-β = Pr[χ²(df, ncp=n·w²) > χ²(1-α,df)]，并给出 Cohen's w 的经验界（0.1 小 / 0.3 中 / 0.5 大）。",
+      "relevance": 5,
+      "peer_review": true,
+      "notes": "原文以 2×2 独立性检验示例（df=1），但非中心 χ² 框架对拟合优度检验（df=k-1）通用；本报告用它作 n=160 功效计算的口径依据。BMC Med Res Methodol 2025;25:144；PMID 40419970。"
+    },
+    {
+      "name": "Liability threshold model-based disease risk prediction based on electronic health record phenotypes (Lee et al. 2025)",
+      "type": "paper",
+      "url": "https://doi.org/10.1038/s41588-025-02370-4",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W4415790384",
+      "date": "2025-11-01",
+      "metrics": "OpenAlex cited_by_count=7 (2026-09-26)",
+      "license": "OA hybrid (Nature Genetics)",
+      "summary": "现代应用：把二值与连续临床表型整合为 liability，再按阈值建模；证明 liability-threshold 仍是当代活跃框架，可用于'连续潜变量 → 离散标签'的建模辩护。",
+      "relevance": 3,
+      "peer_review": true,
+      "notes": "发表年为 2025、引用数低，属'现代旁证'而非 seminal；不宣称其给出本项目阈值数值。"
+    },
+    {
+      "name": "OpenStax Biology 2e — Alternatives to Dominance and Recessiveness (incomplete dominance)",
+      "type": "other",
+      "url": "https://bio.libretexts.org/Bookshelves/Introductory_and_General_Biology/General_Biology_(Boundless)/12%3A_Mendel's_Experiments_and_Heredity/12.02%3A__Patterns_of_Inheritance/12.2D%3A_Alternatives_to_Dominance_and_Recessiveness",
+      "source": "LibreTexts / OpenStax",
+      "source_url": "https://openstax.org/books/biology-2e/pages/12-2-characteristics-and-traits",
+      "date": null,
+      "metrics": null,
+      "license": "CC BY（开放教材）",
+      "summary": "教科书定义：完全显性时杂合子等同显性纯合（Aa×Aa→3:1）；不完全显性时杂合子为中间表型（→1:2:1）；可用于固定 Mendel Mode 的'完全显性'前提。",
+      "relevance": 3,
+      "peer_review": false,
+      "notes": "开放教材，非同行评审。date/metrics 未取，置 null（版本页未固定）。"
+    },
+    {
+      "name": "Introduction to Genetics (Thompson Rivers University open textbook) — A Dihybrid Cross Showing Mendel's Second Law",
+      "type": "other",
+      "url": "https://opengenetics.pressbooks.tru.ca/chapter/a-dihybrid-cross-showing-mendels-second-law-independent-assortment",
+      "source": "TRU Pressbooks",
+      "source_url": "https://opengenetics.pressbooks.tru.ca/chapter/a-dihybrid-cross-showing-mendels-second-law-independent-assortment",
+      "date": null,
+      "metrics": null,
+      "license": "开放教材（具体 CC 版本未核）",
+      "summary": "教科书推导：两独立位点、每基因完全显性时，AaBb×AaBb 后代四表型类 A_B_/A_bb/aaB_/aabb = 9/16,3/16,3/16,1/16；并说明偏离 9:3:3:1 的条件（连锁等）。",
+      "relevance": 4,
+      "peer_review": false,
+      "notes": "标准孟德尔结果，教材级依据；非同行评审。"
+    },
+    {
+      "name": "statsmodels.stats.power.GofChisquarePower / chisquare_effectsize",
+      "type": "other",
+      "url": "https://www.statsmodels.org/stable/generated/statsmodels.stats.power.GofChisquarePower.html",
+      "source": "statsmodels docs",
+      "source_url": "https://www.statsmodels.org/stable/generated/statsmodels.stats.power.GofChisquarePower.html",
+      "date": null,
+      "metrics": null,
+      "license": "BSD-3-Clause (statsmodels)",
+      "summary": "Python 实现 χ² 拟合优度检验的功效/样本量（非中心 χ²；含 chisquare_effectsize），可直接用于把 160 例的功效检查写进 MVP 判据或实验报告。",
+      "relevance": 4,
+      "peer_review": false,
+      "notes": "库文档，非论文。API 名称来自官方文档与作者博客（jpktd.blogspot.com/2013/03/statistical-power-in-statsmodels.html）；本机未安装 statsmodels，仅核到 API 约定，未跑通。"
+    },
+    {
+      "name": "bvilhjal/ltpred — Liability Threshold Model Prediction Ideas",
+      "type": "repo",
+      "url": "https://github.com/bvilhjal/ltpred",
+      "source": "GitHub",
+      "source_url": "https://github.com/bvilhjal/ltpred",
+      "date": "2026-09-25 (last pushed)",
+      "metrics": "stars=1 (gh api, 2026-09-26)",
+      "license": "MIT",
+      "summary": "Python 的 liability-threshold 预测实验仓库（低关注度）；可作概念参照，但成熟度不足。",
+      "relevance": 1,
+      "peer_review": false,
+      "notes": "仅 1 star、无文档/测试证据不足，不建议直接依赖；列出仅为留痕，说明 GitHub 上缺少成熟可复用的 liability-threshold 实现。"
+    }
+  ],
+  "conclusions": [
+    "【推荐直接用】liability-threshold 作为'连续聚合表达 → 离散 phenotype'的理论锚点：Falconer 1965（seminal，OpenAlex 1691 引）给出连续 liability 经阈值产生离散表型的原始表述；Falconer & Mackay 1996 第 18 章明确支持'一个/多个阈值 → 二类/多类离散表型'（含三表型类双阈值示例），是把 4 类表型合法化的直接依据；Gianola & Foulley 1983 给出有序分类阈值模型的统计实现。发育侧旁证：Kicheva & Briscoe 2023、Simsek & Özbudak 2022 表明连续 signaling/表达经阈值被读成离散 cell fate。项目自定义部分：把 liability 取为 A/B 位点的聚合表达信号 E_A、E_B，并规定'至少一个 functional allele 越阈'即 dominance-like。阈值数值 θ_A/θ_B 无任何外部文献定义，必须标为'待反解/需校准'，不得编造。",
+
+    "【推荐直接用】'四类 neural phenotype'的推荐定义（文献支撑的部分 + 项目自定义的部分）：(1) 四类首先指 9:3:3:1 的四个基因型类 A_B_ / A_bb / aaB_ / aabb，概率 9/16,3/16,3/16,1/16——这是独立分配 + 每基因完全显性的标准孟德尔结果（教科书级，peer-reviewed 教材层面）。 (2) 每类映射到一个'架构档'，取二维 2×2：(neuron 数档 N，τ 异质性档 H)。推荐映射：A_B_→(高 N, 高 H)、A_bb→(高 N, 低 H)、aaB_→(低 N, 高 H)、aabb→(低 N, 低 H)。对应 RGCD 产物 (A,Z,τ,W⁰,M) 中 N=|M|（24–48）与 τ∈[1,10] 的离散化。 (3) 判定规则写成：E_A = A 位点相关 motif 聚合表达（GRN 输出标量），E_B 同理；high_N ⟺ E_A > θ_N；high_H ⟺ E_B > θ_H。阈值取校准集（如 ≥1000 个 offspring）上 A_ 与 aa（B_ 与 bb）两类 liability 中位数的中点，或取使错分率最小的分位点；须同时报告 penetrance（每基因型类被分到目标档的比例）。 (4) 文献支撑的是'连续→阈值→离散'与'两位点独立→9:3:3:1'；项目自定义的是'绑定 N 与 τ 这两个架构参数'以及 θ 的取值，须在论文中显式声明为孟德尔演示装置。 (5) 若阈值处噪声不可忽略，经验表型比例会偏离 9:3:3:1；此时应把'基因型比例（可精确 9:3:3:1）'与'表型穿透率/架构档比例（含噪声）'分开报告，不要混为一个数。",
+
+    "【仅作参考，需显式固定前提】完全显性 vs 不完全显性：只有'每基因完全显性 + 阈值保证一个 functional allele 越阈'才得到 9:3:3:1；若采用不完全显性（杂合为中间表型），单基因即为 1:2:1，二位点组合不会再给出 9:3:3:1 的四个类。因此 Mendel Mode 必须在文档中把'完全显性式阈值表型'冻结为契约，并把阈值规则写成可判定的（越阈判据 + penetrance 报告）。",
+
+    "【MVP 判据推荐】'遗传合理'建议写成预注册的两级判据，并规定措辞： (1) 基因型级：4 类计数对 9:3:3:1 做 χ² 拟合检验（df=3, α=0.05, 临界值 7.8147）；不拒绝 → 判为'与 9:3:3:1 相容'。可附加两个单位点 3:1 检验（df=1, 临界值 3.8415）。 (2) 架构级：每个基因型类被阈值规则分到其目标架构档的穿透率 ≥ 预注册下界（数值待定/需校准，建议先在校准集上定标再冻结）。 (3) 措辞纪律：160 例只能称'演示（demonstration）/与理论比例相容'，不能称'验证（verification）'——理由见下条功效计算。 (4) 若确要称'验证'，须改为等价检验（TOST）并预先声明容忍界，所需样本量待反解，或直接增大 n。",
+
+    "【n=160 的统计功效：本报告自算，非文献数值】对 4 类多项分布、H0=(9,3,3,1)/16、α=0.05（df=3, 临界 7.8147）的精确 χ² 拟合检验（枚举 715231 个计数向量，并用 4×10^5 次 Monte Carlo 复核）：实际检验 size=0.0491（标定良好）；80% 功效对应的 Cohen's w=0.261、非中心参数 λ=10.90（口径：Abdul Rahman et al. 2025 的 1-β=Pr[χ²(df,ncp=n w²)>临界]）。具体备择的精确功效：10:2:3:1 → 0.385（达 80% 需 n≈393）；9.5:3:3:0.5 → 0.192（n≈628）；p=(0.60,0.20,0.15,0.05) → 0.172（n≈818）；11:3:1:1 → 0.992（n≈98）；aabb 完全缺失的 2:1:1:0 → 非中心近似 0.957（n≈98）。单位点 3:1（n=160, df=1, 临界 3.8415, 精确 size=0.0546）：vs 0.70:0.30 功效 0.330；vs 2:1 功效 0.682；vs 0.65:0.35 功效 0.819；w80=0.221。95% 置信区间半宽（正态近似）：9/16 ±0.077（[0.486,0.639]）、3/16 ±0.061、1/16 ±0.038（[0.025,0.100]）。结论：160 例足以检测'缺一类/强偏离'，但对温和偏离（w≈0.11–0.17）功效仅 0.17–0.39；故 160 例是'演示'尺度，不构成对 9:3:3:1 的'验证'。若目标是把'与理论比例相容'做为 MVP 硬判据，建议把'不拒绝'与'穿透率下界'合取，并在论文中明确'不拒绝 ≠ 证明'。",
+
+    "【需进一步验证的风险点】(1) 阈值 θ_N/θ_H 的具体数值无文献来源，属项目设计参数，须校准并标'待反解'，禁止 AI 填空；(2) '用 N 与 τ 异质性两个参数承接两位点'是项目自定义，论文须声明为演示装置而非生物学结论；(3) Falconer & Mackay 第 18 章的具体页码/版次本次依据 Internet Archive 第4版扫描与检索片段，正式 BibTeX 引用前请核对；(4) Simsek & Özbudak 2022 的 CC 具体版本未核；(5) χ² 拟合中 1/16 类期望仅 10（≥5 经验下限但接近），本报告已用精确多项分布复核，正式报告建议同时给精确检验；(6) 本报告所有统计功效数值为自算结果，不是文献直接数字，若写入论文须标注为'按非中心 χ² 口径自行计算'并给出脚本与随机种子。"
+  ]
+}
