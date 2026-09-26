@@ -246,7 +246,7 @@ export interface DevelopmentPhenotype {
 
 /** 发育轨迹采样点（`API接口.md` §2.3；`交互与可视化.md` §4 的动画顺序）。 */
 export interface DevelopmentTraceSample {
-  stage: "grn" | "proliferate" | "connectome";
+  stage: "grn" | "proliferate" | "fate" | "connectome";
   step: number;
   n_neurons: number;
   /** 仅 proliferate 阶段。 */
@@ -261,6 +261,12 @@ export interface DevelopmentTraceSample {
   cell_type: number[] | null;
   /** 真实邻接表（边对 `[i, j]`，指向 `positions` 下标）；仅 connectome 阶段。 */
   edges: [number, number][] | null;
+  /** 逐神经元表达强度 `expr[i] = mean_d |g_id|`（`RGCD §4`）；grn/proliferate/fate/connectome 均有。 */
+  expr: number[] | null;
+  /** 逐个体 fate 置信度 `max_k z_ik`（`RGCD §6`）；仅 fate / connectome 阶段。 */
+  fate_conf: number[] | null;
+  /** 连接概率场 `p_ij`（`RGCD §8`，`N×N` 行主序）；仅 connectome 阶段。 */
+  probs: number[][] | null;
 }
 
 export interface DevelopmentResult {

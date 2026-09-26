@@ -588,6 +588,29 @@ def develop(
 
     z = cell_identity(state.grn, params.U, params.c_domain[state.domain_index])
     cell_type = z.argmax(dim=-1)
+    if trace is not None:
+        # FATE（§6）：分化落定的一幕 —— 只读 `state.grn` 与 `z`，不抽随机数。
+        active_fate = state.active_mask
+        with torch.no_grad():
+            trace.append(
+                {
+                    "stage": "fate",
+                    "step": 0,  # 非迭代阶段（同 connectome）
+                    "n_neurons": int(state.grn.shape[0]),
+                    "n_divisions": None,
+                    "n_edges": None,
+                    "mean_abs": float(state.grn[active_fate].abs().mean().item())
+                    if bool(active_fate.any())
+                    else 0.0,
+                    "max_abs": float(state.grn.abs().max().item()),
+                    "positions": [[float(v) for v in row] for row in state.positions.tolist()],
+                    "cell_type": [int(v) for v in cell_type.tolist()],
+                    "edges": None,
+                    "expr": [float(v) for v in state.grn.abs().mean(dim=-1).tolist()],
+                    "fate_conf": [float(v) for v in z.max(dim=-1).values.tolist()],
+                    "probs": None,
+                }
+            )
 
     tau = tau_from_grn(
         state.grn,
@@ -672,6 +695,10 @@ def develop(
                         [int(i), int(j)]
                         for i, j in torch.nonzero(adjacency != 0, as_tuple=False).tolist()
                     ],
+                    "expr": [float(v) for v in state.grn.abs().mean(dim=-1).tolist()],
+                    "fate_conf": [float(v) for v in z.max(dim=-1).values.tolist()],
+                    # 连接概率场 p=σ(ℓ+b_A)（§8）：真值、只读，画「两幕真值」第一幕。
+                    "probs": [[float(v) for v in row] for row in probs.tolist()],
                 }
             )
 

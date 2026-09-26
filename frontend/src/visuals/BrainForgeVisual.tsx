@@ -61,6 +61,7 @@ const FATE_COLORS = [
 const STAGE_COLORS: Record<string, string> = {
   grn: BRAND.shallowWater,
   proliferate: BRAND.amber,
+  fate: BRAND.bone,
   connectome: BRAND.bone,
 };
 
@@ -348,11 +349,17 @@ function drawBrainForge(
 
 /** 发育轨迹的当前采样（画真实几何用；`positions` 已在单位方域）。 */
 export interface DevelopmentGeometry {
-  stage: "grn" | "proliferate" | "connectome";
+  stage: "grn" | "proliferate" | "fate" | "connectome";
   positions: [number, number][];
   cellType: number[] | null;
   /** 真实邻接表；null = 该阶段无（或用户关闭图层）。 */
   edges: [number, number][] | null;
+  /** 逐神经元表达强度（`RGCD §4`）；GRN 阶段用它驱动节点明暗，让"表达上升"可见。 */
+  expr?: number[] | null;
+  /** 连接概率场 `p_ij`（`RGCD §8`）；`connectome` 阶段画「两幕」的第一幕用。 */
+  probs?: number[][] | null;
+  /** `connectome` 阶段画哪一幕：`"p"` 概率场 / `"a"` 采样邻接（默认 `"a"`）。 */
+  connFrame?: "p" | "a";
 }
 
 /**
@@ -391,7 +398,26 @@ function drawDevelopmentGeometry(
       oy + Math.round(Math.min(1, Math.max(0, y)) * (side - 1)),
     ];
   };
-  if (showEdges && geometry.edges && geometry.edges.length > 0) {
+  // 连接层。`connectome` 阶段有**两幕真值**（`交互与可视化.md` §4，用户 2026-09-27 裁决）：
+  //   ① `"p"` 概率场 `p_ij = σ(ℓ)`（模型的连接概率；透明度 ∝ p，只画 p ≥ 0.5 的候选）
+  //   ② `"a"` 采样邻接 `A`（真实边）。**不画"逐步长边"**——模型里没有这个过程。
+  const connFrame = geometry.connFrame ?? "a";
+  if (geometry.stage === "connectome" && connFrame === "p" && geometry.probs) {
+    const probs = geometry.probs;
+    const n = Math.min(probs.length, geometry.positions.length);
+    ctx.fillStyle = BRAND.shallowWater;
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (i === j) continue;
+        const p = probs[i]?.[j] ?? 0;
+        if (p < 0.5) continue;
+        const [x, y] = px(i);
+        ctx.globalAlpha = Math.min(1, Math.max(0.2, p));
+        ctx.fillRect(x, y, 1, 1);
+      }
+    }
+    ctx.globalAlpha = 1;
+  } else if (showEdges && geometry.edges && geometry.edges.length > 0) {
     ctx.fillStyle = BRAIN.microSegment;
     for (const [i, j] of geometry.edges) {
       if (i >= geometry.positions.length || j >= geometry.positions.length) continue;
@@ -410,15 +436,25 @@ function drawDevelopmentGeometry(
   const fallback = STAGE_COLORS[geometry.stage] ?? BRAIN.particleA;
   // 节点：11×11 实心方块（用户两轮要求加粗：3×3 → 5×5 → 11×11，约 2× 当前）。
   // 外圈先铺 1px 暗底再压亮色，让节点在边交叉处也读得出来。
+  // fate 未定的阶段（grn / proliferate）用 `expr` 驱动**明暗**：表达越强越亮 —— 于是 GRN 的
+  // 12 步迭代不再是一张静止图（节点尺寸仍是冻结的 11×11，只动明暗）。
+  const expr = geometry.expr ?? null;
+  const maxExpr = expr && expr.length > 0 ? Math.max(...expr) : 0;
   const NODE_HALF = 5; // 边长 = 2*half + 1 = 11
   geometry.positions.forEach((_position, index) => {
     const [nx, ny] = px(index);
     const fate = geometry.cellType?.[index];
     const color = typeof fate === "number" ? FATE_COLORS[fate % FATE_COLORS.length] : fallback;
+    const alpha =
+      typeof fate !== "number" && expr && maxExpr > 0
+        ? 0.25 + 0.75 * Math.min(1, (expr[index] ?? 0) / maxExpr)
+        : 1;
     ctx.fillStyle = BRAIN.clusterBase;
     ctx.fillRect(nx - NODE_HALF - 1, ny - NODE_HALF - 1, NODE_HALF * 2 + 3, NODE_HALF * 2 + 3);
+    ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
     ctx.fillRect(nx - NODE_HALF, ny - NODE_HALF, NODE_HALF * 2 + 1, NODE_HALF * 2 + 1);
+    ctx.globalAlpha = 1;
   });
 }
 

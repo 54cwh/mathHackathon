@@ -94,4 +94,9 @@ def _grn_sample(g: torch.Tensor, pos: torch.Tensor, *, step: int, stage: str) ->
             "cell_type": None,
             # 邻接表仅在连接组阶段存在；早期记 None（统一键集合，前端不必判键存在性）。
             "edges": None,
+            # 逐神经元表达强度 `expr[i] = mean_d |g_id|`（§4）—— 让 GRN 迭代阶段可见地"表达上升"。
+            "expr": [float(v) for v in g.abs().mean(dim=-1).tolist()],
+            # fate 置信度 `max_k z_ik`（§6）与连接概率场（§8）：仅在 fate / connectome 阶段存在。
+            "fate_conf": None,
+            "probs": None,
         }

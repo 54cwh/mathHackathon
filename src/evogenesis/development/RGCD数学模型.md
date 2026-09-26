@@ -274,6 +274,11 @@ d_{ij}=\|\mathbf p_i-\mathbf p_j\|_2
 
 不允许 self-loop。通过 bias calibration 使平均 density 约 10%–20%。
 
+**轨迹外露（2026-09-27；`API接口.md` §2.3）**：`connectome` 阶段的 trace 采样点额外给出
+`probs`，即上式 \(P(A_{ij}=1)\) 的**模型真值矩阵**（\(N\times N\)，行主序，`float32`，
+值域 \([0,1]\)；`allow_self_loops=False` 时对角线为 0）。前端据此把连接组画成**两幕真值**：
+先 \(p\)（概率场），再 \(A\)（一次采样得到的邻接）。两幕都是模型真值，**不逐步长边**。
+
 依据：空间布线代价项 \(-\lambda d_{ij}\) 有充分文献支撑——在 logit 中加入线性距离项等价于指数距离规则 \(P\propto e^{-\lambda d}\)（Ercsey-Ravasz et al. 2013 *Neuron*；Waxman 1988；Kaiser & Hilgetag 2004；综述 Bullmore & Sporns 2012）；cell-type 兼容项 \(z_i^T C z_j\) 对应 `[bib#4]`。注意 \(\lambda\) 有量纲，本项目在**归一化发育单位方域**上取值（见下），不照搬文献的 mm 口径值。出处：`research/reference/design-basis-connectome.md`。
 
 **\(\gamma R(\cdot)\) 形式（定稿）**：取**逐分量标准化后的双线性（弱偏置）**。令 \(\bar g,\hat\sigma\) 为本代 \(N\) 个神经元在各分量上的均值与**总体标准差（ddof=0）**，\(\hat{\mathbf g}_i=(\mathbf g_i-\bar g)\oslash\hat\sigma\)（**若某分量 \(\hat\sigma_k=0\)，该分量取 \(\hat g_{ik}=0\)，即该项贡献 0**），则

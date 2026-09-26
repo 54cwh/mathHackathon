@@ -96,10 +96,11 @@ class MutationResult(BaseModel):
 class DevelopmentTraceSample(BaseModel):
     """发育轨迹的一个采样点（`API接口.md` §2.3；`交互与可视化.md` §4 的动画顺序）。
 
-    键集合固定，便于前端把三阶段画成同一条时间线；该阶段不存在的量记 ``None``（缺失 ≠ 0）。
+    键集合固定，便于前端把各阶段画成同一条时间线；该阶段不存在的量记 ``None``（缺失 ≠ 0）。
+    阶段顺序：``grn``（0..development_steps）→ ``proliferate`` → ``fate`` → ``connectome``（`§4`）。
     """
 
-    stage: Literal["grn", "proliferate", "connectome"]
+    stage: Literal["grn", "proliferate", "fate", "connectome"]
     #: grn 阶段为步序号（0..development_steps）；proliferate 为轮次；connectome 为 0。
     step: int
     n_neurons: int
@@ -113,6 +114,14 @@ class DevelopmentTraceSample(BaseModel):
     cell_type: list[int] | None = None
     #: 真实邻接表（边对 `[i, j]`，指向 `positions` 的下标）；仅 connectome 阶段。
     edges: list[list[int]] | None = None
+    #: 逐神经元表达强度 `expr[i] = mean_d |g_id|`（`RGCD §4`）。
+    #: `grn` / `proliferate` / `fate` / `connectome` 阶段均有值。
+    expr: list[float] | None = None
+    #: 逐个体 fate 置信度 `max_k z_ik`（`RGCD §6`）；仅 `fate` / `connectome` 阶段。
+    fate_conf: list[float] | None = None
+    #: 连接概率场 `p_ij = σ(ℓ_ij)`（`RGCD §8`）的模型真值矩阵（`N×N` 行主序，`[0,1]`，
+    #: 无自环时对角 0）；仅 `connectome` 阶段。前端据此画「两幕真值」第一幕（第二幕 = `edges`）。
+    probs: list[list[float]] | None = None
 
 
 class DevelopmentRequest(BaseModel):

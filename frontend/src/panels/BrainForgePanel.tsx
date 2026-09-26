@@ -41,6 +41,8 @@ export function BrainForgePanel() {
   const [playing, setPlaying] = useState(false);
   /** 真实连接图层（用户 2026-09-27 裁决允许"可溯源真图"；默认开，可关）。 */
   const [showEdges, setShowEdges] = useState(true);
+  /** `connectome` 阶段的两幕：`"p"` 概率场 / `"a"` 采样邻接（`交互与可视化.md` §4）。 */
+  const [connFrame, setConnFrame] = useState<"p" | "a">("p");
   const cursorRef = useRef(0);
   const playingRef = useRef(false);
 
@@ -117,6 +119,9 @@ export function BrainForgePanel() {
                     positions: currentSample.positions,
                     cellType: currentSample.cell_type,
                     edges: currentSample.edges,
+                    expr: currentSample.expr,
+                    probs: currentSample.probs,
+                    connFrame,
                   }
                 : null
             }
@@ -142,6 +147,18 @@ export function BrainForgePanel() {
               >
                 {showEdges ? "ON" : "OFF"}
               </button>
+              {/* 两幕真值：p（概率场）→ A（采样邻接）。仅 connectome 样本可用。 */}
+              <button
+                type="button"
+                onClick={() => setConnFrame((f) => (f === "p" ? "a" : "p"))}
+                disabled={!currentSample?.probs}
+                title="连接组两幕真值：p = 模型概率场 σ(ℓ)，A = 一次采样得到的邻接"
+                className={`border border-border px-2 py-0.5 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground ${
+                  currentSample?.probs && connFrame === "p" ? "bg-brand-fish-navy text-brand-bone" : ""
+                }`}
+              >
+                {connFrame === "p" ? "P" : "A"}
+              </button>
             </span>
           </div>
 
@@ -159,6 +176,7 @@ export function BrainForgePanel() {
             onTogglePlay={() => {
               if (!playingRef.current && trace && cursorRef.current >= trace.length - 1) {
                 cursorRef.current = 0;
+      setConnFrame("p");
                 setCursor(0);
               }
               playingRef.current = !playingRef.current;

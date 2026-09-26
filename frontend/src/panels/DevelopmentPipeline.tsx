@@ -15,7 +15,8 @@ import type { DevelopmentTraceSample } from "@/api/types";
 const STAGE_LABEL: Record<DevelopmentTraceSample["stage"], string> = {
   grn: "GRN 表达迭代（§4）",
   proliferate: "precursor 增殖（§5）",
-  connectome: "连接组成形（§6）",
+  fate: "细胞分化落定（§6）",
+  connectome: "连接组成形（§8）",
 };
 
 export interface DevelopmentPipelineProps {

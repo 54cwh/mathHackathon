@@ -337,7 +337,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 
 | 字段 | 类型 | 说明 |
 |---|---|---|
-| `stage` | `"grn" \| "proliferate" \| "connectome"` | 阶段（顺序即列表顺序） |
+| `stage` | `"grn" \| "proliferate" \| "fate" \| "connectome"` | 阶段（顺序即列表顺序；`fate` 为分化落定，`交互与可视化.md` §4） |
 | `step` | int | grn 为步序号 `0..development_steps`；proliferate 为轮次；connectome 为 0 |
 | `n_neurons` | int | 该阶段神经元数（单调不减） |
 | `n_divisions` | int \| null | 仅 proliferate：本代分裂出的子代数 |
@@ -346,6 +346,9 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `positions` | `[[float, float], …]` | **逐神经元坐标**（单位方域，`RGCD §3`）—— 供画真实几何；长度 == `n_neurons` |
 | `cell_type` | `[int] \| null` | 逐神经元 fate（六类序号，顺序见 `configs/default_model.yaml::development.domains`）；仅 `connectome` 阶段确定 |
 | `edges` | `[[int, int]] \| null` | **真实邻接表**（边对 `[i, j]`，指向 `positions` 下标）；仅 `connectome` 阶段。条数 == `n_edges`，无自环、无重复。前端据此画**可溯源的真连接图**（用户 2026-09-27 裁决） |
+| `expr` | `[float] \| null` | **逐神经元表达强度** `expr[i]=mean_d\|g_id\|`（`RGCD §4`）；`grn`/`proliferate`/`fate`/`connectome` 均有值（GRN 阶段的"表达上升"靠它可见） |
+| `fate_conf` | `[float] \| null` | 逐个体 fate 置信度 `max_k z_ik`（`RGCD §6`）；仅 `fate` / `connectome` 阶段 |
+| `probs` | `[[float, …], …] \| null` | **连接概率场** \(p_{ij}=\sigma(\ell_{ij})\)（`RGCD §8`）的模型真值矩阵（\(N\times N\)，行主序，`float32`，值域 `[0,1]`；无自环时对角线 0）；仅 `connectome` 阶段。前端据此画「两幕真值」的第一幕 `p`（第二幕即 `edges`） |
 
 > **两条硬约束（有测试守护）**：① **默认关**（不传 `with_trace` 时 `trace=null`）；
 > ② 记录**只读张量、不抽随机数**，故开/关该参数的表型与 `dev_trace` **逐位相同**

@@ -330,10 +330,23 @@ def test_trace_stages_cover_the_pipeline_in_order():
     assert stages[0] == "grn"
     assert stages[-1] == "connectome"
     assert "proliferate" in stages
+    assert "fate" in stages
     # GRN 采样 = 初态 + 每步一个（development_steps）
     assert stages.count("grn") == DEFAULT_CONFIG.development_steps + 1
     assert stages.count("proliferate") == 1
+    assert stages.count("fate") == 1
     assert stages.count("connectome") == 1
+    # 阶段顺序：grn* → proliferate → fate → connectome
+    assert stages.index("proliferate") < stages.index("fate") < stages.index("connectome")
+
+    # 新增真值字段：`expr` 逐神经元、`fate_conf` 与 `probs` 只在 fate/connectome 有值
+    for sample in trace:
+        assert len(sample["expr"]) == sample["n_neurons"]
+    fate = trace[stages.index("fate")]
+    assert fate["cell_type"] is not None and len(fate["fate_conf"]) == fate["n_neurons"]
+    conn = trace[-1]
+    assert len(conn["fate_conf"]) == conn["n_neurons"]
+    assert len(conn["probs"]) == conn["n_neurons"] and len(conn["probs"][0]) == conn["n_neurons"]
 
     # 神经元数单调不减（precursor -> 分裂子代），且与最终一致
     counts = [sample["n_neurons"] for sample in trace]

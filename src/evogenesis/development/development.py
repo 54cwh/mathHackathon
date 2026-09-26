@@ -133,6 +133,10 @@ def proliferate(
                     "positions": [[float(v) for v in row] for row in positions.tolist()],
                     "cell_type": None,  # fate 在连接组阶段才确定
                     "edges": None,  # 邻接表仅在连接组阶段存在（统一键集合）
+                    # 逐神经元表达强度 `expr[i] = mean_d |g_id|`（§4）
+                    "expr": [float(v) for v in grn.abs().mean(dim=-1).tolist()],
+                    "fate_conf": None,  # §6：fate 尚未落定
+                    "probs": None,  # §8：连接概率场尚未计算
                 }
             )
     return DevelopmentState(
