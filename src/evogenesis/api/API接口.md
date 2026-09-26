@@ -259,7 +259,7 @@
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
 
-> `sys.hello` / `sys.error` 与业务推送 `arena.fish_state` / `arena.events` / `job.progress` **已实现**；`sys.echo` **未实现**（B5）；`brain.activation` **未接**（无模型驱动会话）。推送清单与采样率见 `API与系统工程.md §5`（`草案待确认`）。
+> `sys.hello` / `sys.error` 与业务推送 `arena.fish_state` / `arena.events` / `job.progress` **已实现**；`sys.echo` **未实现**（B5）；`brain.activation` **未接**（无模型驱动会话）。推送清单与采样率见 `API与系统工程.md §5`（已定稿）。
 
 | type | 方向 | payload | 触发 | 状态 |
 |---|---|---|---|---|
@@ -271,7 +271,7 @@
 | `job.progress` | 服务端 → 客户端 | `{job_id, status, progress}` | 实验/任务进度变化 | 已实现 |
 | `brain.activation` | 服务端 → 客户端 | `{session_id, fish_id, activation}` | 选中鱼神经激活 | **未接**（无模型驱动会话） |
 
-- 订阅：`/v1/ws?session_id=<id>`；采样率=**事件驱动**（`release` 触发，非定时）；不每帧发 48×48 matrix（`API与系统工程.md §5`，`草案待确认`）。
+- 订阅：`/v1/ws?session_id=<id>`；采样率=**事件驱动**（`release` 触发，非定时）；不每帧发 48×48 matrix（`API与系统工程.md §5`，已定稿）。
 - `seq`：**每连接**单调递增（B5/L6 闭合）。
 - **代码位置**：`ws.py` → `ws_endpoint`。
 

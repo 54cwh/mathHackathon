@@ -3,7 +3,7 @@
 信封 `{v, type, seq, ts, payload}`（R11）。可选订阅 `/v1/ws?session_id=<id>`：订阅某会话后
 收该会话的 `arena.*`；`job.progress` 为全局。**每连接**单调 `seq`（原进程级已废弃）。
 
-推送清单与采样率为 `草案待确认`（实现已先行、待确认）：**事件驱动**（`arena.*` 由 `release`
+推送清单与采样率**已定稿**（`API与系统工程.md §5`）：**事件驱动**（`arena.*` 由 `release`
 触发，无定时采样）；`brain.activation` 未接（无模型驱动会话/DanioNet 生产者）。
 """
 
