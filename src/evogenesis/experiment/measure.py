@@ -22,6 +22,7 @@ from collections.abc import Callable
 from typing import Any, Protocol
 
 import numpy as np
+import torch
 
 DEFAULT_WARMUP = 20
 DEFAULT_ITERS = 200
@@ -71,19 +72,22 @@ def measure_latency(
 ) -> dict[str, float]:
     """单步前向 wall-clock 延迟（ms）；p50 / p95 用线性插值百分位。
 
-    返回 ``p50_ms`` / ``p95_ms`` / ``mean_ms`` / ``n_iters``。
+    **推理口径**：warmup 与计时都在 ``torch.no_grad()`` 下进行（不含 autograd 开销，
+    `实验与评价体系.md` §2.4），与部署时推理一致。返回 ``p50_ms`` / ``p95_ms`` /
+    ``mean_ms`` / ``n_iters``。
     """
     if warmup < 0:
         raise ValueError(f"warmup 必须非负，实际 {warmup}")
     if iters < 1:
         raise ValueError(f"iters 必须 ≥ 1，实际 {iters}")
-    for _ in range(warmup):
-        net.step(observation)
-    samples = np.empty(iters, dtype=np.float64)
-    for i in range(iters):
-        start = time.perf_counter()
-        net.step(observation)
-        samples[i] = (time.perf_counter() - start) * 1e3
+    with torch.no_grad():
+        for _ in range(warmup):
+            net.step(observation)
+        samples = np.empty(iters, dtype=np.float64)
+        for i in range(iters):
+            start = time.perf_counter()
+            net.step(observation)
+            samples[i] = (time.perf_counter() - start) * 1e3
     return {
         "p50_ms": float(np.percentile(samples, 50)),
         "p95_ms": float(np.percentile(samples, 95)),

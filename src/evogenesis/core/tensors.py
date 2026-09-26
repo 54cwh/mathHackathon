@@ -14,6 +14,10 @@ import torch
 
 
 def to_float32_tensor(array: Any, *, device: str | None = None) -> torch.Tensor:
-    """把数组转为 ``torch.float32`` 张量；``device=None`` 时留在当前默认设备（``core §7``）。"""
+    """把数组转为 ``torch.float32`` 张量；``device=None`` 时留在当前默认设备（``core §7``）。
+
+    **零拷贝**：输入已是 ``float32`` 时返回与输入**共享内存**的张量；调用方不得对结果原地
+    写入（会改到 producer 数组），需独立副本时先 ``np.array(x, dtype=np.float32, copy=True)``。
+    """
     tensor = torch.from_numpy(np.asarray(array, dtype=np.float32))
     return tensor if device is None else tensor.to(device)

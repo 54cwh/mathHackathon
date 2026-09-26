@@ -19,7 +19,7 @@ from pathlib import Path
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import expert_policy_from_config
-from evogenesis.core.config import read_yaml
+from evogenesis.core.config import ModelConfig, load_config
 from evogenesis.core.ids import mint_id
 from evogenesis.core.seed import SeedManager
 from evogenesis.experiment.arena_rollout import expert_rollout
@@ -60,11 +60,11 @@ def episode_dynamics_seed(master_seed: int, index: int) -> int:
 
 
 def default_trajectories(model_config: Path) -> int:
-    """从 model config 读 `learning.trajectories`（规模取值 owner = `configs/`）。"""
-    learning = read_yaml(model_config).get("learning") or {}
-    if "trajectories" not in learning:
-        raise ValueError(f"{model_config} 缺少 learning.trajectories")
-    return int(learning["trajectories"])
+    """从 model config 读 `learning.trajectories`（规模取值 owner = `configs/`）。
+
+    经 `core` 加载器统一解析/校验（不在本模块另写一版 YAML 读取）。
+    """
+    return load_config(model_config, model=ModelConfig).learning.trajectories
 
 
 def collect_episode(

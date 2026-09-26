@@ -56,8 +56,8 @@ def track_run(
     if tags:
         run_tags.update({key: str(value) for key, value in tags.items()})
 
-    tracker = RunTracker(root, experiment_id, run_name=f"s{seed}", tags=run_tags).start()
-    try:
+    # 上下文管理：正常退出置 FINISHED、异常置 FAILED（`core/tracking.py::RunTracker.__exit__`）。
+    with RunTracker(root, experiment_id, run_name=f"s{seed}", tags=run_tags) as tracker:
         tracker.log_params({"seed": seed, "config": metadata.get("config"), "status": status})
         if metrics:
             tracker.log_metrics({k: float(v) for k, v in metrics.items() if v is not None})
@@ -66,8 +66,6 @@ def track_run(
             if artifact.is_file():
                 tracker.log_artifact(artifact)
         run_id = tracker.run_id
-    finally:
-        tracker.end("FINISHED")
 
     metadata["mlflow_run_id"] = run_id
     metadata_path.write_text(

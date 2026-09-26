@@ -25,6 +25,8 @@ from collections.abc import Mapping
 from statistics import fmean, stdev
 from typing import Any
 
+import torch
+
 #: composite fitness 权重：§2.1 的四个原始分量 → 一个标量。
 #:
 #: ⚠️ 键名 `prey_capture` 为**历史名**：其分量按 `experiment §2.3` **条件式口径**供给——
@@ -58,6 +60,10 @@ def composite_fitness(
     `prey_capture`（真成功率）。`weights` 的**唯一来源**是
     `configs/evolution.yaml::fitness_weights`（生产调用方注入）；缺省用冻结镜像
     `COMPOSITE_WEIGHTS`（其与配置文件的一致性由 `tests/test_evolution_config.py` 守护）。
+
+    **勿与 `evolution/fitness.py::composite_fitness` 混用**：本函数是**显示分**（四项 rate 直接
+    加权，§2.3）；后者是**选择用 `F`**（在代内 viable 上 min-max 后加权，`evolution §6`）。
+    同名仅因两处都称「复合分」，定义式不同。
     """
     w = COMPOSITE_WEIGHTS if weights is None else weights
     return (
@@ -234,9 +240,11 @@ def summarise_over_seeds(
     return out
 
 
-def edge_distance(a: Any, b: Any) -> float:
+def edge_distance(a: torch.Tensor, b: torch.Tensor) -> float:
+    """`d_edge = ‖A − A'‖₁ / N²`（`RGCD §12`；逐元素不等占比）——入参为同形 torch 张量。"""
     return (a != b).float().mean().item()
 
 
-def tau_distance(a: Any, b: Any) -> float:
+def tau_distance(a: torch.Tensor, b: torch.Tensor) -> float:
+    """`d_τ = (1/N) Σ |τ_i − τ'_i|`（`RGCD §12`）——入参为同形 torch 张量。"""
     return (a - b).abs().mean().item()

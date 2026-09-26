@@ -11,26 +11,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from evogenesis.arena.sensing import DIM_NAMES as OBS_DIM_NAMES
 from evogenesis.core.io import write_jsonl
 
 # schema 版本（SemVer）。加可选字段=MINOR，改必填=MAJOR（schema 的兼容规则）。
 SCHEMA_VERSION = "1.1.0"
 
-# 12 维 observation 分量名，顺序与 `DanioNet设计规范.md` §2 冻结表逐字一致。
-OBS_DIM_NAMES = (
-    "prey_left_signal",
-    "prey_right_signal",
-    "threat_left_signal",
-    "threat_right_signal",
-    "obstacle_left_signal",
-    "obstacle_right_signal",
-    "prey_relative_size",
-    "predator_relative_size",
-    "looming_rate",
-    "current_speed",
-    "energy",
-    "hunger",
-)
+# 12 维 observation 分量名复用 `arena/sensing.py::DIM_NAMES`：感知**产出方**为唯一来源，
+# 顺序与 `DanioNet设计规范.md` §2 冻结表一致（不再在本模块另存一份）。
 
 
 def episode_header(

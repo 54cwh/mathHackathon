@@ -142,8 +142,6 @@ class ArenaConfig:
 
 # --- 装配与分层加载 ---------------------------------------------------------
 
-ARENA_DEFAULT_CONFIG = Path("configs/default_arena.yaml")
-
 # section 名 → dataclass（同 ``core/config.py`` 的「section 名 = dataclass 名」约定）
 ARENA_SECTIONS: dict[str, type] = {
     "world": WorldConfig,
