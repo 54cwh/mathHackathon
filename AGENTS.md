@@ -227,6 +227,9 @@ make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实
 ## 数据 / 配置
 - YAML（`configs/`）
 - JSON Schema（`schemas/`，跨语言契约）
+- 日志：structlog（JSONL，字段对齐 OpenTelemetry Logs）
+- 跟踪：MLflow（本地 file store，现场离线）
+- 表格 / 数组：pyarrow（Parquet）、NumPy `npz`（`float32`）
 
 ## 训练 / 演化
 - Behavior Cloning（Stage 2，`K=20` mini-batch imitation）
