@@ -1,5 +1,6 @@
 from pathlib import Path
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 import mlflow
 
@@ -67,5 +68,7 @@ def test_artifact_logged(tmp_path):
     with tracker:
         tracker.log_artifact(artifact)
         run_id = tracker.run_id
-    artifact_dir = Path(urlparse(mlflow.get_run(run_id).info.artifact_uri).path)
+    # url2pathname 跨平台处理 file:// URI（Windows 上 /C:/... → C:\...）
+    uri = mlflow.get_run(run_id).info.artifact_uri
+    artifact_dir = Path(url2pathname(urlparse(uri).path))
     assert (artifact_dir / "note.txt").is_file()
