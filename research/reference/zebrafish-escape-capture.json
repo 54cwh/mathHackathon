@@ -1,0 +1,583 @@
+{
+  "meta": {
+    "search_time": "2026-09-26",
+    "topic": "Danio Arena 三主题文献侦察：①‘成功逃脱’的可操作定义 ②捕食几何（探测/打击/口裂/捕获失败率）的生物学率定 ③prey 重生/守恒与‘高价值 prey’分级",
+    "scope": "以斑马鱼（Danio rerio）实测为优先，缺失时用近缘硬骨鱼替代并显式标注物种；同时纳入鱼类逃逸行为学、最优觅食理论与 agent-based 生态仿真的工程惯例。约束：现场离线、CPU 可跑；只做文献与可操作定义调研，不改代码。",
+    "sources_summary": "OpenAlex 检索（引用网络/综述/统计）、arXiv（本轮 API 406 失败，未使用）、Tavily 网络补充、GitHub `gh search repos`（两组查询均 0 命中）、以及对仓库内 `research/reference/param-basis-biology.md`、`docs/参数总表.json`、`src/evogenesis/arena/*` 的交叉核对。所有数值附 DOI/URL 与 peer-reviewed 状态；未核实 DOI 置 null 并说明。",
+    "conventions": {
+      "value_kind": "measured=论文实测（含替代物种）；review_summary=综述转述；derived_inference=本次调研基于实测的换算；design_choice=无直接证据的工程取值，必须标‘草案待确认’",
+      "BL": "body length / standard length（SL），来源已注明口径；斑马鱼成鱼 SL≈25–35 mm，幼虫 5–7 dpf≈4.2 mm",
+      "peer_reviewed": "true=期刊/会议同行评审；false=预印本/仓库/文档；null=无法判定",
+      "evidence_grade": "A=斑马鱼直接实测且多来源一致；B=同行评审但为替代物种或单一来源；C=综述/推断；D=设计选择，无直接生物学证据"
+    },
+    "note": "按任务指令，本文件不登记 research/notes/bibliography.md，也不修改 research/reference/ 以外任何文件。"
+  },
+  "themes": [
+    {
+      "id": "T1_escape_operationalization",
+      "question": "斑马鱼/鱼类‘escape success / predator evasion’在实验里的操作定义是什么？对‘生态仿真产生可遗传 fitness’应如何落地？换成目标即算 / 逃出 release_radius / 保持 N 步，哪种偏置最小？",
+      "current_impl": "env.py 中：当 `plan()` 返回目标 != `pred.target_fish_id` 且旧目标仍存活 → 发 `arena.escape` 并对旧目标 `escape_successes += 1`。无威胁状态、无距离门槛、无存活窗口。查看 Danio_Arena实现说明.md 的 S17，与代码一致。",
+      "operational_definitions_found": [
+        {
+          "name": "二值结局定义（survived the strike: success / failure）",
+          "definition": "逃逸成败 = 猎物在一次捕食者的 strike 后是否逃脱（存活 vs 被捕获）。Walker 等以‘evasion outcome (success, failure)’直接记录二值结局。",
+          "source_item": "Walker et al. 2005",
+          "source_url": "https://doi.org/10.1111/j.1365-2435.2005.01033.x",
+          "implication": "实验口径是‘攻击/打击的结局’，不是‘捕食者改变意图’；换成目标本身不是结局。"
+        },
+        {
+          "name": "运动学代理指标（putative escape success, PES）",
+          "definition": "以实验测得的逃逸时序、方向、运动学 + 捕食者运动学，用模型估计‘逃出捕食者攻击’的概率（PES），因直接观察真实逃脱困难。",
+          "source_item": "Meager et al. 2006",
+          "source_url": "https://doi.org/10.1242/jeb.02489",
+          "implication": "允许在仿真中用运动学代理真实结局，但代理量必须与‘是否被捕食’方向一致。"
+        },
+        {
+          "name": "逃逸反应组分（responsiveness / reaction distance / escape latency / directionality / distance-derived performance）",
+          "definition": "Domenici 2010 把逃逸分解成五个可测组分，并指出每一组分都可贡献 escape success；Domenici 2011 进一步指出方向性（away responses 仅约 50–90%）与逃逸轨迹决定成败。",
+          "source_item": "Domenici 2010；Domenici et al. 2011",
+          "source_url": "https://doi.org/10.1002/jez.580",
+          "implication": "不要只用一个事件计数代表‘成功’；反应距离与方向性是实验中最受关注的可测代理。"
+        },
+        {
+          "name": "真实存活率 + 反应距离（斑马鱼特异性）",
+          "definition": "Nair 等以斑马鱼幼虫被同种成/亚成鱼捕食为体系，用三维运动学 + agent-based 概率模型蒙特卡洛预测存活率，并与观测一致；结论：存活不由逃逸速度或方向提升，而由‘从更远处反应（reaction distance）’提升。",
+          "source_item": "Nair, Nguyen & McHenry 2017",
+          "source_url": "https://doi.org/10.1098/rspb.2017.0359",
+          "implication": "本项目若要选一个与‘存活’相关性最强的代理，反应距离（提前量）优于速度；这支持把‘在威胁达身前退出威胁区’作为 escape 判据。"
+        },
+        {
+          "name": "攻击成功率（capture success per attack）",
+          "definition": "Jolles 等对北方狗鱼捕食 golden shiners 记录每次攻击的捕获与否，报告‘多数攻击成功（70%）’；未被捕获的目标个体在攻击前有更高的最大加速度、且离狗鱼头部更远。",
+          "source_item": "Jolles et al. 2022",
+          "source_url": "https://doi.org/10.7554/elife.76344",
+          "implication": "提供了一个‘每次攻击的成功率’锚点（70%），可用于给捕食判定加随机失败率；也说明‘逃离头部距离’是可操作量。"
+        }
+      ],
+      "recommendation": {
+        "primary": "escape_success 按‘威胁事件结局’定义：捕食者曾锁定该鱼、且锁定时该鱼位于捕食者 detect 半径内；捕食者放弃锁定（换目标或无目标）后该鱼仍存活并继续存活 ≥ T_hold 步，才计一次 escape。仅‘换目标’且未通过存活窗口者不计。",
+        "primary_defaults": "T_hold 默认 20 步（20 Hz 下 1 s）。理由：与‘逃逸后存活’的实验结局口径一致（Walker/Jolles），并可用 1 s 覆盖一次瞬时威胁是否真正解除。T_hold 无斑马鱼直接实测依据，标 `草案待确认`。",
+        "secondary": "可选增强：若仿真能记录‘威胁期间’的最近距离，则把 escape 进一步门控为 `威胁期间 min d ≤ k × capture_radius`（例如 k=3）；这使‘逃脱’必须真正贴近过被吃风险，避免远处换锁被记账。k 为设计选择。",
+        "avoid": "不建议把固定 `release_radius` 作为唯一判据。行为学上捕食者的‘放弃’由经济性决定（边际值定理），不是一个固定几何半径；固定半径会让 escape 对半径取值极敏感。",
+        "do_not_add": "不建议再加‘保持 N 步’作为独立判据——它是同一‘存活窗口’思想的更严格版本，N 在本抽象世界无经验锚点，只会再引入一个自由参数。"
+      },
+      "fitness_bias": {
+        "current_switch_of_target": "偏置向上（高估 escape）。捕食者换目标可能是因旧目标离开 detect 半径、或附近出现更近的鱼，与旧目标是否做出有效逃避无关；在 detect=15 wu、世界 100×60、3 只捕食者下，远处换锁频繁发生，会给并无风险的鱼发放 escape。且旧目标先记一次 escape 后再被捕食者吃掉，已记账不撤销 → escape 与真实‘存活’脱钩，弱化对逃避行为的定向选择。",
+        "survival_window": "更接近实验结局，偏置主要来自 T_hold：T_hold 过长会低估（把后来仍被吃的算作未逃脱），过短会高估。方向性风险可控，且与存活相关性最高（Nair 2017）。",
+        "fixed_release_radius": "对半径极敏感：半径 ≫ capture_radius 时，捕食者路过即算逃脱（向上偏置）；半径 ≪ capture_radius 时几乎无 escape（向下偏置）。且忽略‘反应距离’这一斑马鱼关键变量。"
+      },
+      "evidence_grade": "B：结局口径来自多篇同行评审实验（Walker 2005、Jolles 2022、Nair 2017，Nair 为斑马鱼），但 T_hold/k 的具体数值为设计选择（D）。",
+      "risks": [
+        "T_hold 与 k 无直接斑马鱼实测锚点，需在 configs 中标 `草案待确认` 并做敏感性分析。",
+        "Jolles 2022 与 Walker 2005 为替代物种（北方狗鱼/golden shiners；孔雀鱼/狗鱼丽鱼）；Nair 2017 是斑马鱼但为‘同种成鱼捕食幼虫’的实验室体系，量级与本项目抽象世界不可直接比。",
+        "若采用存活窗口，需明确‘旧目标已死亡不计’仍成立（死鱼不产生 escape 事件），与实现说明 S17 的负例守护一致。"
+      ]
+    },
+    {
+      "id": "T2_capture_geometry",
+      "question": "斑马鱼捕食的探测距离（相对 BL）、追击/捕获距离、口裂限制的定量证据；捕食者捕获失败率/逃脱概率；如何映射到本项目抽象单位（capture_radius、κ、sensing.radius）？",
+      "current_impl": "capture_radius=1.2 wu、capture_size_ratio κ=1.25、sensing.radius=18 wu、predator detect=15 wu / release=22 wu；捕获判定为纯距离、无朝向/口部角度，且满足条件即确定捕获（无随机失败）。",
+      "evidence": [
+        {
+          "quantity": "幼虫探测距离（斑马鱼）",
+          "value": "1.55 ± 0.66 mm（草履虫，中线两侧约 60° 弧内）≈ 3 mm 常见；最远约 3.25 mm",
+          "in_bl": "≈ 0.34–0.77 BL（BL 取 4.2 mm 换算）",
+          "source_item": "Bianco, Kampff & Engert 2011（另 Zhu & Goodhill 2023 综述转述 ≈3 mm）",
+          "source_url": "https://doi.org/10.3389/fnsys.2011.00101",
+          "kind": "measured + derived_inference(BL 换算)"
+        },
+        {
+          "quantity": "幼虫捕食打击（strike）距离（斑马鱼）",
+          "value": "0.53 ± 0.19 mm（范围 0.27–1.09）；触发需 <2 mm",
+          "in_bl": "≈ 0.12–0.14 BL",
+          "source_item": "Patterson et al. 2013；Khan et al. 2023（<2 mm 上限）",
+          "source_url": "https://doi.org/10.1242/jeb.087742",
+          "kind": "measured + derived_inference"
+        },
+        {
+          "quantity": "口裂 / 体长（斑马鱼）",
+          "value": "5 dpf 口裂 180–200 µm；15 dpf 290–320 µm；斑马鱼为无齿、吞咽型（gape-limited）",
+          "in_bl": "≈ 4.0–5.2% SL（本调研换算，非摄食实验）",
+          "source_item": "Önal & Langdon 2016（经 Licitra 2024 转述）；换算见 param-basis-biology.md",
+          "source_url": "https://doi.org/10.1089/zeb.2016.1307",
+          "kind": "measured + derived_inference"
+        },
+        {
+          "quantity": "最大可吞咽猎物尺寸（替代物种，肉食性珊瑚礁鱼）",
+          "value": "猎物最大体高 = SL 的 20–27%（Cephalopholis urodeta 27%，Paracirrhites forsteri 20%）；横向最大口裂是主约束",
+          "in_bl": "20–27% SL（体高口径）",
+          "source_item": "Mihalitsis & Bellwood 2017",
+          "source_url": "https://doi.org/10.1371/journal.pone.0184679",
+          "kind": "measured（替代物种，不可直接用于斑马鱼）"
+        },
+        {
+          "quantity": "捕食者-猎物尺寸关系（多物种海洋鱼）",
+          "value": "捕食成功率随捕食者体型上升；捕食者/猎物尺寸比是觅食成功的直接关联量",
+          "in_bl": "—",
+          "source_item": "Scharf, Juanes & Rountree 2000",
+          "source_url": "https://doi.org/10.3354/meps208229",
+          "kind": "measured / review"
+        },
+        {
+          "quantity": "尺寸依赖的捕获成功率（蓝鱼）",
+          "value": "攻击距离/时间/速度与捕食者体型无关；处理时间与攻击成功率强烈依赖捕食者与猎物双方尺寸；尺寸选择是被动的差异捕获成功率造成",
+          "in_bl": "—",
+          "source_item": "Juanes & Conover 1994",
+          "source_url": "https://doi.org/10.3354/meps114059",
+          "kind": "measured（替代物种）"
+        },
+        {
+          "quantity": "捕食成功率的总体范围（鱼类）",
+          "value": "鱼类捕食成功率报道范围 23%–100%（引 Abrams 1989; Vermeij 1982）；把握‘攻击—张嘴—吞入’的时空整合（PPD）是失败主因",
+          "in_bl": "—",
+          "source_item": "Shirazi & Higham 2024（How do fish miss?）",
+          "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11586519",
+          "kind": "review_summary"
+        },
+        {
+          "quantity": "斑马鱼为猎物时的单次攻击成功率（替代物种捕食者）",
+          "value": "北方狗鱼捕食 golden shiners：多数攻击成功（70%）；逃脱者加速度更高、离捕食者头部更远",
+          "in_bl": "—",
+          "source_item": "Jolles et al. 2022",
+          "source_url": "https://doi.org/10.7554/elife.76344",
+          "kind": "measured（替代物种）"
+        },
+        {
+          "quantity": "吸入式捕食的捕获成功预测（替代物种）",
+          "value": "以 3D 吸入水体积（IVW，由 peak gape 与 ram speed 决定）建模，可预测对‘会逃避 prey’与‘不会逃避 prey’的捕获成败；逃避 prey 成功率更低",
+          "in_bl": "—",
+          "source_item": "Kane & Higham 2014",
+          "source_url": "https://doi.org/10.1098/rsif.2014.0223",
+          "kind": "measured / model（替代物种）"
+        }
+      ],
+      "core_conflict": "本项目抽象世界与斑马鱼尺度不自洽：鱼体长抽象为 size≈1 wu，但 sensing.radius=18 wu ⇒ 18 BL，而真实斑马鱼（幼虫）探测 <1 BL、打击 ≈0.13 BL；κ=1.25 允许猎物大于捕食者，与 gape-limited 方向相反。根因是缺少‘world unit ↔ body length’的显式换算约定，因为该量未定义，任何 radius/κ 都不可核验。",
+      "recommendation": {
+        "step0_root_fix": "先在规范中写死单位约定（这是根因修复，不是数值标定）。两种可选：(A) `1 wu = 1 BL`；(B) 保留现有世界尺度，显式声明为‘缩放抽象竞技场’，并只校准无量纲比率、不再宣称绝对生物学量级。未写单位约定前，不建议冻结任何 radius/κ。",
+        "option_A_literal": "若选 A：`sensing.radius ≈ 0.5–1.0 BL`（取探测 0.34–0.77 BL 的上半区）、`capture_radius ≈ 0.12–0.15 BL`（打击距离）。这会显著缩小交互范围，需同步放大世界或降低种群密度、并重新标定 prey/predator 尺寸。",
+        "option_B_ratio": "若选 B（改动最小，推荐作为过渡）：保留 `sensing.radius = 18`，令 `capture_radius / sensing.radius ≈ 0.16–0.41`（= 打击/探测 = 0.12–0.14 BL ÷ 0.34–0.77 BL）。中值取 0.25 ⇒ `capture_radius ≈ 4.5 wu`。现状 1.2/18=0.067，比生物学更低（更‘狙击’），会压低捕食强度、抬高 prey 存活，属偏离。",
+        "kappa": "把 κ 从‘predator.size > κ·prey.size 的绝对尺寸门’改述为面向口裂的尺寸不对称门。生物学口径（gape≈4–5% SL）换算成‘可吞’需要 predator ≫ prey（量级 >20×），对当前 size 上限 2.5 的仿真过严，不能直接采用。建议作为**设计选择**取 κ ∈ [2.0, 2.5]（捕食者至少为猎物 2–2.5 倍），方向与 gape-limited 一致；必须标注 `草案待确认`，不得称其为实测值。",
+        "add_directionality": "现状捕获为纯距离、无朝向。真实捕食发生在捕食者前方（strike 需口部对准；Mihalitsis 2017 报道多数成功攻击头部优先）。建议至少加‘目标位于捕食者前向半平面/前向锥’的几何门；锥角为设计选择。",
+        "add_capture_failure": "现状满足几何即确定捕获，等价于成功率 100%，高于鱼类报道上限（23–100%，pike 70%）。建议加随机捕获失败：`P_capture_success ≈ 0.5–0.7`（设计选择，锚定 Jolles 70% 与 Shirazi & Higham 的 23–100% 区间），并让 prey 处于逃避状态时进一步降低。",
+        "what_is_evidence_what_is_design": "有证据：探测/打击距离量级、gape-limited 方向、成功率非 100%。设计选择：世界单位约定（A/B）、capture_radius 的具体数值、κ 的具体取值、朝向锥角、P_capture_success。"
+      },
+      "evidence_grade": "B：探测/打击/口裂为斑马鱼幼虫实测（A 级单点），但换算为 BL、成年尺度、以及替代物种的最大猎物尺寸均为 B/C；κ、capture_radius 具体值与本项目单位约定为 D（设计选择）。",
+      "risks": [
+        "斑马鱼成鱼（本项目更接近的尺度）的探测/打击距离（以 BL 计）未检索到，是明确数据缺口；现有全部为幼虫数据。",
+        "‘口裂 4–5% SL’是换算推断而非摄食实验上限；斑马鱼最大猎物/体长的直接摄食实验未检索到。",
+        "本项目 size 上限 2.5 与 3 只 predator size=2.0 的组合下，κ=2.0–2.5 会几乎禁止捕食者吃鱼（predator/prey 最大仅 2.0），需同时调 predator size 或 κ；这是必须联调的参数，不能单独改。",
+        "加随机失败率会改变捕获事件序列，需回写事件契约与测试，且属‘代码先行、文档未定’，须先补文档。"
+      ]
+    },
+    {
+      "id": "T3_prey_respawn_and_value",
+      "question": "本项目 24 prey 不补充、耗尽不触发结束；生态/觅食实验与 agent 仿真中猎物补充（respawn）的常见做法及对选择压力的影响？‘高价值 prey’应如何操作化（size / 能量回报 / 稀有度）？有无文献依据？",
+      "current_impl": "24 prey、不重生、耗尽不结束；§12 提‘高价值 prey 靠近 predator’但未定义分级；env.py 中 `food_reward` 为常数 0.12，与 prey.size 无关；prey.size ∈ [0.30, 0.60]，仅通过 biomass/size 增长间接起作用。",
+      "findings": [
+        {
+          "topic": "respawn 的理论必要性与常见做法",
+          "detail": "资源受限的消费-资源系统若封闭且无补充，会因资源耗尽出现强振荡/灭绝（经典 consumer-resource 不稳定性）；agent-based 生态仿真框架的通行做法是给可更新资源设置‘再生时间/再生率’并设承载上限。Agents.jl 的 predator-prey 示例以 `regrowth_time` 控制草地被吃后按倒计时再生；Mesa/savannah 示例中草被吃后再生、种群在资源上限内波动。",
+          "source_item": "Agents.jl predator-prey 文档；Mesa Savannah 模型",
+          "source_url": "https://juliadynamics.github.io/Agents.jl/v5.6/examples/predator_prey",
+          "kind": "engineering_convention（非同行评审）"
+        },
+        {
+          "topic": "本项目的资源预算（派生核算，非文献）",
+          "detail": "每鱼起始能量 = e_max = 1.0；基础代谢 0.0008/步 × 600 步 = 0.48；运动代谢 0.0015·v²/步。若 v≈0.8 持续，运动项 ≈0.576，总支出 ≈1.056 > 1.0 起始能量 ⇒ 需进食才能活到终点；若 v≈0.5，总支出 ≈0.705，可不进食存活。24 prey / 12 fish ⇒ 平均每鱼 ≤2 次捕获（=0.24 能量），prey_capture 分量在 episode 早期即饱和，后半段世界近乎无 prey。",
+          "source_item": "本调研基于 src/evogenesis/arena/{config.py,env.py,policies.py} 的算术核算",
+          "source_url": null,
+          "source_note": "内部派生核算，无外部 URL；源文件路径已在 source_item 给出。",
+          "kind": "derived_inference（系数本身 status=草案待确认）"
+        },
+        {
+          "topic": "猎物价值的理论口径",
+          "detail": "最优觅食/最优食谱理论按‘收益率（profitability）= 净能量收益 / 处理时间’给猎物排序；某猎物是否进入食谱取决于其收益率是否超过由遇率决定的取舍阈值（边际值定理/食谱宽度模型）。因此价值应由能量回报与处理成本共同定义，而非单看体型或稀有度。",
+          "source_item": "Charnov 1976；Werner & Mittelbach 1981",
+          "source_url": "https://doi.org/10.1016/0040-5809(76)90040-x",
+          "kind": "theory（同行评审，高引）"
+        },
+        {
+          "topic": "尺寸作为价值的经验代理",
+          "detail": "鱼类普遍存在尺寸选择性捕食；大猎物能量更高但更难捕获/处理，攻击成功率与处理时间强烈依赖双方尺寸，尺寸选择可表现为‘被动地由差异捕获成功率造成’。捕食者-猎物尺寸比与觅食成功直接相关。",
+          "source_item": "Juanes & Conover 1994；Scharf et al. 2000",
+          "source_url": "https://doi.org/10.3354/meps114059",
+          "kind": "measured（替代物种）"
+        },
+        {
+          "topic": "稀有度是否构成价值",
+          "detail": "未检索到‘稀有本身提高单次捕获价值’的生态学证据。最优食谱理论把‘遇率’与‘收益率’分开：稀有猎物的遇率低，反而更可能被排除在食谱之外。若要实现‘稀有=高价值’，只能作为游戏/机制设计选择，不可援引生物学。",
+          "source_item": "Charnov 1976；Werner & Mittelbach 1981（反向推论）",
+          "source_url": "https://doi.org/10.1016/0040-5809(76)90040-x",
+          "kind": "theory_inference"
+        }
+      ],
+      "recommendation": {
+        "respawn": "二选一并显式写入规范：(R1) 封闭守恒——保留不重生，但必须使 prey 供给不成为首要死亡因子（增大初始 prey / 降低代谢成本 / 缩短 episode），并承认 ‘prey_capture’ 分量后段饱和；(R2) 开放可再生（推荐用于觅食+逃逸 fitness）——按再生率 r 补充至承载 K=live_prey，例如每步以概率 p_spawn 补 1 只直到 K，或按固定 `regrowth_time`（Agents.jl 惯例）。r/p_spawn 为设计选择，无斑马鱼直接实测锚点。",
+        "respawn_choice_rationale": "R2 的理由有两层：理论上避免封闭系统资源崩溃造成的‘拼抢固定蛋糕’选择压力；工程上使 600 步 episode 内觅食压力近似稳态，fitness 不随时间漂移。",
+        "high_value_prey": "按‘收益率’操作化：`V_prey = e_prey / (1 + h_prey)`，其中 `e_prey ∝ size_prey^α`（质量/能量随体长超线性，α 取 1–3 之间并标注口径），`h_prey ∝ size_prey`（处理时间随体型上升）。‘高价值 prey’= V 的 top 分位（如 ≥75th 百分位）。这与最优食谱理论一致，且可用现有 `prey.size` 直接计算。",
+        "wire_energy_to_size": "现状 `food_reward` 是常数 0.12，等于宣称所有 prey 价值相同，与‘高价值 prey’分级自相矛盾。建议将能量回报改为 `R_food · f(size_prey)`（f 单调增）；否则分级只影响 growth 不影响即时能量，机制不成立。此项属行为语义变更，须回写 `Danio_Arena设计规范.md` 后再改代码。",
+        "rarity": "不建议把稀有度当作价值维度；若确实要，明标‘游戏设计选择’。"
+      },
+      "evidence_grade": "respawn=工程惯例（D，无同行评审锚点）+ 理论支撑（A/B）；高价值 prey 的‘收益率’口径=理论（A/B）；尺寸作为经验代理=B（替代物种）；稀有度=not found。",
+      "risks": [
+        "respawn 改变 episode 内的密度与遭遇率，会影响所有与该世界耦合的指标（encounters、captures、escape），属需要重跑基线与回写文档的变更。",
+        "‘高价值 prey’若按 size 分级，会与 κ 门、capture_radius 交互：高价值 prey 往往更大，更难被吃，需检查是否反而降低其被捕获率而失去‘高价值’意义。",
+        "energy 预算核算依赖当前 `草案待确认` 的四个能量系数与运动策略，系数一变结论需重算；不得把该核算当作已定论。"
+      ]
+    }
+  ],
+  "items": [
+    {
+      "name": "Do faster starts increase the probability of evading predators?",
+      "type": "paper",
+      "url": "https://doi.org/10.1111/j.1365-2435.2005.01033.x",
+      "source": "OpenAlex / Functional Ecology",
+      "source_url": "https://openalex.org/W2043415286",
+      "date": "2005-09-27",
+      "metrics": "cited_by=448 (OpenAlex, 2026-09-26)",
+      "license": "public-domain (per OpenAlex)",
+      "summary": "以孔雀鱼逃避狗鱼丽鱼 strike 为体系，把 evasion outcome 记为 success/failure 二值；识别出影响结局的四类参数，并给出快启动性能每提高 1 SD、存活几率提高约 2.3 倍。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "替代物种（Poecilia reticulata / Crenicichla alta）；escape 的操作定义是‘strike 结局’，非‘捕食者换目标’。"
+    },
+    {
+      "name": "Context-dependent variability in the components of fish escape response: integrating locomotor performance and behavior",
+      "type": "paper",
+      "url": "https://doi.org/10.1002/jez.580",
+      "source": "OpenAlex / Journal of Experimental Zoology Part A",
+      "source_url": "https://openalex.org/W2002791665",
+      "date": "2010-01-13",
+      "metrics": "cited_by=195 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "综述鱼类逃逸反应的五个可测组分（responsiveness、reaction distance、escape latency、directionality、distance-derived performance），指出各组分均可贡献 escape success，且反应距离由风险/成本经济性决定。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "用于 T1 的组分清单与‘反应距离可作代理’的依据。"
+    },
+    {
+      "name": "Animal escapology I: theoretical issues and emerging trends in escape trajectories",
+      "type": "paper",
+      "url": "https://doi.org/10.1242/jeb.029652",
+      "source": "OpenAlex / Journal of Experimental Biology",
+      "source_url": "https://openalex.org/W2076528110",
+      "date": "2011-07-13",
+      "metrics": "cited_by=220 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "论证 escape success 由方向性（away responses 仅约 50–90%）与相对威胁的逃逸轨迹决定，少量朝向威胁的反应可能引入不可预测性。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "跨物种综述；用于说明方向性是实验关键变量，本项目目前无朝向概念。"
+    },
+    {
+      "name": "Escape responses in juvenile Atlantic cod Gadus morhua L.: the effects of turbidity and predator speed",
+      "type": "paper",
+      "url": "https://doi.org/10.1242/jeb.02489",
+      "source": "OpenAlex / Journal of Experimental Biology",
+      "source_url": "https://openalex.org/W2112677649",
+      "date": "2006-10-05",
+      "metrics": "cited_by=89 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "以捕食者模型触发逃逸，测量逃逸时序/方向/运动学，并用‘putative escape success (PES)’估计逃出攻击的概率，发现浑浊度对 PES 的影响依赖捕食者速度。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "PES 是‘运动学代理真实结局’的范式，可支撑在仿真中用代理量。替代物种（Gadus morhua）。"
+    },
+    {
+      "name": "A faster escape does not enhance survival in zebrafish larvae",
+      "type": "paper",
+      "url": "https://doi.org/10.1098/rspb.2017.0359",
+      "source": "OpenAlex / Proceedings of the Royal Society B",
+      "source_url": "https://openalex.org/W2606942125",
+      "date": "2017-04-12",
+      "metrics": "cited_by=38 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "斑马鱼幼虫被同种成/亚成鱼捕食，用三维运动学 + agent-based 概率模型蒙特卡洛预测存活并与观测一致；存活不随逃逸速度/方向提升，而随‘从更远处反应（reaction distance）’提升。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "斑马鱼特异性最强的 T1 证据；支持把‘提前量/退出威胁区’而非速度作为 escape 代理。"
+    },
+    {
+      "name": "Both prey and predator features predict the individual predation risk and survival of schooling prey",
+      "type": "paper",
+      "url": "https://doi.org/10.7554/elife.76344",
+      "source": "OpenAlex / eLife",
+      "source_url": "https://openalex.org/W4285797947",
+      "date": "2022-07-19",
+      "metrics": "cited_by=23 (OpenAlex, 2026-09-26)",
+      "license": "cc-by",
+      "summary": "高分辨率追踪北方狗鱼捕食 golden shiners：多数攻击成功（70%）；逃脱者攻击前最大加速度更高、离捕食者头部更远；给出个体被捕食风险的量化和‘远离头部距离’这一可操作量。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "替代物种；70% 成功率可作为本项目随机捕获失败率的锚点之一。"
+    },
+    {
+      "name": "Neural Representation of Object Approach in a Decision-Making Motor Circuit",
+      "type": "paper",
+      "url": "https://doi.org/10.1523/jneurosci.5259-05.2006",
+      "source": "OpenAlex / Journal of Neuroscience",
+      "source_url": "https://openalex.org/W2031434545",
+      "date": "2006-03-29",
+      "metrics": "cited_by=184 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "金鱼对 looming 视觉刺激的 C-start 逃逸反应概率 0.7–0.91，并给出平均潜伏期；Mauthner 细胞作为阈值检测器。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "替代物种（Carassius auratus）；提供‘反应是概率性的、非必然’的实验依据，支持给仿真的逃逸触发加随机性。"
+    },
+    {
+      "name": "Visual Threat Assessment and Reticulospinal Encoding of Calibrated Responses in Larval Zebrafish",
+      "type": "paper",
+      "url": "https://doi.org/10.1016/j.cub.2017.08.012",
+      "source": "OpenAlex / Current Biology",
+      "source_url": "https://openalex.org/W2753297919",
+      "date": "2017-09-01",
+      "metrics": "cited_by=115 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "斑马鱼幼虫按 looming 刺激的张角阈值触发逃逸，反应概率随逼近速率（L/V，测试范围 0.1–1.2 s）增大；逃逸是校准的、随威胁程度分级。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "为‘威胁触发阈值 + 概率反应’提供斑马鱼直接依据；具体角度/阈值数值本项目已在 param-basis-biology.md 收录。"
+    },
+    {
+      "name": "Prey fish escape by sensing the bow wave of a predator",
+      "type": "paper",
+      "url": "https://doi.org/10.1242/jeb.111773",
+      "source": "OpenAlex / Journal of Experimental Biology",
+      "source_url": "https://openalex.org/W2037975312",
+      "date": "2014-12-15",
+      "metrics": "cited_by=94 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "斑马鱼幼虫在黑暗中用侧线感知逼近捕食者的弓形波（<10 ms 潜伏期）触发逃逸；视觉触发潜伏期至少长 20 倍（约 200 ms 量级）。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "给出两种模态的潜伏期差异；与 T1 的‘反应距离决定存活’呼应（模态决定能多早反应）。"
+    },
+    {
+      "name": "Prepontine non-giant neurons drive flexible escape behavior in zebrafish",
+      "type": "paper",
+      "url": "https://doi.org/10.1371/journal.pbio.3000480",
+      "source": "OpenAlex / PLoS Biology",
+      "source_url": "https://openalex.org/W2980541117",
+      "date": "2019-10-15",
+      "metrics": "cited_by=51 (OpenAlex, 2026-09-26)",
+      "license": "cc-by",
+      "summary": "斑马鱼对较不紧迫的威胁表现为延迟逃逸与灵活轨迹（prepontine 神经元驱动），与快速逃逸通路分离，体现运动成本与威胁评估的权衡。",
+      "relevance": 3,
+      "peer_reviewed": true,
+      "notes": "支撑‘威胁强度应影响逃逸决策’；本项目当前无威胁分级。"
+    },
+    {
+      "name": "Intensity-dependent timing and precision of startle response latency in larval zebrafish",
+      "type": "paper",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5199724",
+      "source": "Tavily / PMC (期刊论文)",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5199724",
+      "date": "2017 (年)",
+      "metrics": null,
+      "license": null,
+      "summary": "斑马鱼幼虫 C-start 潜伏期约 26.1 ± 0.9 ms（短潜伏期类），潜伏期精度存在约 2.6 ms 的平台；强度越大反应越快越精确。",
+      "relevance": 3,
+      "peer_reviewed": true,
+      "notes": "DOI 未核实（置 null）。潜伏期数值可作为‘逃逸延迟’量级参考，但本项目 dt=50 ms 无法表达 26 ms。"
+    },
+    {
+      "name": "Functional and morphological basis for maximum prey size in piscivorous fishes (A morphological and functional basis for maximum prey size in piscivorous fishes)",
+      "type": "paper",
+      "url": "https://doi.org/10.1371/journal.pone.0184679",
+      "source": "OpenAlex / PLoS ONE",
+      "source_url": "https://openalex.org/W2753764258",
+      "date": "2017-09-08",
+      "metrics": "cited_by=117 (OpenAlex, 2026-09-26)",
+      "license": "cc-by",
+      "summary": "四种肉食性鱼的形态约束与摄食实验：最大可处理猎物体高为捕食者 SL 的 20–27%；横向最大口裂是影响最大猎物尺寸的主要变量。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "替代物种（珊瑚礁鱼），不可直接套用斑马鱼；支持 κ 应体现 gape-limited 而非 κ=1.25。"
+    },
+    {
+      "name": "Predator size-prey size relationships of marine fish predators: interspecific variation and effects of ontogeny and body size on trophic-niche breadth",
+      "type": "paper",
+      "url": "https://doi.org/10.3354/meps208229",
+      "source": "OpenAlex / Marine Ecology Progress Series",
+      "source_url": "https://openalex.org/W2140294119",
+      "date": "2000",
+      "metrics": "cited_by=892 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "跨物种综述：捕食者-猎物尺寸关系直接关联觅食成功，捕食者随体型更成功，尺寸比是营养生态位宽度的关键。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "多物种海洋鱼；用于支撑‘按尺寸比设捕食门’的方向。"
+    },
+    {
+      "name": "Piscivory and prey size selection in young-of-the-year bluefish: predator preference or size-dependent capture success?",
+      "type": "paper",
+      "url": "https://doi.org/10.3354/meps114059",
+      "source": "OpenAlex / Marine Ecology Progress Series",
+      "source_url": "https://openalex.org/W2084402103",
+      "date": "1994",
+      "metrics": "cited_by=135 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "蓝鱼攻击所有尺寸猎物，但处理时间与攻击成功率强烈依赖捕食者与猎物尺寸；尺寸选择可能是差异捕获成功率的被动结果。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "替代物种；支持‘捕获成功率随尺寸比变化’，即捕食不应是确定性 100%。"
+    },
+    {
+      "name": "Modelled three-dimensional suction accuracy predicts prey capture success in three species of centrarchid fishes",
+      "type": "paper",
+      "url": "https://doi.org/10.1098/rsif.2014.0223",
+      "source": "OpenAlex / Journal of the Royal Society Interface",
+      "source_url": "https://openalex.org/W1978367556",
+      "date": "2014-04-09",
+      "metrics": "cited_by=37 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "用吸入水体积（由 peak gape 与 ram speed 决定）建模，预测对 evasive 与 non-evasive prey 的捕获成功；逃避行为显著降低捕获成功。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "替代物种；支撑‘prey 是否逃避应影响捕获成功率’这一机制，本项目目前 prey 不主动逃跑（PreyPolicy 无逃跑）。"
+    },
+    {
+      "name": "How do fish miss? Attack strategies of threespine stickleback capturing non-evasive prey",
+      "type": "paper",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11586519",
+      "source": "Tavily / PMC (Journal of Experimental Biology)",
+      "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11586519",
+      "date": "2024",
+      "metrics": null,
+      "license": null,
+      "summary": "综述并实验分析鱼类攻击失败机制：鱼类捕食成功率报道 23%–100%，失败主因是‘张嘴时刻的前伸距离（PPD）’与游速整合不当；列出多物种失败证据。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "DOI 未核实（置 null）；23%–100% 与 70% 一起用作本项目随机捕获失败率的锚点区间。"
+    },
+    {
+      "name": "Optimal foraging, the marginal value theorem",
+      "type": "paper",
+      "url": "https://doi.org/10.1016/0040-5809(76)90040-x",
+      "source": "OpenAlex / Theoretical Population Biology",
+      "source_url": "https://openalex.org/W1984132513",
+      "date": "1976-04",
+      "metrics": "cited_by=5463 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "边际值定理：捕食者在斑块间的最优切换由其边际收益率与生境平均收益率比较决定，即‘何时放弃’是经济性判断而非固定几何阈值。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "支撑‘自由定义 release_radius 作为逃脱判据’缺理论依据；也支撑 prey 价值=收益率。"
+    },
+    {
+      "name": "Optimal Foraging: Field Tests of Diet Choice and Habitat Switching",
+      "type": "paper",
+      "url": "https://doi.org/10.1093/icb/21.4.813",
+      "source": "OpenAlex / American Zoologist",
+      "source_url": "https://openalex.org/W1990898991",
+      "date": "1981-11-01",
+      "metrics": "cited_by=212 (OpenAlex, 2026-09-26)",
+      "license": null,
+      "summary": "最优觅食理论的鱼类检验：以实验室估计的模型参数预测野外尺寸选择性食谱，验证按收益率（能量/处理成本）排序的食谱选择。",
+      "relevance": 4,
+      "peer_reviewed": true,
+      "notes": "用于 T3 的‘高价值 prey = 高收益率’操作化。"
+    },
+    {
+      "name": "Predator-prey dynamics (Agents.jl example)",
+      "type": "other",
+      "url": "https://juliadynamics.github.io/Agents.jl/v5.6/examples/predator_prey",
+      "source": "Agents.jl 官方文档",
+      "source_url": "https://juliadynamics.github.io/Agents.jl/v5.6/examples/predator_prey",
+      "date": "v5.6",
+      "metrics": null,
+      "license": "MIT (Agents.jl)",
+      "summary": "标准 agent-based 捕食-被捕食示例：草地为可更新资源，被吃后按 `regrowth_time` 倒计时再生，种群在承载上限内波动。",
+      "relevance": 3,
+      "peer_reviewed": false,
+      "notes": "工程惯例，非同行评审；用于说明 respawn/再生是 ABM 的常见而非特例。"
+    },
+    {
+      "name": "Mesa-Predator-Prey-Model (Savannah)",
+      "type": "repo",
+      "url": "https://github.com/SurpriseDog/Mesa-Predator-Prey-Model",
+      "source": "GitHub",
+      "source_url": "https://github.com/SurpriseDog/Mesa-Predator-Prey-Model",
+      "date": "未标注（最近更新见仓库）",
+      "metrics": null,
+      "license": null,
+      "summary": "Mesa 捕食-被捕食示例：草被吃后再生，捕食者需追逐并靠近才能扑食；强调资源与种群长期平衡。",
+      "relevance": 2,
+      "peer_reviewed": false,
+      "notes": "工程惯例；python 生态（Mesa），可离线。仅作参考。"
+    },
+    {
+      "name": "Prey capture behavior evoked by simple visual stimuli in larval zebrafish",
+      "type": "paper",
+      "url": "https://doi.org/10.3389/fnsys.2011.00101",
+      "source": "OpenAlex / Frontiers in Systems Neuroscience",
+      "source_url": "https://doi.org/10.3389/fnsys.2011.00101",
+      "date": "2011",
+      "metrics": null,
+      "license": null,
+      "summary": "斑马鱼幼虫对简单视觉刺激的捕食行为；给出探测草履虫距离 1.55 ± 0.66 mm，是‘探测 <1 BL’结论的一手来源。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "DOI 与期刊来自本地 param-basis-biology.md 交叉核对；本轮未下载全文核验题名/引用数，metrics 置 null。"
+    },
+    {
+      "name": "Visually guided gradation of prey capture movements in larval zebrafish",
+      "type": "paper",
+      "url": "https://doi.org/10.1242/jeb.087742",
+      "source": "OpenAlex / Journal of Experimental Biology",
+      "source_url": "https://doi.org/10.1242/jeb.087742",
+      "date": "2013",
+      "metrics": null,
+      "license": null,
+      "summary": "斑马鱼幼虫捕食打击（strike）距离 0.53 ± 0.19 mm（0.27–1.09 mm）；打击需 <2 mm，是 capture_radius 生物学上界的一手来源。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "DOI 与期刊来自本地 param-basis-biology.md 交叉核对；本轮未下载全文核验题名/引用数，metrics 置 null。"
+    },
+    {
+      "name": "Önal & Langdon 2016（斑马鱼口裂形态；题名本轮未核验）",
+      "type": "paper",
+      "url": "https://doi.org/10.1089/zeb.2016.1307",
+      "source": "Zebrafish (经本地 param-basis-biology.md 与 Licitra 2024 转述)",
+      "source_url": "https://doi.org/10.1089/zeb.2016.1307",
+      "date": "2016",
+      "metrics": null,
+      "license": null,
+      "summary": "报告斑马鱼 5 dpf 口裂 180–200 µm、15 dpf 290–320 µm；是本项目‘口裂 4–5% SL’换算的原始实测来源。",
+      "relevance": 5,
+      "peer_reviewed": true,
+      "notes": "题名与作者未直接核验（仅经本地文件转述），故 name 用描述并在 notes 声明；metrics 置 null。"
+    },
+    {
+      "name": "From perception to behavior: The neural circuits underlying prey hunting in larval zebrafish",
+      "type": "paper",
+      "url": "https://doi.org/10.3389/fncir.2023.1087993",
+      "source": "OpenAlex / Frontiers in Neural Circuits",
+      "source_url": "https://openalex.org/W4318827811",
+      "date": "2023-02-01",
+      "metrics": "cited_by=33 (OpenAlex, 2026-09-26)",
+      "license": "cc-by",
+      "summary": "综述斑马鱼幼虫捕食的感知-行为神经环路；转述常见探测距离 ≈3 mm（体中线 0–60°），支撑探测 <1 BL 的量级。",
+      "relevance": 3,
+      "peer_reviewed": true,
+      "notes": "综述转述，非一手测量；用于交叉验证 Bianco 2011 的量级。"
+    }
+  ],
+  "gaps": [
+    "斑马鱼成鱼（本项目更接近的尺度）的视觉探测距离与捕食打击距离（以 BL 计）——未检索到直接测量；现有全部为 5–7 dpf 幼虫数据。",
+    "斑马鱼最大猎物/体长的直接摄食实验上限——未检索到；现有 4–5% SL 为口裂换算，20–27% SL 为替代物种。",
+    "捕食者的‘放弃/脱离’时间或阈值（give-up time）在鱼类中的定量实测——未检索到可直接引用的数值；仅有边际值定理提供理论框架。",
+    "斑马鱼特异性的‘escape success’野外/实验室成功率（分母为被攻击次数）——未检索到；现有成功率来自北方狗鱼/golden shiners（70%）、孔雀鱼/狗鱼丽鱼与综述区间（23–100%）。",
+    "与本项目设定（斑马鱼、二维、20 Hz、episode 600 步）同构的 agent-based 仿真的‘猎物重生率’经验值——未检索到；只有 ABM 框架的再生时间工程惯例。",
+    "‘稀有度提高单次捕获价值’的生态学证据——未检索到；最优食谱理论反而把稀有与低遇率、低入选率关联。",
+    "GitHub 上与本项目直接可比的开源实现——`gh search repos 'zebrafish predator prey simulation'` 与 `'agent based fish escape predator'` 均返回 0 条；未找到可复用的 zebrafish-specific 逃逸/捕食仿真实现。"
+  ],
+  "conclusions": [
+    "主题1 推荐（B级，斑马鱼+多物种实验支撑）：escape_success 改为‘威胁事件结局’——曾锁定 + 锁定时在 detect 半径内 + 捕食者放弃后继续存活 ≥ T_hold 步才计数；T_hold=20 步为草案。现状‘换成目标即算’向上偏置最大，会与真实存活脱钩；固定 release_radius 对半径过敏且与‘放弃是经济判断’（Charnov 1976）冲突。",
+    "主题2 推荐：先补‘world unit ↔ body length’换算（根因），再按比率标定。有证据的量级是探测 0.34–0.77 BL、打击 0.12–0.14 BL、口裂≈4–5% SL、鱼类捕获成功率 23–100%（pike 70%）。若保留 sensing.radius=18，则 capture_radius 应取 ≈0.16–0.41×sensing.radius（约 3–7 wu，中值 4.5），而非 1.2；κ=1.25 方向与 gape-limited 相反，建议按设计取 2.0–2.5 并注释为设计选择；同时补朝向门与随机捕获失败率（0.5–0.7）。不要把这些写成实测值。",
+    "主题3 推荐：respawn 必须二选一并写死——封闭守恒（须调高 prey 或降代谢，并承认 prey_capture 后段饱和）或开放可再生（推荐，按再生率补至 K=live_prey，ABM 惯例，无斑马鱼实测锚点）。‘高价值 prey’按收益率 V=e_prey/(1+h_prey) 分级（top 分位为高价值，Charnov 1976 / Werner & Mittelbach 1981），并把 `food_reward` 从常数 0.12 改为随 prey.size 单调增，否则分级无机制作用；稀有度不作价值维度。",
+    "风险与验证点：(1) 所有以 BL 表达的数值与口裂 4–5% SL 均为换算推断；(2) T_hold、capture_radius 具体值、κ、朝向锥角、P_capture_success、respawn 率均属设计选择，须回写 Danio_Arena设计规范.md 并标 `草案待确认`，不得作为契约；(3) κ 与 predator size / size 上限 2.5 必须联调，单独改 κ 会禁掉捕食；(4) 所有改动会改变事件流与指标基线，需重跑并同步 schemas/测试。",
+    "依据条目数：共 24 条来源（T1 11 条、T2 9 条、T3 4 条，含 2 条工程惯例；其中同行评审 22 条）。未找到项 7 条，已列 gaps。"
+  ]
+}
