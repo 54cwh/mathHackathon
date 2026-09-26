@@ -58,7 +58,7 @@ Genome \xrightarrow{Development} Connectome
 W = W^{(0)}(Development) + \Delta W(Lifetime\ Learning)
 \]
 
-DanioNet 动力学（`connectome/DanioNet设计规范.md` §3）中的 \(w_{ij}\) 即此有效权重 \(w^{(0)}_{ij}+\Delta w_{ij}\)。\(\Delta W\) 是否受 Dale sign 约束待定（见文末阅读问题）。后天学习产生的 \(\Delta W\) 不遗传。
+DanioNet 动力学（`connectome/DanioNet设计规范.md` §3）中的 \(w_{ij}\) 即此有效权重 \(w^{(0)}_{ij}+\Delta w_{ij}\)。\(\Delta W\) **遵守 Dale sign 约束**：符号由突触前类型固定，学习只改变幅度（\(w_{ij}=sign(w^{(0)}_{ij})\cdot softplus(\theta_{ij})\)，初始化 \(\theta=softplus^{-1}(|w^{(0)}|)\)）。依据：Dale's principle `[bib#29]`；硬符号约束下训练 E/I 网络可行 `[bib#30][bib#31]`。详见 `learning/行为克隆学习.md`。后天学习产生的 \(\Delta W\) 不遗传。
 
 后代继承的是 DNA：
 
@@ -142,6 +142,5 @@ EvoGenesis 不是把遗传算法套在一个现成神经网络外面，而是把
 
 > 逐份阅读本文时发现的未定义点，需与 04 / 05 / 07 / 16 对齐后确认。
 
-1. **`ΔW` 是否受 Dale sign 约束未定**：§4 已统一 `W=W⁰+ΔW` 与 DanioNet §3 的有效权重 `w_ij`；但 `ΔW` 是否允许改变突触符号（即约束 `sign(w_ij)=sign(w⁰_ij)`）未写，属设计决定。
-2. **“四类 neural phenotype”未定义**：§7 Mendel Mode 输出“四类 neural phenotype”，但四类指什么、如何由 genotype 判定未写（G12）。
-3. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
+1. **“四类 neural phenotype”未定义**：§7 Mendel Mode 输出“四类 neural phenotype”，但四类指什么、如何由 genotype 判定未写（G12）。
+2. **MVP 第 5 条判据未定义**：§8“两个亲本生成遗传合理的 offspring”中“遗传合理”如何判定（例如 9:3:3:1 验证）未写。
