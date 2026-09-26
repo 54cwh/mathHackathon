@@ -41,8 +41,8 @@ _COMPATIBILITY_PRIOR: tuple[tuple[float, ...], ...] = (
 class ConnectomePhenotype:
     """RGCD 发育产物。字段名沿用冻结契约（RGCD §1）。
 
-    ``z`` 为 §1 输出 ``Z``（``z_i = softmax(l_i)``，§6）；作为附加字段提供，
-    默认 ``None`` 以保持旧构造调用兼容。
+    ``z`` 为 §1 输出 ``Z``（``z_i = softmax(l_i)``，§6），必填；``cell_type`` 与
+    ``positions`` 为发育附加字段（`DanioNet` 消费）。
     """
 
     adjacency: torch.Tensor
@@ -158,9 +158,16 @@ def initialize_parameters(
     )
 
 
-def tau_from_grn(grn: torch.Tensor, a: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
-    """§11 ``tau_i = 1 + 9 * sigmoid(a^T g_i + b_tau)``，值域 ``[1, 10]``。"""
-    return 1.0 + 9.0 * torch.sigmoid(grn @ a + b)
+def tau_from_grn(
+    grn: torch.Tensor,
+    a: torch.Tensor,
+    b: torch.Tensor,
+    *,
+    tau_min: float = 1.0,
+    tau_max: float = 10.0,
+) -> torch.Tensor:
+    """§11 ``tau_i = tau_min + (tau_max - tau_min) * sigmoid(...)``。"""
+    return tau_min + (tau_max - tau_min) * torch.sigmoid(grn @ a + b)
 
 
 def apply_dale_sign(
@@ -398,7 +405,7 @@ def develop(
     q: np.ndarray | torch.Tensor,
     *,
     master_seed: int,
-    index: int = 0,
+    index: int,
     config: RGCDConfig = DEFAULT_CONFIG,
     device: str = "cpu",
 ) -> ConnectomePhenotype:
@@ -462,7 +469,13 @@ def develop(
     z = cell_identity(state.grn, params.U, params.c_domain[state.domain_index])
     cell_type = z.argmax(dim=-1)
 
-    tau = tau_from_grn(state.grn, params.tau_vector, params.b_tau)
+    tau = tau_from_grn(
+        state.grn,
+        params.tau_vector,
+        params.b_tau,
+        tau_min=config.tau_min,
+        tau_max=config.tau_max,
+    )
 
     regulatory = centered_bilinear(state.grn)
     logits = connection_logits(

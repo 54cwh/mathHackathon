@@ -2,8 +2,10 @@
 ``development`` / ``connectome`` / ``network`` 节（RGCD §13、`core §7`）。
 
 本模块**不新造数值**：``RGCDConfig`` 的默认值是冻结配置的镜像，由
-``tests/test_development_config.py`` 的漂移守护测试断言与配置文件逐字段一致；
-运行期用 ``load_development_config()`` 经 ``core`` 的 ``load_config`` 读取真实配置注入。
+``tests/test_development_config.py`` 的漂移守护测试断言与配置文件逐字段一致。
+``load_development_config()`` 已就绪，经 ``core`` 的 ``load_config`` 读取真实配置注入；
+当前**尚无生产调用方**（种群初始化 / 编排层未落地，接线待补）。
+``connectome.ablation_random_density`` 为未实现消融（DanioNet 随机图基线）的预留参数，待接线。
 参数依据与状态见 ``docs/参数总表.json``（``group`` ∈ {grn, development, connectome, network}）。
 
 读取时只用本模块自带的 section 模型（顶层 ``extra="ignore"``），因此不依赖
@@ -22,8 +24,17 @@ from pydantic import BaseModel, ConfigDict
 
 from evogenesis.core.config import load_config
 
-# 仓库根 = 本文件 ``src/evogenesis/development/config.py`` 的上溯第 3 级。
-DEFAULT_MODEL_CONFIG_PATH = Path(__file__).resolve().parents[3] / "configs" / "default_model.yaml"
+
+def _resolve_default_model_config() -> Path:
+    """自本文件向上查找 ``configs/default_model.yaml``（源码 / editable 检出）。"""
+    for parent in Path(__file__).resolve().parents:
+        candidate = parent / "configs" / "default_model.yaml"
+        if candidate.is_file():
+            return candidate
+    return Path(__file__).resolve().parents[3] / "configs" / "default_model.yaml"
+
+
+DEFAULT_MODEL_CONFIG_PATH = _resolve_default_model_config()
 
 # 六类神经元谱系顺序（``configs/default_model.yaml → development.domains``，RGCD §3）。
 DOMAIN_ORDER: tuple[str, ...] = (

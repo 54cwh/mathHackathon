@@ -304,7 +304,10 @@ class Architecture:
 
 
 def architecture(e_a: np.float32, e_b: np.float32, theta_N: float, theta_H: float) -> Architecture:
-    """``high_N ⟺ E_A>θ_N``、``high_H ⟺ E_B>θ_H``（genome §3，严格大于）。"""
+    """``high_N ⟺ E_A>θ_N``、``high_H ⟺ E_B>θ_H``（genome §3，严格大于）。
+
+    消费者为 **penetrance 报告**（`experiment`），**不进入 development**（`RGCD §1`）。
+    """
     for name, theta in (("theta_N", theta_N), ("theta_H", theta_H)):
         if not 0.0 < theta < 0.5:
             raise ValueError(f"{name} 须落在 (0, 0.5)（genome §3 完全显性必要条件），实际 {theta}")
