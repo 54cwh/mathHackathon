@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
 export interface ArenaStats {
+  /** 会话摘要里的 `environment`（`API接口.md` §1.2）；顶栏 Env 由它渲染。 */
+  environment: string;
   generation: number;
   population: number;
   fishAlive: number;

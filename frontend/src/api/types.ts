@@ -107,6 +107,16 @@ export interface SessionCreate {
   checkpoint_path: string | null;
 }
 
+/** Fish Card metrics (`API接口.md` §1.5；字段已定稿). */
+export interface FishCardMetrics {
+  alive: boolean;
+  captures: number;
+  encounters: number;
+  predator_encounters: number;
+  escape_successes: number;
+  survival_steps: number;
+}
+
 /** Fish Card (`API接口.md` §1.5). */
 export interface FishCard {
   fish_id: string;
@@ -117,7 +127,7 @@ export interface FishCard {
   size: number;
   fitness: number | null;
   cell_counts: Record<string, number>;
-  metrics: Record<string, unknown>;
+  metrics: FishCardMetrics;
 }
 
 export interface LeaderboardEntry {
