@@ -23,6 +23,23 @@ def test_run_records_params_metrics_tags(tmp_path):
     assert run.data.tags["status_note"] == "smoke"
 
 
+def test_distinguishes_project_experiment_id_from_mlflow_id(tmp_path):
+    tracker = RunTracker(tmp_path / "mlruns", "exp-stable")
+    with tracker:
+        run_id = tracker.run_id
+        assert tracker.experiment_name == "exp-stable"
+        assert tracker.mlflow_experiment_id != "exp-stable"
+        assert mlflow.get_run(run_id).data.tags["experiment_id"] == "exp-stable"
+
+
+def test_mlflow_experiment_id_before_start_raises(tmp_path):
+    import pytest
+
+    tracker = RunTracker(tmp_path / "mlruns", "exp5")
+    with pytest.raises(RuntimeError):
+        _ = tracker.mlflow_experiment_id
+
+
 def test_context_manager_marks_failed(tmp_path):
     tracker = RunTracker(tmp_path / "mlruns", "exp2")
     try:

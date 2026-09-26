@@ -23,13 +23,22 @@ SEVERITY_NUMBERS: dict[str, int] = {
 
 _LEVELS: dict[str, int] = {"debug": 10, "info": 20, "warning": 30, "error": 40, "critical": 50}
 
+# OTel Logs 规范档位名（WARN / FATAL，而非 WARNING / CRITICAL）
+SEVERITY_TEXT: dict[str, str] = {
+    "debug": "DEBUG",
+    "info": "INFO",
+    "warning": "WARN",
+    "error": "ERROR",
+    "critical": "FATAL",
+}
+
 _handle: TextIO | None = None
 
 
 def _add_otel_severity(logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
     level = event_dict.pop("level", method_name or "info")
     event_dict["severity_number"] = SEVERITY_NUMBERS.get(level, 9)
-    event_dict["severity_text"] = level.upper()
+    event_dict["severity_text"] = SEVERITY_TEXT.get(level, level.upper())
     return event_dict
 
 
@@ -51,6 +60,7 @@ def configure_logging(
         _handle.close()
         _handle = None
 
+    structlog.contextvars.clear_contextvars()
     if resource:
         structlog.contextvars.bind_contextvars(**resource)
 

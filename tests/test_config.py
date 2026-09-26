@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from evogenesis.core.config import config_snapshot, load_config
 
@@ -89,6 +89,38 @@ def _minimal() -> dict:
             "loss_weight_v": 1.6,
         },
     }
+
+
+def test_env_case_insensitive_camel_fields(tmp_path):
+    path = _write(tmp_path, _minimal())
+    cfg = load_config(
+        path,
+        environ={
+            "EVOGENESIS_PHENOTYPE__THETA_N": "0.5",
+            "EVOGENESIS_GENOME__MOTIF_SUBSET_A": "3",
+        },
+    )
+    assert cfg.phenotype.theta_N == 0.5
+    assert cfg.genome.motif_subset_A == 3
+
+
+def test_unknown_env_section_rejected(tmp_path):
+    path = _write(tmp_path, _minimal())
+    with pytest.raises(ValidationError):
+        load_config(path, environ={"EVOGENESIS_NOPE__X": "1"})
+
+
+def test_pluggable_model(tmp_path):
+    class Leaf(BaseModel):
+        n: int
+
+    class Root(BaseModel):
+        leaf: Leaf
+
+    path = tmp_path / "other.yaml"
+    path.write_text(yaml.safe_dump({"leaf": {"n": 7}}), encoding="utf-8")
+    cfg = load_config(path, model=Root, environ={})
+    assert cfg.leaf.n == 7
 
 
 def test_loads_frozen_default_model():

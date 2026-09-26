@@ -41,6 +41,20 @@ def test_resolve_requires_alias(tmp_path):
         registry.resolve("danionet")
 
 
+def test_get_by_version(tmp_path):
+    registry = Registry(tmp_path / "registry.json")
+    registry.register("danionet", "1", run_id="run-1")
+    registry.register("danionet", "2", run_id="run-2")
+    assert registry.get("danionet", "2")["source_run_id"] == "run-2"
+
+
+def test_get_missing_version_raises(tmp_path):
+    registry = Registry(tmp_path / "registry.json")
+    registry.register("danionet", "1")
+    with pytest.raises(KeyError):
+        registry.get("danionet", "9")
+
+
 def test_persistence_across_instances(tmp_path):
     path = tmp_path / "registry.json"
     first = Registry(path)

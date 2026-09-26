@@ -2,6 +2,10 @@
 
 字段对齐 **MLflow Tracking**（``run_id / experiment_id / status / start_time / end_time``
 ``/ metrics / params / tags / artifacts``），使用本地 file store，现场离线可用。
+
+项目稳定 ``experiment_id``（AGENTS「稳定 ID」）与 MLflow 的 experiment id 不同名：
+前者作为 ``experiment_name`` 传入并写入 run tag ``experiment_id``；后者由 MLflow 生成，
+经 ``mlflow_experiment_id`` 暴露。
 """
 
 from __future__ import annotations
@@ -30,20 +34,28 @@ class RunTracker:
     def __init__(
         self,
         tracking_dir: str | Path,
-        experiment_id: str,
+        experiment_name: str,
         *,
         run_name: str | None = None,
         tags: Mapping[str, str] | None = None,
     ) -> None:
         self._tracking_dir = Path(tracking_dir)
-        self._experiment_id = experiment_id
+        self._experiment_name = experiment_name
         self._run_name = run_name
         self._tags = dict(tags or {})
         self._run: Any = None
+        self._mlflow_experiment_id: str | None = None
 
     @property
-    def experiment_id(self) -> str:
-        return self._experiment_id
+    def experiment_name(self) -> str:
+        """项目稳定 ``experiment_id``（用作 MLflow experiment 名）。"""
+        return self._experiment_name
+
+    @property
+    def mlflow_experiment_id(self) -> str:
+        if self._mlflow_experiment_id is None:
+            raise RuntimeError("run 尚未 start()")
+        return self._mlflow_experiment_id
 
     @property
     def run_id(self) -> str:
@@ -54,11 +66,17 @@ class RunTracker:
     def start(self) -> RunTracker:
         self._tracking_dir.mkdir(parents=True, exist_ok=True)
         mlflow.set_tracking_uri(self._tracking_dir.resolve().as_uri())
-        if mlflow.get_experiment_by_name(self._experiment_id) is None:
+        existing = mlflow.get_experiment_by_name(self._experiment_name)
+        if existing is None:
             artifact_uri = (self._tracking_dir / "artifacts").resolve().as_uri()
-            mlflow.create_experiment(self._experiment_id, artifact_location=artifact_uri)
-        mlflow.set_experiment(self._experiment_id)
-        self._run = mlflow.start_run(run_name=self._run_name, tags=self._tags or None)
+            self._mlflow_experiment_id = str(
+                mlflow.create_experiment(self._experiment_name, artifact_location=artifact_uri)
+            )
+        else:
+            self._mlflow_experiment_id = str(existing.experiment_id)
+        mlflow.set_experiment(self._experiment_name)
+        tags = {"experiment_id": self._experiment_name, **self._tags}
+        self._run = mlflow.start_run(run_name=self._run_name, tags=tags)
         return self
 
     def log_params(self, params: Mapping[str, Any]) -> None:

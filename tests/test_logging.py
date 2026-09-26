@@ -36,6 +36,25 @@ def test_level_filtering(tmp_path):
     assert events == ["keep-me"]
 
 
+def test_severity_text_uses_otel_names(tmp_path):
+    log_path = tmp_path / "logs.jsonl"
+    configure_logging(log_path, level="info")
+    get_logger("t").warning("careful")
+    record = _read_lines(log_path)[0]
+    assert record["severity_text"] == "WARN"
+    assert record["severity_number"] == 13
+
+
+def test_contextvars_reset_between_configures(tmp_path):
+    configure_logging(tmp_path / "a.jsonl", level="info", resource={"experiment_id": "a"})
+    get_logger("t").info("first")
+
+    second = tmp_path / "b.jsonl"
+    configure_logging(second, level="info")
+    get_logger("t").info("second")
+    assert "experiment_id" not in _read_lines(second)[0]
+
+
 def test_unknown_level_rejected(tmp_path):
     import pytest
 

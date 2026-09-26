@@ -31,11 +31,16 @@ def test_spawn_rng_reproducible_and_distinct():
     assert not np.array_equal(a0, a1)
 
 
-def test_spawn_cache_overflow_raises():
+def test_spawn_grows_without_order_dependence():
+    grown = SeedManager(1)._spawn("mutation", 4)
+    first = SeedManager(1)._spawn("mutation", 1)[0]
+    assert grown[0].spawn_key == first.spawn_key
+
+    high_first = SeedManager(1).spawn_rng("development", 3).uniform(size=3)
     manager = SeedManager(1)
-    assert len(manager._spawn("mutation", 2)) == 2
-    with pytest.raises(ValueError):
-        manager._spawn("mutation", 3)
+    manager.spawn_rng("development", 0)
+    low_then_high = manager.spawn_rng("development", 3).uniform(size=3)
+    assert np.array_equal(high_first, low_then_high)
 
 
 def test_python_rng_reproducible():

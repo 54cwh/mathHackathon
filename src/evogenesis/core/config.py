@@ -2,11 +2,13 @@
 
 覆盖优先级 **CLI > env > file > default**（core §0）。
 - file 层：``configs/*.yaml``（运行期取值的唯一来源，core §7）。
-- env 层：前缀 ``EVOGENESIS_``，嵌套用双下划线 ``__``（沿用 pydantic-settings 约定）。
+- env 层：前缀 ``EVOGENESIS_``，嵌套用双下划线 ``__``（沿用 pydantic-settings 的命名约定）；
+  段名对 Pydantic 字段名大小写不敏感匹配；值按 YAML 标量解析（本实现自选）。
 - CLI 层：点分键（如 ``learning.lr``）或嵌套 dict。
 - default 层：Pydantic 字段默认值；**数值参数一律必填**，此处不发明取值（core §7 禁止）。
 
-env 值的解析沿用 pydantic-settings 的语义（字符串按 YAML 标量解析后再由 Pydantic 强类型校验）。
+各模块用 ``load_config(path, model=...)`` 传入自己的 Pydantic 模型，即可加载对应
+``configs/*.yaml``（core §0「加载并校验 configs/*.yaml」）。
 """
 
 from __future__ import annotations
@@ -117,6 +119,8 @@ class ModelConfig(_Section):
     learning: LearningConfig
 
 
+
+
 def _deep_update(base: dict[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
     for key, value in override.items():
         if isinstance(value, Mapping) and isinstance(base.get(key), dict):
@@ -141,14 +145,41 @@ def _nested(overrides: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _env_overrides(environ: Mapping[str, str]) -> dict[str, Any]:
+def _match_field(segment: str, model: type[BaseModel]) -> tuple[str, type[BaseModel] | None]:
+    """把 env 段名大小写不敏感地匹配到模型字段；返回 (字段名, 子模型类型)。"""
+    for name, field in model.model_fields.items():
+        if name.casefold() == segment.casefold():
+            annotation = field.annotation
+            nested = (
+                annotation
+                if isinstance(annotation, type) and issubclass(annotation, BaseModel)
+                else None
+            )
+            return name, nested
+    return segment, None
+
+
+def _canonical_path(segments: list[str], model: type[BaseModel]) -> list[str]:
+    canonical: list[str] = []
+    current: type[BaseModel] | None = model
+    for segment in segments:
+        if current is None:
+            canonical.append(segment)
+            continue
+        name, current = _match_field(segment, current)
+        canonical.append(name)
+    return canonical
+
+
+def _env_overrides(environ: Mapping[str, str], model: type[BaseModel]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for raw_key, raw_value in environ.items():
         if not raw_key.startswith(ENV_PREFIX):
             continue
-        path = raw_key[len(ENV_PREFIX) :].lower().split(ENV_NESTED_DELIMITER)
-        if not all(path):
+        segments = raw_key[len(ENV_PREFIX) :].split(ENV_NESTED_DELIMITER)
+        if not all(segments):
             continue
+        path = _canonical_path(segments, model)
         try:
             value: Any = yaml.safe_load(raw_value)
         except yaml.YAMLError:
@@ -171,22 +202,26 @@ def _read_yaml(path: Path) -> dict[str, Any]:
     return loaded
 
 
-def load_config(
+def load_config[ConfigModel: BaseModel](
     path: str | os.PathLike[str] | None = None,
     *,
+    model: type[ConfigModel] = ModelConfig,  # type: ignore[assignment]
     overrides: Mapping[str, Any] | None = None,
     environ: Mapping[str, str] | None = None,
-) -> ModelConfig:
-    """按 ``CLI > env > file > default`` 合成并校验配置。"""
+) -> ConfigModel:
+    """按 ``CLI > env > file > default`` 合成并校验配置。
+
+    ``model`` 为对应 ``configs/*.yaml`` 的 Pydantic 模型；默认 ``ModelConfig``。
+    """
     data: dict[str, Any] = {}
     if path is not None:
         _deep_update(data, _read_yaml(Path(path)))
-    _deep_update(data, _env_overrides(os.environ if environ is None else environ))
+    _deep_update(data, _env_overrides(os.environ if environ is None else environ, model))
     if overrides:
         _deep_update(data, _nested(overrides))
-    return ModelConfig.model_validate(data)
+    return model.model_validate(data)
 
 
-def config_snapshot(config: ModelConfig) -> dict[str, Any]:
+def config_snapshot(config: BaseModel) -> dict[str, Any]:
     """供 run 目录落盘的已解析配置快照（core §7）。"""
     return config.model_dump()

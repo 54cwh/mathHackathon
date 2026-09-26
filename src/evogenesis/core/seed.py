@@ -4,8 +4,8 @@ master seed → 命名空间子种子，四路随机源统一派生：
 Python ``random`` / NumPy / PyTorch CPU / PyTorch CUDA。
 
 派生式（core §3 定稿）：``numpy.random.SeedSequence([master_seed, namespace_id])``；
-实体级子种子用命名空间序列的 ``spawn`` 树（``spawn`` 只调用一次并缓存，
-避免 ``SeedSequence(master).spawn(k)[i]`` 那种每次重建、破坏构造顺序语义的写法）。
+实体级子种子用命名空间序列的 ``spawn`` 树（``spawn`` 结果按命名空间缓存；
+取更高索引时按更大的 ``k`` 重新 ``spawn``——其前缀与更小 ``k`` 一致，故与调用顺序无关）。
 """
 
 from __future__ import annotations
@@ -57,13 +57,9 @@ class SeedManager:
 
     def _spawn(self, name: str, count: int) -> list[np.random.SeedSequence]:
         cached = self._spawn_cache.get(name)
-        if cached is None:
+        if cached is None or count > len(cached):
             cached = list(self._namespace_sequence(name).spawn(count))
             self._spawn_cache[name] = cached
-        elif count > len(cached):
-            raise ValueError(
-                f"命名空间 {name!r} 已 spawn {len(cached)} 个子序列，不能再取 {count} 个"
-            )
         return cached[:count]
 
     def rng(self, name: str) -> np.random.Generator:
