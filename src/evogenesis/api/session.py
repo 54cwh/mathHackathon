@@ -16,6 +16,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from evogenesis.api import ws as ws_hub
 from evogenesis.api.schemas import (
     FishCard,
     Leaderboard,
@@ -73,11 +74,12 @@ class Session:
             self.generation = 0
             self.running = True
 
-    def advance(self, steps: int = 1, use_expert: bool = True) -> None:
-        """推进仿真 `steps` 步（`B1` 定稿）；`running=False` 时整段短路。"""
+    def advance(self, steps: int = 1, use_expert: bool = True) -> list:
+        """推进仿真 `steps` 步（`B1` 定稿）；`running=False` 时整段短路。返回本次新增事件。"""
+        new_events: list = []
         with self._lock:
             if not self.running:
-                return
+                return new_events
             for _ in range(steps):
                 if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
                     break
@@ -87,26 +89,17 @@ class Session:
                         if fish.alive:
                             actions[fid] = self.expert(self.arena.observe(fid))
                 result = self.arena.step(actions)
+                new_events.extend(result.events)
                 if result.done:
                     break
+        return new_events
 
     def snapshot(self) -> Snapshot:
         with self._lock:
             return self._snapshot()
 
     def _snapshot(self) -> Snapshot:
-        fish_out = {
-            fid: {
-                "x": float(f.pos[0]),
-                "y": float(f.pos[1]),
-                "heading": float(f.heading),
-                "speed": float(f.speed),
-                "energy": float(f.energy),
-                "size": float(f.size),
-                "alive": f.alive,
-            }
-            for fid, f in self.arena.fish.items()
-        }
+        fish_out = self._fish_out()
         prey_out = {
             pid: {
                 "x": float(p.pos[0]),
@@ -133,6 +126,25 @@ class Session:
             obstacles=obst_out,
             events=[e.to_dict() for e in self.arena.events[-_EVENTS_TAIL:]],
         )
+
+    def _fish_out(self) -> dict[str, dict]:
+        return {
+            fid: {
+                "x": float(f.pos[0]),
+                "y": float(f.pos[1]),
+                "heading": float(f.heading),
+                "speed": float(f.speed),
+                "energy": float(f.energy),
+                "size": float(f.size),
+                "alive": f.alive,
+            }
+            for fid, f in self.arena.fish.items()
+        }
+
+    def fish_state(self) -> dict[str, dict]:
+        """`arena.fish_state` 推送用的逐鱼变换+能量（`API与系统工程.md` §5）。"""
+        with self._lock:
+            return self._fish_out()
 
     def fish_card(self, fish_id: str) -> FishCard:
         with self._lock:
@@ -257,7 +269,10 @@ def delete_session(session_id: str) -> None:
 @router.post("/sessions/{session_id}/release", response_model=SessionSummary)
 def release(session_id: str, steps: int = 1, use_expert: bool = True) -> SessionSummary:
     s = _get_session(session_id)
-    s.advance(steps=steps, use_expert=use_expert)
+    events = s.advance(steps=steps, use_expert=use_expert)
+    if events:
+        ws_hub.publish_fish_state(s.session_id, s.arena.step_idx, s.fish_state())
+        ws_hub.publish_events(s.session_id, [e.to_dict() for e in events])
     return _manager.summary(s)
 
 

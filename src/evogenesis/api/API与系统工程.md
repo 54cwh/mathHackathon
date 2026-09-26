@@ -101,16 +101,23 @@
 编辑 / 发育 / 繁殖为同步；演化与正式实验为异步 job，进度经 WS `job.progress` 推送。
 
 ## 5. WebSocket
-端点 `/v1/ws`；消息信封与命名见 §4.1 R11。
+端点 `/v1/ws`；消息信封与命名见 §4.1 R11。可选订阅：`/v1/ws?session_id=<session_id>`。
 
-实时传：
-- fish transforms
-- selected-fish neural activation
-- energy
-- events
-- generation progress
+**推送清单（`草案待确认`，实现已先行、待确认 2026-09-26）**：
 
-不每帧发送全部 48×48 matrix。
+| `type` | payload | 触发 | 状态 |
+|---|---|---|---|
+| `sys.hello` | `{note, session_id}` | 连接建立一次 | 已实现 |
+| `sys.error` | `{echo}` | 收到非法信封 | 已实现 |
+| `arena.fish_state` | `{session_id, step, fish:{fish_id:{x,y,heading,speed,energy,size,alive}}}` | 订阅会话每次 `release` 推进后 | 已实现 |
+| `arena.events` | `{session_id, events:[{seq,type,step,payload}]}` | 同上（本次新增事件） | 已实现 |
+| `job.progress` | `{job_id, status, progress}` | 实验/任务进度或状态变化 | 已实现 |
+| `brain.activation` | `{session_id, fish_id, activation:[...]}` | 选中鱼的神经激活 | **未接**（需模型驱动会话/DanioNet；当前会话由 `ExpertPolicy` 驱动，无 activation 生产者） |
+
+- **采样率**：**事件驱动**，不做定时采样 —— `arena.*` 由订阅会话的 `release` 触发；不每帧发送全部 48×48 matrix（保持）。
+- **`seq`**：**每连接**单调递增（原进程级全局已废弃）。
+- **订阅**：`?session_id=` 只收该会话的 `arena.*` + 全局 `job.progress`；未提供者只收 `job.progress` / `sys.*`。
+- **心跳/重连**：服务端不发心跳；客户端负责断线重连并重新订阅（服务端不保存订阅）。
 
 ## 6. Seed Manager
 统一设置：

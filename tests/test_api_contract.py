@@ -15,6 +15,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from evogenesis.api import environmental_selections as selections_mod
+from evogenesis.api import ws as ws_mod
 from evogenesis.api.app import app
 from evogenesis.api.session import _manager
 
@@ -29,10 +30,16 @@ def _clean_sessions():
     _manager._sessions.clear()
     selections_mod._selections.clear()
     selections_mod._jobs.clear()
+    ws_mod._subs.clear()
+    ws_mod._seq.clear()
+    ws_mod._loop = None
     yield
     _manager._sessions.clear()
     selections_mod._selections.clear()
     selections_mod._jobs.clear()
+    ws_mod._subs.clear()
+    ws_mod._seq.clear()
+    ws_mod._loop = None
 
 
 def _wait_job(job_id: str, timeout: float = 60.0) -> dict:
@@ -287,3 +294,47 @@ def test_experiment_launch_real_run_generations_zero(tmp_path, monkeypatch) -> N
     run = detail["results"]["runs"][0]
     assert run["seed"] == 1103 and run["generations_run"] == 0
     assert (tmp_path / "runs" / f"{detail['experiment_id']}-s1103" / "evolution.jsonl").exists()
+
+
+def test_ws_pushes_fish_state_and_events() -> None:
+    sid = _create()["session_id"]
+    with client.websocket_connect(f"/v1/ws?session_id={sid}") as ws:
+        hello = ws.receive_json()
+        assert hello["type"] == "sys.hello" and hello["seq"] == 1
+        assert hello["payload"]["session_id"] == sid
+        client.post(f"/v1/sessions/{sid}/release?steps=3")
+        msgs = [ws.receive_json(), ws.receive_json()]
+        by_type = {m["type"]: m for m in msgs}
+        assert "arena.fish_state" in by_type and "arena.events" in by_type
+        fs = by_type["arena.fish_state"]["payload"]
+        assert fs["session_id"] == sid and fs["step"] == 3 and len(fs["fish"]) == 12
+        assert sorted(m["seq"] for m in msgs) == [2, 3]  # 每连接单调
+
+
+def test_ws_does_not_push_other_session() -> None:
+    a = _create()["session_id"]
+    b = _create()["session_id"]
+    with client.websocket_connect(f"/v1/ws?session_id={a}") as ws:
+        ws.receive_json()  # hello
+        client.post(f"/v1/sessions/{b}/release?steps=2")
+        ws.send_text('{"probe": 1}')  # invalid envelope -> immediate sys.error
+        assert ws.receive_json()["type"] == "sys.error"  # 未收到 b 的推送
+
+
+def test_ws_job_progress_push(tmp_path, monkeypatch) -> None:
+    monkeypatch.setattr(selections_mod, "_OUT_ROOT", tmp_path / "runs")
+    monkeypatch.setattr(selections_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
+    monkeypatch.setattr(
+        selections_mod, "_run_one", lambda expt, seed: {"seed": seed, "run_dir": "x"}
+    )
+    with client.websocket_connect("/v1/ws") as ws:
+        assert ws.receive_json()["type"] == "sys.hello"
+        client.post(
+            "/v1/environmental-selections",
+            json={"name": "j", "seeds": [1], "generations": 0},
+        )
+        r = ws.receive_json()
+        while r["type"] != "job.progress" or r["payload"]["status"] != "done":
+            assert r["type"] == "job.progress"
+            r = ws.receive_json()
+        assert r["payload"]["status"] == "done" and r["payload"]["progress"] == 1.0

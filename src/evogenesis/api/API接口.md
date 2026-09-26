@@ -259,16 +259,20 @@
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
 
-> `sys.hello` 与 `sys.error` 已实现（`ws.py`）；`sys.echo` **未实现**（待认领，`§11` B5）；业务推送（`arena.*` / `brain.*` / `job.*`）仍未定义（阻塞：采样率与推送清单未定）。
+> `sys.hello` / `sys.error` 与业务推送 `arena.fish_state` / `arena.events` / `job.progress` **已实现**；`sys.echo` **未实现**（B5）；`brain.activation` **未接**（无模型驱动会话）。推送清单与采样率见 `API与系统工程.md §5`（`草案待确认`）。
 
 | type | 方向 | payload | 触发 | 状态 |
 |---|---|---|---|---|
 | `sys.hello` | 服务端 → 客户端 | `{note}` | 连接建立时一次 | 已实现 |
 | `sys.echo` | 服务端 → 客户端 | `{echo}` | 每收到一条合法消息 | **未实现**（B5 待认领） |
 | `sys.error` | 服务端 → 客户端 | `{echo}` | 收到非法信封 | 已实现 |
-| `arena.*` / `brain.*` / `job.*` | 服务端 → 客户端 | 待定 | 实时推送（§5 数据流） | 未实现 |
+| `arena.fish_state` | 服务端 → 客户端 | `{session_id, step, fish:{...}}` | 订阅会话 `release` 推进后 | 已实现 |
+| `arena.events` | 服务端 → 客户端 | `{session_id, events:[...]}` | 同上的新增事件 | 已实现 |
+| `job.progress` | 服务端 → 客户端 | `{job_id, status, progress}` | 实验/任务进度变化 | 已实现 |
+| `brain.activation` | 服务端 → 客户端 | `{session_id, fish_id, activation}` | 选中鱼神经激活 | **未接**（无模型驱动会话） |
 
-- `seq`：当前为进程内全局单调递增（非连接内），作用域待认领（认领表 B5）。
+- 订阅：`/v1/ws?session_id=<id>`；采样率=**事件驱动**（`release` 触发，非定时）；不每帧发 48×48 matrix（`API与系统工程.md §5`，`草案待确认`）。
+- `seq`：**每连接**单调递增（B5/L6 闭合）。
 - **代码位置**：`ws.py` → `ws_endpoint`。
 
 ---
@@ -486,7 +490,7 @@ class SessionCreate(BaseModel):
 | **B2** | 暂停 / 恢复语义：`pause` 是 **toggle**（兼作 resume），已真正阻塞 `release`；上游无 resume 端点 | ✅ **已闭合（2026-09-26）**：保留 toggle，不另开 `resume`；上游 §4.3 已同步 |
 | **B3** | `generation` / `environment` 是"稳定 ID"还是标量：上游 §3 列为稳定 ID，代码是 `int` / 字符串枚举 | 实现为标量；改文档还是改代码待认领 |
 | **B4** | 未实现模块的统一约定：501 + "owned by 池伟豪 …" 是否正式写进上游文档 | 已实现共享 `_NOT_IMPL` 单例；响应体已是 RFC 7807 |
-| **B5** | WS 词表：`sys.hello` / `sys.echo`（后者仅为契约演示）是否正式纳入 R11 词表 | `sys.hello` / `sys.error` 已实现；`sys.echo` **未实现**，去留待认领 |
+| **B5** | WS 词表 | ✅ **已闭合（2026-09-26）**：业务推送 `arena.fish_state`/`arena.events`/`job.progress` 已实现；`sys.echo` 废弃（不实现）；`seq` 改每连接 |
 | **B6** | experiment 契约分裂 | ✅ **已闭合（2026-09-26，方案 C）**：承认两对象——API 侧落地为 `EnvironmentalSelectionLaunch`（Experiment F 专用资源 `/v1/environmental-selections`，多 seed，展开为 N 个 `ExperimentRun`），Tier3 `schemas/experiment.schema.json` 维持单 run `ExperimentRun`；`environment` 枚举统一 |
 | **B7** | config 未接线：无 loader 读 yaml；`arena_config_path` 被静默忽略；yaml 键名（`live_demo`、缺 `actors` / `biomass_to_size_gain`）与 dataclass 不匹配 | 未变；见 `../arena/Danio_Arena设计与实现说明.md` §18 参数映射 |
 
@@ -499,7 +503,7 @@ class SessionCreate(BaseModel):
 | **L3** | `release` 的 `steps` 无上界、端点同步阻塞 | 实测 `steps=100000` 被接受并同步跑（止步 600，但仍占满请求）；慢客户端会阻塞 worker |
 | **L4** | 暂停无调度器 | `pause` 真的阻塞 `release`，但服务端仍**无调度器 / 无后台推进 / 无独立 resume 端点**；前端仍须自停轮询 |
 | **L5** | `snapshot.events` 的 `200` 是无文档魔数 | 后改它无从知晓影响面；建议提为模块常量并纳入本文档 |
-| **L6** | WS 无广播、无连接注册表；`seq` 为进程级全局 | §8.2 的 5 类推送全部缺失；`seq` 需从进程级改为每连接或全局带来源标识 |
+| **L6** | WS 无广播、无连接注册表；`seq` 为进程级全局 | ✅ **已闭合（2026-09-26）**：新增连接注册表 + `publish_*` 广播；`seq` 改每连接；`brain.activation` 未接（无生产者） |
 | **L7** | 501 上挂了 `202` 状态码声明 | `/docs` / `/openapi.json` 与实际行为不符（实测实际 501）。有意为之（表意"将来是异步"），可在 `responses=` 里同时声明 202 与 501 |
 | **L8** | `FishCard.fitness` / `cell_counts` 恒 `null` / `{}`；`generation` / `genome_id` 恒 `0` / `"unknown"`；`viable` 恒 `True` | 由池伟豪的 genome / development / evolution 落地后填充。**`viable` 的语义是"发育可行性"，不是存活**（源码注释：`# developmental viability; arena survival is in metrics`）；要看存活请读 `metrics.alive` 或 snapshot 的 `fish[].alive` |
 | **L9** | `leaderboard` 含已死鱼且长度恒等于 `population` | 与"排行榜"直觉不符；`entries` 不因死亡而缩短（实测恒 12 条） |

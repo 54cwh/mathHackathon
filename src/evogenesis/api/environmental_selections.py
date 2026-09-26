@@ -23,6 +23,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
+from evogenesis.api import ws as ws_hub
 from evogenesis.api.schemas import (
     EnvironmentalSelectionDetail,
     EnvironmentalSelectionLaunch,
@@ -86,6 +87,11 @@ def _job_status(job: _Job) -> JobStatus:
     return JobStatus(job_id=job.job_id, status=job.status, progress=job.progress, detail=job.detail)
 
 
+def _emit(job: _Job) -> None:
+    """广播 `job.progress`（`API与系统工程.md` §5）。"""
+    ws_hub.publish_job_progress(job.job_id, job.status, job.progress)
+
+
 def _run_one(selection: _Selection, seed: int) -> dict:
     """跑单个 seed 的环境选择实验，返回该 `ExperimentRun` 的摘要。"""
     overrides = (
@@ -142,9 +148,11 @@ def _worker(selection: _Selection, job: _Job) -> None:
         if job.cancelled:
             job.status = "cancelled"
             selection.status = "cancelled"
+            _emit(job)
             return
         job.status = "running"
         selection.status = "running"
+        _emit(job)
     try:
         total = max(1, len(selection.seeds))
         for index, seed in enumerate(selection.seeds, start=1):
@@ -152,6 +160,7 @@ def _worker(selection: _Selection, job: _Job) -> None:
                 if job.cancelled:
                     job.status = "cancelled"
                     selection.status = "cancelled"
+                    _emit(job)
                     return
             info = _run_one(selection, seed)
             with job.lock:
@@ -160,16 +169,20 @@ def _worker(selection: _Selection, job: _Job) -> None:
                 if job.cancelled:
                     job.status = "cancelled"
                     selection.status = "cancelled"
+                    _emit(job)
                     return
+                _emit(job)
         with job.lock:
             job.status = "done"
             selection.status = "done"
             job.progress = 1.0
+            _emit(job)
     except Exception as exc:  # noqa: BLE001 - 后台任务：失败须落到 job 状态而非进程
         with job.lock:
             job.status = "failed"
             selection.status = "failed"
             job.detail = {"error": str(exc)}
+            _emit(job)
 
 
 router = APIRouter(
@@ -266,4 +279,5 @@ def cancel_job(job_id: str) -> JobStatus:
         job.cancelled = True
         if job.status in ("queued", "running"):
             job.status = "cancelled"
+        _emit(job)
     return _job_status(job)
