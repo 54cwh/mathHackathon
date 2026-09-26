@@ -179,6 +179,6 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 （无遗留：
 - #2 `U/m/b` → §3（cell-type 固定先验）；#3 动作合成 → §4（均值池化）；#4 左右标记 → §5（x 中位数二分）；#6 `w/o GRN` → §9（同密度随机结构）。
-- #1 12 维编码归 `arena/Danio_Arena设计与实现说明.md` §4.1（现 `草案待确认` + 认领表 A1）；本文件 §2 只定义语义/顺序/值域。
+- #1 12 维编码归 `arena/Danio_Arena设计与实现说明.md` §4.1（**已定稿**，2026-09-26；认领表 A1 已闭合）；本文件 §2 只定义语义/顺序/值域。
 - #5 `λ_ω,λ_v` 归 `learning/行为克隆学习.md` §6；ExpertPolicy 权重 `w_p0,k_H,w_d,w_o` 归 `arena/Danio_Arena设计与实现说明.md` §11（G4）。
 - #7 BC 轨迹条数/预算归 `learning/行为克隆学习.md` §3；padding 到 48 + mask 见本文件 §3。）
