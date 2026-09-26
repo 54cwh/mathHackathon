@@ -81,11 +81,11 @@ def test_step_passes_schema():
     jsonschema.validate(_step(), SCHEMA)
 
 
-def test_step_at_episode_boundary_passes_schema():
-    """step 的上界 599（20 Hz × 30 s）；越界必须被 schema 拒。"""
+def test_step_index_bound_is_not_hardcoded_in_schema():
+    """step 上界 = header.total_steps − 1；episode_steps 可覆盖，schema 不硬编码 599。"""
     jsonschema.validate(_step(step=599), SCHEMA)
-    with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(_step(step=600), SCHEMA)
+    jsonschema.validate(_header(total_steps=1200), SCHEMA)
+    jsonschema.validate(_step(step=600), SCHEMA)  # 在 total_steps=1200 的 episode 内合法
 
 
 def test_no_invented_fields():

@@ -10,8 +10,7 @@
 用法：
 
     uv run python scripts/collect_trajectories.py \\
-        --experiment-id exp-0001 --seed 1103 --environment-id <env> \\
-        --schema-version <semver>
+        --experiment-id exp-0001 --seed 1103 --environment-id <env> --generation 0
 """
 
 from __future__ import annotations
@@ -36,12 +35,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--experiment-id", required=True, help="稳定实验 ID（run 目录前缀）")
     parser.add_argument("--seed", type=int, required=True, help="master seed（core §3）")
     parser.add_argument(
-        "--environment-id", required=True, help="环境对照组 ID（取值集合待定，见文档缺口）"
-    )
-    parser.add_argument(
-        "--schema-version",
+        "--environment-id",
         required=True,
-        help="轨迹 schema 版本 SemVer（schemas/trajectory.schema.json，取值来源待定，见文档缺口）",
+        help="环境对照组 ID（取值见 experiment §4）",
     )
     parser.add_argument(
         "--trajectories",
@@ -87,7 +83,6 @@ def main(argv: list[str] | None = None) -> None:
         experiment_id=args.experiment_id,
         environment_id=args.environment_id,
         generation=args.generation,
-        schema_version=args.schema_version,
         seed=args.seed,
         trajectories=trajectories,
         out_dir=out_dir,

@@ -11,8 +11,9 @@
 ```text
 results/runs/<experiment_id>-s<seed>/
   metadata.json               (由 runlayout 写)
-  trajectories/               (仅在 --emit-trajectories 时写：
-                               episode_<id>.jsonl，契约见 schemas/trajectory.schema.json)
+  behavior_trace/             (仅在 --emit-behavior-trace 时写：整群逐 step 行为回放，
+                               episode_<id>.jsonl，契约见 schemas/behavior_trace.schema.json；
+                               **不是** BC 数据——单鱼 BC 轨迹由 scripts/collect_trajectories.py 写)
   arena_config_resolved.json  (由 runlayout 写：实际生效的 ArenaConfig 快照)
   config_snapshot/  seed.txt  git_commit.txt
   metrics.csv                 逐个体一行：指标 + 原始计数
@@ -31,7 +32,7 @@ results/runs/<experiment_id>-s<seed>/
 
     .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1
     .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1 --seeds 1103,2207
-    .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1 --emit-trajectories
+    .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1 --emit-behavior-trace
 
 注意：`experiment_id` 必须唯一（沿用 `run_experiment.py` 的契约）；已存在时报错退出。
 """
@@ -42,7 +43,7 @@ import argparse
 import csv
 import json
 import time
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
@@ -52,17 +53,18 @@ from evogenesis.core.ids import mint_id
 from evogenesis.core.seed import SeedManager
 from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
+from evogenesis.experiment.arena_rollout import expert_rollout
+from evogenesis.experiment.behavior_trace import (
+    TraceCollector,
+    trace_header,
+    write_trace,
+)
 from evogenesis.experiment.environments import load_environment
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
     episode_metrics,
     summarise_over_seeds,
-)
-from evogenesis.experiment.trajectories import (
-    episode_header,
-    step_record,
-    write_episode,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -107,19 +109,34 @@ def create_run_dir(
     )
 
 
+@dataclass(frozen=True)
+class ArenaRunResult:
+    """一局 ExpertPolicy run 的产物（供 run_arena 落盘）。"""
+
+    per_fish: dict[str, dict]
+    events: list
+    elapsed: float
+    trace: list[dict]
+    done: bool
+    steps_run: int
+    fish_ids: list[str]
+    spawn_seed: int
+    dynamics_seed: int
+
+
 def run_episode(
     cfg_path: Path,
     seed: int,
     steps: int,
     overrides: dict | None = None,
-    emit_trajectories: bool = False,
+    emit_behavior_trace: bool = False,
     experiment_id: str = "run",
     generation: int = 0,
-) -> tuple[dict[str, dict], list, float, list[dict]]:
-    """跑一局，返回 (每鱼记录, 事件列表, 墙钟秒, 轨迹 step 记录)。
+) -> ArenaRunResult:
+    """跑一局，返回逐鱼记录/事件/墙钟/整群 trace。
 
-    轨迹只在 `emit_trajectories=True` 时收集（BC 数据；见 `trajectories.py`）。
-    死鱼死亡后不再记录：没有 observation/动作就没有训练样本。
+    驱动循环走 `experiment/arena_rollout.py::expert_rollout`（与 BC 采集共用）。
+    整群 trace 只在 `emit_behavior_trace=True` 时收集；死鱼止步（无观测即无记录）。
     """
     cfg = load_arena_config(cfg_path, overrides=overrides)
     fish_ids = [mint_id(experiment_id, "fish", generation, i) for i in range(cfg.population.n_fish)]
@@ -127,47 +144,40 @@ def run_episode(
         mint_id(experiment_id, "genome", generation, i) for i in range(cfg.population.n_fish)
     ]
     manager = SeedManager(seed)
+    spawn_seed = manager.seed("arena_spawn", 0)
+    dynamics_seed = manager.seed("arena_dynamics", 0)
     arena = DanioArena(
         cfg,
-        spawn_seed=manager.seed("arena_spawn", 0),
-        dynamics_seed=manager.seed("arena_dynamics", 0),
+        spawn_seed=spawn_seed,
+        dynamics_seed=dynamics_seed,
         fish_ids=fish_ids,
         genome_ids=genome_ids,
         generation=generation,
     )
     arena.reset()
     expert = ExpertPolicy()
-    traj: list[dict] = []
-    first_step: set[str] = set()
+    collector = TraceCollector(arena) if emit_behavior_trace else None
+    done = False
+    steps_run = 0
     t0 = time.perf_counter()
-    for k in range(steps):
-        alive = [(fid, f) for fid, f in arena.fish.items() if f.alive]
-        obs = {fid: arena.observe(fid) for fid, _ in alive}
-        actions = {fid: expert(obs[fid]) for fid, _ in alive}
-        if emit_trajectories:
-            for fid, f in alive:
-                traj.append(
-                    step_record(
-                        fish_id=fid,
-                        genome_id=f.genome_id,
-                        step=k,
-                        observation=obs[fid],
-                        expert_action=actions[fid],
-                        is_first=fid not in first_step,
-                        is_last=False,
-                    )
-                )
-                first_step.add(fid)
-        arena.step(actions)
-    if emit_trajectories and traj:
-        # 末步标记：每条鱼**最后一条**记录置 is_last
-        last: dict[str, int] = {}
-        for idx, rec in enumerate(traj):
-            last[rec["fish_id"]] = idx
-        for idx in last.values():
-            traj[idx]["is_last"] = True
+    for rollout in expert_rollout(arena, steps=steps, expert=expert):
+        if collector is not None:
+            collector.add(rollout)
+        done = rollout.done
+        steps_run = rollout.step + 1
+    trace = collector.records() if collector is not None else []
     elapsed = time.perf_counter() - t0
-    return arena.per_fish_log(), list(arena.events), elapsed, traj
+    return ArenaRunResult(
+        per_fish=arena.per_fish_log(),
+        events=list(arena.events),
+        elapsed=elapsed,
+        trace=trace,
+        done=done,
+        steps_run=steps_run,
+        fish_ids=fish_ids,
+        spawn_seed=spawn_seed,
+        dynamics_seed=dynamics_seed,
+    )
 
 
 def write_metrics_csv(run_dir: Path, rows: list[dict]) -> None:
@@ -239,9 +249,9 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--config", default="configs/default_arena.yaml")
     parser.add_argument(
-        "--emit-trajectories",
+        "--emit-behavior-trace",
         action="store_true",
-        help="落 Stage-1 专家轨迹到 <run>/trajectories/（BC 训练数据）",
+        help="落整群行为回放到 <run>/behavior_trace/（回放/诊断，非 BC 数据）",
     )
     parser.add_argument(
         "--environment",
@@ -273,14 +283,15 @@ def main() -> None:
     for seed in seeds:
         run_id = f"{args.experiment_id}-s{seed}"
         run_dir = create_run_dir(args.experiment_id, args.config, seed, overrides)
-        per_fish, events, elapsed, traj = run_episode(
+        episode = run_episode(
             cfg_path,
             seed,
             steps,
             overrides,
-            args.emit_trajectories,
+            args.emit_behavior_trace,
             experiment_id=args.experiment_id,
         )
+        per_fish, events, elapsed = episode.per_fish, episode.events, episode.elapsed
         gen = next(iter(per_fish.values()), {}).get("generation") or 0
         write_event_log(
             run_dir / "events.jsonl",
@@ -289,24 +300,28 @@ def main() -> None:
                 episode_id="ep0001",
                 environment_id=args.environment or "default",
                 generation=int(gen),
-                episode_seed=seed,
+                episode_seed=episode.spawn_seed,
                 n_events=len(events),
             ),
             events,
         )
-        if args.emit_trajectories:
-            write_episode(
-                run_dir / "trajectories" / "episode_ep0001.jsonl",
-                episode_header(
+        if args.emit_behavior_trace:
+            write_trace(
+                run_dir / "behavior_trace" / "episode_ep0001.jsonl",
+                trace_header(
                     experiment_id=args.experiment_id,
                     episode_id="ep0001",
                     environment_id=args.environment or "default",
                     generation=int(gen),
-                    episode_seed=seed,
-                    total_steps=steps,
+                    episode_seed=episode.spawn_seed,
+                    dynamics_seed=episode.dynamics_seed,
+                    total_steps=episode.steps_run,
+                    terminated=False,
+                    truncated=episode.done,
+                    fish_ids=episode.fish_ids,
                     environment_config=asdict(cfg.population),
                 ),
-                traj,
+                episode.trace,
             )
         rows = [
             {
@@ -340,7 +355,7 @@ def main() -> None:
         {
             "experiment_id": args.experiment_id,
             "environment": args.environment or "default",
-            "emit_trajectories": bool(args.emit_trajectories),
+            "emit_behavior_trace": bool(args.emit_behavior_trace),
             "seeds": seeds,
             "steps": steps,
             "n_individuals": len(all_rows),

@@ -12,7 +12,7 @@
 | B1 | **代循环未接** | `evolution/population.py::advance_generation` 无生产 caller；缺「评估回填 fitness → 下一代」 | Exp F 的 allele/phenotype frequency 无来源；多代演化跑不起来 |
 | B2 | **BC 端到端未接** | `learning/` 已入库，但无「Stage-1 轨迹 → 训练 → ΔW 不遗传实证」编排 | 论文核心卖点（遗传边界）缺 Exp D 实证 |
 | B3 | **P0-8 Demo 服务层缺** | `api/API与系统工程.md §9` 承诺 `make demo`；`scripts/start_demo.sh`/`serve_api.py`/Makefile `demo` 目标已随 `b4170aa` 删除 | 路演「Live Demo」无载体；文档承诺↔现状冲突 |
-| B4 | **轨迹双产出链路** | `experiment/collect.py`（1 受控鱼、truncated）vs `run_arena --emit-trajectories`（全部存活鱼、truncated=False）；`core §4.5` 状态 `草案待确认`（用户裁决「挂账不合并」） | 产出方不唯一，`core §4.5` 无法恢复已定稿 |
+| B4 ✅ | **轨迹双产出链路** | 已闭合（2026-09-26）：BC `trajectories/` 唯一产出方=`experiment/collect.py`；整群 dump 正名为独立资产 `behavior_trace/`（`--emit-behavior-trace`，schema `schemas/behavior_trace.schema.json`）；共用 `experiment/arena_rollout.py`。`core §4.5` 恢复已定稿 | ✅ |
 
 ## 二、需裁决（设计选择，不可 AI 填空）
 
@@ -55,7 +55,7 @@
 
 1. **`prey_capture` 口径（§4）**：`prey_capture = captures / max(encounters, 1)`，分母 = **尺寸门之前**的纯距离接触数（`arena` S6），**不是** `capture_attempts`。`capture_attempts` 降为诊断列（`capture_attempts − captures` = 「进过口但吃不下」）。实现 `experiment/metrics.py::prey_capture_rate`；每鱼记录 16 列。依据 `experiment/实验与评价体系.md` §2.1（指标契约）。
 2. **可用的驱动/评价入口**（均在 `main`，已被测试守护）：
-   - `scripts/run_arena.py --experiment-id <id>`（`--emit-trajectories` 可落 Stage-1 轨迹）：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`（`metrics.csv`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`）。
+   - `scripts/run_arena.py --experiment-id <id>`（`--emit-behavior-trace` 可落整群行为回放 `behavior_trace/`）：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`（`metrics.csv`/`population.jsonl`/`episodes.jsonl`/`seed_summary.json`）。
    - `scripts/make_figs.py` / `scripts/make_tables.py`：只读 run 目录，出图/出表（含 `diagnostics.md` 口径诊断）。
    - 基线（对照用，**不入库、可重生成**，`exp_arena_expert_ref_v3`，A14 后重跑）：`survival 0.9188 ± 0.1362`、`capture_rate 0.0030 ± 0.0014`、`prey_capture 0.5148 ± 0.2972`、`escape_success 0.3032 ± 0.1354`、`energy_efficiency −9.25e−4 ± 1.62e−4`、`composite_fitness 0.3828 ± 0.0725`。
 
@@ -79,12 +79,12 @@
 
 ## 六、已冻结、可直接依赖（供对齐）
 
-- **评价入口**：`scripts/run_arena.py`（落 `metrics.csv`/`population.jsonl`/`episodes.jsonl`/**`events.jsonl`**/`seed_summary.json`）；`--emit-trajectories` 落 Stage-1 轨迹（`genome_id` 已为稳定 ID）。
+- **评价入口**：`scripts/run_arena.py`（落 `metrics.csv`/`population.jsonl`/`episodes.jsonl`/**`events.jsonl`**/`seed_summary.json`）；`--emit-behavior-trace` 落整群行为回放（`genome_id` 已为稳定 ID）；BC 轨迹另见 `scripts/collect_trajectories.py`。
 - **event log**：`schemas/event_log.schema.json`；`experiment/events.py`（header + 8 类事件）。
 - **基线（可重生成、不入库）** `exp_arena_expert_ref_v3`（A14 后重跑）：`survival 0.9188`、`capture_rate 0.0030`、`prey_capture 0.5148`、`escape_success 0.3032`、`energy_efficiency −9.25e−4`、`composite_fitness 0.3828`。
 - **稳定 ID / 世代**：`DanioArena(..., fish_ids, genome_ids, generation)`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均注入。
 
-`scripts/run_arena.py --emit-trajectories` → 每 run 落 `trajectories/episode_ep0001.jsonl`（首行 header + 逐 step），字段/格式严格照 `schemas/trajectory.schema.json`（jsonschema 逐条校验）。实跑 `exp_traj_smoke`（1 seed）6601 step，obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全通过。当日唯一缺口 = P0-9（`genome_id` 全为 `"unknown"`）。
+`scripts/run_arena.py --emit-behavior-trace` → 每 run 落 `behavior_trace/episode_ep0001.jsonl`（整群 MULTI-FISH，首行 header + 逐 step），字段/格式照 `schemas/behavior_trace.schema.json`（jsonschema 逐条校验）。实跑 `exp_traj_smoke`（1 seed）6601 step，obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全通过。当日唯一缺口 = P0-9（`genome_id` 全为 `"unknown"`）。
 > **【2026-09-26 稍后就地更正】** 该缺口此后已在**代码层**闭合：`scripts/run_arena.py`
 > 经 `core/ids.py::mint_id`（纯函数、确定性）铸造并注入 `genome_id`，
 > `tests/test_collect_trajectories.py` 有断言。**仍存的是**：

@@ -17,7 +17,9 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from evogenesis.arena.env import Event
-from evogenesis.experiment.trajectories import SCHEMA_VERSION
+
+#: 事件日志 schema 版本（独立于 trajectory；owner：`schemas/event_log.schema.json`）。
+EVENT_SCHEMA_VERSION = "1.0.0"
 
 
 def episode_event_header(
@@ -32,7 +34,7 @@ def episode_event_header(
     """事件日志首行 header（`schemas/event_log.schema.json` `$defs/header` 的全部必填字段）。"""
     return {
         "record_type": "header",
-        "schema_version": SCHEMA_VERSION,
+        "schema_version": EVENT_SCHEMA_VERSION,
         "experiment_id": experiment_id,
         "episode_id": episode_id,
         "environment_id": environment_id,

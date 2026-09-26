@@ -18,6 +18,7 @@ from evogenesis.core.ids import mint_id
 from evogenesis.core.io import read_jsonl
 from evogenesis.core.seed import SeedManager
 from evogenesis.experiment import collect
+from evogenesis.experiment.trajectories import SCHEMA_VERSION
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "collect_trajectories.py"
@@ -26,7 +27,6 @@ CLI_EPISODE_STEPS = 6
 N_EPISODES = 2
 EXPERIMENT_ID = "exp-test"
 ENVIRONMENT_ID = "test-env"
-SCHEMA_VERSION = "1.0.0"
 SEED = 1103
 HEADER_REQUIRED = {
     "record_type",
@@ -36,6 +36,7 @@ HEADER_REQUIRED = {
     "environment_id",
     "generation",
     "episode_seed",
+    "dynamics_seed",
     "total_steps",
     "terminated",
     "truncated",
@@ -64,7 +65,6 @@ def run(tmp_path: Path, seed: int = SEED) -> list[Path]:
         experiment_id=EXPERIMENT_ID,
         environment_id=ENVIRONMENT_ID,
         generation=0,
-        schema_version=SCHEMA_VERSION,
         seed=seed,
         trajectories=N_EPISODES,
         out_dir=tmp_path,
@@ -89,6 +89,7 @@ def test_header_required_fields_and_values(tmp_path):
     assert header["environment_id"] == ENVIRONMENT_ID
     assert header["generation"] == 0
     assert isinstance(header["episode_seed"], int)
+    assert isinstance(header["dynamics_seed"], int)
     assert header["total_steps"] == len(steps) == EPISODE_STEPS
     assert header["terminated"] is False
     assert header["truncated"] is True
@@ -153,7 +154,6 @@ def test_collect_rejects_nonpositive_episode_steps(tmp_path):
             experiment_id=EXPERIMENT_ID,
             environment_id=ENVIRONMENT_ID,
             generation=0,
-            schema_version=SCHEMA_VERSION,
             seed=SEED,
             trajectories=1,
             out_dir=tmp_path,
@@ -177,8 +177,6 @@ def test_cli_smoke_writes_two_episodes(tmp_path):
             str(SEED),
             "--environment-id",
             ENVIRONMENT_ID,
-            "--schema-version",
-            SCHEMA_VERSION,
             "--generation",
             "0",
             "--trajectories",

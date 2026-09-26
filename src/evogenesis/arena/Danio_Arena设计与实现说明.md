@@ -547,7 +547,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | motor commands | `motor_commands` | `Fish.motor_log`（`(ω, v)` 元组列表，**裁剪后**的值） | ✅ |
 | **selected neural activity snapshots** | — | — | ❌ **未实现**：规范 §13 声明的最后一项需 DanioNet 接入，当前 `Fish` 无对应缓冲区 |
 
-`Fish.genome_id`（经 `genome_ids` 注入，缺省 `"unknown"`）是实体属性、`Fish.generation` 由 `generation` 注入（缺省 0），**都不在 `per_fish_log()` 键内**；轨迹落盘（`scripts/run_arena.py --emit-trajectories`）直接读 `arena.fish[fid].genome_id`。
+`Fish.genome_id`（经 `genome_ids` 注入，缺省 `"unknown"`）是实体属性、`Fish.generation` 由 `generation` 注入（缺省 0），**都不在 `per_fish_log()` 键内**；轨迹落盘（BC：`scripts/collect_trajectories.py`；整群回放：`scripts/run_arena.py --emit-behavior-trace`）直接读 `arena.fish[fid].genome_id`。
 
 `per_fish_log()` **不含**位置 / 航向 / 尺寸的逐帧轨迹 —— 那属于 snapshot（`../api/API接口.md` §1.8）与后续的 trajectory 落盘（`../core/核心机制与数据流.md` §4）。
 

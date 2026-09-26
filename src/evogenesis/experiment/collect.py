@@ -1,14 +1,15 @@
 """Stage-1 专家轨迹采集（`learning/行为克隆学习.md` §2；`core/核心机制与数据流.md` §4.2/§4.5）。
 
-owner 依据：`core §4.5`（草案待确认）定「产出方 = `experiment`/`scripts` 编排」，
-`experiment/实验与评价体系.md` §5.1 定义 run 目录布局与 `trajectories/`。本模块承载采集
-业务逻辑——跑 Arena episode、按 `core §3` 派生 episode 子种子、组 header/step 记录并落盘；
-`scripts/collect_trajectories.py` 只是薄 CLI（AGENTS：`scripts/` 不放业务逻辑）。
+owner 依据：`core §4.5` 定「产出方 = `experiment`/`scripts` 编排」，`experiment/实验与评价体系.md`
+§5.1 定义 run 目录布局与 `trajectories/`。本模块承载采集业务逻辑——跑 Arena episode、按
+`core §3` 派生 episode 子种子、组 header/step 记录并落盘；`scripts/collect_trajectories.py`
+只是薄 CLI（AGENTS：`scripts/` 不放业务逻辑）。
 
-字段与文件形态 owner 仍是 `schemas/trajectory.schema.json`（已冻结）；本模块不新增字段语义、
+字段与文件形态 owner 是 `schemas/trajectory.schema.json`（已冻结）；本模块不新增字段语义、
 不发明数值。采集粒度（定稿，`learning §2`）：每条 episode **只记录 1 条受控鱼**的
 `(observation, expert_action)`；环境中其余个体照常存在，由 `ExpertPolicy` 驱动（`learning §5`
-Stage-1 driver）以提供真实感知上下文，但**不入轨迹**。
+Stage-1 driver）以提供真实感知上下文，但**不入轨迹**。逐步驱动循环与 `run_arena` 共用
+`experiment/arena_rollout.py::expert_rollout`。
 """
 
 from __future__ import annotations
@@ -22,6 +23,12 @@ from evogenesis.core.config import read_yaml
 from evogenesis.core.ids import mint_id
 from evogenesis.core.io import write_jsonl
 from evogenesis.core.seed import SeedManager
+from evogenesis.experiment.arena_rollout import expert_rollout
+from evogenesis.experiment.trajectories import (
+    SCHEMA_VERSION,
+    episode_header,
+    step_record,
+)
 
 #: `core §3` 定稿的 Arena 命名空间（出生 / 逐步动力学）
 ARENA_SPAWN_NAMESPACE = "arena_spawn"
@@ -45,7 +52,7 @@ def episode_seed(master_seed: int, index: int) -> int:
 
 
 def episode_dynamics_seed(master_seed: int, index: int) -> int:
-    """本 episode 的逐步动力学子种子（`core §3`）。
+    """本 episode 的逐步动力学子种子（`core §3`）
 
     ``SeedManager.seed("arena_dynamics", index)``。
     """
@@ -66,7 +73,6 @@ def collect_episode(
     experiment_id: str,
     environment_id: str,
     generation: int,
-    schema_version: str,
     episode_index: int,
     seed: int,
     dynamics_seed: int,
@@ -80,6 +86,7 @@ def collect_episode(
     其余存活个体同由 `ExpertPolicy` 驱动但不入轨迹。``seed`` / ``dynamics_seed`` 为
     `core §3` 的 ``arena_spawn`` / ``arena_dynamics`` 整数子种子（调用方派生）。
     ``terminated=False``（A9：无任务终止信号）、``truncated=StepResult.done``（跑满即时限截断）。
+    受控鱼一旦死亡仍逐 step 记录其**步前**观测（`expert_rollout(track_ids=...)`）。
     """
     n_fish = config.population.n_fish
     if config.world.episode_steps < 1:
@@ -106,39 +113,36 @@ def collect_episode(
 
     steps: list[dict] = []
     done = False
-    for step in range(config.world.episode_steps):
-        controlled_obs = arena.observe(controlled_fish)
-        controlled_action = expert(controlled_obs)
-        actions = {
-            fid: expert(arena.observe(fid))
-            for fid, fish in arena.fish.items()
-            if fish.alive and fid != controlled_fish
-        }
-        actions[controlled_fish] = controlled_action
-        done = arena.step(actions).done
+    for rollout in expert_rollout(
+        arena,
+        steps=config.world.episode_steps,
+        expert=expert,
+        track_ids=(controlled_fish,),
+    ):
+        controlled_obs = rollout.observations[controlled_fish]
+        controlled_action = rollout.actions.get(controlled_fish) or expert(controlled_obs)
+        done = rollout.done
         steps.append(
-            {
-                "record_type": "step",
-                "fish_id": fish_id,
-                "genome_id": genome_id,
-                "step": step,
-                "observation": [float(x) for x in controlled_obs],
-                "expert_action": [float(controlled_action[0]), float(controlled_action[1])],
-            }
+            step_record(
+                fish_id=fish_id,
+                genome_id=genome_id,
+                step=rollout.step,
+                observation=controlled_obs,
+                expert_action=controlled_action,
+            )
         )
 
-    header = {
-        "record_type": "header",
-        "schema_version": schema_version,
-        "experiment_id": experiment_id,
-        "episode_id": episode_id(episode_index),
-        "environment_id": environment_id,
-        "generation": generation,
-        "episode_seed": seed,
-        "total_steps": len(steps),
-        "terminated": False,
-        "truncated": bool(done),
-    }
+    header = episode_header(
+        experiment_id=experiment_id,
+        episode_id=episode_id(episode_index),
+        environment_id=environment_id,
+        generation=generation,
+        episode_seed=seed,
+        dynamics_seed=dynamics_seed,
+        total_steps=len(steps),
+        terminated=False,
+        truncated=bool(done),
+    )
     return header, steps
 
 
@@ -148,7 +152,6 @@ def collect_trajectories(
     experiment_id: str,
     environment_id: str,
     generation: int,
-    schema_version: str,
     seed: int,
     trajectories: int,
     out_dir: str | Path,
@@ -156,7 +159,8 @@ def collect_trajectories(
 ) -> list[Path]:
     """采集 ``trajectories`` 条 episode 并逐条落盘，返回写入的文件路径列表。
 
-    路径布局：``<out_dir>/episode_<episode_id>.jsonl``（`core §4.5`）。
+    路径布局：``<out_dir>/episode_<episode_id>.jsonl``（`core §4.5`）；schema 版本取
+    `trajectories.SCHEMA_VERSION`（唯一来源，不再由 CLI 传入）。
     """
     out = Path(out_dir)
     written: list[Path] = []
@@ -166,7 +170,6 @@ def collect_trajectories(
             experiment_id=experiment_id,
             environment_id=environment_id,
             generation=generation,
-            schema_version=schema_version,
             episode_index=index,
             seed=episode_seed(seed, index),
             dynamics_seed=episode_dynamics_seed(seed, index),
@@ -179,10 +182,13 @@ def collect_trajectories(
 
 
 __all__ = [
+    "ARENA_DYNAMICS_NAMESPACE",
     "ARENA_SPAWN_NAMESPACE",
+    "SCHEMA_VERSION",
     "collect_episode",
     "collect_trajectories",
     "default_trajectories",
+    "episode_dynamics_seed",
     "episode_id",
     "episode_seed",
 ]

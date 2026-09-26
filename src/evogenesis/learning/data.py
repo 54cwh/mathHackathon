@@ -41,7 +41,7 @@ _HEADER_REQUIRED = frozenset(
         "truncated",
     }
 )
-_HEADER_OPTIONAL = frozenset({"environment_config", "obs_dim_names"})
+_HEADER_OPTIONAL = frozenset({"environment_config", "obs_dim_names", "dynamics_seed"})
 _STEP_REQUIRED = frozenset(
     {"record_type", "fish_id", "genome_id", "step", "observation", "expert_action"}
 )
@@ -220,6 +220,8 @@ def _validate_header(header: dict[str, Any], ctx: str) -> None:
     _require_str(header["environment_id"], "environment_id", ctx)
     _require_int(header["generation"], "generation", ctx)
     _require_int(header["episode_seed"], "episode_seed", ctx)
+    if "dynamics_seed" in header:
+        _require_int(header["dynamics_seed"], "dynamics_seed", ctx)
     total_steps = _require_int(header["total_steps"], "total_steps", ctx)
     if total_steps < 1:
         raise TrajectoryFormatError(f"{ctx} total_steps 必须 ≥ 1，实际 {total_steps}")

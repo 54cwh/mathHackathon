@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 
 # schema 版本（SemVer）。加可选字段=MINOR，改必填=MAJOR（schema 的兼容规则）。
-SCHEMA_VERSION = "1.0.0"
+SCHEMA_VERSION = "1.1.0"
 
 # 12 维 observation 分量名，顺序与 `DanioNet设计规范.md` §2 冻结表逐字一致。
 OBS_DIM_NAMES = (
@@ -40,12 +40,16 @@ def episode_header(
     generation: int,
     episode_seed: int,
     total_steps: int,
+    dynamics_seed: int | None = None,
+    terminated: bool = False,
+    truncated: bool = False,
     environment_config: dict | None = None,
 ) -> dict:
-    """episode 级 header（schema `$defs/header` 的全部必填字段）。
+    """episode 级 header（schema `$defs/header` 的字段）。
 
-    `terminated` / `truncated` 均记 `False`：按 A9 裁决**一律跑满 600 步**，
-    既无任务终止信号，也未因步数/时限被截断。
+    `terminated` 默认 `False`（A9：无任务终止信号）；`truncated` 由调用方按
+    `StepResult.done` 传入。`dynamics_seed` 为 `arena_dynamics` 子种子（`core §3`），
+    写入后 episode 可自包含重放（与 `episode_seed` 一起）。
     """
     head = {
         "record_type": "header",
@@ -56,10 +60,12 @@ def episode_header(
         "generation": generation,
         "episode_seed": episode_seed,
         "total_steps": total_steps,
-        "terminated": False,
-        "truncated": False,
+        "terminated": bool(terminated),
+        "truncated": bool(truncated),
         "obs_dim_names": list(OBS_DIM_NAMES),
     }
+    if dynamics_seed is not None:
+        head["dynamics_seed"] = int(dynamics_seed)
     if environment_config is not None:
         head["environment_config"] = environment_config
     return head
@@ -72,24 +78,28 @@ def step_record(
     step: int,
     observation,
     expert_action,
-    is_first: bool,
-    is_last: bool,
+    is_first: bool | None = None,
+    is_last: bool | None = None,
 ) -> dict:
     """一条 step 样本（schema `$defs/step` 的全部必填字段）。
 
     `reward` 不写：schema 标为可选，Arena 侧没有与 BC 对齐的回报定义，
-    不得凭空造一个（避免 AI 填空）。
+    不得凭空造一个（避免 AI 填空）。`is_first` / `is_last` 仅在显式给定时写入
+    （BC 单鱼口径默认不落盘，见 `learning §2`）。
     """
-    return {
+    record = {
         "record_type": "step",
         "fish_id": str(fish_id),
         "genome_id": str(genome_id),
         "step": int(step),
         "observation": [float(x) for x in observation],
         "expert_action": [float(x) for x in expert_action],
-        "is_first": bool(is_first),
-        "is_last": bool(is_last),
     }
+    if is_first is not None:
+        record["is_first"] = bool(is_first)
+    if is_last is not None:
+        record["is_last"] = bool(is_last)
+    return record
 
 
 def write_episode(path: Path, header: dict, steps: list[dict]) -> Path:

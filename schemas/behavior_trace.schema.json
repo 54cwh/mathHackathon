@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/behavior_trace.schema.json",
+  "title": "EvoGenesis behavior trace (JSONL, full-group rollout, per episode)",
+  "meta": { "owns": "整群行为 trace 文件形态：header(episode 级) + step(逐步) 两级，JSONL；producer=experiment/behavior_trace.py", "status": "已定稿" },
+  "description": "整群行为 trace（**非 BC 训练数据**）：逐 episode 一个 JSONL，首行 header（record_type=header），其后逐 step（record_type=step，含 fish_id）。同一文件含全部存活鱼的记录，死鱼止步故 step 稀疏；header.total_steps 为 episode 长度（非文件行数）。用途：行为回放 / 分布诊断 / 出图。与之并列的 BC 单鱼轨迹见 schemas/trajectory.schema.json。落盘见 experiment/实验与评价体系.md §5.1：results/runs/<experiment_id>-s<seed>/behavior_trace/episode_<episode_id>.jsonl。",
+  "oneOf": [
+    { "$ref": "#/$defs/header" },
+    { "$ref": "#/$defs/step" }
+  ],
+  "$defs": {
+    "header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "schema_version",
+        "experiment_id",
+        "episode_id",
+        "environment_id",
+        "generation",
+        "episode_seed",
+        "dynamics_seed",
+        "total_steps",
+        "terminated",
+        "truncated",
+        "fish_ids"
+      ],
+      "properties": {
+        "record_type": { "const": "header" },
+        "schema_version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "整群 trace schema 版本，SemVer。加可选字段=MINOR，改必填=MAJOR。"
+        },
+        "experiment_id": { "type": "string", "description": "稳定 ID（AGENTS「约定」）。" },
+        "episode_id": { "type": "string", "description": "稳定 ID，形如 ep0001。" },
+        "environment_id": { "type": "string", "description": "环境对照组（core §6）。" },
+        "generation": { "type": "integer", "description": "演化代数。" },
+        "episode_seed": { "type": "integer", "description": "arena_spawn 整数子种子（core §3）。" },
+        "dynamics_seed": { "type": "integer", "description": "arena_dynamics 整数子种子（core §3），与 episode_seed 一起构成 episode 的自包含重放信息。" },
+        "total_steps": { "type": "integer", "minimum": 1, "description": "episode 长度（步数），非文件行数。" },
+        "terminated": { "type": "boolean", "description": "是否因任务终止（非截断）。" },
+        "truncated": { "type": "boolean", "description": "是否因步数/时限截断（= StepResult.done）。" },
+        "fish_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "本 episode 参与的全部稳定 fish_id（本文件 step 的 fish_id 取值集合 ⊆ 此表）。"
+        },
+        "environment_config": { "type": "object", "description": "可选：该 episode 的环境/群体配置快照。" },
+        "obs_dim_names": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 12,
+          "maxItems": 12,
+          "description": "可选：12 维 observation 的分量名（顺序与 DanioNet §2 一致）。"
+        }
+      }
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_type",
+        "fish_id",
+        "genome_id",
+        "step",
+        "observation",
+        "expert_action"
+      ],
+      "properties": {
+        "record_type": { "const": "step" },
+        "fish_id": { "type": "string", "description": "稳定 ID（禁止用数组下标当 identity）。" },
+        "genome_id": { "type": "string", "description": "稳定 ID；与 fish_id 为两个独立字段。" },
+        "step": { "type": "integer", "minimum": 0, "description": "episode 内步序号（上界 = header.total_steps − 1）。" },
+        "observation": {
+          "type": "array",
+          "minItems": 12,
+          "maxItems": 12,
+          "items": { "type": "number", "minimum": 0, "maximum": 1 },
+          "description": "感知向量 float[12]（sensory_dim=12）。维度顺序冻结见 DanioNet §2；编码规则见 arena/Danio_Arena设计与实现说明.md §4.1。"
+        },
+        "expert_action": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "number" },
+          "description": "专家动作 float[2]（action_dim=2）：(ω*, v*)。"
+        },
+        "reward": { "type": "number", "description": "可选：该步回报（若记录）。" },
+        "is_first": { "type": "boolean", "description": "可选：该鱼在本 episode 的首条记录。" },
+        "is_last": { "type": "boolean", "description": "可选：该鱼在本 episode 的末条记录。" }
+      }
+    }
+  }
+}

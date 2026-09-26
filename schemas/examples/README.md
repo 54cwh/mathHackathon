@@ -48,6 +48,11 @@
   （`SeedManager.seed("arena_spawn", 0)`，`core §3`）。受控鱼 = index 0，稳定 ID `exp-example:g0:fish0000`。
 - 形态：首行 header + 8 条 step（`is_first`/`is_last` 选填字段未落盘，见 `learning §2`）；
   `truncated=True`（跑满该 episode 的 8 步）。**契约示例，非正式 run 产物。**
+- **2026-09-26 更新（schema 1.1.0）**：header 增 `dynamics_seed`（`arena_dynamics` 子种子，
+  `core §3`），使 episode 可自包含重放；由同一 `collect_episode` 重新生成。
+- 整群行为回放（多鱼）是**另一个资产**：`schemas/behavior_trace.schema.json` +
+  `experiment/behavior_trace.py`，由 `scripts/run_arena.py --emit-behavior-trace` 写
+  `behavior_trace/`；**不是** BC 数据。
 
 ## trajectory 观测向量的 12 维语义（connectome/DanioNet设计规范.md §2）
 
