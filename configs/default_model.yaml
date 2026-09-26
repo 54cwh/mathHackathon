@@ -7,6 +7,8 @@ genome:
   motif_window: 6
   motif_topk: 3
   motif_scan_scope: per_chromosome
+  motif_subset_A: 0
+  motif_subset_B: 1
 grn:
   dim: 8
   development_steps: 12
