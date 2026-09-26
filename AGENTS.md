@@ -170,7 +170,7 @@ DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
 
 ## 约定
 
-- **稳定 ID**：`fish_id` / `genome_id` / `generation_id` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
+- **稳定 ID**：`fish_id` / `genome_id` / `generation` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
 - **种子**：所有随机过程由 `core/` 的 seed manager 统一派生（Python `random` / NumPy / PyTorch CPU / PyTorch CUDA）。
 - **空目录**：Git 不跟踪空目录，用 `.gitkeep` 占位；被忽略的目录（`data/raw/`、`results/*/`）长期保留。
 - **前端**：仅 `frontend/`；技术栈与版本锁定见 `frontend/README.md`。

@@ -42,11 +42,11 @@
 
 ## 3. 稳定 ID
 
-> **owner 已移出本文件**：`fish_id` / `genome_id` / `generation_id` / `experiment_id` / `environment_id` 的格式、派生与唯一性域归 `core/核心机制与数据流.md` §3.1（实现 `core/ids.py`）。本表仅列名。
+> **owner 已移出本文件**：`fish_id` / `genome_id` / `generation` / `experiment_id` / `environment_id` 的格式、派生与唯一性域归 `core/核心机制与数据流.md` §3.1（实现 `core/ids.py`）。本表仅列名。
 
 - fish_id
 - genome_id
-- generation_id
+- generation
 - experiment_id
 - environment_id
 
@@ -142,7 +142,7 @@ make demo          # 等价于 ./scripts/start_demo.sh
 
 > 逐份阅读本文时发现的未定义点，需与 `AGENTS.md` / `frontend/README.md` / `schemas/` 及既有实现对齐后确认。
 
-1. **稳定 ID 的生成规则与唯一性范围未定义（§3）**：`fish_id / genome_id / generation_id / experiment_id / environment_id` 的格式、派生方式（哈希 / 单调计数）、唯一性范围（会话内 / 全局）均未写。前端“不得用数组下标”已有约束，但后端如何保证稳定未定。
+1. **稳定 ID 的生成规则与唯一性范围未定义（§3）**：`fish_id / genome_id / generation / experiment_id / environment_id` 的格式、派生方式（哈希 / 单调计数）、唯一性范围（会话内 / 全局）均未写。前端“不得用数组下标”已有约束，但后端如何保证稳定未定。
 2. **资源词表与端点不闭合（§4.2 / §4.3）**：词表列 16 个资源，端点仅覆盖约一半；`phenotypes / connectomes / generations / events / metrics` 无任何端点或获取途径。
 3. **同步 / 异步边界与超时未定义（§4.3）**：仅声明“编辑/发育/繁殖同步、演化/实验异步”；未给同步操作的最长时限、超时行为，以及 48 个体演化是否必然异步。
 4. **暂停缺恢复端点（§4.3）**：`POST /v1/sessions/{session_id}/pause` 没有对应的 `resume / play` 端点。

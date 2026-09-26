@@ -22,7 +22,7 @@
 - 成功状态码：`201` 创建、`200` 读取、`204` 无响应体；异步任务用 `202`。
 - 未实现的模块统一返回 `501`，`detail` 指明归属。
 - 分页：`?limit=&cursor=` → `{items, next_cursor}`。
-- 稳定 ID：`session_id` / `fish_id` / `genome_id` / `generation_id` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
+- 稳定 ID：`session_id` / `fish_id` / `genome_id` / `generation` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
 - WebSocket `/v1/ws`，信封 `{v, type, seq, ts, payload}`，`type` 为点分层。
 
 ---
