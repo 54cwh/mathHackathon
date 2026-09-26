@@ -123,7 +123,7 @@ def diagnostics(metrics: pd.DataFrame) -> str:
         " ⇒ 记 0.0，**不等于**捕食失败）",
         f"- `captures == 0` 的个体：{no_catch}",
         f"- 不变式 `captures <= capture_attempts <= encounters`："
-        f"{"✅ 全部满足" if bad == 0 else f"❌ {bad} 个个体违反（**实现缺陷**）"}",
+        f"{'✅ 全部满足' if bad == 0 else f'❌ {bad} 个个体违反（**实现缺陷**）'}",
         f"- 诊断列 `capture_attempts − captures`（「进过口但吃不下」次数）："
         f"mean={gap.mean():.3f}, max={int(gap.max())}, 其中为 0 的个体 {eq}/{n}",
         f"- 分母偏态：`encounters` 中位数={enc_med:.0f}、最大={enc_max}、合计={enc_total}；"
@@ -144,9 +144,7 @@ def diagnostics(metrics: pd.DataFrame) -> str:
             "",
         ]
     if eq == n:
-        gap_note = (
-            f"本 run 中 {eq}/{n} 个体的差额为 0 —— **无**「进过口但吃不下」判定发生。"
-        )
+        gap_note = f"本 run 中 {eq}/{n} 个体的差额为 0 —— **无**「进过口但吃不下」判定发生。"
     else:
         gap_note = (
             f"本 run 中 {n - eq} 个个体的差额 > 0，来自「判定为太小（`arena.capture_attempt`）」。",

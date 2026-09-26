@@ -40,7 +40,10 @@ def _commit() -> str:
     try:
         return subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            cwd=ROOT, capture_output=True, text=True, check=True,
+            cwd=ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
         ).stdout.strip()
     except Exception:
         return "unknown"

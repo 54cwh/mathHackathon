@@ -23,8 +23,7 @@ def load_environments() -> dict:
     data = yaml.safe_load(ENVIRONMENTS_FILE.read_text(encoding="utf-8")) or {}
     envs = data.get("environments") or {}
     return {
-        name: {k: v for k, v in spec.items() if isinstance(v, dict)}
-        for name, spec in envs.items()
+        name: {k: v for k, v in spec.items() if isinstance(v, dict)} for name, spec in envs.items()
     }
 
 
@@ -33,8 +32,7 @@ def load_environment(name: str) -> dict:
     envs = load_environments()
     if name not in envs:
         raise KeyError(
-            f"未知 environment {name!r}；可选：{sorted(envs)}"
-            f"（见 {ENVIRONMENTS_FILE.name}）"
+            f"未知 environment {name!r}；可选：{sorted(envs)}（见 {ENVIRONMENTS_FILE.name}）"
         )
     return envs[name]
 
