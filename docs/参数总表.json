@@ -1828,6 +1828,45 @@
       "config": "configs/evolution.yaml → generation_buttons",
       "sensitivity": null,
       "suggest": "随 api/frontend 重写接线为单代循环的 `generations` 覆盖"
+    },
+    {
+      "name": "n_agents",
+      "value": 12,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "Experiment C 每 seed 每模型评估的个体数。旧值 1 经对照实验证否：单 agent 下 ExpertPolicy 仅得 encounters=1，而未训练随机 MLP 得 0 —— 四个「训练过的」模型与随机网络不可区分。改为种群规模（= arena 默认 n_fish=12）后专家得 encounters=283（人均 23.6），恢复判别力。2026-09-26 用户签署。",
+      "source": "research/notes/契约决策记录.md",
+      "config": "configs/experiment.yaml → n_agents",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "n_episodes",
+      "value": 3,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "Experiment C 每 seed 的评估 episode 数。评估子种子走独立命名空间 arena_eval_spawn=11 / arena_eval_dynamics=12（t = 评估 episode 序号，全模型共享），与采集侧 arena_spawn/arena_dynamics 解耦 —— 后者与 collect.episode_seed 逐字等价，复用会使评估局落在训练数据的环境实例上。2026-09-26 用户签署。",
+      "source": "research/notes/契约决策记录.md",
+      "config": "configs/experiment.yaml → n_episodes",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "n_danio",
+      "value": 400,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "DanioNet 凑 n_agents 个 viable 个体的候选池大小。探针实测（seed 1103）RGCD 发育 viable 率 8–10%（n=48→5 个=10.4%；n=192→16 个=8.3%），单个体发育 ~15 ms，故加大候选近乎免费；按最保守 p=0.083 估计 P(viable>=12) ≈ 1。选取规则 viable_pairs 保序取前 n_agents 个（最低 index），与 n_danio 取值无关。2026-09-26 用户签署。",
+      "source": "research/notes/契约决策记录.md",
+      "config": "configs/experiment.yaml → n_danio",
+      "sensitivity": null,
+      "suggest": null
     }
   ],
   "missing_required": {

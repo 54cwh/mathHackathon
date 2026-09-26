@@ -29,6 +29,11 @@ NAMESPACES: dict[str, int] = {
     "bc": 8,
     "arena_dynamics": 9,
     "baseline_init": 10,
+    # 评估用 Arena 随机流（core §4.2「评估 episode 子种子映射」；2026-09-26 用户签署）。
+    # 与采集/代循环的 arena_spawn=3 / arena_dynamics=9 刻意解耦 —— 后者与
+    # collect.episode_seed 逐字等价，复用会使评估局落在训练数据的环境实例上。
+    "arena_eval_spawn": 11,
+    "arena_eval_dynamics": 12,
 }
 
 

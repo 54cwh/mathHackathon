@@ -1,6 +1,7 @@
 # experiment 协议参数（E–F 环境选择的代循环）
 #
-# owner：`experiment/实验与评价体系.md` §3.6（`docs/参数总表.json` 的 `generations` 条目）
+# owner：`experiment/实验与评价体系.md` §3.3（Experiment C 评估规模：`n_agents` / `n_episodes` / `n_danio`）
+#        与 §3.6（E–F 代循环：`generations`）共管；条目落 `docs/参数总表.json`
 # 值冲突以本文件为准；依据与状态以 `docs/参数总表.json` 为准。
 #
 # generations=20 的依据（属**设计选择**，无文献实测依据）：
@@ -11,3 +12,14 @@
 # 用「同环境 seed 间 spread」作噪声带判断区分力；落入噪声带内不得当结论。
 
 generations: 20
+
+# --- Experiment C 评估规模（2026-09-26 用户签署；口径见 experiment §3.3）---
+# 依据：探针实测 RGCD 发育 viable 率 8–10%
+#   （seed 1103：n_danio=48 → 5 个 viable = 10.4%；n_danio=192 → 16 个 = 8.3%），
+#   单个体发育 ~15 ms，故加大候选池近乎免费。
+# 选取规则：`viable_pairs` 保序取前 `n_agents` 个 ⇒ 取**最低 index** 的 n_agents 个 viable
+#   （与调用顺序无关，合规 core §3 的稳定 ID 要求；加大 n_danio 只买保险、不改实验内容）。
+# 降级语义：viable < n_agents 时**抛错**；`--allow-partial` 显式开关改按 available 评估。
+n_agents: 12          # 每 seed 每模型评估的个体数（旧实现为 1，已被对照证否：与随机网络不可区分）
+n_episodes: 3         # 每 seed 的评估 episode 数；子种子 = arena_eval_spawn=11 / arena_eval_dynamics=12
+n_danio: 400          # 凑 n_agents 个 viable 的候选池；按最保守 p=0.083 估计 P(viable>=n_agents) ≈ 1

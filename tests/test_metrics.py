@@ -82,11 +82,24 @@ def test_composite_weights_are_the_documented_ones_and_sum_to_one():
     assert composite_fitness(1.0, 0.0, 0.0, 0.0) == pytest.approx(0.35)
 
 
-def test_prey_capture_rate_denominator_is_encounters_with_one_as_floor():
-    """2026-09-26 裁决：分母 = `encounters`（尺寸门之前的距离口径）。"""
+def test_prey_capture_rate_denominator_is_encounters():
+    """2026-09-26 裁决：分母 = `encounters`（尺寸门之前的距离口径）。
+
+    分母为 0 的口径于同日**另行签署**：`encounters == 0` ⇒ 无出手机会 ⇒ 返回 `None`（未定义），
+    与「有机会但未得手」（真 0.0）区分。旧实现用 `max(·, 1)` 兜底把两者混同，本测试原断言
+    `prey_capture_rate(0, 0) == 0.0` 即编码了该旧口径，已随之翻转。
+    """
     assert prey_capture_rate(3, 40) == 0.075
-    assert prey_capture_rate(0, 0) == 0.0  # max(0, 1) = 1
-    assert prey_capture_rate(4, 4) == 1.0  # 追近的都吃到了
+    assert prey_capture_rate(0, 0) is None       # 无出手机会 ⇒ 未定义（旧口径为 0.0）
+    assert prey_capture_rate(0, 5) == 0.0        # 有机会但未得手 ⇒ 真 0.0
+    assert prey_capture_rate(4, 4) == 1.0        # 追近的都吃到了
+
+
+def test_prey_capture_rate_rejects_negative_inputs():
+    with pytest.raises(ValueError, match="必须非负"):
+        prey_capture_rate(-1, 5)
+    with pytest.raises(ValueError, match="必须非负"):
+        prey_capture_rate(1, -5)
 
 
 def test_episode_metrics_computes_four_metrics_plus_fitness():

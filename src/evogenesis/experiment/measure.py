@@ -112,7 +112,16 @@ def network_complexity(net: Any, *, individual: int = 0) -> dict[str, int]:
     读自（与 `scripts/probe_architecture.py` 同源）：``support``（支撑 *A* 的布尔 mask）、
     ``active_counts``（*M* 为真者）、``config.max_nodes``（*N*）、``config.sensory_dim``（*D*）。
     另返回 ``parameter_count``（支撑内有效可训练元素数）与 ``active_edges``。
+
+    ``individual`` **逐个体**读；批量网络的**模型级**值由调用方聚合（Experiment C 取 12 个体等权
+    均值，`experiment §3.3`）。越界显式抛错（不静默读到 padding 槽）。
+    注意：返回的结构量为**单个体**口径，**不含 batch 因子**（latency 的 batch 口径另见 §2.4）。
     """
+    n_individuals = len(net.n_neurons)
+    if not 0 <= individual < n_individuals:
+        raise ValueError(
+            f"individual 越界：{individual}（该网络 batch = {n_individuals}）"
+        )
     support = net.support[individual]
     support_edges = int(support.sum().item())
     n_active = int(net.active_counts[individual])

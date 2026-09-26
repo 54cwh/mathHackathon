@@ -71,6 +71,23 @@ def arena_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
     return manager.seed("arena_spawn", index), manager.seed("arena_dynamics", index)
 
 
+def arena_eval_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
+    """**评估**用 Arena 的两个整数子种子（`core §4.2`）：``(arena_eval_spawn, arena_eval_dynamics)``。
+
+    与 `arena_seeds_for` **刻意解耦**：后者的整数轴由 `collect` 的 episode 序号与代循环的
+    `generation` 共占，且 `arena_seeds_for(master, t)` 与 `collect.episode_seed(master, t)`
+    **逐字等价** —— 复用它会使评估局与训练数据落在同一批环境实例上（训练/评估重叠），并令
+    评估的 episode 轴不携带独立环境变异（方差被结构性低估）。
+
+    `index` = 该次评估内 0 起 evaluation episode 序号；**全模型、全个体共享同一 `index`**，
+    故 `core §4.3` 的「相同 evaluation episodes」红线成立：各模型面对同一份出生布局与同一条
+    猎物游走，唯一差异是网络动作。消费方：`experiment/baseline_run.py`（Experiment C）与
+    `experiment/learning_run.py`（BC 生命周期评估）。
+    """
+    manager = SeedManager(master_seed)
+    return manager.seed("arena_eval_spawn", index), manager.seed("arena_eval_dynamics", index)
+
+
 def viable_pairs(
     individuals: Sequence[ChainIndividual],
     motifs: Sequence[str],
@@ -135,12 +152,17 @@ def drive_arena_with_ids(
     arena_config: ArenaConfig,
     steps: int | None = None,
     generation: int = 0,
+    arena_seeds: tuple[int, int] | None = None,
 ) -> ArenaEpisodeResult:
     """用**给定**的网络 + 稳定 ID 驱动 Arena 跑一局（不发育、不构造网络）。
 
-    ``net`` 只需满足 `DanioNet`/baseline 的共同接口：``n_neurons``（list）与
-    ``step(observations) -> (ω, v)``（`connectome §8`）。供 `drive_arena_with_net`
-    （个体对象）与 Experiment C 的基线（无 genome 的裸网络）共用同一驱动循环。
+    ``net`` 只需满足 `DanioNet`/baseline 的共同接口：``n_neurons``（list）、
+    ``step(observations) -> (ω, v)`` 与 ``reset()``（`connectome §8`）。供
+    `drive_arena_with_net`（个体对象）与 Experiment C 的基线（无 genome 的裸网络）共用同一驱动循环。
+
+    ``arena_seeds``：显式指定 ``(spawn_seed, dynamics_seed)``；``None`` 时按
+    `arena_seeds_for(master_seed, generation)`（采集/代循环口径）。**评估方**（Experiment C、
+    BC 生命周期）须传 `arena_eval_seeds_for(...)` 以走独立随机流（`core §4.2`）。
     """
     if len(fish_ids) != len(genome_ids):
         raise ValueError(f"fish_ids 数 {len(fish_ids)} 与 genome_ids 数 {len(genome_ids)} 不一致")
@@ -151,7 +173,9 @@ def drive_arena_with_ids(
     n_eval = len(fish_ids)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
-    spawn_seed, dynamics_seed = arena_seeds_for(master_seed, generation)
+    spawn_seed, dynamics_seed = (
+        arena_seeds_for(master_seed, generation) if arena_seeds is None else arena_seeds
+    )
     arena = DanioArena(
         config,
         spawn_seed=spawn_seed,
@@ -161,6 +185,10 @@ def drive_arena_with_ids(
         generation=generation,
     )
     arena.reset()
+    # 网络侧递归状态必须一并复位（`DanioNet §3` 的 h⁰ = 0）：本函数可被多局复用同一网络对象
+    # 调用（Exp C 的 3 个 episode、learning_run 的训练前/后对照），不复位则后一局继承前一局
+    # 末态 h，两组不可比。对「每局新建网络」的调用方而言 reset() 幂等，行为不变。
+    net.reset()
 
     total = config.world.episode_steps if steps is None else steps
     for _ in range(total):
@@ -193,12 +221,13 @@ def drive_arena_with_net(
     arena_config: ArenaConfig,
     steps: int | None = None,
     generation: int = 0,
+    arena_seeds: tuple[int, int] | None = None,
 ) -> ArenaEpisodeResult:
     """用**给定的** `DanioNet` 驱动 Arena 跑一局（不重新发育/构造网络）。
 
-    供生命周期学习（`experiment/learning_run.py`）在**同一批 arena 子种子**下复用同一
-    网络对象做训练前后对照：``individuals`` 与 ``net`` 的 batch 必须同序等长。内部委托
-    `drive_arena_with_ids`（按稳定 `fish_id`/`genome_id`）。
+    供生命周期学习（`experiment/learning_run.py`）在**同一批评估子种子**下复用同一网络对象
+    做训练前后对照（`arena_seeds=arena_eval_seeds_for(...)`，`core §4.2`）：``individuals`` 与
+    ``net`` 的 batch 必须同序等长。内部委托 `drive_arena_with_ids`（按稳定 `fish_id`/`genome_id`）。
     """
     return drive_arena_with_ids(
         fish_ids=[individual.fish_id for individual in individuals],
@@ -209,6 +238,7 @@ def drive_arena_with_net(
         arena_config=arena_config,
         steps=steps,
         generation=generation,
+        arena_seeds=arena_seeds,
     )
 
 

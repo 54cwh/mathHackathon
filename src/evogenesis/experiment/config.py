@@ -3,6 +3,9 @@
 本模块**不新造数值**：``ExperimentConfig`` 只做 ``configs/experiment.yaml`` 的类型化镜像，
 经 ``core.config.load_config`` 读取并校验（覆盖优先级 ``CLI > env > file > default``）。
 参数依据与状态见 ``docs/参数总表.json``。
+
+``generations`` 属 §3.6（E–F 代循环）；``n_agents`` / ``n_episodes`` / ``n_danio`` 属 §3.3
+（Experiment C 评估规模，2026-09-26 用户签署）。
 """
 
 from __future__ import annotations
@@ -37,6 +40,11 @@ class ExperimentConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     generations: int
+
+    # Experiment C 评估规模（§3.3；2026-09-26 用户签署）—— 代码处不得发明取值（core §7）
+    n_agents: int
+    n_episodes: int
+    n_danio: int
 
 
 class SeedsConfig(BaseModel):

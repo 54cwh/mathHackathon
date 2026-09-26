@@ -134,7 +134,7 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 > 实现状态（2026-09-26）：**已实现**（`src/evogenesis/connectome/baselines.py`，`tests/test_baselines.py`）；§9（消融）仍属实验层待实现。
 >
-> **接线状态（2026-09-26）**：Experiment C 横向对照**已接**——编排 `experiment/baseline_run.py`、薄 CLI `scripts/run_baselines.py`（消费 `build_baselines` 与各 `complexity()`，§3.3）。
+> **接线状态（2026-09-26）**：Experiment C 横向对照**已接**——编排 `experiment/baseline_run.py`、薄 CLI `scripts/run_baselines.py`（消费 `build_baselines` 与各 `complexity()`，§3.3）。评估规模 **12 agent × 3 episode**（2026-09-26 用户签署）：DanioNet 侧取 `n_danio` 候选内**前 12 个 viable**（`viable_pairs(...)[:12]`，保序 ⇒ 最低 index，顺序无关），`n_danio = 400`。复杂度报 12 个个体的**等权均值**（`note` 记极差）；基线三模型逐 agent 恒等，故其数值不变。
 - MLP
 - GRU
 - Fixed Sparse RNN
@@ -155,7 +155,7 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 **接口契约（与 DanioNet 同构，保证同一套 BC 训练与测量可用）**：`n_neurons`（list，长度 = batch，元素 = H）、`active_counts`、`theta`（**唯一** `nn.Parameter`，供 `learning::train_bc` 的 Adam 更新）、`sign_constrained=False`、`reset()`、`step(observations) -> (ω, v)`、`complexity()`（返回 `parameter_count` / `active_edges` / `macs_implemented` / `macs_theoretical` / `flops_*`）。
 > **`support` 不在基线契约内**：DanioNet 的 `support`（bool mask，支撑 \(A\)）是 DanioNet 专有缓冲，`MLPPolicy` / `GRUPolicy` 无此属性（仅 `FixedSparseRNNPolicy` 有 `support`）；`experiment/measure.py::network_complexity` 只适用于 DanioNet。基线的结构量一律经自身 `complexity()` 自报，不共用 DanioNet 的支撑缓冲。
-> **动作区间不一致（待核，公平性）**：基线 `step()` 的 `(ω, v)` 由**同一个 `tanh`** 给出，故 \(v\in[-1,1]\)；DanioNet 的 \((\omega,v)=(\tanh(y_\omega),\sigma(y_v))\)，\(v\in[0,1]\)（§4）。同一份 BC 数据下二者的 `v` 区间不同，需在 Experiment C 对照训练时确认是否影响公平性（若确认，须修正基线读出或统一口径）。
+> **动作区间不一致（待核，公平性）**：基线 `step()` 的 `(ω, v)` 由**同一个 `tanh`** 给出，故 \(v\in[-1,1]\)；DanioNet 的 \((\omega,v)=(\tanh(y_\omega),\sigma(y_v))\)，\(v\in[0,1]\)（§4）。同一份 BC 数据下二者的 `v` 区间不同，需在 Experiment C 对照训练时确认是否影响公平性（若确认，须修正基线读出或统一口径）。**2026-09-26 补**：已在 12 agent × 3 episode 规模下实测一次，本项**仍未裁决**、照实记录不改基线读出（同一类歧义见 `experiment §2.1` 的 `escape_success` 边界段）。
 
 **FLOPs 口径（单步前向，含 bias 不计入 MACs）**：\(\text{MACs}_{impl}\) 按**稠密**权重数计（含被 mask 的位置），\(\text{MACs}_{theo}\) 按**实际连接数**计（Sparse RNN 二者不等）；\(\text{FLOPs} = 2 \times \text{MACs}\)；不含 \(\tanh\) 等非线性（与 `实验与评价体系.md` §2.4 同约定）。
 

@@ -96,16 +96,27 @@ def escape_success_rate(escape_successes: int, predator_encounters: int) -> floa
     return escape_successes / max(predator_encounters, 1)
 
 
-def prey_capture_rate(captures: int, opportunities: int) -> float:
-    """§2.1：`prey capture = captures / max(opportunities, 1)`。
+def prey_capture_rate(captures: int, opportunities: int) -> float | None:
+    """§2.1：`prey capture = captures / encounters`。
 
     `opportunities` = **`encounters`**（进入 `capture_radius` 的猎物数，**尺寸门之前**，
     S6 距离口径）。
     这是 2026-09-26 用户裁决：原分母 `capture_attempts` 在确定性捕获下与 `captures` 恒等，
     使指标退化为「是否有过机会」；改用距离口径后它度量「**追近的猎里有多少吃到了**」。
     见 `arena/Danio_Arena设计与实现说明.md` §8 与实验文档 §2.1。
+
+    **分母为 0 的口径（2026-09-26 用户签署）**：`opportunities == 0`（该个体整局无近距离接触
+    ⇒ **无出手机会**）返回 `None`（未定义），与「有机会但未得手」（`captures == 0` 且
+    `opportunities > 0` ⇒ 真 `0.0`）**区分开**。旧实现用 `max(opportunities, 1)` 兜底，把
+    「没有机会出手」误报成「出手全部失败」——两者是完全不同的失败模式。
+    下游 `aggregate_by_seed` / `summarise_over_seeds` 均**跳过 `None`**，故均值只对有出手机会的
+    个体取、`n` 反映有效数（不静默补 0）；`metrics.csv` 记空单元。
     """
-    return captures / max(opportunities, 1)
+    if captures < 0 or opportunities < 0:
+        raise ValueError(f"captures / opportunities 必须非负，实际 {captures} / {opportunities}")
+    if opportunities == 0:
+        return None
+    return captures / opportunities
 
 
 def energy_efficiency(energy_final: float, e_max: float, survival_steps: int) -> float:
@@ -150,11 +161,20 @@ def episode_metrics(
     escape_successes = int(record["escape_successes"])
     energy_traj = record.get("energy_trajectory") or []
     energy_final = float(energy_traj[-1]) if energy_traj else float("nan")
-    prey_component = (
-        capture_rate(captures, episode_steps)
-        if capture_success_prob >= 1.0
-        else prey_capture_rate(captures, encounters)
-    )
+    if capture_success_prob >= 1.0:
+        prey_component: float = capture_rate(captures, episode_steps)
+    else:
+        # 启用捕获随机化时捕食分量取 prey_capture（真成功率，§2.3 条件式口径）。
+        # encounters == 0 时 prey_capture 未定义（None）——**显式失败，不静默以 0 参与加权和**：
+        # 该情形该报什么尚无裁决（见 research/notes/契约决策记录.md「遗留」）。
+        _prey_capture = prey_capture_rate(captures, encounters)
+        if _prey_capture is None:
+            raise ValueError(
+                "capture_success_prob < 1 时 composite_fitness 的捕食分量取 prey_capture，"
+                f"但该个体 encounters == 0 ⇒ 未定义（captures={captures}, encounters={encounters}）。"
+                "不静默取 0；该口径待裁决（契约决策记录「遗留」）。"
+            )
+        prey_component = _prey_capture
     return {
         "survival_steps": survival_steps,
         "captures": captures,
