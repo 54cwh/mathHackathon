@@ -1,4 +1,4 @@
-"""Arena smoke + unit tests (arena/Danio_Arena设计规范.md + acceptance checklist Arena section)."""
+"""Arena smoke + unit tests (arena/Danio_Arena设计与实现说明.md + acceptance checklist Arena section)."""
 
 import numpy as np
 import pytest

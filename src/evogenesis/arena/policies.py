@@ -1,4 +1,4 @@
-"""Transparent rule policies for the Arena (Danio_Arena设计规范.md sections 9-11).
+"""Transparent rule policies for the Arena (Danio_Arena设计与实现说明.md sections 9-11).
 
 ExpertPolicy is used for imitation data only -- it never takes part in
 DanioNet scoring. Predator/Prey policies are the transparent ecology rules.
@@ -33,7 +33,7 @@ class ExpertPolicy:
 
 @dataclass
 class PreyPolicy:
-    """Danio_Arena设计规范.md section 10: stochastic wander + obstacle avoidance +
+    """Danio_Arena设计与实现说明.md section 10: stochastic wander + obstacle avoidance +
     proximity avoidance. Prey do not see fish (no active fleeing in MVP);
     proximity avoidance is handled by the env separation pass."""
 
@@ -53,7 +53,7 @@ class PreyPolicy:
 
 @dataclass
 class PredatorPolicy:
-    """Danio_Arena设计规范.md section 9: cruise -> chase legal target -> avoid obstacles ->
+    """Danio_Arena设计与实现说明.md section 9: cruise -> chase legal target -> avoid obstacles ->
     resume cruise. Pure planning only: returns the desired heading and speed;
     turn-rate limiting and geometry live in the env."""
 

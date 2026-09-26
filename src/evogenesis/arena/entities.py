@@ -16,7 +16,7 @@ class Entity:
     size: float = 1.0
 
     def advance(self, dt: float, world_w: float, world_h: float) -> None:
-        """Danio_Arena设计规范.md section 5: theta_{t+1} = theta_t + omega*dt was applied by caller;
+        """Danio_Arena设计与实现说明.md section 5: theta_{t+1} = theta_t + omega*dt was applied by caller;
         position uses the NEW heading."""
         self.pos = (
             self.pos + self.speed * np.array([np.cos(self.heading), np.sin(self.heading)]) * dt
@@ -35,7 +35,7 @@ class Fish(Entity):
     hunger: float = 0.0
     biomass: float = 0.0
     alive: bool = True
-    # per-fish log buffers (Danio_Arena设计规范.md section 13)
+    # per-fish log buffers (Danio_Arena设计与实现说明.md section 13)
     energy_trace: list[float] = field(default_factory=list)
     size_trace: list[float] = field(default_factory=list)
     motor_log: list[tuple[float, float]] = field(default_factory=list)
