@@ -31,351 +31,584 @@
       "sensitivity_plan 中的参数须报敏感性"
     ]
   },
-
   "parameters": [
     {
-      "name": "chromosome_pairs", "value": 2, "unit": null, "group": "genome",
-      "grade": "A", "status": "confirmed",
+      "name": "chromosome_pairs",
+      "value": 2,
+      "unit": null,
+      "group": "genome",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "Mendel Mode 的 9:3:3:1 要求 A/B 位于两对独立染色体",
       "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md:28",
       "config": "configs/default_model.yaml → genome.chromosome_pairs",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "bp_per_haplotype_chromosome", "value": 128, "unit": "bp", "group": "genome",
-      "grade": "D", "status": "in_range",
-      "basis": "紧凑人工基因组常见 50–10^4 bp（Avida 50；Banzhaf ARN 1000–10000）；无来源恰用 128",
-      "source": "research/reference/param-basis-engineering.md:34-46",
+      "name": "bp_per_haplotype_chromosome",
+      "value": 128,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "紧凑人工基因组常见 50–10^4 bp（Avida 50；Banzhaf ARN 1000–10000）；无来源恰用 128；依据：与 Avida 同量级、处于 Banzhaf ARN 最短端；真实生物学不为其数量背书",
+      "source": "research/reference/design-basis-genome.md",
       "config": "configs/default_model.yaml → genome.bp_per_haplotype_chromosome",
-      "sensitivity": null, "suggest": "保留 128，改述为「区间内设计选择」"
+      "sensitivity": null,
+      "suggest": "保留 128，改述为「区间内设计选择」"
     },
     {
-      "name": "haploid_bp", "value": 256, "unit": "bp", "group": "genome",
-      "grade": "C", "status": "derived",
-      "basis": "2 × 128", "source": null, "config": null,
-      "sensitivity": null, "suggest": null
-    },
-    {
-      "name": "diploid_bp", "value": 512, "unit": "bp", "group": "genome",
-      "grade": "C", "status": "derived",
-      "basis": "2 × 256", "source": null, "config": null,
-      "sensitivity": null, "suggest": null
-    },
-    {
-      "name": "n_motifs", "value": 8, "unit": null, "group": "genome",
-      "grade": "D", "status": "no_basis",
-      "basis": "无来源；生物 motif 目录为数百–上千量级（Lambert et al. 2018），不可据此外推",
+      "name": "haploid_bp",
+      "value": 256,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "C",
+      "status": "derived",
+      "basis": "2 × 128",
       "source": null,
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "diploid_bp",
+      "value": 512,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "C",
+      "status": "derived",
+      "basis": "2 × 256",
+      "source": null,
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "n_motifs",
+      "value": 8,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无来源；生物 motif 目录为数百–上千量级（Lambert et al. 2018），不可据此外推；依据：数字生物基因组 motif 规模参照(10^1–10^5)；真实 motif 为 10^3 量级，本项目 8 属 A-life 尺度",
+      "source": "research/reference/design-basis-genome.md",
       "config": "configs/default_model.yaml → genome.motif_count",
-      "sensitivity": [4, 8, 16], "suggest": "标「设计选择（未验证）」"
+      "sensitivity": [
+        4,
+        8,
+        16
+      ],
+      "suggest": "标「设计选择（未验证）」"
     },
     {
-      "name": "mutation_rate", "value": 0.001, "unit": "per_base_per_gamete", "group": "genome",
-      "grade": "B", "status": "confirmed",
-      "basis": "目标：256 bp 配子期望 0.256 个新 SNP",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md:49-53",
+      "name": "mutation_rate",
+      "value": 0.001,
+      "unit": "per_base_per_gamete",
+      "group": "genome",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "目标：256 bp 配子期望 0.256 个新 SNP；依据：计算抽象参数：与 Avida 惯例(per-site≈0.0075)同量级，比脊椎动物真实 germline 率(~5.97e-9/site/代)高约1e5倍",
+      "source": "research/reference/design-basis-evolution.md",
       "config": "configs/evolution.yaml → mutation_rate_per_base_per_gamete",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
-
     {
-      "name": "grn_dim", "value": 8, "unit": null, "group": "development",
-      "grade": "D", "status": "in_range",
+      "name": "grn_dim",
+      "value": 8,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
       "basis": "人工 GRN 节点常见 2–20+（Mehra & Hintze 2023 N=20；Banzhaf ARN 2–19）",
       "source": "research/reference/param-basis-engineering.md:56-64",
       "config": "configs/default_model.yaml → grn.dim",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "development_steps", "value": 12, "unit": "steps", "group": "development",
-      "grade": "D", "status": "in_range",
+      "name": "development_steps",
+      "value": 12,
+      "unit": "steps",
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
       "basis": "NCA 形态发生 10–20 步支持 12；但 GRN 收敛研究用 100–1000 步，故此处偏小",
       "source": "research/reference/param-basis-engineering.md:66-74",
       "config": "configs/default_model.yaml → grn.development_steps",
-      "sensitivity": [12, 50, 100], "suggest": "标注「预算截断」，补收敛对比"
+      "sensitivity": [
+        12,
+        50,
+        100
+      ],
+      "suggest": "标注「预算截断」，补收敛对比"
     },
     {
-      "name": "grn_rho", "value": 0.35, "unit": null, "group": "development",
-      "grade": "D", "status": "in_range",
+      "name": "grn_rho",
+      "value": 0.35,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
       "basis": "leak/EMA 常见 0.1–1.0（实例 0.2），0.35 同量级",
       "source": "research/reference/param-basis-engineering.md:76-82",
       "config": "configs/default_model.yaml → grn.rho",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "initial_precursors", "value": 24, "unit": "cells", "group": "development",
-      "grade": "D", "status": "in_range",
+      "name": "initial_precursors",
+      "value": 24,
+      "unit": "cells",
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
       "basis": "≈ ES-HyperNEAT 5×5 substrate = 25 节点；但经典发育编码从 1 个细胞起步——口径待定",
       "source": "research/reference/param-basis-engineering.md:84-90",
       "config": "configs/default_model.yaml → development.initial_precursors",
-      "sensitivity": null, "suggest": "必须写清是「substrate 节点数」还是「发育起始细胞数」"
+      "sensitivity": null,
+      "suggest": "必须写清是「substrate 节点数」还是「发育起始细胞数」"
     },
     {
-      "name": "developmental_domains", "value": 6, "unit": null, "group": "development",
-      "grade": "A", "status": "confirmed",
+      "name": "developmental_domains",
+      "value": 6,
+      "unit": null,
+      "group": "development",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "六类神经元谱系（sensory/prey/threat/integrator_memory/inhibitory/motor）",
       "source": "src/evogenesis/connectome/DanioNet设计规范.md:3-11",
       "config": "configs/default_model.yaml → development.domains",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "precursors_per_domain", "value": 4, "unit": null, "group": "development",
-      "grade": "C", "status": "derived",
+      "name": "precursors_per_domain",
+      "value": 4,
+      "unit": null,
+      "group": "development",
+      "grade": "C",
+      "status": "derived",
       "basis": "24 / 6（24 本身见 initial_precursors）",
-      "source": null, "config": "configs/default_model.yaml → development.precursors_per_domain",
-      "sensitivity": null, "suggest": null
+      "source": null,
+      "config": "configs/default_model.yaml → development.precursors_per_domain",
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "max_divisions", "value": 1, "unit": null, "group": "development",
-      "grade": "A", "status": "confirmed",
+      "name": "max_divisions",
+      "value": 1,
+      "unit": null,
+      "group": "development",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "每个 precursor 最多分裂一次",
       "source": "src/evogenesis/development/RGCD数学模型.md:93",
       "config": "configs/default_model.yaml → development.max_divisions_per_precursor",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "max_neurons", "value": 48, "unit": null, "group": "development",
-      "grade": "C", "status": "derived",
+      "name": "max_neurons",
+      "value": 48,
+      "unit": null,
+      "group": "development",
+      "grade": "C",
+      "status": "derived",
       "basis": "24 × (1 + 1)",
       "source": "src/evogenesis/development/RGCD数学模型.md:108",
       "config": "configs/default_model.yaml → development.max_neurons",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
-
     {
-      "name": "target_density", "value": 0.15, "unit": "fraction", "group": "connectome",
-      "grade": "B", "status": "confirmed",
+      "name": "target_density",
+      "value": 0.15,
+      "unit": "fraction",
+      "group": "connectome",
+      "grade": "B",
+      "status": "confirmed",
       "basis": "文档给定密度区间 [0.10, 0.20] 的中点",
       "source": "src/evogenesis/development/RGCD数学模型.md:170",
       "config": "configs/default_model.yaml → connectome.target_density",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "self_loops", "value": false, "unit": null, "group": "connectome",
-      "grade": "A", "status": "confirmed",
+      "name": "self_loops",
+      "value": false,
+      "unit": null,
+      "group": "connectome",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "不允许 self-loop",
       "source": "src/evogenesis/development/RGCD数学模型.md:170",
       "config": "configs/default_model.yaml → connectome.allow_self_loops",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "tau_min", "value": 1.0, "unit": null, "group": "connectome",
-      "grade": "A", "status": "confirmed",
-      "basis": "τ = 1 + 9σ(·) ⇒ 下界 1",
-      "source": "src/evogenesis/development/RGCD数学模型.md:204-217",
+      "name": "tau_min",
+      "value": 1.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "τ = 1 + 9σ(·) ⇒ 下界 1；依据：t∈[1,10] 步在 20Hz 下等效 50–500ms 网络级整合时间常数；非单神经元膜时间常数(皮层~20ms)",
+      "source": "research/reference/design-basis-neuro.md",
       "config": "configs/default_model.yaml → connectome.tau_min",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "tau_max", "value": 10.0, "unit": null, "group": "connectome",
-      "grade": "A", "status": "confirmed",
-      "basis": "τ = 1 + 9σ(·) ⇒ 上界 10",
-      "source": "src/evogenesis/development/RGCD数学模型.md:204-217",
+      "name": "tau_max",
+      "value": 10.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "τ = 1 + 9σ(·) ⇒ 上界 10；依据：t∈[1,10] 步在 20Hz 下等效 50–500ms 网络级整合时间常数；非单神经元膜时间常数(皮层~20ms)",
+      "source": "research/reference/design-basis-neuro.md",
       "config": "configs/default_model.yaml → connectome.tau_max",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "distance_lambda", "value": 1.0, "unit": null, "group": "connectome",
-      "grade": "D", "status": "no_basis",
-      "basis": "空间布线代价系数，量纲与位置分布绑定；位置分布尚未定义",
-      "source": null,
+      "name": "distance_lambda",
+      "value": 1.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "空间布线代价系数，量纲与位置分布绑定；位置分布尚未定义；依据：空间布线代价 -λ·d 有依据(P∝e^{-λd})；λ 有量纲，Arena 无量纲坐标须重标定",
+      "source": "research/reference/design-basis-connectome.md",
       "config": "configs/default_model.yaml → connectome.distance_lambda",
-      "sensitivity": null, "suggest": "先定义位置分布 p_i 再定量纲"
+      "sensitivity": null,
+      "suggest": "先定义位置分布 p_i 再定量纲"
     },
-
     {
-      "name": "sensory_dim", "value": 12, "unit": null, "group": "network",
-      "grade": "A", "status": "confirmed",
+      "name": "sensory_dim",
+      "value": 12,
+      "unit": null,
+      "group": "network",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "12 维输入被逐项列明",
       "source": "src/evogenesis/connectome/DanioNet设计规范.md:13-25",
       "config": "configs/default_model.yaml → network.sensory_dim",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "action_dim", "value": 2, "unit": null, "group": "network",
-      "grade": "A", "status": "confirmed",
+      "name": "action_dim",
+      "value": 2,
+      "unit": null,
+      "group": "network",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "连续动作 (ω, v) 两维",
       "source": "src/evogenesis/connectome/DanioNet设计规范.md:49-62",
       "config": "configs/default_model.yaml → network.action_dim",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
-
     {
-      "name": "world_width", "value": 100, "unit": "world_unit", "group": "arena",
-      "grade": "D", "status": "no_basis",
-      "basis": "同类连续多智能体环境均为正方形（POSGGym、PettingZoo MPE）；100×60（5:3）疑似 Canvas 显示比例",
-      "source": "research/reference/param-basis-engineering.md:92-98",
+      "name": "world_width",
+      "value": 100,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "同类连续多智能体环境均为正方形（POSGGym、PettingZoo MPE）；100×60（5:3）疑似 Canvas 显示比例；依据：连续二维多智能体环境无统一尺寸(MPE 约2单位、POSGGym 10×10)",
+      "source": "research/reference/design-basis-connectome.md",
       "config": "configs/default_arena.yaml → world.width",
-      "sensitivity": null, "suggest": "明确说明比例来源，或改正方形"
+      "sensitivity": null,
+      "suggest": "明确说明比例来源，或改正方形"
     },
     {
-      "name": "world_height", "value": 60, "unit": "world_unit", "group": "arena",
-      "grade": "D", "status": "no_basis",
-      "basis": "同 world_width",
-      "source": "research/reference/param-basis-engineering.md:92-98",
+      "name": "world_height",
+      "value": 60,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "同 world_width；依据：连续二维多智能体环境无统一尺寸(MPE 约2单位、POSGGym 10×10)",
+      "source": "research/reference/design-basis-connectome.md",
       "config": "configs/default_arena.yaml → world.height",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "sim_hz", "value": 20, "unit": "Hz", "group": "arena",
-      "grade": "B", "status": "confirmed",
+      "name": "sim_hz",
+      "value": 20,
+      "unit": "Hz",
+      "group": "arena",
+      "grade": "B",
+      "status": "confirmed",
       "basis": "dt=0.05 s 有多个权威实现依据（Gymnasium HalfCheetah dt=5×0.01；robosuite control_freq=20）",
       "source": "research/reference/param-basis-engineering.md:100-106",
       "config": "configs/default_arena.yaml → world.hz",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "episode_seconds", "value": 30, "unit": "s", "group": "arena",
-      "grade": "D", "status": "in_range",
+      "name": "episode_seconds",
+      "value": 30,
+      "unit": "s",
+      "group": "arena",
+      "grade": "D",
+      "status": "in_range",
       "basis": "常见 20–50 s（MuJoCo 50 s、robosuite 25 s）",
       "source": "research/reference/param-basis-engineering.md:108-114",
       "config": "configs/default_arena.yaml → world.episode_seconds",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "episode_steps", "value": 600, "unit": "steps", "group": "arena",
-      "grade": "C", "status": "derived",
+      "name": "episode_steps",
+      "value": 600,
+      "unit": "steps",
+      "group": "arena",
+      "grade": "C",
+      "status": "derived",
       "basis": "20 × 30（20/30 见 sim_hz / episode_seconds）",
-      "source": null, "config": "configs/default_arena.yaml → world.episode_steps",
-      "sensitivity": null, "suggest": null
+      "source": null,
+      "config": "configs/default_arena.yaml → world.episode_steps",
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "live_fish", "value": 12, "unit": "count", "group": "arena",
-      "grade": "D", "status": "no_basis",
+      "name": "live_fish",
+      "value": 12,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
       "basis": "无同类惯例，且取决于世界尺寸与计算预算",
-      "source": null, "config": "configs/default_arena.yaml → live_demo.fish",
-      "sensitivity": null, "suggest": null
+      "source": null,
+      "config": "configs/default_arena.yaml → live_demo.fish",
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "live_prey", "value": 24, "unit": "count", "group": "arena",
-      "grade": "D", "status": "no_basis",
+      "name": "live_prey",
+      "value": 24,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
       "basis": "无同类惯例；prey 是否重生/数量守恒未定义",
-      "source": null, "config": "configs/default_arena.yaml → live_demo.prey",
-      "sensitivity": null, "suggest": "先补 ecology 规则（重生/守恒）"
+      "source": null,
+      "config": "configs/default_arena.yaml → live_demo.prey",
+      "sensitivity": null,
+      "suggest": "先补 ecology 规则（重生/守恒）"
     },
     {
-      "name": "live_predators", "value": 3, "unit": "count", "group": "arena",
-      "grade": "D", "status": "no_basis",
-      "basis": "无同类惯例", "source": null,
+      "name": "live_predators",
+      "value": 3,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无同类惯例",
+      "source": null,
       "config": "configs/default_arena.yaml → live_demo.predators",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "live_obstacles", "value": 6, "unit": "count", "group": "arena",
-      "grade": "D", "status": "no_basis",
-      "basis": "无同类惯例", "source": null,
+      "name": "live_obstacles",
+      "value": 6,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无同类惯例",
+      "source": null,
       "config": "configs/default_arena.yaml → live_demo.obstacles",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "capture_size_ratio", "value": 1.25, "unit": "ratio", "group": "arena",
-      "grade": "D", "status": "proposed_change",
-      "basis": "斑马鱼为 gape-limited：口裂仅 4–5% SL，猎物远小于自身；1.25（允许猎物大于自身）与生物学相反",
-      "source": "research/reference/param-basis-biology.md:88-101",
+      "name": "capture_size_ratio",
+      "value": 1.25,
+      "unit": "ratio",
+      "group": "arena",
+      "grade": "D",
+      "status": "proposed_change",
+      "basis": "斑马鱼为 gape-limited：口裂仅 4–5% SL，猎物远小于自身；1.25（允许猎物大于自身）与生物学相反；依据：斑马鱼 gape-limited(口裂 4–5% SL)，κ=1.25 与生物学相反，需改按口裂比",
+      "source": "research/reference/param-basis-biology.md",
       "config": "configs/default_arena.yaml → growth.capture_size_ratio",
-      "sensitivity": null, "suggest": "重定义捕获判定（按口裂/尺寸比）"
+      "sensitivity": null,
+      "suggest": "重定义捕获判定（按口裂/尺寸比）"
     },
     {
-      "name": "sensing_radius", "value": 18.0, "unit": "world_unit", "group": "arena",
-      "grade": "D", "status": "proposed_change",
-      "basis": "幼虫探测 0.34–0.77 BL、打击 0.12–0.14 BL（成鱼未知）；若单位≈体长，18 远大于观测值",
-      "source": "research/reference/param-basis-biology.md:34-54",
+      "name": "sensing_radius",
+      "value": 18.0,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "proposed_change",
+      "basis": "幼虫探测 0.34–0.77 BL、打击 0.12–0.14 BL（成鱼未知）；若单位≈体长，18 远大于观测值；依据：幼虫探测 0.34–0.77 BL；18 若按 BL 远大于观测值，需重定口径",
+      "source": "research/reference/param-basis-biology.md",
       "config": "configs/default_arena.yaml → sensing.radius",
-      "sensitivity": null, "suggest": "先定世界单位→体长换算，再按 BL 设半径"
+      "sensitivity": null,
+      "suggest": "先定世界单位→体长换算，再按 BL 设半径"
     },
     {
-      "name": "sensing_fov_degrees", "value": 220.0, "unit": "deg", "group": "arena",
-      "grade": "D", "status": "in_range",
+      "name": "sensing_fov_degrees",
+      "value": 220.0,
+      "unit": "deg",
+      "group": "arena",
+      "grade": "D",
+      "status": "in_range",
       "basis": "幼虫单眼 163°、总视野（推断）≈306°；220° 落在其间，成鱼未知",
       "source": "research/reference/param-basis-biology.md:15-28",
       "config": "configs/default_arena.yaml → sensing.fov_degrees",
-      "sensitivity": null, "suggest": "标注口径（单眼/总视野）"
+      "sensitivity": null,
+      "suggest": "标注口径（单眼/总视野）"
     },
     {
-      "name": "body_length_mm", "value": 30.0, "unit": "mm", "group": "arena",
-      "grade": "B", "status": "missing",
+      "name": "body_length_mm",
+      "value": 30.0,
+      "unit": "mm",
+      "group": "arena",
+      "grade": "B",
+      "status": "missing",
       "basis": "成鱼标准体长 SL 25–35 mm（取 30，与 Palstra 2010 自洽）；幼虫 4.2 mm",
       "source": "research/reference/param-basis-biology.md:121-134",
       "config": null,
-      "sensitivity": null, "suggest": "新增，作为世界单位换算基准"
+      "sensitivity": null,
+      "suggest": "新增，作为世界单位换算基准"
     },
     {
-      "name": "predator_turn_rate", "value": 5.0, "unit": "rad/s", "group": "arena",
-      "grade": "D", "status": "no_basis",
+      "name": "predator_turn_rate",
+      "value": 5.0,
+      "unit": "rad/s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
       "basis": "斑马鱼 C 形逃避 6,000–21,200 deg/s 是体弯曲角速度，非航向 yaw 率，不可直接套用",
       "source": "research/reference/param-basis-biology.md:74-84",
       "config": "src/evogenesis/arena/env.py（默认值）",
-      "sensitivity": null, "suggest": "航向率需另取依据"
+      "sensitivity": null,
+      "suggest": "航向率需另取依据"
     },
-
     {
-      "name": "population_size", "value": 48, "unit": "count", "group": "evolution",
-      "grade": "D", "status": "in_range",
+      "name": "population_size",
+      "value": 48,
+      "unit": "count",
+      "group": "evolution",
+      "grade": "D",
+      "status": "in_range",
       "basis": "NEAT 150；De Jong 50；GA 经验 50–200 — 48 接近 De Jong 下沿，偏小",
       "source": "research/reference/param-basis-engineering.md:116-122",
       "config": "configs/evolution.yaml → population_size",
-      "sensitivity": [24, 48, 96], "suggest": "保留但须说明并报敏感性"
+      "sensitivity": [
+        24,
+        48,
+        96
+      ],
+      "suggest": "保留但须说明并报敏感性"
     },
     {
-      "name": "selection_beta", "value": 3.0, "unit": null, "group": "evolution",
-      "grade": "D", "status": "proposed_change",
-      "basis": "softmax 无推荐 β；β 强度依赖适应度尺度，而分量归一化方式尚未定义，故 3.0 无确定含义",
-      "source": "research/reference/param-basis-engineering.md:124-130",
+      "name": "selection_beta",
+      "value": 3.0,
+      "unit": null,
+      "group": "evolution",
+      "grade": "D",
+      "status": "proposed_change",
+      "basis": "softmax 无推荐 β；β 强度依赖适应度尺度，而分量归一化方式尚未定义，故 3.0 无确定含义；依据：softmax β 与适应度尺度不可分离，归一化未定前无确定含义；建议改排名/锦标赛选择",
+      "source": "research/reference/design-basis-evolution.md",
       "config": "configs/evolution.yaml → selection_beta",
-      "sensitivity": null, "suggest": "改用尺度无关的锦标赛/排名选择，或先定归一化再定 β"
+      "sensitivity": null,
+      "suggest": "改用尺度无关的锦标赛/排名选择，或先定归一化再定 β"
     },
     {
-      "name": "crossover_probability", "value": 0.5, "unit": "per_chromosome", "group": "evolution",
-      "grade": "D", "status": "proposed_change",
-      "basis": "单点/两点交叉常见 0.6–0.9（De Jong 0.6；Grefenstette 0.9）；0.5 仅适合均匀交叉，而本项目为单点交叉",
-      "source": "research/reference/param-basis-engineering.md:132-138",
+      "name": "crossover_probability",
+      "value": 0.5,
+      "unit": "per_chromosome",
+      "group": "evolution",
+      "grade": "D",
+      "status": "proposed_change",
+      "basis": "单点/两点交叉常见 0.6–0.9（De Jong 0.6；Grefenstette 0.9）；0.5 仅适合均匀交叉，而本项目为单点交叉；依据：单点/两点交叉常见 0.6–0.9；0.5 对应均匀交叉。按『每染色体』口径时每配子至少一次交叉概率=1-0.5^2=0.75，可接受",
+      "source": "research/reference/design-basis-evolution.md",
       "config": "configs/evolution.yaml → crossover_probability_per_chromosome",
-      "sensitivity": null, "suggest": "单点交叉下改 0.6–0.7"
+      "sensitivity": null,
+      "suggest": "单点交叉下改 0.6–0.7"
     },
     {
-      "name": "max_crossovers_per_chromosome", "value": 1, "unit": null, "group": "evolution",
-      "grade": "D", "status": "no_basis",
+      "name": "max_crossovers_per_chromosome",
+      "value": 1,
+      "unit": null,
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
       "basis": "文档规定每对染色体一次 crossover，无外部依据",
       "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md:7-11",
       "config": "configs/evolution.yaml → max_crossovers_per_chromosome",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "mendel_display_n", "value": 160, "unit": "offspring", "group": "evolution",
-      "grade": "D", "status": "no_basis",
+      "name": "mendel_display_n",
+      "value": 160,
+      "unit": "offspring",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
       "basis": "用于展示 9:3:3:1（期望 90/30/30/10），统计功效未反解",
       "source": null,
       "config": "configs/evolution.yaml → mendel_display_offspring",
-      "sensitivity": null, "suggest": "由卡方检验功效反解 160 是否足够"
+      "sensitivity": null,
+      "suggest": "由卡方检验功效反解 160 是否足够"
     },
     {
-      "name": "fitness_weights", "value": {"survival": 0.35, "prey_capture": 0.25, "escape_success": 0.20, "energy_efficiency": 0.20},
-      "unit": "weights", "group": "evolution",
-      "grade": "D", "status": "proposed_change",
-      "basis": "权重为拍定值；且分量归一化方式未定（min-max / 相对 / 理论上界），故权重无确定含义",
-      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md:49-58,104-106",
+      "name": "fitness_weights",
+      "value": {
+        "survival": 0.35,
+        "prey_capture": 0.25,
+        "escape_success": 0.2,
+        "energy_efficiency": 0.2
+      },
+      "unit": "weights",
+      "group": "evolution",
+      "grade": "D",
+      "status": "proposed_change",
+      "basis": "权重为拍定值；且分量归一化方式未定（min-max / 相对 / 理论上界），故权重无确定含义；依据：人为权重，且依赖未定的归一化方式；须做敏感度分析",
+      "source": "research/reference/design-basis-evolution.md",
       "config": "configs/evolution.yaml → fitness_weights",
-      "sensitivity": null, "suggest": "先定归一化方式，再定权重"
+      "sensitivity": null,
+      "suggest": "先定归一化方式，再定权重"
     },
-
     {
-      "name": "formal_seeds", "value": 3, "unit": "count", "group": "experiment",
-      "grade": "B", "status": "confirmed",
+      "name": "formal_seeds",
+      "value": 3,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "B",
+      "status": "confirmed",
       "basis": "实验设计的最低重复数（要求给出方差）",
       "source": "configs/experiment_seeds.yaml",
       "config": "configs/experiment_seeds.yaml → minimum_formal_replicates",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     },
     {
-      "name": "bc_updates", "value": 20, "unit": "mini_batch_updates", "group": "learning",
-      "grade": "A", "status": "confirmed",
+      "name": "bc_updates",
+      "value": 20,
+      "unit": "mini_batch_updates",
+      "group": "learning",
+      "grade": "A",
+      "status": "confirmed",
       "basis": "Stage 2 BC 预算 K=20",
       "source": "src/evogenesis/connectome/DanioNet设计规范.md:73-77",
       "config": "configs/default_model.yaml → learning.mini_batch_updates",
-      "sensitivity": null, "suggest": null
+      "sensitivity": null,
+      "suggest": null
     }
   ],
-
   "missing_required": {
     "note": "参数总表原缺、实现 RGCD/DanioNet 必须补齐（见 RGCD数学模型.md 阅读问题）",
     "items": [
@@ -392,36 +625,118 @@
       "位置 p_i 的分布"
     ]
   },
-
   "citation_risks": [
-    "Neural DNA（NDNA）引文不匹配：该工作用 <400 可学习参数、不含 ACGT/motif，不能支撑 bp 与 n_motifs（docs/相关工作与开源参考.md）",
+    "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 n_motifs（见 research/notes/bibliography.md 引用规则）",
     "initial_precursors=24 的口径未写清（substrate 节点数 vs 发育起始细胞数）",
     "『步数→秒』换算是推断，各来源 dt 不同",
-    "selection_beta 在适应度归一化未定前无意义"
+    "selection_beta 在适应度归一化未定前无意义（建议改排名/锦标赛，见 design-basis-evolution.md）"
   ],
-
   "reference_magnitudes": [
-    {"name": "swim_speed_cruise", "value": "4.2 BL/s (mean), peak 6.5", "source": "Fuiman & Webb 1988", "use": "对标 arena 游速"},
-    {"name": "swim_speed_Uopt", "value": "13 BL/s", "source": "Palstra 2010", "use": "对标 arena 游速"},
-    {"name": "swim_speed_Ucrit", "value": "13–18 BL/s", "source": "Palstra 2010 / Plaut 2000", "use": "对标 arena 游速"},
-    {"name": "larval_burst_speed", "value": "50–66 BL/s", "source": "Fuiman 1986", "use": "幼虫爆发"},
-    {"name": "turn_rate_cbend", "value": "6,000–21,200 deg/s（体弯曲，非航向 yaw）", "source": "Budick & O'Malley 2000", "use": "不可直接用作航向率"},
-    {"name": "strike_distance_larval", "value": "0.5–0.6 mm ≈ 0.12–0.14 BL", "source": "Patterson 2013", "use": "捕获判定距离"},
-    {"name": "looming_threshold_adult", "value": "10.3°–15.8°, latency 740–780 ms", "source": "McKee & McHenry 2020", "use": "looming 阈值"},
-    {"name": "looming_threshold_larval", "value": "21.7°/35 ms 或 ≈72°/81 ms", "source": "Temizer 2015 / Dunn 2016", "use": "looming 阈值（口径二选一）"}
+    {
+      "name": "swim_speed_cruise",
+      "value": "4.2 BL/s (mean), peak 6.5",
+      "source": "Fuiman & Webb 1988",
+      "use": "对标 arena 游速"
+    },
+    {
+      "name": "swim_speed_Uopt",
+      "value": "13 BL/s",
+      "source": "Palstra 2010",
+      "use": "对标 arena 游速"
+    },
+    {
+      "name": "swim_speed_Ucrit",
+      "value": "13–18 BL/s",
+      "source": "Palstra 2010 / Plaut 2000",
+      "use": "对标 arena 游速"
+    },
+    {
+      "name": "larval_burst_speed",
+      "value": "50–66 BL/s",
+      "source": "Fuiman 1986",
+      "use": "幼虫爆发"
+    },
+    {
+      "name": "turn_rate_cbend",
+      "value": "6,000–21,200 deg/s（体弯曲，非航向 yaw）",
+      "source": "Budick & O'Malley 2000",
+      "use": "不可直接用作航向率"
+    },
+    {
+      "name": "strike_distance_larval",
+      "value": "0.5–0.6 mm ≈ 0.12–0.14 BL",
+      "source": "Patterson 2013",
+      "use": "捕获判定距离"
+    },
+    {
+      "name": "looming_threshold_adult",
+      "value": "10.3°–15.8°, latency 740–780 ms",
+      "source": "McKee & McHenry 2020",
+      "use": "looming 阈值"
+    },
+    {
+      "name": "looming_threshold_larval",
+      "value": "21.7°/35 ms 或 ≈72°/81 ms",
+      "source": "Temizer 2015 / Dunn 2016",
+      "use": "looming 阈值（口径二选一）"
+    }
   ],
-
   "changes_pending": [
-    {"param": "crossover_probability", "from": 0.5, "to": "0.6–0.7", "reason": "单点交叉惯例"},
-    {"param": "selection_beta", "from": 3.0, "to": "排名/锦标赛选择", "reason": "尺度无关，规避未定义归一化"},
-    {"param": "sensing_radius", "from": 18.0, "to": "按 BL 换算", "reason": "生物学量级，待定世界单位"},
-    {"param": "capture_size_ratio", "from": 1.25, "to": "口裂/尺寸比", "reason": "斑马鱼 gape-limited"},
-    {"param": "world", "from": "100×60", "to": "保留或正方形", "reason": "无依据，疑似 Canvas 比例"}
+    {
+      "param": "crossover_probability",
+      "from": 0.5,
+      "to": "0.6–0.7",
+      "reason": "单点交叉惯例"
+    },
+    {
+      "param": "selection_beta",
+      "from": 3.0,
+      "to": "排名/锦标赛选择",
+      "reason": "尺度无关，规避未定义归一化"
+    },
+    {
+      "param": "sensing_radius",
+      "from": 18.0,
+      "to": "按 BL 换算",
+      "reason": "生物学量级，待定世界单位"
+    },
+    {
+      "param": "capture_size_ratio",
+      "from": 1.25,
+      "to": "口裂/尺寸比",
+      "reason": "斑马鱼 gape-limited"
+    },
+    {
+      "param": "world",
+      "from": "100×60",
+      "to": "保留或正方形",
+      "reason": "无依据，疑似 Canvas 比例"
+    }
   ],
-
   "sensitivity_plan": [
-    {"param": "n_motifs", "values": [4, 8, 16]},
-    {"param": "development_steps", "values": [12, 50, 100]},
-    {"param": "population_size", "values": [24, 48, 96]}
+    {
+      "param": "n_motifs",
+      "values": [
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "param": "development_steps",
+      "values": [
+        12,
+        50,
+        100
+      ]
+    },
+    {
+      "param": "population_size",
+      "values": [
+        24,
+        48,
+        96
+      ]
+    }
   ]
 }
