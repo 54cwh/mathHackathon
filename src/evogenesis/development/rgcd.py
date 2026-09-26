@@ -1,6 +1,6 @@
 """RGCD 发育：连接概率（§8）、初权（§10）、时间常数（§11）、viability（§7）与入口。
 
-范围：``RGCD数学模型.md`` §1–§11（v1.7 已定稿）。不实现 §12 Genome Sensitivity，
+范围：``RGCD数学模型.md`` §1–§11（v1.8 已定稿）。不实现 §12 Genome Sensitivity，
 不做 batch>1 / padding（形状与 DanioNet 兼容：``N ≤ max_neurons``、``M`` active mask）。
 
 随机数纪律：唯一随机源为 ``SeedManager(master).torch_generator("development", index)``

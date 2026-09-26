@@ -1,4 +1,4 @@
-"""唯一正式离散 GRN（RGCD §4，v1.7 已定稿）。
+"""唯一正式离散 GRN（RGCD §4，v1.8 已定稿）。
 
     g^{r+1} = (1 - rho) g^r + rho * sigmoid(W_g g^r + B q(G) + P p_i + b)
 

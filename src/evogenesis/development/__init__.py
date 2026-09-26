@@ -1,4 +1,4 @@
-"""RGCD 发育（`RGCD数学模型.md` §1–§11，v1.7 已定稿）。"""
+"""RGCD 发育（`RGCD数学模型.md` §1–§11，v1.8 已定稿）。"""
 
 from evogenesis.development.config import (
     DEFAULT_CONFIG,

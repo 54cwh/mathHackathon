@@ -161,7 +161,7 @@ type_i=\arg\max_k z_{ik}
 
 domain bias 保证六个基础谱系有 developmental competence，DNA/GRN 决定各谱系扩张和属性。
 
-**参数与初始化（定稿）**：\(U\in\mathbb R^{6\times8}\)、\(\mathbf c_{domain}\in\mathbb R^6\)；\(U\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf c_{domain}\) 为 one-hot（本域位 \(+1.5\)，余为 0），给六个基础谱系 developmental competence。
+**参数与初始化（定稿）**：\(U\in\mathbb R^{6\times8}\)、\(\mathbf c_{domain}\in\mathbb R^6\)（实现存为 \(6\times6\) 的 \(1.5\cdot I\)，按域取行）；\(U\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf c_{domain}\) 为 one-hot（本域位 \(+1.5\)，余为 0），给六个基础谱系 developmental competence。
 
 **owner**：`type_i` 如何由 GRN **产出**（本式）归本文件；六类**功能语义**与 left/right motor 标记归 `connectome/DanioNet设计规范.md` §1/§5。`argmax` 为离散化理想化（真实 fate 为连续谱 `[bib#75]`），建议同时记录 `z_i` 分布/熵。
 
@@ -227,10 +227,10 @@ R_{ij}=\frac{1}{8}\sum_{k=1}^{8}\hat g_{ik}\hat g_{jk},\qquad K=I\ (\text{零参
 
 中心化**只用于 \(R\) 项**，§4 的 \(\mathbf g\) 语义不变。依据：转录组/细胞类型相似度预测连线的双线性模型（Qiao et al. 2024 *eLife* `[bib#111]`；Kovács et al. 2020 *PNAS* `[bib#112]`；识别分子为异源、\(K\) 可非对角但 \(I\) 为可解释 MVP，Sanes & Zipursky 2020 `[bib#119]`）。**限定**：单用表达相似度预测连线的证据仅 AUC≈0.64（`[bib#111]`；Hayashi et al. 2022 反 Hebbian `[bib#121]`），故 \(R\) 按**弱偏置**使用并须报 \(\gamma=0\) 消融。
 
-**系数（定稿）**：\(\gamma=1.0\) 固定（属 \(\Theta_D\)，不演化；敏感性搜索 \(\{0.5,1,2\}\)）；\(\lambda=2.0\)（单位方域，\(E[d]\approx0.521\Rightarrow\lambda d\approx1.04\)，与 \(z_i^\top Cz_j\in[-2,2]\) 配平）。\(b_A\) 用**二分反解**到实测 off-diagonal density 落在 \([0.10,0.20]\)（目标 0.15）：
+**系数（定稿）**：\(\gamma=1.0\) 固定（属 \(\Theta_D\)，不演化；敏感性搜索 \(\{0.5,1,2\}\)）；\(\lambda=2.0\)（单位方域，\(E[d]\approx0.521\Rightarrow\lambda d\approx1.04\)，与 \(z_i^\top Cz_j\in[-2,2]\) 配平）。\(b_A\) 用**二分反解**使**期望** off-diagonal density \(=0.15\)（实测密度由 Bernoulli 抽样波动，落在 \([0.10,0.20]\)，由 `tests/test_rgcd.py` 守护）。下式为**一阶近似**，仅用于解释 \(b_A\) 的量级；因 \(E[\sigma(\ell)]\neq\sigma(E[\ell])\)，实现**以二分反解为准**：
 
 \[
-b_A=\mathrm{logit}(p_{target})-E[z_i^\top Cz_j]+\lambda E[d]-\gamma E[R].
+b_A\approx\mathrm{logit}(p_{target})-E[z_i^\top Cz_j]+\lambda E[d]-\gamma E[R].
 \]
 
 \(\gamma,\lambda,b_A\) 均为项目标定/设计选择（\(\lambda\) 的量纲由单位方域归一化定义）。出处：`research/reference/rgcd-wiring-and-placement.md`。
@@ -349,7 +349,7 @@ x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
 | \(P\) | \(\mathbb R^{8\times2}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | \(\mathbf p_i\) 原样输入（不 embedding） |
 | \(\mathbf b\) | \(\mathbb R^8\) | \(\mathcal N(0,0.1^2)\) | 设计选择 |
 | \(U\) | \(\mathbb R^{6\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | 设计选择 |
-| \(\mathbf c_{domain}\) | \(\mathbb R^6\) | one-hot，本域 \(+1.5\) | 保证六谱系 competence |
+| \(\mathbf c_{domain}\) | \(\mathbb R^6\)（存为 \(6\times6\) 的 \(1.5\cdot I\)） | one-hot，本域 \(+1.5\) | 保证六谱系 competence |
 | \(\mathbf w_d,b_d\) | \(\mathbb R^8,\mathbb R\) | \(\mathcal N(0,(1/\sqrt8)^2),\,0\) | 分裂率约 0.5 |
 | \(C\) | \(\mathbb R^{6\times6}\) | §9 固定 prior | 人工 prior |
 | \(\lambda\) | \(2.0\) | 单位方域归一 | 设计选择（量纲随坐标归一） |
