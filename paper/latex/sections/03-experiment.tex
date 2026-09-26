@@ -225,7 +225,7 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 \end{enumerate}
 
 \textbf{主口径取绝对速率、而把接触转化降为诊断列的裁决理由}：
-当前捕获是\textbf{确定性的}（占位参数 $P_{\text{capture\_success}}=1.0$），
+当前捕获是\textbf{确定性的}（\texttt{growth.capture\_success\_prob}\,$=1.0$ 为配置旋钮默认值，\texttt{arena} \S8 项 a），
 此时任何以「首次接触」为单位的\emph{去重}口径都恒等于 1、零方差；
 而含重复计数的口径（每步每猎物各计一次 / 每鱼每步至多一次）其分母随\textbf{停留步数}
 增长，比值实际上度量的是「\textbf{蹲守程度}」而非捕食技巧——这正是下文右偏的来源。
@@ -237,13 +237,14 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 两者相差 \textbf{7.1 倍}。原因是前者是个体比值的\emph{等权平均}（每条约 $1/12$ 权重，
 把一个只遇到 1 次猎物却恰好捕获的个体与一个遇到 200 次的个体同等看待），
 后者按\emph{遭遇次数加权}。因此\textbf{报任何一个都必须写明是哪一个口径}；
-本文正文与图表在未特别注明时，一律指\textbf{个体比值均值} $\overline{(\text{captures}_i/\text{encounters}_i)}$。
+本文正文与图表所报的比值一律指\textbf{个体比值均值} $\overline{(\text{captures}_i/\text{encounters}_i)}$——即\emph{诊断口径}；主口径是绝对速率 \texttt{capture\_rate}，因落盘 run 早于该口径而未在本章出现。
 
-\textbf{实现现状（须如实声明）}：主口径 \texttt{capture\_rate} 目前
-\textbf{尚未实现}，现有实现产出的是诊断口径 \texttt{prey\_capture}。
-因此本文所报的捕食相关比值数字，均为\textbf{诊断口径}，其含义是
+\textbf{实现现状（须如实声明）}：主口径 \texttt{capture\_rate} 的\textbf{实现已就位}
+（\texttt{experiment/metrics.py}），但\textbf{本文所依据的全部落盘 run 均早于该口径变更}
+——其 \texttt{metrics.csv} 无 \texttt{capture\_rate} 列——故本文所报的捕食比值数字
+一律为\textbf{诊断口径} \texttt{prey\_capture}，其含义是
 「\textbf{追近的猎里有多少吃到了}，受停留时间影响」，\textbf{不是}捕食成功率。
-
+重建基线后方可补报主口径；本文不引用未落盘的数字。
 \subsubsection{\texttt{prey\_capture} 的分母语义与不变式}
 
 \texttt{prey\_capture} 的定义为
@@ -268,7 +269,7 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 （猎物进了捕获半径且在前向锥内、但未通过尺寸门）的次数。
 基线 run 中该差额对 36/36 个个体\textbf{全部为 0}，
 即没有任何「进过口但吃不下」的判定发生——这是占位参数
-$P_{\text{capture\_success}}=1.0$ 的直接后果（见 \S\ref{sec:exp-gaps}）。
+\texttt{growth.capture\_success\_prob}\,$=1.0$ 的直接后果（见 \S\ref{sec:exp-gaps}）。
 $36/36$ 的不变式在四个环境下均被验证为满足。
 
 \subsubsection{分母严重右偏：引用均值必须并列偏态尾}
@@ -302,12 +303,14 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
 引用本节任何数字时都应一并带上：
 
 \begin{itemize}
-  \item $P_{\text{capture\_success}}=1.0$ 是\textbf{占位值}（Arena \S8 待裁决项 a）。
+  \item \texttt{growth.capture\_success\_prob}\,$=1.0$ 是\textbf{配置旋钮的默认值}
+        （Arena \S8 项 a）：默认即历史行为，表示「满足几何条件即必定捕获」。
         其后果是 \texttt{capture\_attempts} 与 \texttt{captures} 普遍相等
         （本 run 中 36/36 个体的差额为 0），因此部分指标\textbf{偏乐观}。
         该事实\textbf{不影响}公式 \eqref{eq:prey-capture}——分母已是尺寸门之前的
-        \texttt{encounters}；若未来引入 $P_{\text{capture\_success}}<1$，
-        公式不变，该指标自动成为标准成功率。
+        \texttt{encounters}；启用 \texttt{growth.capture\_success\_prob}\,$<1$ 后，
+        失败会记 \texttt{capture\_attempt(result="missed")}，公式不变，
+        该指标自动成为标准成功率。
   \item \textbf{P0-9}：\texttt{Fish.genome\_id} 的\textbf{缺省值}仍是占位
         \texttt{"unknown"}；实验路径已可由构造注入铸出的 \texttt{genome\_id}
         （\texttt{scripts/run\_arena.py} 经 \texttt{core/ids.py::mint\_id}，纯函数、确定性）。

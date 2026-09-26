@@ -74,9 +74,10 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \textbf{代价是外推范围}：本平台能回答「某机制\emph{是否}存在、幅度多大」，
   不能回答「该机制在大规模任务上\emph{是否仍}有效」。
 
-  \item \textbf{占位参数使一部分指标偏乐观。}
-  $P_{\text{capture\_success}}=1.0$ 是\textbf{占位}值（\texttt{arena} \S8 待裁决项；
-  见 \texttt{experiment} \S2.1），含义是「满足几何条件即必定捕获」。
+  \item \textbf{捕获确定性使一部分指标偏乐观。}
+  \texttt{growth.capture\_success\_prob}\,$=1.0$ 是\textbf{配置旋钮的默认值}
+  （\texttt{arena} \S8 项 a；见 \texttt{experiment} \S2.1），含义是「满足几何条件即必定捕获」；
+  默认即历史行为，故改动它不改变既有产物。
   本 run 的实测后果是具体的：\textbf{36/36 个个体的
   $\text{capture\_attempts}-\text{captures}$ 为 $0$}，即无一次「进过口但吃不下」的判定发生
   （\texttt{results/tables/exp\_arena\_expert\_ref\_v2/diagnostics.md}）。
@@ -84,8 +85,9 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   但它意味着\textbf{「捕食技巧」这一维度在本 run 中几乎未被检验}：
   捕获是确定性的，任何以「首次接触」为单位的去重口径都会退化为恒 1
   （\texttt{research/notes/契约决策记录.md}，2026-09-26 条）。
-  修复路径已明确且不需要改公式：引入 $P_{\text{capture\_success}}<1$ 后
-  \texttt{prey\_capture} 自动成为标准成功率（同上引诊断文件）。
+  修复路径已明确且不需要改公式：启用 \texttt{growth.capture\_success\_prob}\,$<1$ 后，
+  扑击失败记 \texttt{capture\_attempt(result="missed")} 且猎物存活，
+  \texttt{prey\_capture} 自动成为真成功率（同上引诊断文件）。
 
   \item \textbf{12 维 observation 的\emph{编码规则}仍是「草案待确认」。}
   需要区分两个层次：\emph{语义 / 顺序 / 值域}已冻结（\texttt{DanioNet} \S2，v1.8），
