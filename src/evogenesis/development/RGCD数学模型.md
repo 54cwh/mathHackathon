@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.2 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.3 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 
@@ -316,6 +316,21 @@ behavior effect（四维向量，不合成标量）：
 \]
 
 三个量——\(d_{edge}^{(l)}\)、\(d_{\tau}^{(l)}\)、\(\Delta \mathbf B_l\)——并列展示，不合成单一总分；权重 \(w_1\ldots w_4\) 不使用。
+
+**\(\Delta B_l\) 四分量口径（定稿）**：对每个 locus \(l\)，取 \(K\) 个**匹配块**（同 `environment_id`、同 `episode_seed`，每块一条野生型 \(+\) 一条突变体），分量沿用 fitness 同口径的**原始率**（不做代内 min-max、不除以野生型基线）：
+
+\[
+\Delta X_l=\frac1K\sum_{k=1}^{K}\big[x_X(G^{(l)},k)-x_X(G,k)\big],\qquad X\in\{\mathrm{Capture,Escape,Survival,Energy}\}
+\]
+
+\[
+x_{\text{Survival}}=\frac{\text{survival\_steps}}{600},\quad
+x_{\text{Capture}}=\frac{\text{captures}}{\max(\text{capture\_attempts},1)},\quad
+x_{\text{Escape}}=\frac{\text{escape\_successes}}{\max(\text{predator\_encounters},1)},\quad
+x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
+\]
+
+分量各自报告 Hedges \(g_z=J(K-1)\,\Delta X_l/s_{d_X}\)（\(J(m)=1-\frac{3}{4m-1}\)）与配对 CI；**不合成标量**。出处 `research/reference/delta-B-and-penetrance.md`。
 
 ## 13. 参数形状与初始化总表（定稿）
 
