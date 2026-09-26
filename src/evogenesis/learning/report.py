@@ -59,7 +59,7 @@ def sign_flip_rate(net: DanioNet) -> float:
     """``flip_rate``：活跃支撑上 ``sign(W) ≠ sign(W⁰)`` 的占比（§4）。
 
     有符号约束时 ``W = sign(W⁰)·softplus(Θ)`` 且 ``softplus>0``，故恒为 0；无约束消融
-    路径（`DanioNet §3` 接口，尚未实现）下会大于 0，用于对照。
+    路径（`DanioNet §3` 的 `sign_constrained=False`）下会大于 0，用于对照。
     """
     mask = active_support(net)
     count = int(mask.sum())

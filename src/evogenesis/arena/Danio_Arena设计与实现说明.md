@@ -68,11 +68,11 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 
 ### 4.1 12 维 observation 编码（本文件为编码 owner）
 > **值域契约**：12 维的语义 / 顺序 / **值域 `[0,1]`** / dtype（`float32`）由 `../connectome/DanioNet设计规范.md` §2（v1.8，2026-09-26 冻结）own；本节职责是**编码规则**，其结果须映射到该区间。
-> ⚠️ **dtype 现状（对齐缺口）**：`sensing.observe()` 返回 **`float64`**（`sensing.py:162` `dtype=float`），而 DanioNet §2 契约是 `float32`。当前由下游转换为 `float32`（`pipeline/arena_episode.py` 写入 `np.float32` 数组；`core §7` 定「消费方转换」），故**契约未被违反**；但若未来直接把 `arena.observe()` 输出喂给 DanioNet，须先转 `float32`。改 Arena 内部 dtype 会轻微改变 `ExpertPolicy` 动作（float64→float32 舍入）从而作废 §18.11 基线，故**暂不改**。
+> ⚠️ **dtype 现状（对齐缺口）**：`sensing.observe()` 返回 **`float64`**（`sensing.py:192` `dtype=float`），而 DanioNet §2 契约是 `float32`。当前由下游转换为 `float32`（`pipeline/arena_episode.py` 写入 `np.float32` 数组；`core §7` 定「消费方转换」），故**契约未被违反**；但若未来直接把 `arena.observe()` 输出喂给 DanioNet，须先转 `float32`。改 Arena 内部 dtype 会轻微改变 `ExpertPolicy` 动作（float64→float32 舍入）从而作废 §18.11 基线，故**暂不改**。
 本文件负责**如何由视野算出** DanioNet §2 定义的 12 维向量（语义 / 顺序 / 值域以 DanioNet §2 为准）。**【已定稿】**（2026-09-26；12 维公式与截断口径已认领，唯一遗留 `looming_norm`=R_loom 为设计选择（D））
 
 现状（代码）：
-- `prey` / `threat` / `obstacle` 的 `_{left,right}_signal`：对 FOV 内该类目标按方位角以朝向为界分左右 —— **左右按 \(\mathrm{sign}(\sin(\text{rel\_bearing}))\) 划分**；强度取距离核 \((1-d/r)_{+}\)，**每通道求和后截断到 1.0**。
+- `prey` / `threat` / `obstacle` 的 `_{left,right}_signal`：对 FOV 内该类目标按方位角以朝向为界分左右 —— **左右按 \(\mathrm{sign}(\sin(\text{rel\_bearing}))\) 划分**；**符号映射（约定，实现现状）**：`rel = wrap(atan2(Δy,Δx) − θ_fish)`，`sin(rel) < 0 → left`、`sin(rel) ≥ 0 → right`（`sensing.py::_split_channels`）。强度取距离核 \((1-d/r)_{+}\)，**每通道求和后截断到 1.0**。
 - `prey_relative_size`：\(\min(size_{prey}/size_{fish},1)\)；`predator_relative_size`：\(\min(size_{pred}/size_{fish}/\texttt{predator\_size\_ref},1)\)（`sensing.predator_size_ref`，现 2.5）。
 - `looming_rate`：**角尺寸扩张率**。角尺寸 \(\theta=2\arctan((size/2)/r)\)，取"视野半径 + FOV 内**所有**可见天敌的 **max** \(\theta\)"（多天敌以最著者为准，依据 `research/reference/looming-and-growth.md`）；相对扩张率 \(1/\tau=(\theta_{after}-\theta_{before})/(\theta_{after}\,\Delta t)\)（**分母 \(\theta_t=\theta_{after}\)**，同所引依据）；编码 \(\mathrm{clip}((1/\tau)/R_{loom},0,1)\)，\(R_{loom}=\texttt{sensing.looming\_norm}\)（现 3.5，**设计选择（D）** \([2,5]\,\mathrm{s^{-1}}\)）。**相位（修复 M13/F1）**：步首采样 \(\theta_{before}\)、步尾（全部实体移动后）采样 \(\theta_{after}\)，结算本步扩张率并缓存到 `Fish._looming_rate`；`observe()` 只读该已结算值（= 最近一步扩张率，与其余各维同为「当前状态」相位）。任一端不可见（\(\theta=0\)）即记 0。
 - `current_speed`：取自身上一步推进 \(v_{t-1}\)（决策见 `research/notes/契约决策记录.md`）。
@@ -207,7 +207,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 **其他**：
 - **稀有度不作价值维度**（dossier T3：未检索到「稀有本身提高单次捕获价值」的生态学证据；最优食谱理论把遇率与收益率分开）。
-- **待裁决（未闭合）**：environment（Food Rich / Predator Rich / Resource Scarce）三组当前**不改变任何参数**，「环境选择」尚无实际因果（M4）。
+- **环境三组（已闭合，2026-09-26）**：environment（Food Rich / Predator Rich / Resource Scarce）**已改变参数**——单因子对照，仅动 `population.n_prey` / `n_predators` 及其派生的 `prey_regrowth_steps`（取值 owner = `../experiment/实验与评价体系.md` §4；落 `configs/experiment_environments.yaml`，依据/状态登记 `../../../docs/参数总表.json` 的 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`）。**仍开放**：把「高价值 prey 靠近 predator / resource-scarce 抬升 hunger」做成**场景布置**（当前仅参数级对照，无空间布置）。
 - 高价值 prey 靠近 predator / resource-scarce 时 hunger 提升 prey attraction / obstacles 限制逃生路径——用于共同激活 prey / threat / integrator / hunger 机制；**场景布局属后续项**。
 
 ## 13. 事件日志与每鱼记录
@@ -275,7 +275,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | κ（capture_size_ratio） | 1.25 | — | 已定稿（设计选择） |
 | r_capture | 4.61 | world unit | 已定稿（方案 B） |
 | θ_cone（capture_cone_degrees） | 120 | °（**总**锥角） | 已定稿（设计选择） |
-| k_turn | 0.35 | — | 草案待确认 |
+| k_turn | 0.35 | — | 已定稿（§5） |
 | energy 四系数 | 1.0 / 0.0008 / 0.0015 / 0.12 | — | 已定稿（A3 已签；依据 D，已进参数总表） |
 | C_pen（collision_penalty） | 见 config | — | **设计选择（D）** |
 | growth | 1.0 / 2.5 / g=0.2（prey_area_gain） | — | **设计选择（D）**（A4 面积式） |
@@ -283,8 +283,8 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | prey 再生间隔（prey_regrowth_steps） | 25 | step | **设计选择（D）**（派生 600/24） |
 | 逃脱存活窗口（escape_hold_steps） | 20 | step | **设计选择（D）** |
 | 限时追击（predator_max_chase_steps） | 80 | step | **设计选择（D）** |
-| prey：speed / size / wander | 0.35 / [0.30,0.60] / 0.8 | — | 草案待确认（A5） |
-| predator：cruise / chase / detect / release / turn | 0.40 / 0.65 / 15 / 22 / 5.0 | — / — / wu / wu / rad/s | 草案待确认（A5/A10） |
+| prey：speed / size / wander | 0.35 / [0.30,0.60] / 0.8 | — | 已定稿（A5） |
+| predator：cruise / chase / detect / release / turn | 0.40 / 0.65 / 15 / 22 / 5.0 | — / — / wu / wu / rad/s | 已定稿（A5/A10） |
 | obstacle 半径 | [1.5, 3.5] | world unit | 已定稿 |
 
 ## 17. 待裁决条款（认领清单）
@@ -583,7 +583,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | **A2** ✅ | 捕食几何：`capture_radius = 4.61`、$\kappa = 1.25$（判据含边界）、**前向锥 120°（总锥角）** | §2.1、§2.2、§3.1 §8 | **2026-09-26 已裁决并全部落地**：半径与 κ 已进参数总表；**前向锥已实现**（`growth.capture_cone_degrees`）。未采纳「半径和」口径（§8 已知局限） |
 | **A3** ✅ | 能量四系数 + 新增 $C_{pen}$（`collision_penalty`）与回报函数 $f$ | §2.1、§6 | 已实现；**四系数与 `collision_penalty` 均已进参数总表**（2026-09-26；表内 `status=no_basis`，依据 D＝设计选择）。`food_reward` 现为**均值**（按 `prey.size` 缩放、中点归一），A3 预算不变 |
 | **A4** ✅ | 生长：改为**面积守恒式** `size ← min(size_max, sqrt(size^2 + g*prey_size^2))`，$g$ = `prey_area_gain` | §2.2、§3.1 §7 | **2026-09-26 已改**（用户裁决「面积式」）：局内生长可见、边际递减内生；`Fish.biomass` **字段删除**（消除「只写不读」）；`prey_area_gain` 已进参数总表（**设计选择（D）** 0.2） |
-| **A5** ✅ | `actors` 整组 14 项（含 `predator_turn_rate`、`escape_hold_steps`、`predator_max_chase_steps`） | §2.2 | 已实现；**已进 `configs/default_arena.yaml` 的 `actors:` 段与参数总表**（2026-09-26，登记为 play-test 旋钮） |
+| **A5** ✅ | `actors` 整组 **17** 项（含 `predator_turn_rate`、`escape_hold_steps`、`predator_max_chase_steps`） | §2.2 | 已实现；**已进 `configs/default_arena.yaml` 的 `actors:` 段与参数总表**（2026-09-26，登记为 play-test 旋钮） |
 | **A6** ✅ | 边界策略：新增 `world.boundary`，默认 **`reflect`**（镜面反射） | §2.1、§3.1 §2 | **2026-09-26 已改**：`reflect` 确定性、不消耗随机数；旧 `clamp` 降为对照选项（隐性能耗使跨 seed 能量不可比） |
 | **A7** ✅ | 碰撞语义：**硬不穿透**（投影回障碍表面、零反弹）+ **软惩罚**（按穿透深度扣能量 `collision_penalty`） | S4、§6 | **2026-09-26 已改**。事件 payload **未改动**（惩罚经 `energy_trace` 可观测）。碰撞稀疏（多数 seed 为 0，密集障碍场景 seed42 达 208），故**不作 headline 指标** |
 | **A8** ✅ | escape 判定：**威胁结局制** —— 曾被锁定 且 捕食者放弃后继续存活 ≥ `escape_hold_steps` 才计 | S17、§15 | **2026-09-26 已改**：仅换目标未过存活窗口者不计；另加**限时追击** `predator_max_chase_steps`（超时放弃，且在该鱼离开探测半径前不再锁定它） |
@@ -608,7 +608,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M1 | 神经控制 | 鱼由外部 `actions` 驱动，Arena 不内嵌网络；DanioNet 推理已由 `pipeline/arena_episode.py` 接入（`scripts/run_chain.py`，DanioNet 驱动模型评估）。`generation` 可由构造注入（缺省 0；代循环已接入）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
 | M3 | selected neural activity snapshots | 规范 §13 最后一项未实现；**owner = `connectome`/`DanioNet`（+ api 推送）**，arena 不缓存网络激活（见 §6） |
-| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；但「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**场景布置仍未做**，`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |
+| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；环境三组**已改变参数**（`configs/experiment_environments.yaml`，单因子：`n_prey`/`n_predators` + 派生 regrowth，登记参数总表 `env_*`）。仍未做：「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**空间场景布置**（现为参数级对照，无布局） |
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | ~~`PreyPolicy.avoid_gain`~~ | ✅ **已删除（2026-09-26）**（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
@@ -622,7 +622,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 ---
 
-### 18.9 测试覆盖（`tests/test_arena.py`，31 项）
+### 18.9 测试覆盖（`tests/test_arena.py`，29 项）
 
 | # | 测试 | 守护的契约 |
 |---|---|---|
@@ -736,6 +736,7 @@ uv run python scripts/smoke_arena.py
 7. **文献登记**：采纳 Arena lane 的生物学依据时，从 `bibliography.md` 当前编号之后继续登记（不得复用 RGCD 的 #111–#130），再把引用写回合并稿和参数总表。文献只支撑合理性校验或设计依据，不自动变成 Arena 契约。
 
 8. **H3 历史依赖探针（可选增强，§14）**：任务定义已定稿、实现未做；实现前须定 \(D\)、\(r_H\) 并评估是否新增事件类型（若新增，按 §18.10 同步 `KNOWN_EVENTS` / core §5.1 / 事件样例）。
+8b. **sensing 的 left/right 语义与 action 侧对齐（待用户裁决）**：`sensing._split_channels` 现约定 `sin(rel) < 0 → left`（§4.1）；`connectome/DanioNet设计规范.md` §4 又定 left motor 池 → \(+ω\)（\(+θ\)，逆时针）。二者是否同侧需做一次方向性核对：标准数学坐标下 \(+rel\) 才是物理左，故当前映射可能与 action 侧反相。若确认反相，须在 `sensing` 与 `ExpertPolicy` **同步翻转**（两者一起翻可保持 Expert 行为逐位不变，进而保住 §18.11 基线），并重跑 DanioNet 驱动基线；**裁决前不改行为**，本约定按 §4.1 文档化，供方向性测试与用户决定。
 
 ### P2：实现完善
 

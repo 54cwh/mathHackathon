@@ -42,7 +42,7 @@ class PopulationConfig:
     n_prey: int = 24
     n_predators: int = 3
     n_obstacles: int = 6
-    prey_regrowth_steps: int = 25  # placeholder: 600 / n_prey (dossier T3 s3.1)
+    prey_regrowth_steps: int = 25  # 设计选择（D）：600 / n_prey（arena §16，dossier T3 s3.1）
 
 
 @dataclass(frozen=True)
@@ -65,7 +65,7 @@ class EnergyConfig:
     base_cost_per_step: float = 0.0008
     movement_cost_scale: float = 0.0015
     food_reward: float = 0.12
-    collision_penalty: float = 0.001  # c_pen, placeholder (section 6 / 18.7 A7)
+    collision_penalty: float = 0.001  # c_pen，设计选择（D）（arena §6 / §18.7 A7）
 
 
 @dataclass(frozen=True)
@@ -76,7 +76,9 @@ class GrowthConfig:
     capture_radius: float = 4.61
     capture_cone_degrees: float = 120.0  # total cone, hunter-forward (section 8)
     turn_inertia_scale: float = 0.35  # k_turn (Danio_Arena设计与实现说明.md section 5)
-    prey_area_gain: float = 0.2  # g in size = sqrt(size^2 + g*prey_size^2); placeholder
+    prey_area_gain: float = (
+        0.2  # g in size = sqrt(size^2 + g*prey_size^2); 设计选择（D）（arena §7）
+    )
     # 鱼的捕食成功率（arena §8）：1.0=确定性（默认，历史行为）；<1 时尺寸门通过后按概率判定，
     # 失败记 arena.capture_attempt(result="missed") 且猎物存活。
     capture_success_prob: float = 1.0
@@ -105,8 +107,8 @@ class ActorDefaults:
     prey_turn_clip: float = 3.0  # rad/s, PreyPolicy 游走转向裁剪（§10）
     prey_obstacle_avoid_gain: float = 2.0  # rad/step, 猎物避障转向增益（§10）
     predator_obstacle_avoid_gain: float = 0.5  # rad/step, 捕食者避障转向增益（§9）
-    escape_hold_steps: int = 20  # A8 threat-outcome survival window; placeholder
-    predator_max_chase_steps: int = 80  # A8 limited chase; placeholder
+    escape_hold_steps: int = 20  # A8 threat-outcome survival window; 设计选择（D）
+    predator_max_chase_steps: int = 80  # A8 limited chase; 设计选择（D）
 
 
 @dataclass(frozen=True)

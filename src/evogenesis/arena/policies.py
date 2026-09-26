@@ -75,7 +75,7 @@ class PredatorPolicy:
     chase_speed: float = 0.65
     detection_radius: float = 15.0
     release_radius: float = 22.0
-    max_chase_steps: int = 80  # give up after N consecutive steps (placeholder)
+    max_chase_steps: int = 80  # give up after N consecutive steps; 设计选择（D）（arena §15）
 
     def plan(
         self,

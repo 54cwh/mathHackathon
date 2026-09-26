@@ -1,4 +1,4 @@
-"""BC 加权 MSE（`learning/行为克隆学习.md` v1.4 §3 定稿）。
+"""BC 加权 MSE（`learning/行为克隆学习.md` v1.5 §3 定稿）。
 
     L = λ_ω · MSE(ω̂, ω*) + λ_v · MSE(v̂, v*)
 

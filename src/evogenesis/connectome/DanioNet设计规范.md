@@ -133,6 +133,8 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 ## 8. Baselines
 
 > 实现状态（2026-09-26）：**已实现**（`src/evogenesis/connectome/baselines.py`，`tests/test_baselines.py`）；§9（消融）仍属实验层待实现。
+>
+> **接线状态（2026-09-26 静态审计）**：`baselines.py` 目前**仅被测试引用**，无生产入口（无脚本/实验构造或训练 baseline）；`build_baselines` 与各 `complexity()` 暂无生产消费点，Experiment C 的横向对照表**尚未接线**。登记为**待接实验项**。
 - MLP
 - GRU
 - Fixed Sparse RNN
@@ -151,7 +153,9 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 - **符号约束**：三个 baseline **均不施加 Dale 符号约束**（等价 `sign_constrained=False`）；DanioNet 的 Dale 约束视作其归纳偏置计入对比，§9 另设「BC 有/无 Dale」消融单独隔离该变量。
 - **初始化**：权重由 `core §3` 的 `baseline_init` 命名空间（id = 10）派生，实体 `t` 取该个体在种群内的 `index`；与 DanioNet 的 `network_init`（全局单表）分离。`float32`。
 
-**接口契约（与 DanioNet 同构，保证同一套 BC 训练与测量可用）**：`n_neurons`（list，长度 = batch，元素 = H）、`active_counts`、`theta`（**唯一** `nn.Parameter`，供 `learning::train_bc` 的 Adam 更新）、`sign_constrained=False`、`reset()`、`step(observations) -> (ω, v)`（\(\tanh\) 输出，∈\([-1,1]\)，形状 `(batch,)`）、`support`（bool mask）、`complexity()`（返回 `parameter_count` / `active_edges` / `macs_implemented` / `macs_theoretical` / `flops_*`）。
+**接口契约（与 DanioNet 同构，保证同一套 BC 训练与测量可用）**：`n_neurons`（list，长度 = batch，元素 = H）、`active_counts`、`theta`（**唯一** `nn.Parameter`，供 `learning::train_bc` 的 Adam 更新）、`sign_constrained=False`、`reset()`、`step(observations) -> (ω, v)`、`complexity()`（返回 `parameter_count` / `active_edges` / `macs_implemented` / `macs_theoretical` / `flops_*`）。
+> **`support` 不在基线契约内**：DanioNet 的 `support`（bool mask，支撑 \(A\)）是 DanioNet 专有缓冲，`MLPPolicy` / `GRUPolicy` 无此属性（仅 `FixedSparseRNNPolicy` 有 `support`）；`experiment/measure.py::network_complexity` 只适用于 DanioNet。基线的结构量一律经自身 `complexity()` 自报，不共用 DanioNet 的支撑缓冲。
+> **动作区间不一致（待核，公平性）**：基线 `step()` 的 `(ω, v)` 由**同一个 `tanh`** 给出，故 \(v\in[-1,1]\)；DanioNet 的 \((\omega,v)=(\tanh(y_\omega),\sigma(y_v))\)，\(v\in[0,1]\)（§4）。同一份 BC 数据下二者的 `v` 区间不同，需在 Experiment C 对照训练时确认是否影响公平性（若确认，须修正基线读出或统一口径）。
 
 **FLOPs 口径（单步前向，含 bias 不计入 MACs）**：\(\text{MACs}_{impl}\) 按**稠密**权重数计（含被 mask 的位置），\(\text{MACs}_{theo}\) 按**实际连接数**计（Sparse RNN 二者不等）；\(\text{FLOPs} = 2 \times \text{MACs}\)；不含 \(\tanh\) 等非线性（与 `实验与评价体系.md` §2.4 同约定）。
 

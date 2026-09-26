@@ -1,9 +1,8 @@
 """Danio Arena: continuous 2-D ecology env (Danio_Arena设计与实现说明.md).
 
-Deterministic given (config, spawn_seed, dynamics_seed). Emits the draft event vocabulary
-from core/核心机制与数据流.md section 5.1 in dot form (arena.*, R11) plus
-arena.fish_captured / arena.collision (vocabulary still DRAFT pending
-joint freeze).
+Deterministic given (config, spawn_seed, dynamics_seed). Emits the frozen event
+vocabulary v1 (arena §18.4.2, machine-readable authority tests::KNOWN_EVENTS) in
+dot form (arena.*); see Danio_Arena设计与实现说明.md §18.4.
 """
 
 from collections.abc import Sequence

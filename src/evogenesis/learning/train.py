@@ -1,4 +1,4 @@
-"""BC 训练循环（`learning/行为克隆学习.md` v1.4 §3 已定稿；`DanioNet设计规范.md` §3/§4）。
+"""BC 训练循环（`learning/行为克隆学习.md` v1.5 §3 已定稿；`DanioNet设计规范.md` §3/§4）。
 
 训练粒度（`learning §1`）：每个当代个体各自训练**自己的** ``DanioNet``；本函数接受
 单个个体的网络（``len(net.n_neurons) == 1``），只更新其 ``theta``。``ΔW = W − W⁰`` 为

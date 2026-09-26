@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-import json
 import time
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
@@ -25,6 +24,7 @@ from evogenesis.evolution.population import (
     Individual,
     advance_generation,
 )
+from evogenesis.experiment import runlayout
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import (
     aggregate_by_seed,
@@ -197,33 +197,22 @@ def _write_generation_artifacts(
             gen_dir / "episodes.jsonl",
             [episode_row(seed, list(episode.events), episode.per_fish, steps, elapsed)],
         )
-    with (gen_dir / "fitness.jsonl").open("w", encoding="utf-8", newline="") as fh:
-        for individual in individuals:
-            fh.write(
-                json.dumps(
-                    {
-                        "generation": generation,
-                        "genome_id": individual.genome_id,
-                        "fish_id": individual.fish_id,
-                        "viable": individual.viable,
-                        "failure_reason": individual.failure_reason,
-                        "fitness": individual.fitness,
-                    },
-                    ensure_ascii=False,
-                )
-                + "\n"
-            )
+    write_jsonl(
+        gen_dir / "fitness.jsonl",
+        (
+            {
+                "generation": generation,
+                "genome_id": individual.genome_id,
+                "fish_id": individual.fish_id,
+                "viable": individual.viable,
+                "failure_reason": individual.failure_reason,
+                "fitness": individual.fitness,
+            }
+            for individual in individuals
+        ),
+    )
     if episode is not None:
         dump_json(gen_dir / "seed_summary.json", aggregate_by_seed(rows), indent=2)
-
-
-def _update_status(run_dir: Path, status: str) -> None:
-    metadata_path = run_dir / "metadata.json"
-    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-    metadata["status"] = status
-    metadata_path.write_text(
-        json.dumps(metadata, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
-    )
 
 
 def run_evolution(
@@ -261,7 +250,7 @@ def run_evolution(
     summaries: list[GenerationSummary] = []
     bottleneck = False
     generations_run = 0
-    _update_status(run_dir, "running")
+    runlayout.update_run_status(run_dir, "running")
     for generation in range(generations):
         chain_individuals = to_chain_individuals(individuals, experiment_id=experiment_id)
         t0 = time.perf_counter()
@@ -322,7 +311,7 @@ def run_evolution(
         individuals = result.offspring
 
     write_jsonl(run_dir / "evolution.jsonl", [asdict(s) for s in summaries])
-    _update_status(run_dir, "bottleneck" if bottleneck else "completed")
+    runlayout.update_run_status(run_dir, "bottleneck" if bottleneck else "completed")
     return EvolutionRunResult(
         generations_run=generations_run,
         bottleneck=bottleneck,
