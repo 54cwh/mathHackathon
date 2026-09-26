@@ -102,6 +102,9 @@ def test_too_small_to_eat_attempt_logged():
     assert attempts, "expected a capture_attempt event"
     assert attempts[0].payload["result"] == "too_small_to_eat"
     assert prey.alive
+    # 每鱼记录的计数器与事件逐事件对齐（§8「进过口」口径）
+    assert fish.capture_attempts == 1
+    assert fish.captures == 0
 
 
 def test_starvation_death_event():
@@ -444,3 +447,19 @@ def test_predator_gives_up_after_limited_chase():
     assert gaveup[0] is None and gaveup[2] == pol.cruise_speed
     banned = pol.plan(pos, 0.0, None, fishes, banned_fish_id="fish_00")
     assert banned[0] is None, "a banned fish is not re-acquired inside detect radius"
+
+
+def test_capture_attempts_counts_eaten_prey_as_well():
+    """§8「进过口」口径：吃到也算一次 attempt；`encounters` 保持纯距离语义（S6）。"""
+    arena = make_arena()
+    arena.reset()
+    fish = arena.fish["fish_00"]
+    fish.heading = 0.0
+    prey = arena.prey["prey_00"]
+    prey.size = 0.3  # 1.0 / 0.3 > kappa -> eatable
+    fish.pos = np.array([50.0, 30.0])
+    prey.pos = np.array([50.5, 30.0])
+    arena.step({"fish_00": (0.0, 0.0)})
+    assert fish.captures == 1
+    assert fish.capture_attempts == 1
+    assert fish.capture_attempts >= fish.captures

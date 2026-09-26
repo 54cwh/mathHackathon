@@ -14,6 +14,7 @@ from evogenesis.experiment.metrics import (
     energy_efficiency,
     episode_metrics,
     escape_success_rate,
+    prey_capture_rate,
     summarise_over_seeds,
     survival_rate,
 )
@@ -24,6 +25,7 @@ def _record(**over: object) -> dict:
     rec = {
         "survival_steps": 600,
         "captures": 3,
+        "capture_attempts": 5,
         "encounters": 40,
         "predator_encounters": 2,
         "escape_successes": 1,
@@ -70,20 +72,30 @@ def test_composite_weights_are_the_documented_ones_and_sum_to_one():
     assert composite_fitness(1.0, 0.0, 0.0, 0.0) == pytest.approx(0.35)
 
 
-def test_episode_metrics_computes_defined_and_blocks_undefined():
+def test_prey_capture_rate_uses_capture_attempts_with_one_as_floor():
+    assert prey_capture_rate(3, 5) == 0.6
+    assert prey_capture_rate(0, 0) == 0.0  # max(0, 1) = 1
+    assert prey_capture_rate(4, 4) == 1.0  # 「进过口」都吃到了
+
+
+def test_episode_metrics_computes_four_metrics_plus_fitness():
     row = episode_metrics(_record(), episode_steps=600, e_max=1.0)
     assert row["survival"] == 1.0
     assert row["escape_success"] == 0.5
     assert row["energy_efficiency"] == pytest.approx((0.25 - 1.0) / 600)
     assert row["energy_final"] == 0.25
-    assert row["captures"] == 3 and row["encounters"] == 40
-    # 未定义量必须留空，且 BLOCKED_METRICS 给出原因
-    assert row["prey_capture"] is None
-    assert row["composite_fitness"] is None
-    for key in ("prey_capture", "composite_fitness"):
-        assert key in BLOCKED_METRICS
-        assert BLOCKED_METRICS[key].strip()
-    assert "capture_attempts" in BLOCKED_METRICS["prey_capture"]
+    assert row["captures"] == 3 and row["capture_attempts"] == 5
+    assert row["encounters"] == 40
+    assert row["prey_capture"] == pytest.approx(3 / 5)  # 「进过口」口径
+    # 四项齐备后 composite fitness 真的算出来，且等于文档权重的加权和
+    expected = (
+        COMPOSITE_WEIGHTS["survival"] * row["survival"]
+        + COMPOSITE_WEIGHTS["prey_capture"] * row["prey_capture"]
+        + COMPOSITE_WEIGHTS["escape_success"] * row["escape_success"]
+        + COMPOSITE_WEIGHTS["energy_efficiency"] * row["energy_efficiency"]
+    )
+    assert row["composite_fitness"] == pytest.approx(expected)
+    assert not BLOCKED_METRICS, "prey_capture 已实现，阻断表应为空"
 
 
 def test_episode_metrics_reads_only_keys_that_per_fish_log_provides():
@@ -96,6 +108,7 @@ def test_episode_metrics_reads_only_keys_that_per_fish_log_provides():
     for key in (
         "survival_steps",
         "captures",
+        "capture_attempts",
         "encounters",
         "predator_encounters",
         "escape_successes",

@@ -148,6 +148,8 @@ d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}\quad\te
 $encounters$ 语义**不变**（仍为 $d<r_{capture}$ 的近距接触计数，见 §18.3.2 S6）：锥只作用于**捕获判定**，不改变接触计数。
 
 **【已定稿】** $r_{capture}=4.61$（方案 B：按 $r_{capture}/sensing.radius=\sqrt{0.16\times0.41}=0.256$ 校准，可接受域 2.88–7.38；见 `research/notes/契约决策记录.md`）。**前向锥（总锥角 120°）已于 2026-09-26 实现**（§17 A2 该项闭合）。
+
+**【已定稿】捕食尝试计数（2026-09-26，用户裁定）**：`capture_attempts` 每鱼每步至多 +1，条件为「猎物进入 `d < r_capture` **且在猎人前向锥内**」并**判定了尺寸口径**；吃到（`size_hunter ≥ κ·size_target`）与判定为太小（`arena.capture_attempt`）**都计**。锥外的猎物不计（§17 S5：命中第一个半径内猎物即 `break`，故每步至多一次判定）；`encounters` 仍是**纯距离**口径（S6），两者不可互替。
 > **已知局限（未采纳项）**：开源机制对照报告建议距离口径改为「半径和」（$d<r_1+r_2$，使捕食圈随体型缩放）。**未采纳**——$r_{capture}=4.61$ 是同日刚裁决冻结的方案 B 值，改口径会使该标定与耦合约束 $size_{predator}\ge\kappa\,size_{max}$ 整体作废。记为后续项（§19 P2）。
 
 > ⚠️ 原记「与生物量级冲突」。**根因＝`world unit ↔ BL` 换算缺失，已由 §2 尺度声明闭合**（方案 B：不建立固定换算，只按无量纲比率校准）。故本节参数不再与成鱼 BL 直接比对；校准口径是 `r_capture / sensing.radius` 与 $\kappa$ 的无量纲关系。
@@ -527,6 +529,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | generation | `generation` | `Fish.generation`（恒 0，未接演化） | ✅ |
 | encounters | `encounters` | `Fish.encounters` | ✅ 语义为"$d < r_{capture}$ 的近距接触数"（S6） |
 | captures | `captures` | `Fish.captures` | ✅ |
+| capture attempts | `capture_attempts` | `Fish.capture_attempts` | ✅ **2026-09-26 新增**（用户裁定「进过口」口径）：每鱼每步**至多 1 次** —— 猎物 $d < r_{capture}$ **且**在猎人前向锥内**且**判定了尺寸口径，**不论吃到与否**（吃到走 `arena.prey_captured`，太小走 `arena.capture_attempt`）。因此**逐事件对齐**于既有事件，且恒有 `capture_attempts ≥ captures`。是 `实验与评价体系.md` §4 `prey_capture` 的分母。由 `test_capture_attempts_counts_eaten_prey_as_well` 与 `test_too_small_to_eat_attempt_logged` 守护 |
 | predator encounters | `predator_encounters` | `Fish.predator_encounters` | ✅ **已实现**：捕食者**获得新目标**时 +1（S7）。由 `test_predator_encounter_recorded_on_acquisition` 守护。⚠️ 口径是"被锁定次数"而非"近距遭遇次数"，属待认领（§7 A8 邻域） |
 | escape successes | `escape_successes` | `Fish.escape_successes` | ✅ 口径见 S17（仅对**仍存活**的丢失目标计数） |
 | collisions | `collisions` | `Fish.collisions` | ✅ |

@@ -3,7 +3,12 @@
 口径来源：`实验与评价体系.md` §4 的「指标定义（供 §9 与 fitness 复用）」段。
 
 设计原则（`AGENTS.md`「禁止 AI 填空」）：**只实现文档已定义的量**；文档提到但未定义的量
-一律不猜，登记在 `BLOCKED_METRICS` 里，并在返回值中置 `None`。
+一律不猜，登记在 `BLOCKED_METRICS` 里，并在返回值中置 `None`（**当前该表为空**）。
+
+`prey_capture` 的分母 `capture_attempts` 原为未定义项，2026-09-26 经用户裁定取**「进过口」口径**：
+每鱼每步**至多 1 次**——猎物进入（`d < capture_radius` **且**在猎人前向锥内）并判定了尺寸口径，
+**不论是否真的吃到**（吃到 → `arena.prey_captured`；太小 → `arena.capture_attempt`）。
+该口径与既有事件 `arena.capture_attempt`（§18.4 表第 2 行）**逐事件对齐**，只把事件计入每鱼记录。
 
 统计口径（补齐 `实验与评价体系.md` §1 的阅读问题 #1）：
 
@@ -28,16 +33,9 @@ COMPOSITE_WEIGHTS: dict[str, float] = {
 }
 
 #: 文档提到、但**上游未定义**因而本模块拒绝计算的量。键 = 指标名，值 = 为何算不出 / 需要什么决定。
-BLOCKED_METRICS: dict[str, str] = {
-    "prey_capture": (
-        "§4 定义为 captures / max(capture_attempts, 1)，但 `capture_attempts` 在 "
-        "`arena/env.py::per_fish_log()` 里不存在（现有计数只有 encounters / captures / "
-        "predator_encounters / escape_successes），也没有任何文档定义它。"
-        "`encounters` 是纯距离口径（`Danio_Arena设计与实现说明.md` §8 S6），不能顶替。"
-        "需先定义 capture_attempts 再实现。"
-    ),
-    "composite_fitness": ("依赖 prey_capture；prey_capture 未定义 ⇒ composite fitness 暂不可算。"),
-}
+BLOCKED_METRICS: dict[str, str] = {}
+#: 2026-09-26：`prey_capture`（分母 `capture_attempts` 未定义）曾是唯一阻断项；
+#: 用户裁定「进过口」口径后已实现，见模块 docstring 与 `arena/Danio_Arena设计与实现说明.md` §8。
 
 
 def composite_fitness(
@@ -67,6 +65,14 @@ def escape_success_rate(escape_successes: int, predator_encounters: int) -> floa
     return escape_successes / max(predator_encounters, 1)
 
 
+def prey_capture_rate(captures: int, capture_attempts: int) -> float:
+    """§4：`prey capture = captures / max(capture_attempts, 1)`
+
+    分母的「进过口」口径见模块 docstring 与 `arena/Danio_Arena设计与实现说明.md` §8。
+    """
+    return captures / max(capture_attempts, 1)
+
+
 def energy_efficiency(energy_final: float, e_max: float, survival_steps: int) -> float:
     """§4：`r_i = (E_i(T_i) - E_max) / T_i`（MVP；口径另见 `core/核心机制与数据流.md` §10 #12）。
 
@@ -86,10 +92,10 @@ def episode_metrics(
 ) -> dict[str, Any]:
     """`DanioArena.per_fish_log()` 的一条**每鱼记录** → 该个体的指标行。
 
-    返回列：原始计数（`captures` / `encounters` / `predator_encounters` /
-    `escape_successes` / `survival_steps` / `energy_final`）+ 已定义指标
-    （`survival` / `escape_success` / `energy_efficiency`）+ 未定义指标置 `None`
-    （`prey_capture` / `composite_fitness`，见 `BLOCKED_METRICS`）。
+    返回列：原始计数（`captures` / `capture_attempts` / `encounters` / `predator_encounters` /
+    `escape_successes` / `collisions` / `survival_steps` / `energy_final`）
+    + §4 的四项指标（`survival` / `prey_capture` / `escape_success` / `energy_efficiency`）
+    + 由四项合成的 `composite_fitness`。
     """
     survival_steps = int(record["survival_steps"])
     energy_traj = record.get("energy_trajectory") or []
@@ -101,20 +107,29 @@ def episode_metrics(
         "predator_encounters": int(record["predator_encounters"]),
         "escape_successes": int(record["escape_successes"]),
         "collisions": int(record.get("collisions", 0)),
+        "capture_attempts": int(record["capture_attempts"]),
         "energy_final": energy_final,
         "survival": survival_rate(survival_steps, episode_steps),
-        "prey_capture": None,
+        "prey_capture": prey_capture_rate(int(record["captures"]), int(record["capture_attempts"])),
         "escape_success": escape_success_rate(
             int(record["escape_successes"]), int(record["predator_encounters"])
         ),
         "energy_efficiency": energy_efficiency(energy_final, e_max, survival_steps),
-        "composite_fitness": None,
+        "composite_fitness": composite_fitness(
+            survival_rate(survival_steps, episode_steps),
+            prey_capture_rate(int(record["captures"]), int(record["capture_attempts"])),
+            escape_success_rate(
+                int(record["escape_successes"]), int(record["predator_encounters"])
+            ),
+            energy_efficiency(energy_final, e_max, survival_steps),
+        ),
     }
 
 
 #: `aggregate_by_seed` / `summarise_over_seeds` 默认汇总的指标列（未定义的列自动跳过）。
 SCALAR_METRICS: tuple[str, ...] = (
     "survival",
+    "prey_capture",
     "escape_success",
     "energy_efficiency",
     "composite_fitness",

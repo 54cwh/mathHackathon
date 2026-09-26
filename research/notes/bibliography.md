@@ -1040,3 +1040,8 @@ Fuiman 1986 / Budick & O Malley 2000 / Patterson 2013 / McKee & McHenry 2020）�
 `research/notes/契约决策记录.md`「开源机制对照的采纳」中被列为可借鉴项。**已核实未被实现**：
 `arena/policies.py` 无状态机（ExpertPolicy 仍是简单加权规则），故未复制代码；仍须补声明，
 见 `docs/declaration/THIRD_PARTY.md`（现为空表）。
+
+**（待登记-5）前端候选资源** —— 来源 `research/reference/前端可用资源-调研与选型.md`（Tier6 入库副本）。
+**采用前**须逐项登记（License 与版本）：Kenney Fish Pack 2.0（CC0）、8bitcn-ui（MIT）、SeqViz（MIT）、
+cytoscape-fcose / cytoscape-dagre（MIT）、Press Start 2P（OFL）、Lospec 调色板（逐页核实）、
+OpenGameArt「Cute Fish Sprites」（OGA-BY 3.0，**须署名**）、TensorFlow Playground（Apache-2.0，仅作交互参考不引代码）。

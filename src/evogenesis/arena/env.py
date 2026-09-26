@@ -242,6 +242,7 @@ class DanioArena:
                 size_ratio = fish.size / prey.size
                 if size_ratio >= self.cfg.growth.capture_size_ratio:
                     prey.alive = False
+                    fish.capture_attempts += 1
                     fish.captures += 1
                     fish.size = min(
                         self.cfg.growth.max_size,
@@ -262,6 +263,7 @@ class DanioArena:
                         )
                     )
                     break
+                fish.capture_attempts += 1
                 new_events.append(
                     self._emit(
                         "arena.capture_attempt",
@@ -461,6 +463,7 @@ class DanioArena:
                 "generation": f.generation,
                 "encounters": f.encounters,
                 "captures": f.captures,
+                "capture_attempts": f.capture_attempts,
                 "predator_encounters": f.predator_encounters,
                 "escape_successes": f.escape_successes,
                 "collisions": f.collisions,

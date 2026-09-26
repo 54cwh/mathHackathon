@@ -62,6 +62,8 @@ class Fish(Entity):
     motor_log: list[tuple[float, float]] = field(default_factory=list)
     survival_steps: int = 0
     captures: int = 0
+    # 每步至多 1 次：猎物进了（距离+前向锥）且判定了尺寸口径，不论吃到与否（§8）
+    capture_attempts: int = 0
     encounters: int = 0
     predator_encounters: int = 0
     escape_successes: int = 0
