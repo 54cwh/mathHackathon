@@ -160,6 +160,14 @@ DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
                  learning(BC)        experiment 编排；viz 出图；api 对外
 ```
 
+### 动手前必读（写任一模块代码的固定动作）
+
+写 `src/evogenesis/` 任一模块代码前，按**数据流上游优先**固定查三处；冲突以更高层级/被查文档为准：
+
+1. **本模块文档**（同目录 `.md`）：首行「管辖范围」写明它拥有 / 不拥有什么、指向谁。
+2. **`core/核心机制与数据流.md` 的绑定节**：`§0` 模块与契约边界；`§3` 种子派生 + **`§3.1` 稳定 ID**（禁自建随机源、禁空 ID）；`§7` 存储分级 + dtype + **跨框架转换**（NumPy→torch 走 `core/tensors.py::to_float32_tensor`，禁隐式 `float64`）；`§4` 数据流管线与边界对象清单；`§10` owner 登记（新边界对象 owner 未定先登记此处）。config / logging / tracking / io / registry 一律用 `core` 公开 API。
+3. **边界两端文档**：上游产出方（对象字段 / 形状由它定义，只引用、不改名）+ 下游消费方（要什么字段 / 形状，对齐 export）。
+
 ## 约定
 
 - **稳定 ID**：`fish_id` / `genome_id` / `generation_id` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
