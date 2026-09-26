@@ -77,6 +77,7 @@ def test_namespaces_frozen():
         "network_init": 5,
         "selection": 6,
         "initial_population": 7,
+        "bc": 8,
     }
 
 
@@ -113,3 +114,12 @@ def test_torch_generator_cross_process_deterministic():
         return out.stdout.strip()
 
     assert run() == run()
+
+
+def test_entity_integer_seed_reproducible_and_distinct():
+    a = SeedManager(11).seed("arena_spawn", 0)
+    assert a == SeedManager(11).seed("arena_spawn", 0)
+    assert 0 <= a < 2**32
+    assert a != SeedManager(11).seed("arena_spawn", 1)
+    with pytest.raises(ValueError):
+        SeedManager(11).seed("arena_spawn", -1)

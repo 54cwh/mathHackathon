@@ -1,7 +1,7 @@
 # DanioNet 设计规范
 
 > **管辖范围**：六类功能语义、12 维输入**语义**、神经动力学、连续动作、lifetime learning 与遗传边界、baselines/ablations。产出：activation / 动作 `(ω,v)` / `ΔW`。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.7 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
+> 状态：**v1.8 已定稿（冻结 2026-09-26）**。范围外：12 维编码（`Arena §4.1`）、BC 损失权重（`learning`）、ExpertPolicy 权重（`Arena §11`）、BC 数据预算（`learning`）。
 
 ## 1. 六类神经元
 - Sensory
@@ -69,6 +69,8 @@ m_iH_t
 **`U_i,m_i,b_i` 来源（定稿）**：三者按 **cell type** 取固定先验、不学习——`U_i=U_{type_i}`、`m_i=m_{type_i}`、`b_i=b_{type_i}`，其中 `U∈R^{6×12}`、`m,b∈R^6` 由 seed 初始化（`U~N(0,(1/√12)²)`、`m~N(0,0.1²)`、`b~N(0,0.1²)`）。理由：RGCD 输出契约 `(A,Z,τ,W⁰,M)` 保持冻结，感官增益经 cell type 与基因型挂钩；`ΔW` 只改 `w`，与 §7 遗传边界自洽。属**设计选择**（登记 `docs/参数总表.json`）。
 
 **与发育期 viability 的关系**：`development/RGCD数学模型.md` §7 的零输入动力学检查在发育期以 \(b_i=0\) 近似（该处不产出 \(b_i\)）；本模块用它自己的 \(b_{type_i}\) 对同一组 §7 判据复核，作为最终判定；复核沿用发育期结构 \(W^{(0)}\)（\(\Delta W\) 不遗传，§7，故不参与 viability 判定）。
+
+**符号约束消融开关（接口约定，2026-09-26）**：为支撑 `learning §4` 的「有约束 vs 无约束」消融，`DanioNet` 提供 `sign_constrained: bool`（默认 `True`）——`False` 时参数直接作为有效权重 `W`（不经 `sign(W⁰)·softplus(Θ)`），供消融对照；**默认路径仍是约束版**。该开关的实现属本模块，训练侧（`learning`）只传参。
 
 **初始化与 padding（定稿）**：本模块接收的 \(M\) 亦用于屏蔽 \(W^{(0)}\) 的非活跃行列（使 \(\Delta W\) 在非活跃处恒 0）。初始激活 \(h_i^{0}=0\)（`float32`，形状 `(N,)`，batch 内 padding）。padding 宽度取 `development.max_neurons`（`configs/default_model.yaml`，现 48），不在此硬编码。`U/m/b` 为按 cell type 的**全局单表**（全体个体共享同一张表），在 `network_init` 命名空间（`core §3`，id=5，`index=0`）下由 master seed 初始化一次；其标准差取 `network.input_weight_std` / `network.hunger_gain_std` / `network.neuron_bias_std`（现 0.289 / 0.1 / 0.1；文档式 `U~N(0,(1/√12)²)` 的 σ=0.28868，config 取整为 0.289）。
 

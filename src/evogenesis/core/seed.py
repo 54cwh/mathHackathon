@@ -26,6 +26,7 @@ NAMESPACES: dict[str, int] = {
     "network_init": 5,
     "selection": 6,
     "initial_population": 7,
+    "bc": 8,
 }
 
 
@@ -74,6 +75,17 @@ class SeedManager:
     def rng(self, name: str) -> np.random.Generator:
         """命名空间级 NumPy 生成器（非实体级）。"""
         return np.random.default_rng(self._namespace_sequence(name))
+
+    def seed(self, name: str, index: int) -> int:
+        """实体级整数子种子 ``g``（``core §3``）：``C.generate_state(1, uint32)[0]``。
+
+        供只接受整数种子的下游（如 ``DanioArena(master_seed=...)``）使用；同一
+        ``(master_seed, name, index)`` 恒得同一 ``g``。
+        """
+        if index < 0:
+            raise ValueError("index 必须非负")
+        state = self._spawn(name, index + 1)[index].generate_state(1, dtype=np.uint32)
+        return int(state[0])
 
     def spawn_rng(self, name: str, index: int) -> np.random.Generator:
         """实体级 NumPy 生成器：命名空间序列的第 ``index`` 个 spawn 子序列。"""
