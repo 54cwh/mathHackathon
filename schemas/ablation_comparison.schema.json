@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/ablation_comparison.schema.json",
+  "title": "EvoGenesis Experiment D ablation comparison table",
+  "meta": {
+    "owns": "results/tables/<experiment_id>_ablations.json（producer=experiment/ablation_run.py，Experiment D §3.4）",
+    "status": "草案待确认"
+  },
+  "description": "Experiment D 消融对照表：控制 + 三臂（架构 homogeneous τ / w/o wiring cost；BC 有/无 Dale）任务指标 mean±std（seed 轴）+ 复杂度 + BC 学习量。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["experiment_id", "seeds", "steps", "tau", "n_agents", "arms"],
+  "properties": {
+    "experiment_id": { "type": "string", "minLength": 1 },
+    "seeds": { "type": "array", "items": { "type": "integer" } },
+    "steps": { "type": "integer", "minimum": 1 },
+    "tau": { "type": "number" },
+    "n_agents": { "type": "integer", "minimum": 1 },
+    "arms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["arm", "kind", "metrics", "complexity", "learning", "note"],
+        "properties": {
+          "arm": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "enum": ["architecture", "bc"] },
+          "metrics": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["mean", "std", "n"],
+                  "properties": {
+                    "mean": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+                    "std": { "anyOf": [{ "type": "number" }, { "type": "null" }] },
+                    "n": { "type": "integer" }
+                  }
+                }
+              }
+            ]
+          },
+          "complexity": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "parameter_count",
+                  "active_edges",
+                  "macs_implemented",
+                  "macs_theoretical",
+                  "flops_implemented",
+                  "flops_theoretical",
+                  "latency_p50_ms",
+                  "latency_p95_ms"
+                ],
+                "properties": {
+                  "parameter_count": { "type": "integer" },
+                  "active_edges": { "type": "integer" },
+                  "macs_implemented": { "type": "integer" },
+                  "macs_theoretical": { "type": "integer" },
+                  "flops_implemented": { "type": "integer" },
+                  "flops_theoretical": { "type": "integer" },
+                  "latency_p50_ms": { "type": "number" },
+                  "latency_p95_ms": { "type": "number" }
+                }
+              }
+            ]
+          },
+          "learning": {
+            "anyOf": [
+              { "type": "null" },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "delta_w_norm",
+                  "final_loss",
+                  "n_updates",
+                  "coverage_steps",
+                  "visible_steps"
+                ],
+                "properties": {
+                  "delta_w_norm": { "type": "number" },
+                  "final_loss": { "type": "number" },
+                  "n_updates": { "type": "integer" },
+                  "coverage_steps": { "type": "integer" },
+                  "visible_steps": { "type": "integer" }
+                }
+              }
+            ]
+          },
+          "note": { "anyOf": [{ "type": "string" }, { "type": "null" }] }
+        }
+      }
+    }
+  }
+}
