@@ -19,7 +19,7 @@
 
 ## 实现落地补充（李辰钊，2026-09-26）
 
-> 本节是对上面「最低测试计划」14 项的**补充**，不是替换：14 项的编号、措辞与地位**原样保留**，仍是最低门槛。下表两套测试已随实现落地（`954aca7` Arena 骨架 / `4de7316` API 契约骨架），作用是把 14 项里的机制性要求、以及冻结的 HTTP / WS 契约，钉成可执行的断言。
+> 本节是对上面「最低测试计划」14 项的**补充**，不是替换：14 项的编号、措辞与地位**原样保留**，仍是最低门槛。下表两套测试已随实现落地（Arena 侧 `tests/test_arena.py`、API / WS 侧 `tests/test_api_contract.py`），作用是把 14 项里的机制性要求、以及冻结的 HTTP / WS 契约，钉成可执行的断言。
 
 ### Arena 实现（`tests/test_arena.py`，15 项）
 
@@ -36,10 +36,10 @@
 | 9 | `test_turn_inertia_reduces_bigger_fish_turning` | 同一转舵指令下 `_omega_eff(size=2.0) < _omega_eff(size=1.0)` —— 把「体型越大转向越钝」的惯量缩放（`turn_inertia_scale`）固化为断言，而非仅写在设计文档里。 |
 | 10 | `test_all_events_in_known_vocabulary` | 跑 120 步后所有事件的 `type` 都以 `arena.` 开头且落在 `KNOWN_EVENTS` 白名单内 —— 防止拼错或新造事件名破坏前后端事件契约。 |
 | 11 | `test_per_fish_log_completeness` | `per_fish_log()` 的每条鱼都含 10 个必需字段，且 `energy_trajectory` 长度等于 `survival_steps` —— 保证每鱼日志完整、可对齐，能支撑基因型 × 表现型的统计关联。 |
-| 12 | `test_reset_idempotent_on_same_instance` | 同一实例连续两次 `reset()` 后，每条鱼的位置与每个障碍的位置**及半径**完全一致 —— 钉住「同 seed 反复 reset 得到同一初始局面」。这是复现性判据真正成立的前提（`99fda0d` 修复：障碍改为就地逐个生成、`reset` 先清空，旧实现会让同 seed 二次 `reset` 布局漂移）。 |
+| 12 | `test_reset_idempotent_on_same_instance` | 同一实例连续两次 `reset()` 后，每条鱼的位置与每个障碍的位置**及半径**完全一致 —— 钉住「同 seed 反复 reset 得到同一初始局面」，这是复现性判据成立的前提（障碍就地逐个生成、`reset` 先清空：同 seed 反复 `reset` 布局不漂移）。 |
 | 13 | `test_step_after_episode_end_is_inert` | 跑满 600 步后再 `step()`：仍 `done`、`step_idx` 保持 600、`arena.episode_end` 计数不增 —— 保证 episode 结束后不再推进、结束事件不重复发。 |
 | 14 | `test_dead_fish_not_credited_escape` | 把捕食者目标指向一条已死鱼后推进：该鱼 `escape_successes` 保持 0 且本步无 `arena.escape` —— 钉住「逃脱只记活鱼」，避免被吃掉的鱼反过来抬高逃脱指标。 |
-| 15 | `test_predator_encounter_recorded_on_acquisition` | 捕食者从「无目标」切换到目标鱼的下一步，该鱼 `predator_encounters >= 1` —— 让原本恒 0 的字段变为可观测，并把口径钉在「目标获取」而非「近距接触」。 |
+| 15 | `test_predator_encounter_recorded_on_acquisition` | 捕食者从「无目标」切换到目标鱼的下一步，该鱼 `predator_encounters >= 1` —— 让该字段可观测，并把口径钉在「目标获取」而非「近距接触」。 |
 
 ### API / WS 契约（`tests/test_api_contract.py`，9 项）
 
@@ -58,5 +58,5 @@
 ### 说明
 
 - 事件名的**权威名单**是 `tests/test_arena.py::KNOWN_EVENTS`（`arena.spawn` / `arena.prey_captured` / `arena.capture_attempt` / `arena.escape` / `arena.energy_depleted` / `arena.episode_end` / `arena.fish_captured` / `arena.collision`）；新增事件必须先改该集合。**8 项，不多不少。**
-- `99fda0d` 追加的回归用例：Arena 侧 #12–#15、API 侧 #9（共 5 个新测试函数，覆盖 reset 幂等 / episode 幂等 / 死鱼不计逃脱 / 目标获取计数 / pause 阻塞推进 5 个场景）；另有 #6 由「body 含 `detail`」加强为 RFC 7807 五字段断言（原断言恰好把错误形状锁死）。
+- 回归与契约加强用例：Arena 侧 #12–#15 与 API 侧 #9 共 5 个测试函数，分别覆盖 reset 幂等 / episode 幂等 / 死鱼不计逃脱 / 目标获取计数 / pause 阻塞推进；API 侧 #6 断言 RFC 7807 五字段（`type` / `title` / `status` / `detail` / `instance`）。
 - Arena 与 API 的完整实现说明见 `src/evogenesis/arena/Danio_Arena实现说明.md` 与 `src/evogenesis/api/API接口.md`（模块内文档描述**实现现状与其契约状态**，不替代 `src/evogenesis/arena/Danio_Arena设计规范.md` 与 `src/evogenesis/api/API与系统工程.md` 的上位规格）。
