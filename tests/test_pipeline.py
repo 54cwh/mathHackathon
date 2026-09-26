@@ -2,7 +2,9 @@
 
 import numpy as np
 
+from evogenesis.arena.config import load_arena_config
 from evogenesis.core.ids import mint_id
+from evogenesis.pipeline.arena_episode import run_arena_episode
 from evogenesis.pipeline.model_chain import (
     danionet_of,
     initial_population,
@@ -56,3 +58,18 @@ def test_chain_to_danionet_actions():
     omega, v = net.step(observation)
     assert -1.0 <= float(omega.detach()) <= 1.0
     assert 0.0 <= float(v.detach()) <= 1.0
+
+
+def test_run_arena_episode_is_deterministic():
+    chain = load_model_chain_config()
+    arena_config = load_arena_config(None)
+    population = initial_population(master_seed=MASTER_SEED, experiment_id=EXPERIMENT_ID, n=160)
+    first = run_arena_episode(
+        population, master_seed=MASTER_SEED, chain=chain, arena_config=arena_config, steps=40
+    )
+    second = run_arena_episode(
+        population, master_seed=MASTER_SEED, chain=chain, arena_config=arena_config, steps=40
+    )
+    assert first.steps == 40
+    assert first.evaluated_individuals == len(first.per_fish)
+    assert first.per_fish == second.per_fish
