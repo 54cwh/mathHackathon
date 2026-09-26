@@ -42,3 +42,18 @@ export function subscribeDevelopment(listener: (payload: LabDevelopment) => void
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
+
+// --- 焦点：Arena 点鱼 -> Lab 载入该个体（`交互与可视化.md` §15.6 三栏联动） --------
+
+type FocusListener = (genomeId: string) => void;
+const focusListeners = new Set<FocusListener>();
+
+/** 请求把某个实验室个体载入 DNA2Brain Lab（由 Arena 面板在点选实验室鱼时调用）。 */
+export function focusGenome(genomeId: string): void {
+  for (const listener of focusListeners) listener(genomeId);
+}
+
+export function subscribeFocus(listener: FocusListener): () => void {
+  focusListeners.add(listener);
+  return () => focusListeners.delete(listener);
+}

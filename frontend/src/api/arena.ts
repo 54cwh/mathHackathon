@@ -3,6 +3,7 @@
 import { req } from "./http";
 import type {
   ArenaSnapshot,
+  SpawnedIndividual,
   Environment,
   FishCard,
   Leaderboard,
@@ -13,6 +14,7 @@ import type {
 export type {
   ArenaEvent,
   ArenaSnapshot,
+  SpawnedIndividual,
   Environment,
   FishCard,
   FishState,
@@ -81,6 +83,21 @@ export function release(
     query.set("speed", String(control.speed));
   }
   return req<SessionSummary>(`/v1/sessions/${sessionId}/release?${query}`, { method: "POST" });
+}
+
+/**
+ * 把发育好的实验室个体追加进会话 Arena（`API接口.md` §1.11）。
+ * 之后该鱼由**它自己的 DanioNet** 驱动，鱼卡回真实 `genome_id`。
+ */
+export function spawnIndividual(
+  sessionId: string,
+  genomeId: string,
+  seed = 0,
+): Promise<SpawnedIndividual> {
+  return req<SpawnedIndividual>(`/v1/sessions/${sessionId}/individuals`, {
+    method: "POST",
+    body: JSON.stringify({ genome_id: genomeId, seed }),
+  });
 }
 
 /** Toggle pause/resume (`API接口.md` §1.7: one endpoint, not pause+resume). */

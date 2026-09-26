@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useUiStore } from "@/store/ui";
 import { Dna } from "lucide-react";
 import { Panel } from "@/components/Panel";
 import { DnaHelixVisual } from "@/visuals/DnaHelixVisual";
@@ -6,7 +7,8 @@ import { NucleotideStrip } from "@/visuals/NucleotideStrip";
 import { createGenome, develop, getGenome, mutateGenome } from "@/api/lab";
 import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResult } from "@/api/types";
 import { DevCompare } from "@/panels/DevCompare";
-import { publishDevelopment } from "@/store/labBus";
+import { publishDevelopment, subscribeFocus } from "@/store/labBus";
+import { spawnIndividual, type SpawnedIndividual } from "@/api/arena";
 import { BreedingLab } from "@/panels/BreedingLab";
 
 /**
@@ -26,20 +28,10 @@ import { BreedingLab } from "@/panels/BreedingLab";
 const DEV_SEED = 0;
 /** 二倍体碱基总长（`API接口.md` §2.3：`[0, 512)`）。 */
 const MAX_POSITION = 512;
-/** strip 一次显示的碱基数：以选中位置为中心开窗（组件本身按序切前 N 个，故由本面板开窗）。 */
-const STRIP_WINDOW = 60;
-/** 单染色体对的两个单倍体，拼接顺序见上文坐标口径。 */
-const HAPLOID_ORDER = ["maternal", "paternal"] as const;
+/** 每条单倍体一次显示的碱基数（4 行 × 1 行高，面板放得下；选中位点居中开窗）。 */
+const STRIP_WINDOW = 20;
 
 const BASES: Base[] = ["A", "C", "G", "T"];
-
-function flatten(chromosomePairs: Record<string, string>[]): string {
-  let out = "";
-  for (const pair of chromosomePairs) {
-    for (const haploid of HAPLOID_ORDER) out += pair[haploid] ?? "";
-  }
-  return out;
-}
 
 function shortId(id: string): string {
   return id.length > 14 ? `${id.slice(0, 14)}…` : id;
@@ -57,11 +49,45 @@ export function DNA2BrainPanel() {
   const [mutations, setMutations] = useState<MutationDiff[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** 已送入 Arena 的个体（按 genome 去重；显示 fish_id 与连接组规模）。 */
+  const [spawned, setSpawned] = useState<Record<string, SpawnedIndividual>>({});
+  const sessionId = useUiStore((s) => s.sessionId);
 
-  const sequence = useMemo(
-    () => (genome ? flatten(genome.chromosome_pairs) : ""),
-    [genome],
+  /**
+   * 4 条**同源**单倍体（pair0.mat / pair0.pat / pair1.mat / pair1.pat），顺序即 `position ∈ [0,512)`
+   * 的线性坐标（`API接口.md` §2.3 已定稿）。
+   *
+   * ⚠️ **不是碱基配对**：本模型的两条同源链是各自独立抽取的随机序列（实测互补性 0、
+   * 相同率 22.7% ≈ 随机），不存在 Watson–Crick 配对关系。旧版把 512 碱基**折行**显示，
+   * 上下相邻看着像配对 —— 这是误导，已改为按单倍体分行并标注。
+   */
+  const haplotypes = useMemo(() => {
+    if (!genome) return [] as Array<{ label: string; seq: string; start: number }>;
+    const order: Array<[number, "maternal" | "paternal"]> = [
+      [0, "maternal"],
+      [0, "paternal"],
+      [1, "maternal"],
+      [1, "paternal"],
+    ];
+    let start = 0;
+    return order.map(([pairIndex, key]) => {
+      const seq = genome.chromosome_pairs[pairIndex]?.[key] ?? "";
+      const row = {
+        label: `P${pairIndex} ${key === "maternal" ? "MAT" : "PAT"}`,
+        seq,
+        start,
+      };
+      start += seq.length;
+      return row;
+    });
+  }, [genome]);
+
+  /** 当前选中位点落在哪条单倍体上（螺旋只画这一条，避免把 4 条混在一起）。 */
+  const activeRow = useMemo(
+    () => haplotypes.find((row) => position >= row.start && position < row.start + row.seq.length),
+    [haplotypes, position],
   );
+  const sequence = activeRow?.seq ?? haplotypes[0]?.seq ?? "";
 
   const loadFresh = useCallback(async () => {
     setBusy(true);
@@ -103,6 +129,30 @@ export function DNA2BrainPanel() {
     }
   }
 
+  /** 待送入 Arena 的 genome（会话尚未建立时先排队，会话就绪后自动补送）。 */
+  const [pendingSpawn, setPendingSpawn] = useState<string[]>([]);
+
+  /** 把某 genome 送进 Arena（幂等：同 genome 只送一次；无会话则排队）。 */
+  const sendToArena = useCallback(
+    async (genomeId: string) => {
+      if (!sessionId) {
+        setPendingSpawn((current) =>
+          current.includes(genomeId) ? current : [...current, genomeId],
+        );
+        return;
+      }
+      if (spawned[genomeId]) return;
+      try {
+        const individual = await spawnIndividual(sessionId, genomeId);
+        setSpawned((current) => ({ ...current, [genomeId]: individual }));
+      } catch (e) {
+        // 已存在（409）/ 非 viable（422）等：不打断开发流程，只在提示区显示
+        setError(String(e));
+      }
+    },
+    [sessionId, spawned],
+  );
+
   /** 把某个 genome 载入编辑器并**立即发育**（育种产出的子代走这条路）。 */
   const adoptGenome = useCallback(
     async (genomeId: string) => {
@@ -118,14 +168,25 @@ export function DNA2BrainPanel() {
         setBaseline(result);
         setDevelopment(result);
         publishDevelopment(genomeId, result, result.trace ?? null);
+        void sendToArena(genomeId);
       } catch (e) {
         setError(String(e));
       } finally {
         setBusy(false);
       }
     },
-    [],
+    [sendToArena],
   );
+
+  // 会话就绪后补送排队中的个体（例如先点了 DEVELOP、Arena 会话还在建）
+  useEffect(() => {
+    if (!sessionId || pendingSpawn.length === 0) return;
+    for (const genomeId of pendingSpawn) void sendToArena(genomeId);
+    setPendingSpawn([]);
+  }, [sessionId, pendingSpawn, sendToArena]);
+
+  // 点 Arena 里的实验室鱼 → 把它的基因组载入本面板（§15.6 三栏联动）
+  useEffect(() => subscribeFocus((genomeId) => void adoptGenome(genomeId)), [adoptGenome]);
 
   async function handleDevelop() {
     if (!genome) return;
@@ -145,31 +206,70 @@ export function DNA2BrainPanel() {
     }
   }
 
-  // 以选中位置为中心开窗，保证选中格始终可见（组件按序取前 N 个，无 offset 参数）。
-  const windowStart = Math.max(
-    0,
-    Math.min(position - Math.floor(STRIP_WINDOW / 2), Math.max(0, sequence.length - STRIP_WINDOW)),
-  );
-  const windowSequence = sequence.slice(windowStart, windowStart + STRIP_WINDOW);
+  /** 每条单倍体各自开窗，窗口以选中位点为中心（保证选中格可见；无 offset 参数故由本面板切片）。 */
+  const rowWindow = (row: { seq: string; start: number }) => {
+    const start = Math.max(
+      0,
+      Math.min(
+        position - row.start - Math.floor(STRIP_WINDOW / 2),
+        Math.max(0, row.seq.length - STRIP_WINDOW),
+      ),
+    );
+    const index = position - row.start - start;
+    return {
+      start,
+      text: row.seq.slice(start, start + STRIP_WINDOW),
+      selected: index >= 0 && index < STRIP_WINDOW ? index : undefined,
+    };
+  };
 
   return (
     <Panel title="DNA2Brain Lab" icon={<Dna className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* min-h-40 + flex-[3]：面板矮时视觉区不被下方内容挤成 0 高（实测过 0 高黑块）。 */}
-        <div className="min-h-40 flex-[3] overflow-hidden">
-          <DnaHelixVisual sequence={sequence} highlightPosition={position} />
+        <div className="min-h-32 flex-[3] overflow-hidden">
+          <div className="flex items-baseline justify-between">
+            <span className="font-pixel text-[9px] leading-none text-muted-foreground">
+              HELIX (SCHEMATIC)
+            </span>
+            <span className="font-mono text-[9px] text-muted-foreground">
+              显示 {activeRow?.label ?? "—"} · 非互补配对
+            </span>
+          </div>
+          <DnaHelixVisual
+            sequence={sequence}
+            highlightPosition={activeRow ? position - activeRow.start : position}
+          />
         </div>
 
         {/* 下方内容（条带 + 编辑器 + 表型 + 提示）独立成可滚区，矮面板下不裁剪。 */}
         <div className="flex min-h-0 flex-[2] flex-col gap-2 overflow-y-auto pr-1">
 
-        {/* Nucleotide strip：真实序列；窗口内可点选（点选 index 需加回 windowStart）。 */}
-        <div className="max-h-20 min-h-0 shrink-0 overflow-hidden">
-          <NucleotideStrip
-            sequence={windowSequence}
-            selectedPosition={position - windowStart}
-            onSelectPosition={(i) => setPosition(windowStart + i)}
-          />
+        {/* 4 条同源单倍体（§2 的 chromosome pair / maternal / paternal / locus 四项）：可点选。 */}
+        <div className="min-h-0 shrink-0 space-y-0.5">
+          {haplotypes.map((row) => {
+            const view = rowWindow(row);
+            return (
+              <div key={row.label} className="flex items-center gap-1">
+                <span className="w-[52px] shrink-0 font-pixel text-[9px] leading-none text-muted-foreground">
+                  {row.label}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <NucleotideStrip
+                    sequence={view.text}
+                    selectedPosition={view.selected}
+                    onSelectPosition={(i) => setPosition(row.start + view.start + i)}
+                    maxBases={STRIP_WINDOW}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <p className="font-mono text-[9px] leading-tight text-muted-foreground">
+            4 条**同源**单倍体（P0/P1 × MAT/PAT），顺序即 POS 0..511；
+            <span className="text-brand-amber"> 同源位点之间不存在碱基互补配对</span>
+            （本模型为非互补随机序列）。
+          </p>
         </div>
 
         {/* 编辑器：genome_id / 位置 / 碱基 / 两个动作 */}
@@ -280,6 +380,22 @@ export function DNA2BrainPanel() {
             ))}
           </dl>
         </div>
+
+          {Object.keys(spawned).length > 0 && (
+            <div className="shrink-0 border border-border p-2">
+              <div className="mb-1 font-pixel text-[10px] leading-none">IN ARENA</div>
+              <ul className="space-y-0.5 font-mono text-[10px]">
+                {Object.values(spawned).map((individual) => (
+                  <li key={individual.fish_id} className="flex justify-between gap-2">
+                    <span className="truncate">{individual.fish_id}</span>
+                    <span className="text-muted-foreground">
+                      N{individual.n_neurons} · E{individual.n_edges}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* §5 / §11 compare：基线 vs 改后 */}
           <section className="border border-border p-2">

@@ -5,6 +5,7 @@ import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
+import { focusGenome } from "@/store/labBus";
 import {
   MASTER_SEED,
   createSession,
@@ -208,7 +209,12 @@ export function DanioArenaPanel() {
     if (hit) {
       setSelectedFish(hit);
       void getFishCard(sessionId ?? "", hit)
-        .then(setCard)
+        .then((next) => {
+          setCard(next);
+          // 实验室个体（`genome_id` 非 "unknown"）→ 把焦点对齐到它：
+          // DNA2Brain Lab 载入该基因组并发育，Brain Forge 随 labBus 自动跟上（§15.6 三栏联动）。
+          if (next.genome_id && next.genome_id !== "unknown") focusGenome(next.genome_id);
+        })
         .catch(() => setCard(null));
     } else {
       setSelectedFish(null);
@@ -264,6 +270,21 @@ export function DanioArenaPanel() {
                 <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
                   genome {card.genome_id} · fitness {card.fitness === null ? "—" : card.fitness.toFixed(3)}
                 </div>
+                {Object.keys(card.cell_counts).length > 0 && (
+                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                    cells{" "}
+                    {Object.entries(card.cell_counts)
+                      .map(([fate, count]) => `${fate}:${count}`)
+                      .join(" ")}
+                    {typeof card.metrics.n_edges === "number" && (
+                      <>
+                        {" "}
+                        · N{String(card.metrics.n_neurons)} E{String(card.metrics.n_edges)} τ
+                        {Number(card.metrics.tau_mean).toFixed(2)}
+                      </>
+                    )}
+                  </div>
+                )}
               </>
             ) : (
               <p className="text-xs text-muted-foreground">点选画布上的鱼查看卡片。</p>

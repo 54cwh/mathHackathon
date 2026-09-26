@@ -107,6 +107,19 @@ export interface SessionCreate {
   checkpoint_path: string | null;
 }
 
+/** 已追加进会话 Arena 的实验室个体（`API接口.md` §1.11）。 */
+export interface SpawnedIndividual {
+  /** 稳定 ID：`fish_id == genome_id`。 */
+  fish_id: string;
+  genome_id: string;
+  generation: number;
+  viable: boolean;
+  n_neurons: number;
+  n_edges: number;
+  tau_mean: number;
+  cell_type_counts: Record<string, number>;
+}
+
 /** Fish Card metrics (`API接口.md` §1.5；字段已定稿). */
 export interface FishCardMetrics {
   alive: boolean;
@@ -115,6 +128,10 @@ export interface FishCardMetrics {
   predator_encounters: number;
   escape_successes: number;
   survival_steps: number;
+  // 实验室个体（`API接口.md` §1.11）额外带上连接组摘要；默认 Arena 鱼没有这三项。
+  n_neurons?: number;
+  n_edges?: number;
+  tau_mean?: number;
 }
 
 /** Fish Card (`API接口.md` §1.5). */
