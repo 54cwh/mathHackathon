@@ -109,6 +109,25 @@ mathHackathon/
 - `tests/`：冒烟 + 单测；`TEST_PLAN.md` 是测试计划，`test_*.py` 是现状。
 - `data/`：`raw/`（忽略）、`processed/`、`external/`；`notebooks/` 放探索性分析。
 
+## 文档层级与优先级（冲突裁决）
+
+文档冲突时按**层级**裁决，同一事物由**单一 owner** 定义；低层不得与高层冲突。
+
+| Tier | 文档 | 拥有 |
+|---|---|---|
+| 0 | 赛题原文、`docs/赛题补充说明.md` | 外部硬约束（只可解释，不可改） |
+| 1 | `AGENTS.md` | 项目公约 |
+| 2 | `src/evogenesis/问题定义与研究假设.md`、`EvoGenesis项目总纲.md` | 方向与语义 |
+| 3 | 跨模块契约：`schemas/`、`docs/参数总表.json`、`docs/验收清单.md`、`research/notes/bibliography.md` | 字段名/类型、参数值与依据状态、完成判据、文献事实 |
+| 4 | `src/evogenesis/` 各模块文档（与代码同目录） | 该模块行为/算法/字段 |
+| 5 | `configs/*.yaml` | 运行期实际取值 |
+| 6 | `research/reference/*`、`docs/相关工作与开源参考.md`、`docs/设计依据审计.md`、`docs/开发排期与人员分工.md` | 证据与过程，不作契约 |
+
+- **属地（单一来源）**：字段名/类型 → `schemas/`；参数取值 → `configs/`，参数依据与状态 → `docs/参数总表.json`（值冲突以 `configs/` 为准，参数总表须同步）；文献 → `research/notes/bibliography.md`（未登记即引用＝缺陷）；验收判据 → `docs/验收清单.md`；API 端点 → `api/API接口.md`、系统约定 → `api/API与系统工程.md`；实验 run 目录与产物布局 → `experiment/实验与评价体系.md`；模块内算法与常量语义 → 该模块文档。
+- **数据流产物归属（producer owns）**：流经模块边界的数据对象由**产出方**模块文档定义，消费方只引用，不得改名或另立定义。`core/核心机制与数据流.md` 是数据流总管，拥有管线图与边界清单，不定义模块内算法。
+- **禁止循环引用**：边界对象必须指定唯一 owner；owner 未定时登记进 `core/核心机制与数据流.md` §10，不得在两处各写一版。
+- **修改启动顺序（沿数据流，上游优先）**：`赛题 → AGENTS → 建模总纲 → core 边界清单 → 产出方模块文档 → 消费方模块文档 → schemas/configs/参数总表 → 代码 → 测试 → 回写 core §10`。改上游必须评估下游；下游不得抢先改；跨语言字段（`schemas/` 与 `configs/` 键名）双方同步。
+
 ## 数据 / 控制流
 
 ```text
