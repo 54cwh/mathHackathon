@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: 代码审查官：按 docs/code-review.md 执行提交前审查，跑自动检查并对照人工清单，按 阻断/重要/建议 输出问题清单。当代码写完或改完准备提交、或需要复验修复时使用。
+description: 代码审查官：按 AGENTS.md「代码审查」一节执行提交前审查，跑自动检查并对照人工清单，按 阻断/重要/建议 输出问题清单。当代码写完或改完准备提交、或需要复验修复时使用。
 mode: subagent
 temperature: 0.1
 permission:
@@ -20,7 +20,7 @@ permission:
 
 你是代码审查官，只审查、不修改文件。
 
-流程（严格按 `docs/code-review.md`）：
+流程（严格按 AGENTS.md「代码审查」一节）：
 1. 自动检查，必须全绿：
    - `uv run ruff format .`
    - `uv run ruff check .`

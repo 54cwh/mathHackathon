@@ -1,0 +1,481 @@
+{
+  "meta": {
+    "search_time": "2026-09-26",
+    "topic": "斑马鱼（Danio rerio）Arena 与捕食仿真参数的真实生物学量级依据",
+    "scope": "视觉总视野/单眼视野/双眼重叠；视觉探测距离（以体长计）与视觉锐度；巡航/冲刺游速与转弯角速度；捕食物尺寸比例上限；捕食触发距离与 looming 逃避阈值/潜伏期；成鱼体长。优先斑马鱼实测，缺失时用近缘硬骨鱼并显式标注替代物种。",
+    "sources_summary": "PubMed Central、Frontiers、eLife、Current Biology、Journal of Experimental Biology、PLoS ONE、Integrative Organismal Biology、ZFIN 发育分期、实验室斑马鱼手册、BadenLab 视觉空间 3D 模型。所有数值均附来源链接，DOI 未核实者以 URL 代替并注明。",
+    "conventions": {
+      "value_kind": "measured=论文实测；derived_inference=本调研基于实测几何/体长的换算推断；substitute_species=非斑马鱼替代物种；review_summary=综述转述",
+      "BL": "body length（此处按 standard length / 总长口径混用，来源已注明；换算推断中统一用该来源的体长口径）",
+      "note": "凡 inference 均可在同名字段核对；不确定的 DOI 置 null 并给 URL"
+    }
+  },
+  "items": [
+    {
+      "param": "视觉总视野 / 单眼视野 / 双眼重叠（visual field）",
+      "unit_hint": "degrees (deg)",
+      "typical_range": "单眼水平视野 ≈139°（3 dpf）→ ≈163°（4–7 dpf，成体未见直接测量）；双眼重叠在静息时很小（近似 0，几何推断 ≈20°），捕食时会聚时增大（几何推断 ≈50–55°）",
+      "confidence": "medium：单眼 163° 为多篇文献互相引用的一手测量（Easter & Nicola 1996），可信度高；双眼重叠无斑马鱼直接测量值，仅有『很小』的定性描述，本文的约数均为几何推断，可信度低。",
+      "evidence": [
+        {
+          "species": "Danio rerio（幼虫，4–8 dpf）",
+          "value": "单眼完整视野 ≈163°；静息时眼球前旋 ≈18.5°，捕食时 ≈35.5°",
+          "units": "deg",
+          "source": "Zimmermann et al. 2018, Current Biology 28:2018–2032（引自 Easter & Nicola 1996 与 Bianco et al. 2011）",
+          "doi_or_url": "10.1016/j.cub.2018.04.075",
+          "quote": "In larval zebrafish, the full monocular field of view is ~163°, and at rest, eyes are rotated forwards by ~18.5° (~35.5° during prey-capture) (Bianco et al. 2011; Patterson et al. 2013).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫，3 dpf vs 4 dpf）",
+          "value": "3 dpf 单眼视野 ≈139°，4 dpf ≈163°",
+          "units": "deg",
+          "source": "Easter & Nicola 1996, Developmental Biology（经 Dehmelt et al. 2021 eLife 审稿回复转述）",
+          "doi_or_url": "10.1006/dbio.1996.0335",
+          "quote": "The value of 163 degrees cited refers to that reported by Easter and Nicola, 1996 Dev Biol, for 4 dpf larvae. The same authors report a smaller visual field for younger fish, namely 139 degrees at 3 dpf.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "双眼在静息时重叠很小（little binocular overlap）；捕食开始时眼球会聚增加重叠",
+          "units": "qualitative",
+          "source": "Tian et al. 2025, Current Biology 35（Binocular integration of prey stimuli in the zebrafish visual system）",
+          "doi_or_url": "10.1016/j.cub.2025.05.063",
+          "quote": "Zebrafish larvae have laterally positioned eyes that normally have little binocular overlap, but the eye convergence at the beginning of a hunting episode...",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "静息时眼球相对体轴前旋 18.5°，捕食时 35.5°；3D 模型显示后者使两侧单眼视野在体前重叠，形成前向双眼视觉",
+          "units": "deg",
+          "source": "BadenLab / Zimmermann, Zebrafish-visual-space-model（OpenSCAD，GPL-3.0），基于 Easter & Nicola 1996 与 Bianco et al. 2011",
+          "doi_or_url": "https://github.com/BadenLab/Zebrafish-visual-space-model",
+          "quote": "Its eyes at rest are at an angle of 18.5° relative to the body axis. ... Its eyes are then rotated to an angle of 35.5° forward, which makes the two monocular field of view overlap in front of the animal, giving him a forward facing binocular vision.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "双眼重叠（静息）≈20°；捕食时会聚后 ≈54°；水平总视野 ≈306°（后方盲区 ≈54°）",
+          "units": "deg",
+          "source": "本调研几何推断（单眼 163°，双眼前旋各 18.5°/35.5°，眼轴近似共面）",
+          "doi_or_url": null,
+          "quote": null,
+          "kind": "derived_inference",
+          "derivation": "两眼光轴夹角 = 180° − 2×前旋角；重叠 = 单眼视野 − 光轴夹角。静息：180−2×18.5=143°，163−143=20°。捕食：180−2×35.5=109°，163−109=54°。该模型忽略眼球非共面、鼻颞不对称与折射，仅作数量级参考。"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "另一来源笼统写作『幼虫视野为 180°』（未区分单眼/双眼口径）",
+          "units": "deg",
+          "source": "Rodwell et al. 2023, Biology 13(1):4（Zebrafish Optokinetic Reflex: Minimal Reporting Guidelines）",
+          "doi_or_url": "https://www.mdpi.com/2079-7737/13/1/4",
+          "quote": "Physiologically, the larval visual field is 180 degrees.",
+          "kind": "review_summary"
+        }
+      ],
+      "inference_notes": "双眼重叠与总视野的约数为本调研几何推断（见 derivation），非论文实测；成鱼（adult）视野/双眼重叠未检索到直接测量，置 null。",
+      "notes": "『单眼 163°』被广泛引用自 Easter & Nicola 1996（其测的是 72 hpf 功能视网膜角度），后续文献均转引。成鱼视野文献稀缺（多数视觉行为研究用幼虫）。"
+    },
+    {
+      "param": "视觉探测距离与视觉锐度（visual detection distance / acuity）",
+      "unit_hint": "mm（探测距离）、BL（相对体长）、cycles/degree（cpd）、degrees（最小可分辨视角）",
+      "typical_range": "幼虫探测猎物：约 1.5–3.3 mm（≈0.35–0.8 BL @ 4–5 mm 体长）；打击距离 ≈0.5 mm（≈0.12 BL）；视觉锐度：幼虫 0.16 cpd（最小可分辨角 ≈3.1°），成鱼行为 ≈0.56–0.60 cpd（≈0.83–0.89°），成鱼形态学极限 0.871 cpd（≈0.57°）",
+      "confidence": "medium：幼虫探测距离与锐度为多篇直接测量，可信；成鱼探测距离（以 BL 计）未检索到，置 null；相对体长的换算为本调研推断。",
+      "evidence": [
+        {
+          "species": "Danio rerio（幼虫，5–7 dpf）",
+          "value": "对草履虫的探测距离均值 1.55 ± 0.66 mm，分布在体中线左右约 60° 的弧内",
+          "units": "mm",
+          "source": "Bianco, Kampff & Engert 2011, Frontiers in Systems Neuroscience 5:101",
+          "doi_or_url": "10.3389/fnsys.2011.00101",
+          "quote": "Zebrafish responded to paramecia located at an average distance of 1.55±0.66 mm (Figure 2G), within an arc extending ∼60˚ into the left and right...",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "猎物最常在 ≈3 mm、体中线 0–60° 内被探测到",
+          "units": "mm",
+          "source": "Zhu & Goodhill 2023, Frontiers in Neural Circuits 17:1087993（综述）",
+          "doi_or_url": "10.3389/fncir.2023.1087993",
+          "quote": "Prey are most commonly detected at distances of ∼3 mm and angles between 0 and 60° to the midline of the fish.",
+          "kind": "review_summary"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "可探测 <100 µm 猎物，最远约 3.25 mm，此时张角仅 ≈1.8°",
+          "units": "mm",
+          "source": "Yoshimatsu et al. bioRxiv 744615（Cellular and molecular mechanisms of photoreceptor patterning，预印本，未同行评审）",
+          "doi_or_url": "https://www.biorxiv.org/content/10.1101/744615v2.full-text",
+          "quote": "Larval zebrafish can detect <100 μm prey at up to 3.25 mm, where it subtends a visual angle of only 1.8°.",
+          "kind": "measured",
+          "caution": "预印本，引用前应核对正式发表版"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "有效打击距离均值 0.53 ± 0.19 mm（范围 0.27–1.09 mm，N=50）",
+          "units": "mm",
+          "source": "Patterson et al. 2013, Journal of Experimental Biology 216:3071–3081",
+          "doi_or_url": "10.1242/jeb.087742",
+          "quote": "Larvae initiated a capture maneuver once paramecia were within 0.5 mm of the mouth (mean 0.53±0.19 mm, range 0.27–1.09 mm; N=50).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫，5 dpf）",
+          "value": "行为视觉锐度 0.16 cpd（最小可分辨角 ≈3.1°）；形态学上限 0.24 cpd（≈2.1°）",
+          "units": "cycles/degree; degrees",
+          "source": "Haug et al. 2010, Frontiers in Zoology 7:8",
+          "doi_or_url": "10.1186/1742-9994-7-8",
+          "quote": "Visual acuity of 5 day old larval zebrafish was determined to be 0.16 cpd, or about 3.1 degrees. Morphological measurements based on photoreceptor distance led to a (theoretical) cut-off frequency of 0.24 cpd or 2.09 degrees.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（成鱼）",
+          "value": "行为视觉锐度 0.56–0.58 cpd（最小可分辨角 ≈0.86–0.89°）；形态学极限 0.871 cpd（≈0.57°）",
+          "units": "cycles/degree; degrees",
+          "source": "Tappeiner et al. 2012, Frontiers in Zoology 9:10（行为）；Haug et al. 2010（形态学）",
+          "doi_or_url": "10.1186/1742-9994-9-10",
+          "quote": "(Tappeiner) visual acuity values ranged from 0.56 to 0.58 c/d. (Haug) calculating to a maximal visual acuity of 0.871 cpd or a minimum separable angle of 0.57 degree.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（成鱼）",
+          "value": "行为锐度约 0.60 cpd，约合 20/1000（最小可分辨角 ≈0.83°）",
+          "units": "cycles/degree",
+          "source": "Cameron et al. 2013, Journal of Visualized Experiments (80):e50633",
+          "doi_or_url": "10.3791/50832",
+          "quote": "is approximately 20/1,000 (when 0.60 cpd is converted to -0.3 logMAR).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫，5–7 dpf，BL≈3.9–4.5 mm）",
+          "value": "探测距离 ≈0.34–0.77 BL；打击距离 ≈0.12–0.14 BL",
+          "units": "BL",
+          "source": "本调研由上述 mm 测量值与 ZFIN 体长换算（1.55 mm / 4.2 mm≈0.37；3 mm / 4.2 mm≈0.71；0.53 mm / 4.2 mm≈0.13）",
+          "doi_or_url": "https://zfin.org/zf_info/zfbook/stages",
+          "quote": null,
+          "kind": "derived_inference",
+          "derivation": "BL 取 5 dpf=3.9 mm、7 dpf=4.5 mm 的中值 ≈4.2 mm。"
+        }
+      ],
+      "inference_notes": "以 BL 表示的探测/打击距离为本调研换算；成鱼视觉探测距离（相对体长）未获直接数据，置 null。",
+      "notes": "幼虫探测距离与体长同量级甚至小于 1 BL，这是仿真中视觉半径宜偏小的关键证据。"
+    },
+    {
+      "param": "游速（巡航 / 最优 / 临界 / 冲刺）与转弯角速度",
+      "unit_hint": "BL/s（体长每秒）、m/s 或 cm/s；turning 用 deg/s",
+      "typical_range": "成鱼常规巡游 ≈4.2 BL/s（峰值 6.5 BL/s）；最优游速 Uopt ≈13 BL/s；临界游速 Ucrit ≈13–18 BL/s（不同品系/方法差异大，亦有 6–7 BL/s 报道）。幼虫巡游 ≈2 BL/s，临界 ≈6–8 BL/s，爆发/逃避可达 40–65 BL/s。转弯：幼虫 C 形逃避体弯曲角速度约 6,000–21,000 deg/s（远离稳态转向速率）",
+      "confidence": "medium–high：成鱼 Ucrit/Uopt 有多个独立实测但数值分歧大（品系、有无长鳍、训练状态、算法不同）；幼虫爆发速度可信；成鱼稳态转弯角速度未检索到干净数值，置 null。",
+      "evidence": [
+        {
+          "species": "Danio rerio（成鱼）",
+          "value": "Ucrit = 0.548 ± 0.007 m/s = 18.0 ± 0.2 BL/s；Uopt = 0.396 ± 0.019 m/s = 13.0 ± 0.6 BL/s",
+          "units": "m/s; BL/s",
+          "source": "Palstra et al. 2010, PLoS ONE 5(12):e14432",
+          "doi_or_url": "10.1371/journal.pone.0014483",
+          "quote": "Individual zebrafish (n = 10) were able to swim at a critical swimming speed (Ucrit) of 0.548±0.007 m s−1 or 18.0 standard body lengths (BL) s−1. The optimal swimming speed (Uopt) ... was 0.396±0.019 m s−1 (13.0 BL s−1).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（成鱼，wild-type）",
+          "value": "Ucrit = 0.560 ± 0.048 m/s = 15.5 SL/s",
+          "units": "m/s; BL/s",
+          "source": "Plaut 2000, Journal of Experimental Biology 203:813–820（经 Palstra et al. 2010 转述）",
+          "doi_or_url": "https://journals.biologists.com/jeb/article/203/4/813/8392/Effects-of-Fin-Size-on-Swimming-Performance",
+          "quote": "Plaut measured Ucrit of individual wild-type zebrafish at 0.560±0.048 m s−1 or 15.5 standard BL s−1.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（成鱼，长鳍 PET 品系）",
+          "value": "Ucrit 雌 22.3 ± 1.0 cm/s、雄 23.8 ± 0.9 cm/s（明显低于上两条；提示品系/鳍型/装置影响巨大）",
+          "units": "cm/s",
+          "source": "Wakamatsu et al. 2019, Scientific Reports 9:16863",
+          "doi_or_url": "https://www.nature.com/articles/s41598-019-52592-w",
+          "quote": "The Ucrit of female was 22.3 ± 1.0 cm/s (n = 10), while that of male was 23.8 ± 0.9 cm/s (n = 10; P > 0.3).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（成鱼，3.5 cm）",
+          "value": "平均常规游速 4.2 BL/s，最大常规游速 6.5 BL/s",
+          "units": "BL/s",
+          "source": "Fuiman & Webb 1988, Animal Behaviour 36:250–261（经 JEB 1994 转述）",
+          "doi_or_url": "https://journals.biologists.com/jeb/article/194/1/209/6843/Swimming-Metabolism-of-Wild-Type-and-Cloned",
+          "quote": "Fuiman and Webb (1988) found that average and maximum routine swimming speeds for 3.5 cm zebrafish were 4.2 BL s−1 and 6.5 BL s−1 respectively.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫，5–7 dpf）",
+          "value": "常规慢游瞬时速度约 10 mm/s（≈2 BL/s）；临界游速 ≈30 mm/s（≈6–8 BL/s）；视觉驱动可持续达 30 mm/s",
+          "units": "mm/s; BL/s",
+          "source": "Basnet et al. 2019 / 综述 Optimizing assays of zebrafish larvae swimming performance（PMC10485652）",
+          "doi_or_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10485652",
+          "quote": "Each bout is powered by 3–5 low amplitude, 25–40 Hz oscillations ... propelling a larvae 2–3 mm, or ~0.50 to 0.75 body lengths, at instantaneous velocities that average about 10 mm/s or ~2 body lengths/s. ... The critical swimming speed has been reported to be ~30 mm/s for 5–7 dpf larvae.",
+          "kind": "review_summary"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "looming 触发的逃避爆发游速 16.4 ± 0.2 cm/s，摆动频率 62.7 ± 0.9 Hz，单次游动位移 1.5 ± 0.1 cm",
+          "units": "cm/s; Hz; cm",
+          "source": "Dunn et al. 2016, Neuron 89(3):613–628",
+          "doi_or_url": "10.1016/j.neuron.2015.12.021",
+          "quote": "fish executed a high-velocity burst swim (velocity 16.4 ± 0.2 cm/s; burst (undulation) frequency 62.7 ± 0.9 Hz) away from the starting position (distance 1.5 ± 0.1 cm).",
+          "kind": "measured"
+        },
+        {
+          "species": "斑马鱼（zebra danio，幼虫）",
+          "value": "爆发游速 50–66 BL/s",
+          "units": "BL/s",
+          "source": "Fuiman 1986, Transactions of the American Fisheries Society 115(1):143–148（Burst-Swimming Performance of Larval Zebra Danios）",
+          "doi_or_url": "https://deepblue.lib.umich.edu/bitstreams/a09c81d1-a41a-4827-a9e1-6fdecb016abb/download",
+          "quote": "During a response, velocity increased rapidly from zero towards a maximum, velocity ranged from 50 to 66 body lengths per second.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "可游约 65 BL/s，尾拍频率 95–100 Hz",
+          "units": "BL/s; Hz",
+          "source": "Müller & van Leeuwen, Swimming of larval zebrafish: ontogeny of body waves（J Exp Biol）",
+          "doi_or_url": "https://www.researchgate.net/publication/8900220_Swimming_of_larval_zebrafish_ontogeny_of_body_waves",
+          "quote": "Larval zebrafish, for example, can swim at about 65 body lengths per second with tail-beat frequencies of 95-100 Hz.",
+          "kind": "review_summary"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "逃避转弯体弯曲角速度 21.2 ± 4.4 deg/ms（=21,200 deg/s），常规转弯 6.0 ± 1.0 deg/ms（=6,000 deg/s）；逃避初始弯曲历时 6–14 ms",
+          "units": "deg/s",
+          "source": "Budick & O'Malley 2000, Journal of Experimental Biology 203:2565–2579（Locomotor Repertoire of the Larval Zebrafish）",
+          "doi_or_url": "http://www.zfhindbrain.com/files/40233309.pdf",
+          "quote": "The mean angular velocity of escape turns was 21.2±4.4 ° ms−1 (N=10) and that for routine turns was 6.0±1.0° ms−1 (N=9; means ± S.D.). The initial bend of escape turns took 6–14 ms.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "慢转弯角速度 3,200–8,000 deg/s（另：looming 逃避最大体弯曲速度 19.5 ± 0.2 deg/ms = 19,500 deg/s，最大转角 133.4°）",
+          "units": "deg/s",
+          "source": "Jez et al. / Wiley J Exp Zool（jez.1002）；Dunn et al. 2016 Neuron",
+          "doi_or_url": "https://onlinelibrary.wiley.com/doi/10.1002/jez.1002",
+          "quote": "Slow turns generally have a final angle around 70° relative to the initial orientation of the larva, angular velocities between 3,200 and 8,000° ... (Dunn) maximum bend velocity 19.5 ± 0.2 °/ms, high-angle bend (133.4 ± 2.1°).",
+          "kind": "measured"
+        }
+      ],
+      "inference_notes": "上列『角速度』多为 C 形逃避时身体/尾部的弯曲角速度，不是鱼体航向（yaw）的稳态旋转速率；仿真若用航向角速度，应取更小值，勿直接采用 20,000 deg/s。",
+      "notes": "成鱼常规转弯角速度、成鱼冲刺（spurt）速度未检索到干净的一手数值，置 null。Ucrit 数值分歧大：13–18 BL/s（Palstra/Plaut）与 22–24 cm/s（PET 长鳍品系）不可混用。"
+    },
+    {
+      "param": "捕食猎物尺寸比例上限（prey size / predator size）",
+      "unit_hint": "µm（绝对尺寸）、% SL（相对体长）",
+      "typical_range": "斑马鱼为吞食型（gape-limited）：5 dpf 口裂 180–200 µm、15 dpf 290–320 µm，对应口裂约 4–5% 体长；首次摄食可接受最大猎物 150–200 µm。成鱼实际摄食颗粒 400–600 µm。通用硬骨鱼（替代物种、肉食性）最大猎物深度约为捕食者 SL 的 20–27%",
+      "confidence": "medium：斑马鱼口裂与首食猎物尺寸有实测；但『最大猎物/体长』比例在斑马鱼上无直接实验上限报道，4–5% 与成鱼比例均为本调研由口裂与体长换算的推断。替代物种比例仅供量级参照。",
+      "evidence": [
+        {
+          "species": "Danio rerio（幼虫，5 dpf 与 15 dpf）",
+          "value": "口裂（mouth gape）：5 dpf 180–200 µm；15 dpf 290–320 µm",
+          "units": "µm",
+          "source": "Önal & Langdon 2016, Zebrafish（经 Licitra et al. 2024, Biology 13(4):209 转述）",
+          "doi_or_url": "10.1089/zeb.2016.1307",
+          "quote": "Önal showed that at 5 dpf, zebrafish larvae' mouth gape is 180–200 μm, while at 15 dpf, it is 290–320 μm, and the fish are already able to...",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（首次摄食幼虫）",
+          "value": "首次摄食可接受的最大猎物尺寸约 150–200 µm",
+          "units": "µm",
+          "source": "The Laboratory Zebrafish（实验室斑马鱼手册，PDF）, 引用 Carvalho et al. 2006 等",
+          "doi_or_url": "https://www.researchgate.net/profile/Adnan-Gora/post/Zebrafish-Breeding-Inquiries/attachment/5cbdc44ecfe4a7df4aea9fc5/AS%3A750482708516864%401555940429344/download/laboratory+zebrafish.pdf",
+          "quote": "A prey size of 150–200 µm is the maximal size range acceptable for first-feeding zebrafish. ... Freshly hatched Artemia nauplii are typically a bit large for first-feeding zebrafish (500–550 µm in length), but the width (<200 µm) is within range.",
+          "kind": "review_summary"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "首食幼虫偏好 21–45 µm 胶囊；15 日龄偏好 47–75 µm",
+          "units": "µm",
+          "source": "Önal & Langdon 2016, Zebrafish 13(5)",
+          "doi_or_url": "10.1089/zeb.2016.1307",
+          "quote": "While first feeding larvae preferred 21–45 μm capsules, 15-day-old larvae preferred capsules in the 47–75 μm size range.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "草履虫/轮虫 150–250 µm 适合作首食；卤虫无节幼体长约 437–470 µm、宽约 164 µm，宜在 2–4 周龄后投喂",
+          "units": "µm",
+          "source": "Feeding Behavior of Larval Zebrafish: Effects of Two Brine Shrimp Strains, Preprints 2025（预印本）；Licitra et al. 2024, Biology",
+          "doi_or_url": "https://www.preprints.org/manuscript/202507.1147",
+          "quote": "paramecia (150-250 µm) and rotifers (~150-250 µm) are small and thus easily captured and ingested by larval zebrafish. By contrast, Artemia nauplii are approximately two to four times larger in length...",
+          "kind": "measured",
+          "caution": "预印本"
+        },
+        {
+          "species": "Danio rerio（成鱼）",
+          "value": "成鱼标准饲料颗粒 400–600 µm（61 dpf 起）",
+          "units": "µm",
+          "source": "Licitra et al. 2024, Biology 13(4):209",
+          "doi_or_url": "10.3390/biology13040209",
+          "quote": "<100 µm for newly hatched larvae (up to 15 dpf), 100–200 µm between 16 and 30 dpf, 200–400 µm between 31 and 60 dpf, and 400–600 µm from 61 dpf onwards.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫；本调研换算）",
+          "value": "口裂/体长 ≈4.0–4.8%（5 dpf，BL≈4.2–4.5 mm）；≈4.7–5.2%（15 dpf，BL≈6.2 mm）",
+          "units": "% SL",
+          "source": "本调研由口裂（Önal 2016）与 ZFIN 体长换算",
+          "doi_or_url": "https://zfin.org/zf_info/zfbook/stages",
+          "quote": null,
+          "kind": "derived_inference",
+          "derivation": "180–200 µm ÷ 4.2–4.5 mm = 4.0–4.8%；290–320 µm ÷ 6.2 mm = 4.7–5.2%。"
+        },
+        {
+          "species": "替代物种：Cephalopholis urodeta、Paracirrhites forsteri（珊瑚礁肉食性鱼，非斑马鱼）",
+          "value": "可吞食猎物的最大体高（MD）= 捕食者 SL 的 20–27%；若按猎物全长计可达 SL 的 41–56%",
+          "units": "% SL",
+          "source": "Mihalitsis & Bellwood 2017, PLoS ONE 12(9):e0184679",
+          "doi_or_url": "10.1371/journal.pone.0184679",
+          "quote": "C. urodeta was able to process prey with a maximum depth of 27% of the predators’ standard length; for P. forsteri it was 20%.",
+          "kind": "substitute_species"
+        }
+      ],
+      "inference_notes": "斑马鱼为无齿、吞咽型鲤科，其上限主要由口裂宽度决定；本调研的 4–5% SL 是口裂换算而非摄食实验上限。蜇居性肉食鱼的 20–27% SL 属替代物种，不可直接用于斑马鱼。",
+      "notes": "未检索到『斑马鱼能吞食的猎物体高/SL 直接上限实验』，该项在斑马鱼上为数据缺口。"
+    },
+    {
+      "param": "捕食触发距离与 looming（逼近）逃避阈值/潜伏期",
+      "unit_hint": "mm（触发距离）、deg（视角阈值）、ms（潜伏期）",
+      "typical_range": "幼虫捕获打击触发 ≈0.5–0.6 mm（<2 mm 才能诱发打击）；口张开约 0.1–0.3 mm。looming 逃避阈值：成鱼 ≈10–16°（视角），幼虫 21.7°（Temizer）或 ≈72°（Dunn，方法差异）；潜伏期：幼虫约 35–81 ms，成鱼对慢速逼近刺激的等效潜伏期约 740–780 ms",
+      "confidence": "medium：捕食触发距离有直接测量；looming 阈值有多个独立实验但结论分歧大（成鱼 vs 幼虫、头固定 vs 自由游动、投影 vs 活体捕食者），需按仿真刺激方式选用。",
+      "evidence": [
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "打击距离 0.53 ± 0.19 mm；口张开发生在距猎物 0.1–0.3 mm",
+          "units": "mm",
+          "source": "Patterson et al. 2013, J Exp Biol 216:3071–3081；Dial & Lauder（Harvard PDF）",
+          "doi_or_url": "10.1242/jeb.087742",
+          "quote": "(Patterson) Larvae initiated a capture maneuver once paramecia were within 0.5 mm of the mouth (mean 0.53±0.19 mm, range 0.27–1.09 mm). (Dial & Lauder) Zebrafish initiated mouth opening between 0.1–0.3 mm from prey.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫）",
+          "value": "捕获游（capture swim）在猎物位于正前方 0.59 ± 1.63 mm 时被释放（另一文献：捕食启动可发生在数 mm 外，但打击需 <2 mm）",
+          "units": "mm",
+          "source": "Bianco, Kampff & Engert 2011, Front Syst Neurosci 5:101；Khan et al. 2023, Current Biology（经 ScienceDirect 摘要）",
+          "doi_or_url": "10.3389/fnsys.2011.00101",
+          "quote": "(Bianco) This stereotyped motor output is released when prey are located directly in front of the larvae at a distance of 0.59 ± 1.63 mm. (Khan) prey capture initiation can occur when the larva is several mm away from the prey, but the strike is not evoked unless the larva is within 2 mm.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（成鱼）",
+          "value": "looming 逃避阈值视角 θthresh = 10.3°–15.8°，对应潜伏期 740–780 ms（投影刺激）；对活体捕食者 Herichthys cyanoguttatus，触发视角第一四分位低至 6.3°、第三四分位不超过 17.4°",
+          "units": "deg; ms",
+          "source": "McKee & McHenry 2020, Integrative Organismal Biology 2(1):obaa023",
+          "doi_or_url": "10.1093/iob/obaa023",
+          "quote": "we found the best matches for a range of threshold values for the visual stimulus (10.3° < θthresh < 15.8°, 12 < N < 17). These threshold values correspond to a range in latency between 740 ms and 780 ms. ... The first quartile was as low as 6.3° (N=63) and the third quartile did not exceed 17.4°.",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫，头部固定）",
+          "value": "looming 逃避阈值 θthresh = 21.7°，潜伏期 tlat = 35 ms",
+          "units": "deg; ms",
+          "source": "Temizer et al. 2015, Current Biology 25(14):1823–1834（经 McKee & McHenry 2020 与 Dunn et al. 2016 转述并对比）",
+          "doi_or_url": "10.1016/j.cub.2015.06.002",
+          "quote": "(McKee & McHenry) The goldfish results are consistent with findings from one study on zebrafish larvae ((θthresh = 21.7°, tlat = 35 ms) (Temizer et al. 2015).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（幼虫，自由游动）",
+          "value": "looming 逃避阈值 θthresh ≈ 72°，潜伏期 tlat = 81 ms",
+          "units": "deg; ms",
+          "source": "Dunn et al. 2016, Neuron 89(3):613–628（经 McKee & McHenry 2020 转述）",
+          "doi_or_url": "10.1016/j.neuron.2015.12.021",
+          "quote": "another study on larvae found sensitivities that were less than a third of these values (θthresh ∼ 72°, tlat = 81 ms) (Dunn et al. 2016).",
+          "kind": "measured"
+        },
+        {
+          "species": "替代物种：Carassius auratus（金鱼，非斑马鱼）",
+          "value": "looming 响应主要视角约 21°，潜伏期 tlat = 35 ms",
+          "units": "deg; ms",
+          "source": "Preuss et al. 2006, Journal of Neuroscience 26(13):3454–3464（经 McKee & McHenry 2020 转述）",
+          "doi_or_url": "10.1523/JNEUROSCI.5259-05.2006",
+          "quote": "Adult goldfish were found to respond principally to a visual angle of ∼21° (tlat = 35 ms) (Preuss et al. 2006).",
+          "kind": "substitute_species"
+        },
+        {
+          "species": "Danio rerio",
+          "value": "视觉传导延迟 ≈60 ms；声启动逃避潜伏期 ≈10 ms（机械感觉通路）",
+          "units": "ms",
+          "source": "Zwaka et al. 2022, Current Biology 32（Visual object detection biases escape trajectories following acoustic startle）",
+          "doi_or_url": "https://cap.csail.mit.edu/sites/default/files/research-pdfs/Visual%20object%20detection%20biases%20escape%20trajectories%20following%20acoustic%20startle%20in%20larval%20zebrafish.pdf",
+          "quote": "Conduction delays of vision (60 ms in zebrafish) are far slower than the time between stimulus onset and the escape response, meaning that to avoid collisions during escape, fish must use pre-computed visual statistics...",
+          "kind": "measured"
+        }
+      ],
+      "inference_notes": "成鱼 740–780 ms 潜伏期是对慢速虚拟逼近刺激拟合得到的等效值，不是神经潜伏期；幼虫 35 vs 81 ms 的差异源于头固定/自由游动与刺激几何不同，仿真应二选一并标注口径。",
+      "notes": "捕食触发距离以幼虫为主；成鱼捕食触发距离未检索到直接测量。"
+    },
+    {
+      "param": "体长（standard length）",
+      "unit_hint": "mm",
+      "typical_range": "成鱼常见标准体长 25–35 mm（约 1 岁），性成熟约 23 mm SL；实验室成鱼通常 <50 mm，平均约 25 mm，最大记录 64 mm。幼虫：5 dpf ≈3.9 mm，7 dpf ≈4.5 mm，14 dpf ≈6.2 mm，30 dpf ≈10 mm，45 dpf ≈14 mm",
+      "confidence": "high：体长数据来自发育分期权威来源（ZFIN、Spence 2008 综述、实验室手册），交叉一致。",
+      "evidence": [
+        {
+          "species": "Danio rerio",
+          "value": "幼虫总长：5 dpf 3.9 mm；6 dpf 4.2 mm；7–13 dpf 4.5 mm；14–20 d 6.2 mm；21–29 d 7.8 mm；30 d 10 mm；45 d 14 mm",
+          "units": "mm",
+          "source": "ZFIN Zebrafish Developmental Staging Series（Kimmel et al. 系列）",
+          "doi_or_url": "https://zfin.org/zf_info/zfbook/stages",
+          "quote": "Day 5 | 120 h | 3.9 mm total body length ... Days 7-13 | 168 h | 4.5 mm total body length ... Days 14-20 | 14 d | 6.2 mm total body length ... Days 30-44 | 30 d | 10 mm total body length ... Days 45-89 | 45 d | 14 mm total body length",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（实验室）",
+          "value": "性成熟对应标准体长约 23 mm；1 岁鱼 25–35 mm",
+          "units": "mm",
+          "source": "Spence et al. 2008, Biological Reviews 83:13–34（经 The Laboratory Zebrafish 手册转述）",
+          "doi_or_url": "10.1111/j.1469-185X.2007.00030.x",
+          "quote": "A standard length of approximately 23 mm corresponds with attainment of reproductive maturity in this species (Eaton and Farley 1974; Spence et al. 2008). ... One-year-old zebrafish can measure between 25 mm to 35 mm in length (Spence et al. 2008).",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio",
+          "value": "平均体长约 25 mm（标准体长），成鱼通常 <50 mm，饲养最大记录 64 mm",
+          "units": "mm",
+          "source": "Animal Diversity Web（Danio rerio）",
+          "doi_or_url": "https://animaldiversity.org/accounts/Danio_rerio",
+          "quote": "Zebrafish have fusiform, laterally compressed bodies that reach an average length of 25 mm. The largest recorded zebrafish reached 64 mm in captivity.",
+          "kind": "review_summary"
+        },
+        {
+          "species": "Danio rerio（实验室）",
+          "value": "90 dpf 成鱼阶段标准体长约 18 mm（另一分期口径）",
+          "units": "mm",
+          "source": "Singleman & Holtzman 2014, Zebrafish（Growth and Maturation in the Zebrafish, Danio rerio）",
+          "doi_or_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4108942",
+          "quote": "adult stage (18 mm SL) at 90 days",
+          "kind": "measured"
+        },
+        {
+          "species": "Danio rerio（首食幼虫）",
+          "value": "首食时标准体长约 4.5 mm；约 15 mm SL 完成变态（≈30 天）",
+          "units": "mm",
+          "source": "Dial & Lauder, Longer development provides first-feeding fish time to...（Harvard PDF）",
+          "doi_or_url": "https://sites.harvard.edu/glauder/files/2022/02/Dial.Lauder.202030718-1.pdf",
+          "quote": "Zebrafish (Danio rerio) offspring included in this study ranged in size from 4.5 mm at first-feeding to 10 mm as nearly-metamorphic juveniles at 18 days post first-feeding. Zebrafish fully metamorphosed at 15 mm SL at ~30 days post first-feeding.",
+          "kind": "measured"
+        }
+      ],
+      "inference_notes": "18 mm SL @90 dpf 与 25–35 mm @1 yr 的口径差异源于饲养密度/品系/营养，仿真取成鱼 25–35 mm 更稳妥。",
+      "notes": "体长为所有换算（探测距离以 BL 计）的基准，建议仿真成鱼取 SL=30 mm（与 Palstra 2010 的 0.548 m/s ÷ 18 BL/s = 30.4 mm 自洽）。"
+    }
+  ],
+  "gaps": [
+    "成鱼（adult）水平视野 / 双眼重叠的直接测量：未检索到，只有幼虫 163° 单眼数据与『静息重叠很小』的定性描述。",
+    "成鱼视觉探测距离（以体长计）与捕食触发距离：未检索到直接测量。",
+    "斑马鱼最大猎物体高/体长的直接摄食上限实验：未检索到；现有 4–5% SL 为口裂换算推断。",
+    "成鱼常规/逃避转弯角速度（yaw rate, deg/s）：未检索到干净的一手数值；现有 deg/s 均为幼虫 C 形弯曲角速度。",
+    "成鱼冲刺（spurt）绝对速度：未检索到可靠一手值（幼虫 50–66 BL/s 来自 Fuiman 1986）。",
+    "预印本（bioRxiv 744615、Preprints 202507.1147）数值引用前应核对正式发表版。"
+  ],
+  "conclusions": [
+    "推荐直接用（高可信实测）：体长（ZFIN/Spence 2008）、幼虫单眼视野 163° 与眼球前旋角（Easter & Nicola 1996；Zimmermann 2018）、幼虫视觉锐度 3.1°/0.16 cpd（Haug 2010）、成鱼视觉锐度 0.56–0.60 cpd（Tappeiner 2012；Cameron 2013）、成鱼 Uopt/Ucrit（Palstra 2010）、幼虫 C 形逃避角速度（Budick & O'Malley 2000；Dunn 2016）、幼虫捕食打击距离（Patterson 2013）、looming 阈值（McKee & McHenry 2020；Temizer 2015；Dunn 2016）。",
+    "仅作参考（口径差异/单一来源/替代物种）：成鱼 Ucrit 的 22–24 cm/s 与 13–18 BL/s 两派数值；RR／成鱼视觉的『180°』口径；肉食性鱼的 20–27% SL 猎物上限（替代物种）；金鱼 looming 21°/35 ms（替代物种）。",
+    "不建议/需进一步验证的风险点：(1) 本调研给出的双眼重叠 ≈20°（静息）与 ≈54°（捕食）是几何推断，尚无斑马鱼实测，仿真如以双眼视觉深度线索为核心需另找来源或做敏感性分析；(2) 以 BL 表达的所有探测/打击距离、口裂 4–5% SL 均为换算推断；(3) 成鱼视野/转向/探测距离为明确数据缺口，不应臆造。",
+    "下一步建议：若要成鱼参数，优先在 OpenAlex/Google Scholar 检索 Kröger、Pusch、Easter 的鱼眼视野学工作，以及 adult zebrafish yaw/C-start 运动学（如 Brainstem circuits encoding start, speed, and duration of swimming in adult zebrafish, Neuron 2023）。"
+  ]
+}

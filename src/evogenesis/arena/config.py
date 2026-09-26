@@ -1,6 +1,6 @@
 """Arena configuration.
 
-Defaults mirror ``configs/default_arena.yaml`` (frozen values, docs/参数总表.md).
+Defaults mirror ``configs/default_arena.yaml`` (frozen values, docs/参数总表.json).
 All numbers MUST stay in sync with that file; the config object exists so
 experiments can override knobs without touching the frozen defaults.
 """

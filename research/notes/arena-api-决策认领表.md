@@ -1,9 +1,9 @@
 # arena / api 决策认领表
 
 > 收件人：李辰钊
-> 目的：`src/evogenesis/arena/` 与 `src/evogenesis/api/` 的代码**先于文档**落地。审计发现其中大量数值与语义由代码生成工具（提交信息带 `co-author Claude Code`）自行填入，从未进入任何设计文档。本表把这些"未认领的决定"逐条列出，请回答 **接受 / 改成 X / 说明原意**。答案确认后由我们写进 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`、`docs/参数总表.md`，作为契约冻结。
+> 目的：`src/evogenesis/arena/` 与 `src/evogenesis/api/` 的代码**先于文档**落地。审计发现其中大量数值与语义由代码生成工具（提交信息带 `co-author Claude Code`）自行填入，从未进入任何设计文档。本表把这些"未认领的决定"逐条列出，请回答 **接受 / 改成 X / 说明原意**。答案确认后由我们写进 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`、`docs/参数总表.json`，作为契约冻结。
 >
-> 基准：以 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`、`docs/参数总表.md` 对照代码。凡"文档没写、代码自定"的，一律不默认正确。
+> 基准：以 `arena/Danio_Arena设计规范.md`、`api/API与系统工程.md`、`docs/参数总表.json` 对照代码。凡"文档没写、代码自定"的，一律不默认正确。
 
 ## 怎么填
 每条在 `[ ] 接受` / `[ ] 改：____` / `[ ] 说明：____` 上打勾或直接写；不确定写"待定"。
@@ -25,12 +25,12 @@
 
 ### A3 能量四系数 `arena/config.py`
 - 现状：`e_max=1.0`、`base_cost_per_step=0.0008`、`movement_cost_scale=0.0015`、`food_reward=0.12`。
-- 文档：`arena/Danio_Arena设计规范.md §6` 给了公式，但系数不在 `docs/参数总表.md`。
+- 文档：`arena/Danio_Arena设计规范.md §6` 给了公式，但系数不在 `docs/参数总表.json`。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A4 生长 `arena/config.py`
 - 现状：`initial_size=1.0`、`max_size=2.5`、`biomass_to_size_gain=0.02`；实现为 `size += gain*prey.size`，`biomass` 是只写不读的镜像量。
-- 文档：`arena/Danio_Arena设计规范.md §7` 只说"缓慢增长并设上限"；`docs/参数总表.md` 无 `biomass_to_size_gain`。实测单局 size 几乎不动（1.00→1.01）。
+- 文档：`arena/Danio_Arena设计规范.md §7` 只说"缓慢增长并设上限"；`docs/参数总表.json` 无 `biomass_to_size_gain`。实测单局 size 几乎不动（1.00→1.01）。
 - [ ] 接受  [ ] 改：____  [ ] 说明：____
 
 ### A5 actors 整组 `arena/config.py`
