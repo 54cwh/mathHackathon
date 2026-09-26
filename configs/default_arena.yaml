@@ -4,11 +4,13 @@ world:
   hz: 20
   episode_seconds: 30  # 派生只读键：须 = episode_steps / hz（§18.2.1）
   episode_steps: 600
+  boundary: reflect
 population:
   n_fish: 12
   n_prey: 24
   n_predators: 3
   n_obstacles: 6
+  prey_regrowth_steps: 25
 sensing:
   radius: 18.0
   fov_degrees: 220.0
@@ -17,13 +19,15 @@ energy:
   base_cost_per_step: 0.0008
   movement_cost_scale: 0.0015
   food_reward: 0.12
+  collision_penalty: 0.001
 growth:
   initial_size: 1.0
   max_size: 2.5
   capture_size_ratio: 1.25
   capture_radius: 4.61
+  capture_cone_degrees: 120.0
   turn_inertia_scale: 0.35
-  biomass_to_size_gain: 0.02
+  prey_area_gain: 0.2
 actors:
   prey_speed: 0.35
   prey_size_min: 0.30
@@ -37,3 +41,5 @@ actors:
   obstacle_radius_min: 1.5
   obstacle_radius_max: 3.5
   wander_turn_std: 0.8
+  escape_hold_steps: 20
+  predator_max_chase_steps: 80

@@ -34,7 +34,10 @@ Danio Arena 是 DanioNet 的行为测量环境，同时承担现场 Demo。目�
 > 依据：方案 B 裁决（2026-09-26，见 `research/notes/契约决策记录.md`）；`research/reference/zebrafish-escape-capture.{json,md}` T2。本声明同时闭合 §8 旧记的尺度冲突。
 
 ### 2.1 边界策略
-【草案待确认】现状（代码）：位置裁剪（clamp）到 \([0,W]\times[0,H]\)，贴墙卡住并持续耗能，**不反弹、不出界即死**。备选：反弹 / 出界即死 / 边界惩罚。
+【已定稿】（2026-09-26，认领表 A6）新增显式配置项 `world.boundary`，取值 `clamp` / `reflect`；**正式实验默认 `reflect`**。
+- `reflect`：**镜面反射**——越界分量取反射（`x<0 ⇒ x←-x`、`y<0 ⇒ y←-y`，对应速度分量同号翻转；朝向按墙法线镜面反射：x 向越界 `θ←π−θ`、y 向越界 `θ←−θ`）。**确定性、不消耗随机数**，故同 seed 随机流不受影响。
+- `clamp`（旧默认）**废弃为正式实验默认**：贴墙卡住并持续耗能属**隐性能耗**，使跨 seed 的能量与 survival 不可比；保留为对照 / 历史复现选项。
+- 鱼与脚本实体（prey / predator）一律适用同一策略。
 - 影响：运动轨迹、边界处视觉截断、可复现性。
 
 ### 2.2 初始布局
@@ -106,36 +109,48 @@ FOV/radius 为 config 参数，不作为真实斑马鱼解剖测量值。【已�
 
 ## 6. Energy / Hunger
 \[
-E_{t+1}=\mathrm{clip}\!\left(E_t-C_{base}-C_{move}v_t^2+R_{food}\cdot\mathbb{1}[\text{本步捕获}],0,E_{max}\right),\qquad
-H_t=1-\frac{E_t}{E_{max}}
+E_{t+1}=\mathrm{clip}\!\left(E_t-C_{base}-C_{move}v_t^2-C_{pen}p_t+R_{food}\cdot f(size_{prey})\cdot\mathbb{1}[\text{本步捕获}],0,E_{max}\right),\qquad H_t=1-\frac{E_t}{E_{max}}
 \]
 
-energy \(=0\) 时死亡。【已定稿】公式；**四系数取值 `【草案待确认】`**（现状 \(E_{max}=1.0\)、\(C_{base}=0.0008\)、\(C_{move}=0.0015\)、\(R_{food}=0.12\)，未进 `docs/参数总表.json`，待认领表 A3）。
+其中 `p_t = max(0, r_obs + r_fish − d)` 为本步**障碍穿透深度**（不重叠时为 0）；`f(s) = s / s̄`、`s̄ = 0.45`。
+
+energy `=0` 时死亡。【已定稿】公式。**四系数取值**（`E_max=1.0`、`C_base=0.0008`、`C_move=0.0015`、`R_food=0.12`）认领表 A3 已签「接受并登记」，待补 `docs/参数总表.json`。
+
+**2026-09-26 新增两项**：
+- `C_pen`（`energy.collision_penalty`，**标定占位**）：碰撞软惩罚系数，与「硬不穿透」配合，见 §18.7 A7。
+- `f`：能量回报随猎物体型的归一化函数。取 `f(s)=s/s̄`、`s̄=0.45`（= prey 尺寸区间 `[0.30,0.60]` 的中点），使**均值回报 ≈ R_food = 0.12**，**不破坏 A3 已完成的能量预算**（否则「每局至少吃 ~4 条才能活到 600 步」的结论作废）。`s̄` 属归一化约定（设计选择，非生物学量）。
 
 ## 7. Growth
-吃到 prey 增加 biomass，biomass 使 size 缓慢增长并设上限：
+【已定稿】（2026-09-26，认领表 A4 + 用户裁决「面积式」）吃到 prey 后按**面积守恒带损耗**增长：
 
 \[
-\text{biomass}\mathrel{+}=size_{prey},\qquad
-size\leftarrow\min\big(size_{max},\ size+k_{growth}\cdot size_{prey}\big)
+size\leftarrow\min\big(size_{max},\ sqrt{size^2+g\cdot size_{prey}^2}\big)
 \]
 
-体型增大带来：可捕食更大 prey、metabolic cost ↑、turning inertia ↑。因此"大"不是单向优势。
+- `g`（`growth.prey_area_gain`，**标定占位**）：开源机制对照报告区间 0.1–0.35（[bib#215] 实取 0.35），本仓库占位 **0.2**；须 play-test 标定后才可冻结。
+- **边际递减内生**：自身越大，同一 prey 带来的**相对**增幅越小，无需额外调参；`size_max` 退化为**硬上限**（不再依赖公式自然收敛）。
+- `Fish.biomass` **字段删除**：面积式下 `size` 已完整编码生长，该字段无角色，同时消除原「只写不读」缺陷。原线性系数 `biomass_to_size_gain` 由 `prey_area_gain` 取代。
+- 【已定稿·声明】**与真实斑马鱼时间尺度不符**：30 s 内真实鱼质量变化仅 ~1e−5 量级，故**局内可见生长属游戏化抽象**（`问题定义与研究假设.md` §4 建模假设 7「growth 是生态游戏化抽象」）。论文中须显式声明，**不得**表述为生物学实测；生物学校准的生长应放到跨 episode / 世代尺度讨论。
 
-【草案待确认】（待认领表 A4）现状：\(size_0=1.0\)、\(size_{max}=2.5\)、\(k_{growth}=0.02\)；`biomass` 为**只写不读**的镜像量（实测单局 size 近乎不变 1.00→1.01）。备选：承认 `biomass` 为展示量并删去其耦合，或改用 `biomass` 驱动 size。
+体型增大带来：可捕食更大 prey、metabolic cost ↑、turning inertia ↑。因此「大」不是单向优势——"大吃小"的收益被机动性代价部分抵消。
 
 ## 8. Predation
-必须同时满足：
+必须同时满足**三条**：
 
 \[
-d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}
+d<r_{capture}\quad\text{且}\quad size_{hunter}\ge\kappa\, size_{target}\quad\text{且}\quad \lvert\Delta\theta\rvert\le\frac{\theta_{cone}}{2}
 \]
 
-**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。\(\kappa=1.25\) 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。距判据为**纯距离，无朝向/口部角度**（前向锥待实现，见 §17 A2）；每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
+**【已定稿】** 判据形式**含边界**：$size_{hunter}\ge\kappa\, size_{target}$（等价 `prey_size ≤ predator_size / κ`）。$\kappa=1.25$ 保持（**设计选择**：未找到斑马鱼直接的最大可吞猎物/体长上限；替代物种 20–27% SL 度量的是**猎物体高**，不可倒数为 κ）。**耦合约束【已定稿】**：$size_{predator}\ge\kappa\, size_{max}$——否则最大体型个体不可捕食；因 $size\leftarrow\min(size_{max},\cdot)$ 会**钳住**体型，该免疫态是**吸收态**。**捕食为双向**：predator 可捕食 Danio fish，鱼可捕食 prey；被吃者即死亡。每鱼每步**至多一条**捕食事件（命中第一个合格目标即处理）。
 
-**【已定稿】** $r_{capture}=4.61$（方案 B：按 $r_{capture}/sensing.radius=\sqrt{0.16\times0.41}=0.256$ 校准，可接受域 2.88–7.38；见 `research/notes/契约决策记录.md`）。**前向锥（总锥角 120°）仍待实现**，见 §17 A2。
+**【前向锥·已定稿（2026-09-26 实现）】** 目标要纳入捕食判定，还须位于**猎人朝向的前向锥**内：$\lvert\Delta\theta\rvert$ 为猎物相对**猎人**朝向的方位角，$\theta_{cone}$（`growth.capture_cone_degrees`）$=120\,^{\circ}$ 为**总锥角**（半锥 $60\,^{\circ}$）。锥角属**设计选择**（dossier T2 `add_directionality`；[bib#217]/[bib#218] 对照），非实测值；默认值 120° 由用户 2026-09-26 裁决。
+**双向同一**：判据对两个方向对称——predator 吃鱼与鱼吃 prey，均按**各自作为猎人**的朝向锥判定。
+$encounters$ 语义**不变**（仍为 $d<r_{capture}$ 的近距接触计数，见 §18.3.2 S6）：锥只作用于**捕获判定**，不改变接触计数。
 
-> ⚠️ 原记「与生物量级冲突」。**根因＝`world unit ↔ BL` 换算缺失，已由 §2 尺度声明闭合**（方案 B：不建立固定换算，只按无量纲比率校准）。故本节参数不再与成鱼 BL 直接比对；校准口径是 `r_capture / sensing.radius` 与 \(\kappa\) 的无量纲关系（见 §17 A2 余下子项）。
+**【已定稿】** $r_{capture}=4.61$（方案 B：按 $r_{capture}/sensing.radius=\sqrt{0.16\times0.41}=0.256$ 校准，可接受域 2.88–7.38；见 `research/notes/契约决策记录.md`）。**前向锥（总锥角 120°）已于 2026-09-26 实现**（§17 A2 该项闭合）。
+> **已知局限（未采纳项）**：开源机制对照报告建议距离口径改为「半径和」（$d<r_1+r_2$，使捕食圈随体型缩放）。**未采纳**——$r_{capture}=4.61$ 是同日刚裁决冻结的方案 B 值，改口径会使该标定与耦合约束 $size_{predator}\ge\kappa\,size_{max}$ 整体作废。记为后续项（§19 P2）。
+
+> ⚠️ 原记「与生物量级冲突」。**根因＝`world unit ↔ BL` 换算缺失，已由 §2 尺度声明闭合**（方案 B：不建立固定换算，只按无量纲比率校准）。故本节参数不再与成鱼 BL 直接比对；校准口径是 `r_capture / sensing.radius` 与 $\kappa$ 的无量纲关系。
 
 ## 9. PredatorPolicy
 predator 不用神经网络：【已定稿】
@@ -164,14 +179,19 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 再映射到连续 \((\omega^*,v^*)\)。参数 \(w_{p0},k_H,w_d,w_o\) `【草案待确认】`（G4，未落 config）。
 
 ## 12. 风险—收益冲突
-Complex Scene 可设置：【草案待确认】
-- 高价值 prey 靠近 predator
-- resource-scarce 时 hunger 提升 prey attraction
-- obstacles 限制逃生路径
+**2026-09-26 已定稿三项**（认领表 §12；依据 dossier T3）：
 
-用于共同激活 prey / threat / integrator / hunger 机制。
+1. **prey 再生（R2 开放可再生）**：存活 prey 数 `< K = population.n_prey` 时，每 `population.prey_regrowth_steps` 步补 1 只（**确定性定时**；新个体位置用既有随机流采样）。
+   - 依据（dossier T3 §3.1 资源核算）：24 prey / 12 fish ≈ 每鱼至多 2 次捕获 → `prey_capture` 分量在 episode **后半段饱和**、fitness 随时间漂移；开放再生使觅食压力在 600 步内近似**稳态**。
+   - 占位值 `prey_regrowth_steps = 25`（**派生**：`episode_steps / n_prey = 600/24`，使再生速率与消耗速率同量级；**无生物学锚点，属设计选择**）。
+2. **高价值 prey 分级**：`V_prey = e_prey/(1+h_prey)`，`e_prey ∝ size^α`（α∈[1,3]）、`h_prey ∝ size`（dossier T3 §3.2，最优食谱理论口径）。
+   - 因 `V(·)` 对 α≥1、size>0 **严格单调递增**，**top-V 集合 ≡ top-size 集合**，故操作判据直接取 **`size ≥ 75th 分位`**（无需为 α 选值；α 只在需要 V 的**数值**时才有意义）。
+3. **能量回报随体型**：`R_food · f(size_prey)`，`f(s)=s/s̄`、`s̄=0.45`（见 §6）。否则分级只影响 growth、不影响即时能量，「机制不成立」（dossier T3 §3.2）。
 
-**待裁决**：①「高价值 prey」价值分级未定义（§3 只有单一类 24 prey）；② environment（Food Rich / Predator Rich / Resource Scarce）三组当前**不改变任何参数**，"环境选择"尚无实际因果（M4）。
+**其他**：
+- **稀有度不作价值维度**（dossier T3：未检索到「稀有本身提高单次捕获价值」的生态学证据；最优食谱理论把遇率与收益率分开）。
+- **待裁决（未闭合）**：environment（Food Rich / Predator Rich / Resource Scarce）三组当前**不改变任何参数**，「环境选择」尚无实际因果（M4）。
+- 高价值 prey 靠近 predator / resource-scarce 时 hunger 提升 prey attraction / obstacles 限制逃生路径——用于共同激活 prey / threat / integrator / hunger 机制；**场景布局属后续项**。
 
 ## 13. 事件日志与每鱼记录
 **事件词表的唯一权威**在本文件 §18 实现映射的事件词表 + `tests/test_arena.py::KNOWN_EVENTS`（v1，8 类点分层 `arena.*`，已生效）。本节不重复字段名。【已定稿】
@@ -202,47 +222,56 @@ Complex Scene 可设置：【草案待确认】
 依据：斑马鱼脑干 integrator 维持自我位置记忆、被动位移后数秒游回原位 `[bib#26]`；异质时间常数支撑记忆痕迹 `[bib#27]`。本任务是**抽象探针**，非真实范式复刻。\(D\)、\(r_H\) 取值待定。
 
 ## 15. 繁殖/终止相关判定
-【已定稿】episode 结束：`done = step_idx ≥ 600 或 非空种群全灭`；结束后 `step()` 幂等空转，`arena.episode_end` 每局**恰好一次**。空种群（`fish={}`）不判团灭。
+【已定稿】episode 结束：`done = step_idx ≥ 600`（**一律跑满 600 步**）。个体死亡只**冻结该个体**，不提前结束。结束后 `step()` 幂等空转，`arena.episode_end` 每局**恰好一次**。空种群（`fish={}`）不判团灭。
+> **A9 裁决（2026-09-26）**：原「非空种群全灭即提前结束」**已废弃**——提前结束使 episode 长度内生，破坏跨 episode / 跨 seed 的 fitness 可比性。若日后恢复，必须同时落盘 `truncated` 标志与**实际** `episode_length` 并做协变量校正。
 
-【草案待确认】
-- **逃脱判定**（A8）：现状为"捕食者换掉已锁定目标、且旧目标仍存活"即对旧目标计一次 escape；备选为"逃出 `release_radius` 才算"。旧目标已死亡（饿死/被吃）不计入。
-- **团灭提前结束**（A9）：保留现状，或固定跑满 600 步 —— 影响 `fitness` 的 S 分量与跨 episode 可比性。
-- **survival 定义与归一化**（阅读#7）：需明确 600 步满局、饿死、被捕食三类的 S 值口径。
-- **prey 重生/守恒**（阅读#5）：现状不补充、不触发结束。
+【已定稿】**逃脱判定（A8）——威胁结局制**：一次 escape 成立需**同时**满足
+1. 该鱼**曾被某捕食者锁定**；
+2. 该锁定被**放弃**（换目标 / 限时追击超时 / 丢失）；
+3. 放弃后该鱼**继续存活 ≥ `actors.escape_hold_steps` 步**（默认 20 步 = 1 s @20 Hz，**标定占位**）。
+
+仅「换目标」而未通过存活窗口者**不计**；旧目标已死亡（饿死 / 被吃）**不计**。
+> 理由：原「换目标即算逃脱」会把「捕食者只是看到更近的鱼」这一**捕食者侧重决策**记成猎物功劳，上偏最大（dossier T1 `avoid` / `do_not_add`）。
+
+【已定稿】**限时追击**：捕食者新增 `actors.predator_max_chase_steps`（默认 80 步，**标定占位**；@20 Hz 对应开源对照报告 3–5 s @60 fps，[bib#218] `fish.py:124,205-208`）。连续追击超过该步数即放弃当前目标、恢复巡游——使「放弃」有明确因果，而非仅由换目标触发。
+
+【已定稿】**survival 定义与归一化**：`S = survival_steps / 600`（固定分母、线性；满局存活 `S=1.0`，饿死 / 被捕食按实际存活步数取值）。加权合成 fitness 前，各分量须**显式尺度归一化**，并诊断分量间相关。
+
+【已定稿】**prey 重生/守恒**：走 **R2 开放可再生**（见 §12）——不再「不补充」。
 
 ## 16. 参数表（本模块取值 → owner 为 `configs/` + `docs/参数总表.json`）
-
 | 参数 | 值 | 单位 | 状态 |
 |---|---|---|---|
-| 世界 \(W\times H\) | 100 × 60 | world unit | 已定稿 |
-| 更新频率 / \(\Delta t\) | 20 / 0.05 | Hz / s | 已定稿 |
+| 世界 W×H | 100 × 60 | world unit | 已定稿 |
+| 更新频率 / Δt | 20 / 0.05 | Hz / s | 已定稿 |
 | 标准 episode | 30 / 600 | s / step | 已定稿 |
 | 种群（Live） | 12 / 24 / 3 / 6 | 个 | 已定稿 |
 | Fast Evolution | 48 | 个 | 已定稿 |
+| `world.boundary` | reflect | — | 已定稿（2026-09-26，A6） |
 | sensing.radius / fov | 18.0 / 220.0 | world unit / ° | 已定稿（`proposed_change` 待认领） |
-| \(\kappa\)（capture_size_ratio） | 1.25 | — | `proposed_change` |
-| \(r_{capture}\) | 1.2 | world unit | 草案待确认（A2） |
-| \(k_{turn}\) | 0.35 | — | 草案待确认 |
-| energy 四系数 | 1.0 / 0.0008 / 0.0015 / 0.12 | — | 草案待确认（A3） |
-| growth | 1.0 / 2.5 / 0.02 | — | 草案待确认（A4） |
+| κ（capture_size_ratio） | 1.25 | — | 已定稿（设计选择） |
+| r_capture | 4.61 | world unit | 已定稿（方案 B） |
+| θ_cone（capture_cone_degrees） | 120 | °（**总**锥角） | 已定稿（设计选择） |
+| k_turn | 0.35 | — | 草案待确认 |
+| energy 四系数 | 1.0 / 0.0008 / 0.0015 / 0.12 | — | 草案待确认（A3 已签「接受并登记」，待补参数总表） |
+| C_pen（collision_penalty） | 见 config | — | **标定占位** |
+| growth | 1.0 / 2.5 / g=0.2（prey_area_gain） | — | **标定占位**（A4 面积式） |
+| prey 再生间隔（prey_regrowth_steps） | 25 | step | **标定占位**（派生 600/24） |
+| 逃脱存活窗口（escape_hold_steps） | 20 | step | **标定占位** |
+| 限时追击（predator_max_chase_steps） | 80 | step | **标定占位** |
 | prey：speed / size / wander | 0.35 / [0.30,0.60] / 0.8 | — | 草案待确认（A5） |
 | predator：cruise / chase / detect / release / turn | 0.40 / 0.65 / 15 / 22 / 5.0 | — / — / wu / wu / rad/s | 草案待确认（A5/A10） |
 | obstacle 半径 | [1.5, 3.5] | world unit | 已定稿 |
 
-> ⚠️ `configs/default_arena.yaml` **当前无任何调用方读取**（§18 参数映射 / M8 / 认领表 B7）：改 config 不影响仿真，与"参数 owner 是 `configs/`"冲突。**状态更新（2026-09-26）**：通用 loader 已落地（`core/config.py`，PyYAML+Pydantic v2，优先级 `CLI > env > file > default`）；**Arena 侧映射与加载亦已落地**——`arena/config.py::load_arena_config()` / `arena_config_snapshot()`，键名已对齐 dataclass，见 `tests/test_arena_config.py`（含「YAML ↔ dataclass 逐字段一致」漂移守护）。**本条余项**：调用方接线——`DanioArena.__init__` 仍为 `config or ArenaConfig()`，`scripts/run_experiment.py` 与 `api/session.py` 尚未调用 loader。
-
 ## 17. 待裁决条款（认领清单）
-以下条款为 `【草案待确认】`，须在 `research/notes/arena-api-决策认领表.md` 认领后转已定稿，方可冻结本文件：
+以下条款为 `【草案待确认】`，须在 `research/notes/arena-api-决策认领表.md` 认领后转已定稿。**2026-09-26 已认领 9 项**（见 `research/notes/契约决策记录.md`「A3 签署结果」）。
 
 | 组 | 条款 |
 |---|---|
-| 行为语义 | A6 边界策略；A7 碰撞后果（现状默认不触发，需重评指标）；A8 逃脱判定；A9 团灭提前结束；捕食双向/被吃后果（§8 已建议固定为双向，待确认）；prey 重生/守恒；survival 定义（§15） |
-| 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；looming 恒 0 的修法 |
-| 参数 | A2 \(r_{capture}\)（**已裁决并定稿**：`r_capture=4.61`、判据含边界 `≥` 从而锁定 `predator_size=3.125`；余**前向锥 120°** 待实现）；A3 能量四系数；A4 growth 与 biomass；A5 actors 12 项；A10 转向量纲；§12 高价值 prey 分级；G4 ExpertPolicy 权重 |
-| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（B7/M8：loader 与 Arena 侧映射均已落地，**仅余调用方接线**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
-
-
----
+| 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）。**余**：M4 环境三组仍不改变任何参数 |
+| 编码接口 | A1 12 维归一化（含 looming 公式二选一、每通道截断口径）；**looming 恒 0 的修法（M13）——仍开放** |
+| 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，待补参数总表）；✅ A4 growth/biomass（面积式；g 为标定占位）；A5 actors 12 项（已签，待补参数总表）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（待落 config） |
+| 契约/工程 | §18 实例事件（重生成 vs 降级）；config 接线（loader + Arena 映射均已落地，**仅余调用方接线**）；api 语义 B1–B6；本文件的契约与实现映射分界 |
 
 ## 18. 实现映射（原 Danio Arena 实现说明）
 
@@ -267,20 +296,17 @@ Complex Scene 可设置：【草案待确认】
 ---
 
 ### 18.1 模块清单
-
 | 文件 | 职责 | 行数 | 对外接口 |
 |---|---|---|---|
-| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True` | 81 | `ArenaConfig()` |
-| `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance`）、`Fish`、`Prey`、`Predator`、`Obstacle`（含 `contains`） | 69 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
-| `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`（索引对齐的可读名）、`nearest_predator_relative_size()`（编码器与 env 的**共用口径**） | 164 | `observe(...)`、`nearest_predator_relative_size(...)` |
-| `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`（模仿学习教师）、`PreyPolicy`（游走）、`PredatorPolicy`（巡游 / 追击 + 滞回） | 95 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
-| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 感知入口 / 能量 / 捕食（双向）/ 事件 / episode 终止 / 每鱼记录；`Event`、`StepResult` | 372 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events` |
-| `configs/default_arena.yaml` | 参数**唯一事实来源**（`config.py` docstring 明确此约束）；当前**无任何代码读取它**（见 §2.3） | 25 | — |
-| `tests/test_arena.py` | 15 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 212 | — |
+| `src/evogenesis/arena/config.py` | 冻结参数的数据类镜像（`WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig` / `GrowthConfig` / `ActorDefaults` / `ArenaConfig`），全部 `frozen=True`；含 `load_arena_config()` / `arena_config_snapshot()` | 182 | `ArenaConfig()`、`load_arena_config()` |
+| `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
+| `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
+| `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 109 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
+| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 475 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events` |
+| `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方接线待补**（§18.2.3） | 45 | — |
+| `tests/test_arena.py` | 28 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 436 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
-
----
 
 ### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 
@@ -294,49 +320,53 @@ Complex Scene 可设置：【草案待确认】
 下表逐项核对这一声明。
 
 #### 18.2.1 `WorldConfig` / `PopulationConfig` / `SensingConfig` / `EnergyConfig`
-
-| 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | `../../../docs/参数总表.json` 收录 |
+| 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | 参数总表 收录 |
 |---|---|---|---|---|---|
 | `world.width` | 100.0 | `world.width` | 100.0 | ✅ | ✅ `world_width` |
 | `world.height` | 60.0 | `world.height` | 60.0 | ✅ | ✅ `world_height` |
 | `world.hz` | 20 | `world.hz` | 20 | ✅ | ✅ `sim_hz` |
 | `world.episode_steps` | 600 | `world.episode_steps` | 600 | ✅ | ✅ `episode_steps` |
-| （无对应字段） | — | `world.episode_seconds` | 30 | ⚠️ YAML 独有 | ✅ `episode_seconds` |
+| `world.boundary` | 'reflect' | `world.boundary` | 'reflect' | ✅ | ❌ |
 | `population.n_fish` | 12 | `population.n_fish` | 12 | ✅ | ✅ `live_fish` |
 | `population.n_prey` | 24 | `population.n_prey` | 24 | ✅ | ✅ `live_prey` |
 | `population.n_predators` | 3 | `population.n_predators` | 3 | ✅ | ✅ `live_predators` |
 | `population.n_obstacles` | 6 | `population.n_obstacles` | 6 | ✅ | ✅ `live_obstacles` |
+| `population.prey_regrowth_steps` | 25 | `population.prey_regrowth_steps` | 25 | ✅ | ✅ `prey_regrowth_steps` |
 | `sensing.radius` | 18.0 | `sensing.radius` | 18.0 | ✅ | ✅ `sensing_radius` |
 | `sensing.fov_degrees` | 220.0 | `sensing.fov_degrees` | 220.0 | ✅ | ✅ `sensing_fov_degrees` |
-| `energy.e_max` | 1.0 | `energy.e_max` | 1.0 | ✅ | ❌ |
-| `energy.base_cost_per_step` | 0.0008 | `energy.base_cost_per_step` | 0.0008 | ✅ | ❌ |
-| `energy.movement_cost_scale` | 0.0015 | `energy.movement_cost_scale` | 0.0015 | ✅ | ❌ |
-| `energy.food_reward` | 0.12 | `energy.food_reward` | 0.12 | ✅ | ❌ |
+| `energy.e_max` | 1.0 | `energy.e_max` | 1.0 | ✅ | ✅ `e_max` |
+| `energy.base_cost_per_step` | 0.0008 | `energy.base_cost_per_step` | 0.0008 | ✅ | ✅ `base_cost_per_step` |
+| `energy.movement_cost_scale` | 0.0015 | `energy.movement_cost_scale` | 0.0015 | ✅ | ✅ `movement_cost_scale` |
+| `energy.food_reward` | 0.12 | `energy.food_reward` | 0.12 | ✅ | ✅ `food_reward` |
+| `energy.collision_penalty` | 0.001 | `energy.collision_penalty` | 0.001 | ✅ | ✅ `collision_penalty` |
 
-`world.dt` 是派生属性：$dt = 1/hz = 0.05$ s。
+`world.dt` 是派生属性：dt = 1/hz = 0.05 s。`world.episode_seconds` 是**YAML 独有的派生只读键**（不参与构造，见 `DERIVED_READONLY_KEYS`）。
+`world.boundary` 在 `WorldConfig.__post_init__` 中校验取值（`reflect` / `clamp`），非法值在**加载期**即报错（不再静默回退）。
 
 #### 18.2.2 `GrowthConfig` / `ActorDefaults`
-
-| 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | `../../../docs/参数总表.json` 收录 | 性质 |
-|---|---|---|---|---|---|---|
-| `growth.initial_size` | 1.0 | `growth.initial_size` | 1.0 | ✅ | ❌ | 实现值 |
-| `growth.max_size` | 2.5 | `growth.max_size` | 2.5 | ✅ | ❌ | 实现值 |
-| `growth.capture_size_ratio` | 1.25 | `growth.capture_size_ratio` | 1.25 | ✅ | ✅ `capture_size_ratio` | 已进表，`status=proposed_change`（规范 §8 当前取值 $\kappa = 1.25$，待 play-test 标定） |
-| `growth.capture_radius` | 4.61 | `growth.capture_radius` | 4.61 | ✅ | ❌ | **已定稿**（方案 B：$r_{capture}/sensing.radius=0.256$，见 §8） |
-| `growth.turn_inertia_scale` | 0.35 | `growth.turn_inertia_scale` | 0.35 | ✅ | ❌ | 实现值（$k_{turn}$） |
-| `growth.biomass_to_size_gain` | 0.02 | `growth.biomass_to_size_gain` | 0.02 | ✅ | ❌ | **MVP 标定旋钮**（规范只说"缓慢增长并设上限"，未给数值） |
-| `actors.prey_speed` | 0.35 | `actors.prey_speed` | 0.35 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.prey_size_min` | 0.30 | `actors.prey_size_min` | 0.30 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.prey_size_max` | 0.60 | `actors.prey_size_max` | 0.60 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_size` | 3.125 | `actors.predator_size` | 3.125 | ✅ | ❌ | **已定稿**（$=\kappa\cdot size_{max}=1.25\times2.5$，耦合约束见 §8） |
-| `actors.predator_cruise_speed` | 0.40 | `actors.predator_cruise_speed` | 0.40 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_chase_speed` | 0.65 | `actors.predator_chase_speed` | 0.65 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_detection_radius` | 15.0 | `actors.predator_detection_radius` | 15.0 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.predator_release_radius` | 22.0 | `actors.predator_release_radius` | 22.0 | ✅ | ❌ | **MVP 标定旋钮**（滞回：超出此半径即丢失目标） |
-| `actors.predator_turn_rate` | 5.0 | `actors.predator_turn_rate` | 5.0 | ✅ |✅ `predator_turn_rate` | 单位 **rad/s**，见 §3.2 S14 / 认领表 A10。**已进 `../../../docs/参数总表.json`，是 `actors.*` 中最早进表的项（`predator_size` 亦已进表）** |
-| `actors.obstacle_radius_min` | 1.5 | `actors.obstacle_radius_min` | 1.5 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.obstacle_radius_max` | 3.5 | `actors.obstacle_radius_max` | 3.5 | ✅ | ❌ | **MVP 标定旋钮** |
-| `actors.wander_turn_std` | 0.8 | `actors.wander_turn_std` | 0.8 | ✅ | ❌ | **MVP 标定旋钮**（单位 **rad/s**） |
+| 代码字段 | 代码默认值 | YAML 键 | YAML 值 | 一致 | 参数总表 收录 |
+|---|---|---|---|---|---|
+| `growth.initial_size` | 1.0 | `growth.initial_size` | 1.0 | ✅ | ✅ `initial_size` |
+| `growth.max_size` | 2.5 | `growth.max_size` | 2.5 | ✅ | ✅ `max_size` |
+| `growth.capture_size_ratio` | 1.25 | `growth.capture_size_ratio` | 1.25 | ✅ | ✅ `capture_size_ratio` |
+| `growth.capture_radius` | 4.61 | `growth.capture_radius` | 4.61 | ✅ | ✅ `capture_radius` |
+| `growth.capture_cone_degrees` | 120.0 | `growth.capture_cone_degrees` | 120.0 | ✅ | ✅ `capture_cone_degrees` |
+| `growth.turn_inertia_scale` | 0.35 | `growth.turn_inertia_scale` | 0.35 | ✅ | ✅ `turn_inertia_scale` |
+| `growth.prey_area_gain` | 0.2 | `growth.prey_area_gain` | 0.2 | ✅ | ✅ `prey_area_gain` |
+| `actors.prey_speed` | 0.35 | `actors.prey_speed` | 0.35 | ✅ | ✅ `prey_speed` |
+| `actors.prey_size_min` | 0.3 | `actors.prey_size_min` | 0.3 | ✅ | ✅ `prey_size_min` |
+| `actors.prey_size_max` | 0.6 | `actors.prey_size_max` | 0.6 | ✅ | ✅ `prey_size_max` |
+| `actors.predator_size` | 3.125 | `actors.predator_size` | 3.125 | ✅ | ✅ `predator_size` |
+| `actors.predator_cruise_speed` | 0.4 | `actors.predator_cruise_speed` | 0.4 | ✅ | ✅ `predator_cruise_speed` |
+| `actors.predator_chase_speed` | 0.65 | `actors.predator_chase_speed` | 0.65 | ✅ | ✅ `predator_chase_speed` |
+| `actors.predator_detection_radius` | 15.0 | `actors.predator_detection_radius` | 15.0 | ✅ | ✅ `predator_detection_radius` |
+| `actors.predator_release_radius` | 22.0 | `actors.predator_release_radius` | 22.0 | ✅ | ✅ `predator_release_radius` |
+| `actors.predator_turn_rate` | 5.0 | `actors.predator_turn_rate` | 5.0 | ✅ | ✅ `predator_turn_rate` |
+| `actors.obstacle_radius_min` | 1.5 | `actors.obstacle_radius_min` | 1.5 | ✅ | ✅ `obstacle_radius_min` |
+| `actors.obstacle_radius_max` | 3.5 | `actors.obstacle_radius_max` | 3.5 | ✅ | ✅ `obstacle_radius_max` |
+| `actors.wander_turn_std` | 0.8 | `actors.wander_turn_std` | 0.8 | ✅ | ✅ `wander_turn_std` |
+| `actors.escape_hold_steps` | 20 | `actors.escape_hold_steps` | 20 | ✅ | ✅ `escape_hold_steps` |
+| `actors.predator_max_chase_steps` | 80 | `actors.predator_max_chase_steps` | 80 | ✅ | ✅ `predator_max_chase_steps` |
 
 #### 18.2.3 三条必须写明的结论
 
@@ -510,20 +540,22 @@ Complex Scene 可设置：【草案待确认】
 
 ### 18.7 未认领的实现决定（指向 `research/notes/arena-api-决策认领表.md` A 节）
 
-> **本节是本文档的契约状态核心。** 以下数值与语义由实现先于设计落地，`Danio_Arena设计与实现说明.md` 与 `../../../docs/参数总表.json` 未定义；在认领表被回答、结论写进上游文档之前，状态一律为 **`草案待确认`**，**不得写进论文与正式实验**。
+> **本节是本文档的契约状态核心。** 以下数值与语义由实现先于设计落地。**2026-09-26 已有 9 项被认领并落地**（A2/A4/A5/A6/A7/A8/A9/§12/§15，用户签署「按建议」，见 `research/notes/契约决策记录.md`「A3 签署结果」）：这些行转为**已定稿**，其余仍为 **`草案待确认`**，**不得写进论文与正式实验**。
 
 | 认领编号 | 未认领的内容 | 本文档对应节 | 实现现状 |
 |---|---|---|---|
 | **A1** | 12 维感官编码的归一化公式（线性衰减、$rel$ 尺寸、looming 系数 10、左右分侧规则） | §4、S20 | 已实现、已固化；**looming 通道在现状调用序下恒 0**（S20 实测），须一并认领 |
-| **A2** | 捕食几何：`capture_radius = 4.61`（纯距离；前向锥 120° 待实现）、$\kappa = 1.25$（判据含边界） | §2.1、§2.2、§3.1 §8 | **2026-09-26 已裁决**（台账「Arena 世界尺度」）；半径与 $\kappa$ 均已进 `../../../docs/参数总表.json` |
-| **A3** | 能量四系数：`e_max` / `base_cost_per_step` / `movement_cost_scale` / `food_reward` | §2.1 | 已实现，未进 `../../../docs/参数总表.json` |
-| **A4** | 生长：`initial_size` / `max_size` / `biomass_to_size_gain`；`biomass` 为只写不读的镜像量 | §2.2、§3.1 §7 | 已实现；实测单局 size 几乎不动 |
-| **A5** | `actors` 整组 12 项（含 `predator_turn_rate`） | §2.2 | 已实现；YAML 无 `actors:` 段，未进 `../../../docs/参数总表.json` |
-| **A6** | 边界策略：clamp 到 $[0,W] \times [0,H]$（贴墙卡住、持续耗能），不反弹、不出界即死 | §3.1 §2、§3.2 S1 | 已实现 |
-| **A7** | 碰撞语义：仅"鱼–障碍"，重叠即**每步 +1**，无位移/能量后果，可穿模 | S4 | 已实现。⚠️ **实测：默认场景 5 个 seed × 600 步均为 0 次 `arena.collision`**（障碍互不重叠 + `_steer_away_from_obstacles` 生效）。该事件在当前默认场景下近乎不触发，指标意义需重新评估 |
-| **A8** | escape 判定：**换目标**即算被弃目标"逃脱成功"（死亡导致的切换不计入） | S17 | 已实现（死鱼导致的切换不计入，见 S17）；"是否应改为逃出 `release_radius` 才算"待认领 |
-| **A9** | 团灭提前结束：`step_idx >= 600` **或**非空种群全灭 → episode 结束 | S22 | 已实现；影响跨 episode 可比性 |
-| **A10** | 天敌/猎物转向量纲：天敌统一为 `predator_turn_rate = 5.0` **rad/s**（等价原 0.25 rad/step），猎物 `wander_turn_std = 0.8` **rad/s** | S14、S20 邻域、§2.2 | 已实现；**数值等价，但单位口径本身待确认** |
+| **A2** ✅ | 捕食几何：`capture_radius = 4.61`、$\kappa = 1.25$（判据含边界）、**前向锥 120°（总锥角）** | §2.1、§2.2、§3.1 §8 | **2026-09-26 已裁决并全部落地**：半径与 κ 已进参数总表；**前向锥已实现**（`growth.capture_cone_degrees`）。未采纳「半径和」口径（§8 已知局限） |
+| **A3** ✅ | 能量四系数 + 新增 $C_{pen}$（`collision_penalty`）与回报函数 $f$ | §2.1、§6 | 已实现；**四系数与 `collision_penalty` 均已进参数总表**（2026-09-26）。`food_reward` 现为**均值**（按 `prey.size` 缩放、中点归一），A3 预算不变 |
+| **A4** ✅ | 生长：改为**面积守恒式** `size ← min(size_max, sqrt(size^2 + g*prey_size^2))`，$g$ = `prey_area_gain` | §2.2、§3.1 §7 | **2026-09-26 已改**（用户裁决「面积式」）：局内生长可见、边际递减内生；`Fish.biomass` **字段删除**（消除「只写不读」）；`prey_area_gain` 已进参数总表（**标定占位** 0.2） |
+| **A5** ✅ | `actors` 整组 14 项（含 `predator_turn_rate`、`escape_hold_steps`、`predator_max_chase_steps`） | §2.2 | 已实现；**已进 `configs/default_arena.yaml` 的 `actors:` 段与参数总表**（2026-09-26，登记为 play-test 旋钮） |
+| **A6** ✅ | 边界策略：新增 `world.boundary`，默认 **`reflect`**（镜面反射） | §2.1、§3.1 §2 | **2026-09-26 已改**：`reflect` 确定性、不消耗随机数；旧 `clamp` 降为对照选项（隐性能耗使跨 seed 能量不可比） |
+| **A7** ✅ | 碰撞语义：**硬不穿透**（投影回障碍表面、零反弹）+ **软惩罚**（按穿透深度扣能量 `collision_penalty`） | S4、§6 | **2026-09-26 已改**。事件 payload **未改动**（惩罚经 `energy_trace` 可观测）。⚠️ 计数仍近乎不触发（0 次/5 seed×600 步），故仍**不作 headline 指标** |
+| **A8** ✅ | escape 判定：**威胁结局制** —— 曾被锁定 且 捕食者放弃后继续存活 ≥ `escape_hold_steps` 才计 | S17、§15 | **2026-09-26 已改**：仅换目标未过存活窗口者不计；另加**限时追击** `predator_max_chase_steps`（超时放弃，且在该鱼离开探测半径前不再锁定它） |
+| **A9** ✅ | episode 终止：**一律跑满 `episode_steps`（600）**；个体死亡只冻结该个体 | S22、§15 | **2026-09-26 已改**：不再因团灭提前结束（提前结束使 episode 长度内生、破坏跨 seed 可比性） |
+| **A10** ✅ | 天敌/猎物转向量纲：`predator_turn_rate = 5.0` **rad/s**，`wander_turn_std = 0.8` **rad/s** | S14、§2.2 | 已实现；**2026-09-26 已签接受 5.0 rad/s** |
+| **§12** ✅ | prey 再生（R2 开放可再生）+ 高价值分级 + `food_reward` 随体型 | §12 | **2026-09-26 已落地**：每 `prey_regrowth_steps`（占位 25）补 1 只至 `n_prey`；高价值 = `size` 的 75th 分位（V 对 size 单调 ⇒ top-V ≡ top-size，故 α 无需取值）；回报见 A3 行 |
+| **§15** ✅ | survival 定义与归一化 | §15 | **2026-09-26 已落地**：`S = survival_steps / 600`（固定分母、线性）；加权前须显式尺度归一化 |
 
 另有两项**实现侧发现**，不属认领表原有编号，但同样不得在未确认前用于指标：
 
@@ -541,21 +573,21 @@ Complex Scene 可设置：【草案待确认】
 | M1 | 神经控制 | 鱼由外部 `actions` 驱动；DanioNet 推理未接入，`Fish.genome_id` 恒 `"unknown"`、`generation` 恒 0 |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
 | M3 | selected neural activity snapshots | 规范 §13 最后一项，未实现（见 §6） |
-| M4 | 规范 §12 风险—收益冲突场景 | 高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger 的场景布置未做；`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |
+| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；但「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**场景布置仍未做**，`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | `PreyPolicy.avoid_gain` | 死参数（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
-| M8 | 配置加载 | YAML **不被读取**（§2.3）；`ArenaConfig` 硬编码 |
+| M8 | 配置加载 | **部分闭合**（2026-09-26）：`arena/config.py::load_arena_config()` 已落地（严格构造 + 分层），YAML↔dataclass 键名已对齐；**但调用方仍未接线**（`DanioArena.__init__` 走 `config or ArenaConfig()`，`scripts/run_experiment.py` / `api/session.py` 未调用 loader），故仿真仍走 Python 硬编码默认值 |
 | M9 | 障碍物为非凸形状 | 障碍只用圆 `contains`，无多边形/复杂几何 |
 | M10 | 流体动力学 | 规范 §1 已明确排除，非遗漏 |
-| M11 | episode 内重生成猎物 | 猎物被吃光后不补充，也不触发结束（结束只看鱼） |
+| M11 | ~~episode 内重生成猎物~~ | ✅ **已实现**（2026-09-26，§12 R2）：每 `prey_regrowth_steps`（占位 25）补 1 只至 `n_prey`；新个体以 `arena.spawn` 事件落盘 |
 | M12 | 手动控制通路 | `Session.advance(use_expert=False)` 存在但**无端点暴露手动 action**（`release` 只给 `steps`/`use_expert`） |
 | M13 | looming 通道无信息 | 见 S20 / F1：口径已统一，但整条通道在现状调用序下恒 0，等于 12 维里的第 9 维目前是常数 0；修法（在 `step()` 内、实体移动前后各取一次，或把 prev 改在步首读取）会改变 RNG 无关但会改变观测分布，需与 A1 一并认领 |
 | M14 | `world.episode_seconds` 未进代码 | YAML 有 `world.episode_seconds: 30`，`WorldConfig` 无对应字段（§2.1 的 ⚠️ 行），故 `dt`/步数与它无关 |
 
 ---
 
-### 18.9 测试覆盖（`tests/test_arena.py`，15 项）
+### 18.9 测试覆盖（`tests/test_arena.py`，28 项）
 
 | # | 测试 | 守护的契约 |
 |---|---|---|
@@ -563,8 +595,8 @@ Complex Scene 可设置：【草案待确认】
 | 2 | `test_reset_different_seed_differs` | 种子确实生效（防"seed 被忽略"的假确定性） |
 | 3 | `test_obs_shape_and_ranges` | 12 维、有限、全在 $[0,1]$（§3.1 §4） |
 | 4 | `test_population_counts_match_frozen_defaults` | 12 / 24 / 3 / 6（`../../../docs/参数总表.json` 冻结量） |
-| 5 | `test_capture_grants_food_reward` | §3.1 §7 + §8：捕获后 `captures == 1`、猎物死亡、能量精确为 $0.5 - 0.0008 + 0.12 = 0.6192$（`abs=1e-9`） |
-| 6 | `test_too_small_to_eat_attempt_logged` | §4.2 #2：`result == "too_small_to_eat"`，且猎物存活 |
+| 5 | `test_capture_grants_food_reward` | §3.1 §7 + §8 + §6：捕获后 `captures == 1`、猎物死亡、payload 的 `food_reward == round(0.12*size/0.45, 6)`、能量 == `0.5 - 0.0008 + reward`（`abs=1e-9`）；鱼朝向显式设为 0（锥内） |
+| 6 | `test_too_small_to_eat_attempt_logged` | §4.2 #2：`result == "too_small_to_eat"`，且猎物存活（朝向同样显式对齐前向锥） |
 | 7 | `test_starvation_death_event` | §4.2 #6：$E < C_{base}$ 时判死并发射 `arena.energy_depleted`，`fish_id` 正确 |
 | 8 | `test_episode_terminates_at_max_steps` | §3.1 §2 + §4.2 #8：600 步 `done`，`payload["steps"] == 600` |
 | 9 | `test_turn_inertia_reduces_bigger_fish_turning` | §3.1 §5：$\omega_{eff}$ 随 size 单调下降 |
@@ -575,7 +607,21 @@ Complex Scene 可设置：【草案待确认】
 | **14** | `test_dead_fish_not_credited_escape` | **S17**：把 `pred.target_fish_id` 指向一条已死鱼后 `step()`，该鱼 `escape_successes` 保持 0 且本步无 `arena.escape` |
 | **15** | `test_predator_encounter_recorded_on_acquisition` | **S7**：捕食者从"无目标"切到目标鱼的下一步，该鱼 `predator_encounters >= 1` |
 
-**未覆盖**（已知缺口）：`arena.collision` 的**触发**无专项测试；`arena.escape` 的"活鱼被换掉"正向分支无专项测试（只测了死鱼反向）；`arena.spawn` 恰为 39 条无测试；`_free_spot` 的 200 次回退分支无测试；**空种群不判团灭（S22）无专项测试**（`bool(self.fish)` 分支只在人工验证中跑过）；`observe()` 对死鱼仍返回向量（S23）无测试。
+| **16** | `test_forward_cone_blocks_capture_from_behind` | **§8 前向锥**：半径内但在猎人身后 0.5 的猎物**不可捕**、不发 `capture_attempt`；但 `encounters` 仍 +1（**S6 纯距离语义不变**） |
+| **17** | `test_boundary_reflect_is_deterministic_and_inbounds` | **§2.1**：`reflect` 为镜面反射（位置与朝向均按解析值反射）且保持在世界内 |
+| **18** | `test_boundary_clamp_is_still_available` | **§2.1**：`clamp` 保留为对照选项 |
+| **19** | `test_boundary_config_default_and_validation` | **§2.1**：默认 `boundary == "reflect"`；非法取值在推进时即 `ValueError`（不静默回退） |
+| **20** | `test_area_conservation_growth` | **§7**：捕获后 `size == min(max_size, sqrt(size0^2 + g*prey_size^2))`，且 `size` 严格增大（局内生长可见） |
+| **21** | `test_prey_reward_is_mean_preserving` | **§6/§12**：猎物尺寸取区间中点时回报恰等于 `energy.food_reward`（归一化使均值不变） |
+| **22** | `test_prey_regrowth_refills_toward_capacity` | **§12（R2）**：低于承载量时每 `prey_regrowth_steps` 补 1 只、新增 id 连续、发 `arena.spawn` |
+| **23** | `test_escape_requires_survival_window` | **§15（A8）**：锁定 → 放弃 → 存活窗口未满**不计**；满 `escape_hold_steps` 后计 1 次且事件恰好 1 条 |
+| **24** | `test_extinction_does_not_end_episode_early` | **§15（A9）**：鱼全灭后 `step()` 仍不 `done`、`step_idx` 正常推进 |
+| **25** | `test_predator_gives_up_after_limited_chase` | **§9（A8）**：`max_chase_steps` 内保持追击、超出即放弃（返回巡游速度）；被 ban 的鱼在探测半径内不再被重新锁定 |
+| **26** | `test_predator_size_coupling_invariant` | **§8 耦合约束**：`predator_size >= kappa * max_size` |
+| **27** | `test_capture_boundary_is_inclusive_at_max_size` | **§8 边界含入**（捕食者→鱼）：`size_ratio == kappa` 仍被吃、`max_size` 恰可捕、其上不可捕；猎人朝向已对齐锥内 |
+| **28** | `test_prey_capture_boundary_is_inclusive` | **§8 边界含入**（鱼→prey）：`size_ratio == kappa` 仍可吃（朝向对齐） |
+
+**未覆盖**（已知缺口）：`reset` 侧的 24 条 `arena.spawn` 无专项测试；`_free_spot` 的 200 次回退分支无测试；`observe()` 对死鱼仍返回向量（S23）无测试；**`arena.collision` 的触发**在默认场景下仍无法自然发生（见 A7 行）。
 
 ⚠️ 其中前两项**在默认场景下无法自然触发**（见附录实测：5 个 seed × 600 步的 `arena.collision` 与 `arena.escape` 均为 0），要补测试必须手工构造场景（如把鱼直接放到障碍上 / 手工指定 `pred.target_fish_id` 后让其换目标）。
 
@@ -589,7 +635,7 @@ Complex Scene 可设置：【草案待确认】
 |---|---|
 | **事件词表**（增删 `type`、改 payload 字段名/含义） | ① `src/evogenesis/arena/env.py` 的发射点；② `tests/test_arena.py::KNOWN_EVENTS`；③ 本文档 §4.2；④ `../core/核心机制与数据流.md` §5.1 摘要表；⑤ `schemas/examples/event_log_example.jsonl`（重生成，见 §4.4）；⑥ 若涉及前端消费：`frontend/src/api/arena.ts` 的 `ArenaEvent`；⑦ 若涉及 WS 推送：`../api/API与系统工程.md` §4.1 R11 |
 | **冻结参数值**（`capture_size_ratio` / 世界尺寸 / Hz / 步数 / 种群数） | ① `configs/default_arena.yaml`（**唯一事实来源**）；② `src/evogenesis/arena/config.py` 默认值；③ `../../../docs/参数总表.json`；④ `tests/test_arena.py::test_population_counts_match_frozen_defaults`（种群数）；⑤ 本文档 §2；⑥ 报告中的参数表快照 |
-| **MVP 标定旋钮**（`biomass_to_size_gain`、`actors` 中 `../../../docs/参数总表.json` 未收录的 10 项——`predator_turn_rate` 与 `predator_size` 已进表故不在内、以及任何 `../../../docs/参数总表.json` 未收录的感知/能量/成长值） | ① `configs/default_arena.yaml`（**需先补上当前缺失的 `actors:` 块与 `biomass_to_size_gain`**）；② `config.py` 默认值；③ 本文档 §2.2；④ 建议同步把新值补进 `../../../docs/参数总表.json`，否则"冻结"一词不成立 |
+| **标定占位 / play-test 旋钮**（`prey_area_gain`、`collision_penalty`、`prey_regrowth_steps`、`escape_hold_steps`、`predator_max_chase_steps`、`capture_cone_degrees`、`world.boundary`、`energy.*` 4 项、`growth` 余项、`actors` 余项） | ① `configs/default_arena.yaml`（**唯一事实来源**；`actors:` 段与全部新键已就位）；② `config.py` 默认值；③ 本文档 §2/§16；④ `../../../docs/参数总表.json`（**2026-09-26 已全部登记**）；⑤ `tests/test_arena_config.py` 的 YAML↔dataclass 漂移守护 |
 | ⚠️ **障碍生成方式 / `n_obstacles` / 半径范围 / clearance** | ① `env.py::_spawn_obstacles()` 与 `reset()`（必须保持"先清空、再就地逐个生成"）；② 本文档 §3.2 S9、§5 D2/D5；③ `test_reset_idempotent_on_same_instance`；④ **一切历史冒烟基线作废**（RNG 流全局平移） |
 | **12 维感知顺序**（`sensing.DIM_NAMES` / `observe()` 返回顺序） | ① `src/evogenesis/arena/sensing.py`（docstring 与 `DIM_NAMES`）；② `schemas/examples/README.md` 的 12 维语义表；③ `schemas/examples/trajectory_example.jsonl`（观测向量列序）；④ `../core/核心机制与数据流.md` §4.2 的 `observation` 行；⑤ `../connectome/DanioNet设计规范.md` §2；⑥ `../../../docs/参数总表.json` `sensory_dim`；⑦ **顺序冻结是验收清单硬性要求，改动需双方同步** |
 | ⚠️ **looming 口径**（`nearest_predator_relative_size` / `_prev_predator_rel` 刷新位置） | ① `sensing.py` 与 `env.py`（**两者必须继续共用同一函数**，否则差分重新变成聚合口径差）；② 本文档 S20 / §7 F1 / §8 M13；③ 认领表 A1 |
@@ -599,30 +645,39 @@ Complex Scene 可设置：【草案待确认】
 ---
 
 ### 18.11 冒烟基线
+**可复现生成**：`scripts/smoke_arena.py`（12 条 ExpertPolicy 驱动的鱼、默认 `ArenaConfig()`、600 步）：
 
-本文件自测基线：`master_seed = 250927`、600 步、12 条 ExpertPolicy 鱼、默认 `ArenaConfig()`（`r_capture=4.61`、`predator_size=3.125`、κ=1.25、§8 判据含边界）。
+```bash
+.venv/Scripts/python.exe scripts/smoke_arena.py   # 需项目 .venv（Python 3.12）
+```
+
+**单 seed 细节（seed 250927）**
 
 | 项 | 值 |
 |---|---|
-| 猎物捕获 | 12 / 24（`arena.prey_captured` 计数亦为 12） |
-| 存活 | 9 / 12（`arena.fish_captured` = 3） |
-| 事件计数 | `arena.spawn` 39 + `arena.prey_captured` 12 + `arena.episode_end` 1 = **52** |
-| 吞吐 | 约 327 steps/s（单进程、CPU） |
-| 测试 | `pytest tests/test_arena.py tests/test_api_contract.py` → **27 passed**（`test_arena.py` 18 + `test_api_contract.py` 9） |
+| 猎物捕获 | 19 / 24 初始（`arena.prey_captured` = 19） |
+| 存活 | 11 / 12（`arena.fish_captured` = 1） |
+| `arena.spawn` | 57（24 初始猎物 + 12 鱼 + 3 捕食者 = 39，另加 18 条再生猎物） |
+| 逃生 `arena.escape` | 9 |
+| 吞吐 | 约 154 steps/s（单进程、CPU） |
 
-⚠️ **本次基线因参数变更重跑**：`r_capture` 1.2 → **4.61**、`predator_size` 2.0 → **3.125**、§8 判据改为**含边界**（方案 B，2026-09-26）。`r_capture` 改变遭遇/捕获几何，`predator_size` 改变可捕食体型集合，故**先前基线（5 / 24 猎物捕获、0 条鱼被捕食、约 267 steps/s）不可与本表直接对比**；更早的历史基线（9 / 24、约 236 steps/s）同理。另注：障碍生成方式一旦变动，同一 seed 下的初始世界即不同（§18.5 D5）。
-
-**多 seed 实测（600 步，12 条 ExpertPolicy 鱼，默认配置）**：
+**多 seed 实测（600 步，默认配置）**：
 
 | seed | `arena.prey_captured` | `arena.fish_captured` | `arena.collision` | `arena.escape` | `arena.energy_depleted` | 存活 |
 |---|---|---|---|---|---|---|
-| 1 | 14 | 3 | 0 | 0 | 0 | 9 |
-| 7 | 17 | 1 | 0 | 0 | 0 | 11 |
-| 42 | 9 | 3 | 0 | 0 | 0 | 9 |
-| 1234 | 14 | 2 | 0 | 0 | 0 | 10 |
-| 250927 | 12 | 3 | 0 | 0 | 0 | 9 |
+| 1 | 20 | 1 | 0 | 6 | 0 | 11 |
+| 7 | 25 | 0 | 0 | 3 | 0 | 12 |
+| 42 | 12 | 2 | 0 | 12 | 0 | 10 |
+| 1234 | 24 | 1 | 0 | 2 | 0 | 11 |
+| 250927 | 19 | 1 | 0 | 9 | 0 | 11 |
 
-**三条给指标口径的提醒**：① 默认场景下 `arena.collision` 与 `arena.escape` **一次都不触发**（A7 / A8 待认领）；② 饥饿在 600 步内不会发生（$C_{base} \times 600 = 0.48 < E_{max} = 1.0$，且有食物奖励补回），因此"饿死"路径在默认配置下同样观测不到；③ 死亡全部来自捕食者。
+⚠️ **本基线为 2026-09-26 语义改动后的新基线，与更早基线不可直接对比**。本版改动：前向锥 120°、面积守恒生长、回报随体型缩放、prey 再生（R2）、碰撞硬不穿透 + 软惩罚、边界 `reflect`、逃脱改威胁结局制、episode 一律跑满 600。
+上一版（seed 250927：12 捕获 / 3 被捕食 / escape 0 / spawn 39 / 约 327 steps/s）与更早历史基线（9 / 24、约 236 steps/s）**均已作废**。另注：障碍生成方式一旦变动，同一 seed 下的初始世界即不同（§18.5 D5）。
+
+**三条给指标口径的提醒（2026-09-26 更新）**：
+① **`arena.escape` 不再是零方差**：威胁结局制（A8）使其在默认场景下**自发触发**（本表 2–12 次/局），这解除了旧版「escape 恒 0、指标无信息」的缺陷。
+② `arena.collision` **仍为 0**：障碍互不重叠且 `_steer_away_from_obstacles` 生效，故它仍**不宜作 headline 指标**，需专门设计「密集障碍」对照场景（见 §18.7 A7 行）。
+③ **饥饿仍不会发生**（`C_base × 600 = 0.48 < E_max = 1.0`，且有食物补回），默认配置下 `arena.energy_depleted` 观测不到；**死亡全部来自捕食者**。
 
 ## 19. 合并后细化与明确清单
 

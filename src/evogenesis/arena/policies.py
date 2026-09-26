@@ -61,6 +61,7 @@ class PredatorPolicy:
     chase_speed: float = 0.65
     detection_radius: float = 15.0
     release_radius: float = 22.0
+    max_chase_steps: int = 80  # give up after N consecutive steps (placeholder)
 
     def plan(
         self,
@@ -68,20 +69,33 @@ class PredatorPolicy:
         heading: float,
         current_target: str | None,
         fish_pos: dict[str, np.ndarray],
+        current_chase_steps: int = 0,
+        banned_fish_id: str | None = None,
     ) -> tuple[str | None, float, float]:
         """Return (target_fish_id | None, desired_heading, speed).
 
         Hysteresis: keep the current target until it is beyond
         ``release_radius``; otherwise pick the nearest fish within
         ``detection_radius``.
+
+        Limited chase (Danio_Arena设计与实现说明.md section 9 / A8): after
+        ``max_chase_steps`` consecutive steps on one fish the predator gives up and
+        cruises; that fish is then ignored while it stays inside
+        ``detection_radius``, so the predator cannot instantly re-lock it.
         """
-        if current_target in fish_pos:
+        # The ban lives in env-owned state: the caller clears it once the fish is dead
+        # or outside the detection radius. Here we only honour it.
+        if current_target in fish_pos and current_target != banned_fish_id:
             d = float(np.linalg.norm(fish_pos[current_target] - pos))
             if d <= self.release_radius:
+                if current_chase_steps >= self.max_chase_steps:
+                    return None, heading, self.cruise_speed  # give up and cruise
                 return current_target, self._toward(pos, fish_pos[current_target]), self.chase_speed
 
         best_id, best_d = None, float("inf")
         for fid, fpos in fish_pos.items():
+            if fid == banned_fish_id:
+                continue
             d = float(np.linalg.norm(fpos - pos))
             if d < self.detection_radius and d < best_d:
                 best_id, best_d = fid, d

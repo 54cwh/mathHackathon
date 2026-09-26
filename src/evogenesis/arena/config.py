@@ -25,6 +25,11 @@ class WorldConfig:
     height: float = 60.0
     hz: int = 20
     episode_steps: int = 600  # 30 s at 20 Hz
+    boundary: str = "reflect"  # "reflect" (default) | "clamp" (section 2.1)
+
+    def __post_init__(self) -> None:
+        if self.boundary not in ("reflect", "clamp"):
+            raise ValueError(f"world.boundary 取值非法：{self.boundary!r}（仅 reflect / clamp）")
 
     @property
     def dt(self) -> float:
@@ -37,6 +42,7 @@ class PopulationConfig:
     n_prey: int = 24
     n_predators: int = 3
     n_obstacles: int = 6
+    prey_regrowth_steps: int = 25  # placeholder: 600 / n_prey (dossier T3 s3.1)
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,7 @@ class EnergyConfig:
     base_cost_per_step: float = 0.0008
     movement_cost_scale: float = 0.0015
     food_reward: float = 0.12
+    collision_penalty: float = 0.001  # c_pen, placeholder (section 6 / 18.7 A7)
 
 
 @dataclass(frozen=True)
@@ -59,8 +66,9 @@ class GrowthConfig:
     max_size: float = 2.5
     capture_size_ratio: float = 1.25  # kappa (Danio_Arena设计与实现说明.md section 8)
     capture_radius: float = 4.61
+    capture_cone_degrees: float = 120.0  # total cone, hunter-forward (section 8)
     turn_inertia_scale: float = 0.35  # k_turn (Danio_Arena设计与实现说明.md section 5)
-    biomass_to_size_gain: float = 0.02  # MVP calibration knob (play-test later)
+    prey_area_gain: float = 0.2  # g in size = sqrt(size^2 + g*prey_size^2); placeholder
 
 
 @dataclass(frozen=True)
@@ -79,6 +87,8 @@ class ActorDefaults:
     obstacle_radius_min: float = 1.5
     obstacle_radius_max: float = 3.5
     wander_turn_std: float = 0.8  # rad/s, std of the prey turning-rate jitter
+    escape_hold_steps: int = 20  # A8 threat-outcome survival window; placeholder
+    predator_max_chase_steps: int = 80  # A8 limited chase; placeholder
 
 
 @dataclass(frozen=True)

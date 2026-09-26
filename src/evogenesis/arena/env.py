@@ -15,6 +15,11 @@ from evogenesis.arena.entities import Entity, Fish, Obstacle, Predator, Prey
 from evogenesis.arena.policies import PredatorPolicy, PreyPolicy
 from evogenesis.arena.sensing import nearest_predator_relative_size, observe
 
+# Collision margin already used by the pre-existing obstacle test
+# (o.contains(fish.pos, 0.1)); reused as the fish effective radius in the
+# penetration-depth formula (section 18.7 A7), not invented anew.
+FISH_RADIUS = 0.1
+
 
 @dataclass(frozen=True)
 class Event:
@@ -66,6 +71,7 @@ class DanioArena:
         self._seq = 0
         self._episode_ended = False
         self.obstacles = []
+        self._next_prey_id = self.cfg.population.n_prey
         self._spawn_obstacles()
         self.fish = {
             f"fish_{i:02d}": Fish(
@@ -131,6 +137,28 @@ class DanioArena:
         k = self.cfg.growth.turn_inertia_scale
         return omega / (1.0 + k * (fish.size - 1.0))
 
+    # Reward for one prey (section 6/12): scales with prey size, normalised by the
+    # midpoint of the prey size range so the MEAN reward equals energy.food_reward,
+    # keeping the A3 energy budget (and its must-eat conclusion) intact.
+    def _prey_reward(self, prey: Prey) -> float:
+        s_bar = 0.5 * (self.cfg.actors.prey_size_min + self.cfg.actors.prey_size_max)
+        return round(self.cfg.energy.food_reward * prey.size / s_bar, 6)
+
+    # Section 8: the target must lie inside the HUNTER forward cone.
+    # capture_cone_degrees is the TOTAL cone angle (half each side), applied
+    # symmetrically to both predation directions.
+    def _in_forward_cone(self, hunter: Entity, target_pos: np.ndarray, d: float) -> bool:
+        if d <= 0.0:
+            return True
+        bearing = float(
+            np.arctan2(target_pos[1] - hunter.pos[1], target_pos[0] - hunter.pos[0])
+        )
+        rel = float(
+            np.arctan2(np.sin(bearing - hunter.heading), np.cos(bearing - hunter.heading))
+        )
+        half = float(np.deg2rad(self.cfg.growth.capture_cone_degrees) / 2.0)
+        return abs(rel) <= half
+
     def _steer_away_from_obstacles(self, entity: Entity, gain: float = 0.5) -> None:
         """Rotate heading away from an obstacle we are about to hit."""
         look = (
@@ -178,11 +206,24 @@ class DanioArena:
 
             fish.heading = fish.heading + self._omega_eff(fish, omega) * dt
             fish.speed = v
-            fish.advance(dt, self.cfg.world.width, self.cfg.world.height)
+            fish.advance(
+                dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary
+            )
 
+            # obstacle contact: hard non-penetration (project back onto the surface, zero
+            # bounce) + soft energy penalty by penetration depth (section 18.7 A7). The event
+            # payload is left unchanged on purpose: the penalty is visible via energy_trace.
+            penetration = 0.0
             for o in self.obstacles:
-                if o.contains(fish.pos, 0.1):
+                gap = float(np.linalg.norm(fish.pos - o.pos))
+                reaches = o.radius + FISH_RADIUS
+                if gap <= reaches:
+                    penetration = max(penetration, reaches - gap)
                     fish.collisions += 1
+                    if gap > 0.0:
+                        fish.pos = o.pos + (fish.pos - o.pos) * (reaches / gap)
+                    else:
+                        fish.pos = o.pos + np.array([reaches, 0.0])
                     new_events.append(
                         self._emit(
                             "arena.collision", {"fish_id": fid, "obstacle_id": o.obstacle_id}
@@ -191,7 +232,8 @@ class DanioArena:
                     break
 
             # predation on prey (Danio_Arena设计与实现说明.md section 8):
-            # d < r_capture AND size >= kappa * prey_size
+            # d < r_capture AND size >= kappa * prey_size AND target in the hunter
+            # forward cone. encounters stays distance-only (S6).
             for prey in self.prey.values():
                 if not prey.alive:
                     continue
@@ -199,14 +241,17 @@ class DanioArena:
                 if d >= self.cfg.growth.capture_radius:
                     continue
                 fish.encounters += 1
+                if not self._in_forward_cone(fish, prey.pos, d):
+                    break  # in-radius prey is behind us: no attempt this step
                 size_ratio = fish.size / prey.size
                 if size_ratio >= self.cfg.growth.capture_size_ratio:
                     prey.alive = False
                     fish.captures += 1
-                    fish.biomass += prey.size
                     fish.size = min(
                         self.cfg.growth.max_size,
-                        fish.size + self.cfg.growth.biomass_to_size_gain * prey.size,
+                        float(np.sqrt(
+                            fish.size**2 + self.cfg.growth.prey_area_gain * prey.size**2
+                        )),
                     )
                     new_events.append(
                         self._emit(
@@ -216,7 +261,7 @@ class DanioArena:
                                 "prey_id": prey.entity_id,
                                 "distance": round(d, 3),
                                 "size_ratio": round(size_ratio, 3),
-                                "food_reward": self.cfg.energy.food_reward,
+                                "food_reward": self._prey_reward(prey),
                             },
                         )
                     )
@@ -238,15 +283,16 @@ class DanioArena:
                 break  # one attempt per fish per step
 
             # energy (Danio_Arena设计与实现说明.md section 6):
-            # E = clip(E - C_base - C_move*v^2 + R_food, 0, E_max)
+            # E = clip(E - C_base - C_move*v^2 - C_pen*p + R_food*f(prey), 0, E_max)
             e = (
                 fish.energy
                 - self.cfg.energy.base_cost_per_step
                 - self.cfg.energy.movement_cost_scale * v * v
+                - self.cfg.energy.collision_penalty * penetration
             )
             for ev in new_events:
                 if ev.type == "arena.prey_captured" and ev.payload["fish_id"] == fid:
-                    e += self.cfg.energy.food_reward
+                    e += ev.payload["food_reward"]
             fish.energy = min(max(e, 0.0), self.cfg.energy.e_max)
             fish.hunger = 1.0 - fish.energy / self.cfg.energy.e_max
             fish.energy_trace.append(fish.energy)
@@ -268,22 +314,38 @@ class DanioArena:
             if not pred.alive:
                 continue
             fish_pos = {fid: f.pos for fid, f in self.fish.items() if f.alive}
-            target, desired, speed = self._pred_policy.plan(
-                pred.pos, pred.heading, pred.target_fish_id, fish_pos
-            )
             prev_target = pred.target_fish_id
-            if prev_target is not None and target != prev_target:
-                lost_fish = self.fish.get(prev_target)
-                if lost_fish is not None and lost_fish.alive:
-                    new_events.append(
-                        self._emit(
-                            "arena.escape",
-                            {"fish_id": prev_target, "threat_source": pred.entity_id},
-                        )
-                    )
-                    lost_fish.escape_successes += 1
-            if target is not None and target != prev_target:
-                self.fish[target].predator_encounters += 1
+            # a limited-chase ban expires once the fish is dead or out of detect range
+            if pred.banned_fish_id is not None:
+                banned_pos = fish_pos.get(pred.banned_fish_id)
+                if banned_pos is None or float(
+                    np.linalg.norm(banned_pos - pred.pos)
+                ) >= self.cfg.actors.predator_detection_radius:
+                    pred.banned_fish_id = None
+            target, desired, speed = self._pred_policy.plan(
+                pred.pos,
+                pred.heading,
+                prev_target,
+                fish_pos,
+                current_chase_steps=pred.chase_steps,
+                banned_fish_id=pred.banned_fish_id,
+            )
+            # A8 limited chase: consecutive steps spent on the same fish
+            pred.chase_steps = pred.chase_steps + 1 if target and target == prev_target else 0
+            if target is None and prev_target is not None and prev_target in fish_pos:
+                pred.banned_fish_id = prev_target  # gave up: do not instantly re-lock
+            # A8 threat outcome: releasing a lock opens a survival window for that fish
+            if prev_target is not None and target != prev_target and prev_target in self.fish:
+                lost_fish = self.fish[prev_target]
+                if lost_fish.alive:
+                    lost_fish._threat_step = self.step_idx
+                    lost_fish._threat_source = pred.entity_id
+            if target is not None:
+                locked = self.fish[target]
+                locked._threat_step = None  # re-locked: the earlier window is void
+                locked._threat_source = None
+                if target != prev_target:
+                    locked.predator_encounters += 1
             pred.target_fish_id = target
             diff = float(np.arctan2(np.sin(desired - pred.heading), np.cos(desired - pred.heading)))
             max_turn = self.cfg.actors.predator_turn_rate * dt
@@ -299,6 +361,7 @@ class DanioArena:
             if (
                 d < self.cfg.growth.capture_radius
                 and pred.size >= self.cfg.growth.capture_size_ratio * fish.size
+                and self._in_forward_cone(pred, fish.pos, d)
             ):
                 fish.alive = False
                 pred.target_fish_id = None
@@ -321,7 +384,26 @@ class DanioArena:
             prey.heading += omega * dt
             prey.speed = v
             self._steer_away_from_obstacles(prey, gain=2.0)
-            prey.advance(dt, self.cfg.world.width, self.cfg.world.height)
+            prey.advance(
+                dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary
+            )
+
+        # --- prey regrowth (section 12, R2 open replenishment): deterministic timing
+        regrow = self.cfg.population.prey_regrowth_steps
+        if regrow > 0 and self.step_idx % regrow == 0:
+            alive_prey = sum(1 for p in self.prey.values() if p.alive)
+            if alive_prey < self.cfg.population.n_prey:
+                pid = f"prey_{self._next_prey_id:02d}"
+                self._next_prey_id += 1
+                self.prey[pid] = Prey(
+                    pid,
+                    self._free_spot(1.0),
+                    float(self._rng.uniform(0, 2 * np.pi)),
+                    size=float(self._rng.uniform(
+                        self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max
+                    )),
+                )
+                new_events.append(self._emit("arena.spawn", {"entity_id": pid}))
 
         # --- looming bookkeeping: reuse the encoder's own definition (nearest
         #     visible predator), so the differential is a genuine rate of change
@@ -334,9 +416,30 @@ class DanioArena:
                 fish, predators, self.cfg.sensing.radius, self.cfg.sensing.fov_degrees
             )
 
+        # --- A8 resolution: a released lock counts as an escape only once the fish
+        #     has survived escape_hold_steps beyond the release (section 15).
+        hold = self.cfg.actors.escape_hold_steps
+        for fid, fish in self.fish.items():
+            if fish._threat_step is None:
+                continue
+            if not fish.alive:
+                fish._threat_step = None
+                fish._threat_source = None
+                continue
+            if self.step_idx - fish._threat_step >= hold:
+                new_events.append(
+                    self._emit(
+                        "arena.escape",
+                        {"fish_id": fid, "threat_source": fish._threat_source},
+                    )
+                )
+                fish.escape_successes += 1
+                fish._threat_step = None
+                fish._threat_source = None
+
         self.step_idx += 1
-        extinct = bool(self.fish) and all(not f.alive for f in self.fish.values())
-        done = self.step_idx >= self.cfg.world.episode_steps or extinct
+        # A9: always run the full episode; individual death only freezes that fish
+        done = self.step_idx >= self.cfg.world.episode_steps
         if done:
             self._episode_ended = True
             new_events.append(
