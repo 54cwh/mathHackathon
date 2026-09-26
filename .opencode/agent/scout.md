@@ -7,6 +7,7 @@ permission:
   edit:
     "*": deny
     "research/reference/**": allow
+    "research/notes/bibliography.md": allow
   webfetch: allow
   websearch: allow
   bash:
@@ -24,6 +25,7 @@ permission:
 - 一律写入 `research/reference/` 下的 JSON，文件名体现主题。
 - 每个数据点附来源 URL；字段区分 required/optional；找不到的值置 `null`，并在 `notes` 说明原因。
 - 同名文件已存在时优先更新，并在 `meta` 记录本次搜索时间；不得杜撰 star 数、引用数或 API。
+- **唯一写例外**：任务明确要求"登记文献"时，可**只追加**写 `research/notes/bibliography.md`（不改既有条目、不删），并在 `research/reference/` 留下登记报告。
 
 工具优先级（已挂载的 MCP/CLI）：
 - 开源实现：`gh search repos`、`gh search code`、`gh repo view`
