@@ -63,7 +63,7 @@ def binary_tournament(
 def random_pairs(selected: Sequence[int] | np.ndarray, rng: np.random.Generator) -> np.ndarray:
     """把已选亲本下标随机置换后相邻两两配对，**尽量禁自体配对**，返回 ``(n_pairs, 2)``。
 
-    算法（``evolution §5`` 随机配对，草案待确认）：随机置换后逐对修复——对内两下标相同则与
+    算法（``evolution §5`` 随机配对，定稿）：随机置换后逐对修复——对内两下标相同则与
     **其后最近一个不同下标**交换；若其后无不同下标，则与**其前一个能保持配对合法性的下标**交换；
     多轮修复直到无冲突。
 
