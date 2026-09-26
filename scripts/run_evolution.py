@@ -56,6 +56,13 @@ def _parse_args() -> argparse.Namespace:
         default=1e-3,
         help="drop_degenerate 的分量跨度下限（代内 min-max 之前）",
     )
+    parser.add_argument(
+        "--episodes-per-generation",
+        type=int,
+        default=1,
+        help="每代用于折算 F 的独立 episode 数（默认 1）。单次实现的排序可靠性实测仅 0.069；"
+        "按 Spearman-Brown，K=14 / 32 / 50 可把可靠性抬到约 0.53 / 0.69 / 0.79。",
+    )
     parser.add_argument("--out-root", default=str(ROOT / "results" / "runs"))
     return parser.parse_args()
 
@@ -97,6 +104,7 @@ def main() -> None:
         steps=args.steps,
         fitness_mode=args.fitness_mode,
         fitness_floor=args.fitness_floor,
+        episodes_per_generation=args.episodes_per_generation,
     )
     status = "bottleneck" if result.bottleneck else "completed"
     last = result.summaries[-1] if result.summaries else None

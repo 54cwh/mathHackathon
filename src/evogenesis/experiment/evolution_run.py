@@ -101,24 +101,16 @@ def to_chain_individuals(
     return tuple(out)
 
 
-def assemble_individuals(
+def _components_from_evaluation(
     individuals: tuple[ChainIndividual, ...],
     evaluation: PopulationEvaluation,
-    *,
     arena_config: ArenaConfig,
-    weights: dict[str, float],
-    fitness_mode: str = "minmax",
-    fitness_floor: float = 1e-3,
-    drift_seed: int | None = None,
-) -> tuple[Individual, ...]:
-    """按 `代循环编排.md` §3 把评估结果折算为选择用 `F` 并回填 `Individual`。
+) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+    """单次 episode 实现 → (viable 掩码, 四分量原始量)。
 
-    分量取**原始量**（`survival_steps` / `captures` / `escape_successes` / `energy_efficiency`），
-    对齐全长；non-viable 置 0（由 `composite_fitness` 的掩码处理）。存活步数为 0 的个体
-    `energy_efficiency` 记 0（函数定义域要求 `T_i>0`）。
-
-    `fitness_mode` 决定喂给选择机制的分数（见 `_selection_score`）：``minmax`` 为
-    `evolution §6` 现状；``drop_degenerate`` / ``drift`` 为 2026-09-26 引入的实验臂。
+    非 viable 个体的分量记 0（由 `composite_fitness` 的掩码处理）；存活步数为 0 的
+    个体 `energy_efficiency` 记 0（`metrics.energy_efficiency` §2.1 的定义域要求
+    `T_i > 0`）。
     """
     n = len(individuals)
     mask = np.zeros(n, dtype=bool)
@@ -144,6 +136,29 @@ def assemble_individuals(
         components["energy_efficiency"][index] = np.float32(
             energy_efficiency(energy_final, e_max, steps)
         )
+    return mask, components
+
+
+def assemble_individuals(
+    individuals: tuple[ChainIndividual, ...],
+    evaluation: PopulationEvaluation,
+    *,
+    arena_config: ArenaConfig,
+    weights: dict[str, float],
+    fitness_mode: str = "minmax",
+    fitness_floor: float = 1e-3,
+    drift_seed: int | None = None,
+) -> tuple[Individual, ...]:
+    """按 `代循环编排.md` §3 把评估结果折算为选择用 `F` 并回填 `Individual`。
+
+    分量取**原始量**（`survival_steps` / `captures` / `escape_successes` / `energy_efficiency`），
+    对齐全长；non-viable 置 0（由 `composite_fitness` 的掩码处理）。存活步数为 0 的个体
+    `energy_efficiency` 记 0（函数定义域要求 `T_i>0`）。
+
+    `fitness_mode` 决定喂给选择机制的分数（见 `_selection_score`）：``minmax`` 为
+    `evolution §6` 现状；``drop_degenerate`` / ``drift`` 为 2026-09-26 引入的实验臂。
+    """
+    mask, components = _components_from_evaluation(individuals, evaluation, arena_config)
     fitness = _selection_score(
         components,
         viable=mask,
@@ -164,6 +179,84 @@ def assemble_individuals(
                 fitness=float(fitness[index]),
                 viable=viable,
                 failure_reason=None if viable else phenotype.viability_reason,
+            )
+        )
+    return tuple(out)
+
+
+def generation_episode_indices(generation: int, episodes_per_generation: int) -> tuple[int, ...]:
+    """第 `generation` 代使用的 K 个 episode 下标：`generation*K + k, k=0..K-1`。
+
+    `K=1` 时退化为 `(generation,)`，即与旧行为**逐字节一致**。各代的索引区间互不
+    相交，故 K 次实现互相独立，且不同代不会重复同一次实现 —— 这是把「环境实现」
+    与「代数」解耦的关键：旧实现下同一个体在 gen `g` 的分数含 `g` 特异噪声，
+    实测排序可靠性仅 `rho_1 = 0.069`。
+    """
+    k_episodes = max(1, int(episodes_per_generation))
+    return tuple(generation * k_episodes + k for k in range(k_episodes))
+
+
+def assemble_individuals_averaged(
+    individuals: tuple[ChainIndividual, ...],
+    evaluations: tuple[PopulationEvaluation, ...],
+    *,
+    arena_config: ArenaConfig,
+    weights: dict[str, float],
+    fitness_mode: str = "minmax",
+    fitness_floor: float = 1e-3,
+    drift_seed: int | None = None,
+) -> tuple[Individual, ...]:
+    """K 次独立 episode 实现后折算 `F`：**分量取 K 次均值**，viable 取并集。
+
+    2026-09-26 诊断：单次 episode 的**排序可靠性**实测仅 `rho_1 = 0.069`
+    （固定种群 × 11 个独立下标的面板；见 `results/tmp/reliability.py`），即选择分数里
+    约 93% 是代特异噪声 —— 这解释了「3 复制 × 2 臂」（选择 vs 漂变）为何测不到正向
+    响应。按 Spearman-Brown，K 次平均把可靠性抬到 `K*rho_1 / (1 + (K-1)*rho_1)`：
+    `K=14 → 0.53`、`K=32 → 0.69`、`K=50 → 0.79`。
+
+    分量语义与 `K=1` 一致：每次实现中非 viable 记 0，再对 K 次取均值，即**期望口径**
+    （`E[survival]` / `E[captures]` / ...），故「偶尔死亡」按死亡频率自然折价。
+    viable 取**并集**：个体在任一实现中通过即计入；正式配置下发育通过率实测为 100%，
+    故与交集口径等价。
+    """
+    if not evaluations:
+        raise ValueError("evaluations 不能为空")
+    parts = [
+        _components_from_evaluation(individuals, evaluation, arena_config)
+        for evaluation in evaluations
+    ]
+    mask = np.zeros(len(individuals), dtype=bool)
+    for part_mask, _ in parts:
+        mask |= part_mask
+    components: dict[str, np.ndarray] = {
+        name: np.mean([part[1][name] for part in parts], axis=0).astype(np.float32)
+        for name in ("survival", "prey_capture", "escape_success", "energy_efficiency")
+    }
+    fitness = _selection_score(
+        components,
+        viable=mask,
+        weights=weights,
+        mode=fitness_mode,
+        floor=fitness_floor,
+        drift_seed=drift_seed,
+    )
+    out: list[Individual] = []
+    for index, chain_individual in enumerate(individuals):
+        viable = bool(mask[index])
+        reason = None
+        if not viable:
+            for evaluation, (part_mask, _) in zip(evaluations, parts):
+                if not part_mask[index]:
+                    reason = evaluation.phenotypes[index].viability_reason
+                    break
+        out.append(
+            Individual(
+                genome_id=chain_individual.genome_id,
+                genome=chain_individual.genome,
+                fish_id=chain_individual.fish_id if viable else None,
+                fitness=float(fitness[index]),
+                viable=viable,
+                failure_reason=reason,
             )
         )
     return tuple(out)
@@ -341,11 +434,17 @@ def run_evolution(
     forced_by_generation: Mapping[int, tuple[str, str]] | None = None,
     fitness_mode: str = "minmax",
     fitness_floor: float = 1e-3,
+    episodes_per_generation: int = 1,
 ) -> EvolutionRunResult:
     """跑 `generations` 代；`run_dir` 须已由 `runlayout.create_run_dir` 建好。
 
     逐代写 `<run>/generations/g<gen:04d>/` 与 `<run>/evolution.jsonl`；`metadata.json.status`
     依 `created → running → completed | bottleneck` 更新。
+
+    `episodes_per_generation`（默认 1）> 1 时，每代的 `F` 由 K 次**独立** episode 实现
+    的分量均值折算（见 `assemble_individuals_averaged`）：第 `g` 代用下标
+    `g*K + k, k=0..K-1`，因此 `K=1` 时与旧行为**逐字节一致**。落地件（事件日志、
+    dashboard 聚合）取 `k=0` 的实现。诊断依据：单次实现的排序可靠性实测 `rho_1 = 0.069`。
     """
     steps = arena_config.world.episode_steps if steps is None else steps
     weights = evolution_config.fitness_weights.model_dump()
@@ -369,25 +468,42 @@ def run_evolution(
     for generation in range(generations):
         chain_individuals = to_chain_individuals(individuals, experiment_id=experiment_id)
         t0 = time.perf_counter()
-        evaluation = evaluate_population(
-            chain_individuals,
-            master_seed=master_seed,
-            chain=chain,
-            arena_config=arena_config,
-            steps=steps,
-            generation=generation,
-            device=device,
+        episode_indices = generation_episode_indices(generation, episodes_per_generation)
+        k_episodes = len(episode_indices)
+        evaluations = tuple(
+            evaluate_population(
+                chain_individuals,
+                master_seed=master_seed,
+                chain=chain,
+                arena_config=arena_config,
+                steps=steps,
+                generation=episode_index,
+                device=device,
+            )
+            for episode_index in episode_indices
         )
         elapsed = time.perf_counter() - t0
-        individuals = assemble_individuals(
-            chain_individuals,
-            evaluation,
-            arena_config=arena_config,
-            weights=weights,
-            fitness_mode=fitness_mode,
-            fitness_floor=fitness_floor,
-            drift_seed=master_seed * 1_000_003 + generation,
-        )
+        evaluation = evaluations[0]
+        if k_episodes == 1:
+            individuals = assemble_individuals(
+                chain_individuals,
+                evaluation,
+                arena_config=arena_config,
+                weights=weights,
+                fitness_mode=fitness_mode,
+                fitness_floor=fitness_floor,
+                drift_seed=master_seed * 1_000_003 + generation,
+            )
+        else:
+            individuals = assemble_individuals_averaged(
+                chain_individuals,
+                evaluations,
+                arena_config=arena_config,
+                weights=weights,
+                fitness_mode=fitness_mode,
+                fitness_floor=fitness_floor,
+                drift_seed=master_seed * 1_000_003 + generation,
+            )
         _write_generation_artifacts(
             run_dir,
             experiment_id=experiment_id,
