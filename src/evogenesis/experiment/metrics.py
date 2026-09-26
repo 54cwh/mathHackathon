@@ -5,10 +5,11 @@
 设计原则（`AGENTS.md`「禁止 AI 填空」）：**只实现文档已定义的量**；文档提到但未定义的量
 一律不猜，登记在 `BLOCKED_METRICS` 里，并在返回值中置 `None`（**当前该表为空**）。
 
-`prey_capture` 的分母 `capture_attempts` 原为未定义项，2026-09-26 经用户裁定取**「进过口」口径**：
-每鱼每步**至多 1 次**——猎物进入（`d < capture_radius` **且**在猎人前向锥内）并判定了尺寸口径，
-**不论是否真的吃到**（吃到 → `arena.prey_captured`；太小 → `arena.capture_attempt`）。
-该口径与既有事件 `arena.capture_attempt`（§18.4 表第 2 行）**逐事件对齐**，只把事件计入每鱼记录。
+`prey_capture` 的分母**曾**取「进过口」口径（每鱼每步至多 1 次判定），但实测 **36/36 个体**
+`capture_attempts == captures`（捕获确定性 `P_capture_success = 1.0`），指标退化为「是否有过机会」。
+**2026-09-26 用户裁决改分母**：改用 **`encounters`**（进入 `capture_radius` 的猎物数，
+**尺寸门之前**，S6 距离口径）。`capture_attempts` 仍记录，作为**诊断列**。
+S6 距离口径）。`capture_attempts` 仍记录，作为**诊断列**。
 
 统计口径（补齐 `实验与评价体系.md` §1 的阅读问题 #1）：
 
@@ -65,12 +66,16 @@ def escape_success_rate(escape_successes: int, predator_encounters: int) -> floa
     return escape_successes / max(predator_encounters, 1)
 
 
-def prey_capture_rate(captures: int, capture_attempts: int) -> float:
-    """§4：`prey capture = captures / max(capture_attempts, 1)`
+def prey_capture_rate(captures: int, opportunities: int) -> float:
+    """§4：`prey capture = captures / max(opportunities, 1)`。
 
-    分母的「进过口」口径见模块 docstring 与 `arena/Danio_Arena设计与实现说明.md` §8。
+    `opportunities` = **`encounters`**（进入 `capture_radius` 的猎物数，**尺寸门之前**，
+    S6 距离口径）。
+    这是 2026-09-26 用户裁决：原分母 `capture_attempts` 在确定性捕获下与 `captures` 恒等，
+    使指标退化为「是否有过机会」；改用距离口径后它度量「**追近的猎里有多少吃到了**」。
+    见 `arena/Danio_Arena设计与实现说明.md` §8 与实验文档 §4。
     """
-    return captures / max(capture_attempts, 1)
+    return captures / max(opportunities, 1)
 
 
 def energy_efficiency(energy_final: float, e_max: float, survival_steps: int) -> float:
@@ -110,14 +115,16 @@ def episode_metrics(
         "capture_attempts": int(record["capture_attempts"]),
         "energy_final": energy_final,
         "survival": survival_rate(survival_steps, episode_steps),
-        "prey_capture": prey_capture_rate(int(record["captures"]), int(record["capture_attempts"])),
+        "prey_capture": prey_capture_rate(
+            int(record["captures"]), int(record["encounters"])
+        ),  # 分母 = encounters（尺寸门之前），见 prey_capture_rate
         "escape_success": escape_success_rate(
             int(record["escape_successes"]), int(record["predator_encounters"])
         ),
         "energy_efficiency": energy_efficiency(energy_final, e_max, survival_steps),
         "composite_fitness": composite_fitness(
             survival_rate(survival_steps, episode_steps),
-            prey_capture_rate(int(record["captures"]), int(record["capture_attempts"])),
+            prey_capture_rate(int(record["captures"]), int(record["encounters"])),
             escape_success_rate(
                 int(record["escape_successes"]), int(record["predator_encounters"])
             ),

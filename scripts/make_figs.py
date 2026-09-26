@@ -207,18 +207,20 @@ def report_figs(
     plt.close(fig)
     made.append(p)
 
+    # §4 的关系图：分母 `encounters`（尺寸门之前）vs `captures`。
+    # `capture_attempts` 自 2026-09-26 起只是**诊断列**，不进该指标，故只作参考线。
     fig, ax = plt.subplots(figsize=(6, 5))
     for s in seeds:
         sub = metrics[metrics["seed"] == s]
-        ax.scatter(sub["capture_attempts"], sub["captures"], s=28, label=f"seed {s}")
-    lim = float(max(metrics["capture_attempts"].max(), metrics["captures"].max())) + 1
-    ax.plot([0, lim], [0, lim], ls=":", color="0.5", label="attempts = captures")
-    ax.set_xlabel("capture attempts")
+        ax.scatter(sub["encounters"], sub["captures"], s=28, label=f"seed {s}")
+    lim = float(max(metrics["encounters"].max(), metrics["captures"].max())) + 1
+    ax.plot([0, lim], [0, lim], ls=":", color="0.5", label="captures = encounters (upper bound)")
+    ax.set_xlabel("encounters (pre-size-gate, §4 denominator)")
     ax.set_ylabel("captures")
-    ax.set_title("Opportunities vs successful captures (per fish)")
+    ax.set_title("Prey-capture denominator vs successful captures (per fish)")
     ax.legend(fontsize=8)
     _stamp(fig, note)
-    p = out_dir / "fig_attempts_vs_captures.png"
+    p = out_dir / "fig_encounters_vs_captures.png"
     fig.tight_layout()
     fig.savefig(p, dpi=150)
     plt.close(fig)

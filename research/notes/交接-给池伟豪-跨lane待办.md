@@ -52,3 +52,35 @@
 2. **evolution 的选择机制冲突**（softmax vs binary tournament）优先裁决 —— 它压着「遗传边界」这一核心卖点；
 3. DanioNet / 学习层实现（Exp C/D 与主线的前提）；
 4. 参数总表 A3/A4/A6/A11 的形态决定后，我这边一次改完总表侧。
+
+---
+
+## 追加（2026-09-26）：你要接 core ↔ arena 时，这些是**已冻结**的接口
+
+你消息说要把 core 和 arena 连起来。以下三件已在 `main` 上，可**直接依赖**，不必再等我：
+
+1. **`prey_capture` 口径已改（§4，2026-09-26）**：
+   `prey_capture = captures / max(encounters, 1)`，
+   分母 = **尺寸门之前**的纯距离接触数（`arena` S6），**不是** `capture_attempts`。
+   `capture_attempts` 降为**诊断列**（`capture_attempts − captures` = 「进过口但吃不下」）。
+   实现：`experiment/metrics.py::prey_capture_rate`；每鱼记录字段不变（16 列，含两者）。
+   依据：`src/evogenesis/experiment/实验与评价体系.md` §4。
+2. **`encounters` 是事件计数、严重右偏 —— 已知，未裁决**：
+   实测（3 seed × 12 鱼）中位数 2 / 最大 225 / **前 3 位个体占 65.7%**。
+   故**引用 `prey_capture` 必须并列偏态**。是否改「去重」口径见 `实验与评价体系.md` 阅读问题 **#13**
+   （涉及你 lane 的 S6 语义，故**我没动**，等你定）。
+3. **可用的驱动/评价入口**（都在 `main`，已被测试守护）：
+   - `scripts/run_arena.py --experiment-id <id>`：3 seed × 600 步，落 `results/runs/<id>-s<seed>/`
+     （`metrics.csv` / `population.jsonl` / `episodes.jsonl` / `seed_summary.json`）
+     并汇总到 `results/tables/<id>_summary.json`。
+   - `scripts/make_figs.py` / `scripts/make_tables.py`：只读 run 目录，出图与出表
+     （含 `diagnostics.md` 自动口径诊断）。
+   - 基线（供你对照）：`survival 0.9472 ± 0.0459`、`prey_capture 0.5407 ± 0.1180`、
+     `escape_success 0.2292 ± 0.0625`、`energy_efficiency −1.031e−3 ± 4.64e−5`、
+     `composite_fitness 0.5123 ± 0.0428`（`exp_arena_expert_ref_v2`，**不入库、可重生成**）。
+
+**仍然卡在你这边的**（会挡住 core↔arena 接线）：**A14**（arena 的 RNG 未走 `SeedManager`）。
+`env.py` 现在一个 `np.random.default_rng()` 同时驱动出生与每步游走，**拆不开**成两个 namespace，
+而 namespace id 属 **Tier-3 `schemas/` 契约**（现有 `mutation=0 … network_init=5`），
+**我不 invent 新 id**。请你给一个 namespace（或在 `core` §10 登记新项），我立刻改。
+在此之前，跨 lane 复现只能靠 master seed 整体复现，**无法按模块单独重放**。

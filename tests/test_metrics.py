@@ -72,10 +72,11 @@ def test_composite_weights_are_the_documented_ones_and_sum_to_one():
     assert composite_fitness(1.0, 0.0, 0.0, 0.0) == pytest.approx(0.35)
 
 
-def test_prey_capture_rate_uses_capture_attempts_with_one_as_floor():
-    assert prey_capture_rate(3, 5) == 0.6
+def test_prey_capture_rate_denominator_is_encounters_with_one_as_floor():
+    """2026-09-26 裁决：分母 = `encounters`（尺寸门之前的距离口径）。"""
+    assert prey_capture_rate(3, 40) == 0.075
     assert prey_capture_rate(0, 0) == 0.0  # max(0, 1) = 1
-    assert prey_capture_rate(4, 4) == 1.0  # 「进过口」都吃到了
+    assert prey_capture_rate(4, 4) == 1.0  # 追近的都吃到了
 
 
 def test_episode_metrics_computes_four_metrics_plus_fitness():
@@ -84,9 +85,9 @@ def test_episode_metrics_computes_four_metrics_plus_fitness():
     assert row["escape_success"] == 0.5
     assert row["energy_efficiency"] == pytest.approx((0.25 - 1.0) / 600)
     assert row["energy_final"] == 0.25
-    assert row["captures"] == 3 and row["capture_attempts"] == 5
-    assert row["encounters"] == 40
-    assert row["prey_capture"] == pytest.approx(3 / 5)  # 「进过口」口径
+    assert row["captures"] == 3 and row["encounters"] == 40
+    assert row["capture_attempts"] == 5  # 保留为**诊断列**（= captures + 吃不下）
+    assert row["prey_capture"] == pytest.approx(3 / 40)  # 分母 = encounters
     # 四项齐备后 composite fitness 真的算出来，且等于文档权重的加权和
     expected = (
         COMPOSITE_WEIGHTS["survival"] * row["survival"]

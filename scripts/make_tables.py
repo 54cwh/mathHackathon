@@ -84,33 +84,71 @@ def md_table(metrics: pd.DataFrame, summary: dict) -> str:
 
 
 def diagnostics(metrics: pd.DataFrame) -> str:
-    """口径诊断：讲明「零机会个体」与「attempts 恒等于 captures」这类退化。"""
+    """口径诊断：分母（`encounters`）的健康度、不变式核对、以及诊断列 `capture_attempts`。
+
+    公式（`实验与评价体系.md` §4，2026-09-26 裁决）：
+    `prey_capture = captures / max(encounters, 1)`。
+    `encounters` = 进入 `capture_radius` 的猎物数（尺寸门**之前**，纯距离口径，`arena` S6）。
+    """
     n = len(metrics)
-    zero = int((metrics["capture_attempts"] == 0).sum())
-    eq = int((metrics["capture_attempts"] == metrics["captures"]).sum())
+    encounters = metrics["encounters"]
+    captures = metrics["captures"]
+    attempts = metrics["capture_attempts"]
+    zero_enc = int((encounters == 0).sum())
+    no_catch = int((captures == 0).sum())
+
+    # 不变式（§4 声明）：captures <= capture_attempts <= encounters。违反即为真 bug。
+    bad = int(((attempts > encounters) | (captures > attempts)).sum())
+    # `encounters` 严重右偏（少数「蹲守」个体刷高）⇒ 任何引用都必须并列偏态。
+    enc_med = float(encounters.median())
+    enc_max = int(encounters.max())
+    enc_total = int(encounters.sum())
+    top = encounters.sort_values(ascending=False).head(3).sum()
+    top_share = (float(top) / enc_total) if enc_total else 0.0
+    gap = attempts - captures
+    eq = int((gap == 0).sum())
+
     lines = [
         "# 指标口径诊断（自动生成）",
         "",
+        "- 公式：`prey_capture = captures / max(encounters, 1)`（§4；"
+        "分母 = **尺寸门之前**的纯距离接触数，S6）",
         f"- 个体总数：{n}",
-        f"- `capture_attempts == 0` 的个体：{zero}（其 `prey_capture` 按 §4 的 max(·,1) 记 0.0，"
-        "**不等于**尝试失败）",
-        f"- `capture_attempts == captures` 的个体：{eq} / {n}",
+        f"- `encounters == 0` 的个体：{zero_enc}（分母被 `max(·,1)` 兜底"
+        " ⇒ 记 0.0，**不等于**捕食失败）",
+        f"- `captures == 0` 的个体：{no_catch}",
+        f"- 不变式 `captures <= capture_attempts <= encounters`："
+        f"{"✅ 全部满足" if bad == 0 else f"❌ {bad} 个个体违反（**实现缺陷**）"}",
+        f"- 诊断列 `capture_attempts − captures`（「进过口但吃不下」次数）："
+        f"mean={gap.mean():.3f}, max={int(gap.max())}, 其中为 0 的个体 {eq}/{n}",
+        f"- 分母偏态：`encounters` 中位数={enc_med:.0f}、最大={enc_max}、合计={enc_total}；"
+        f"**前 3 位个体占 {top_share:.1%}** —— 引用该均值时必须并列偏态尾，",
+        "否则会被少数「蹲守」个体主导。",
         "",
     ]
-    if eq == n:
+    if bad:
         lines += [
-            "> ⚠️ **退化警告**：全部个体的 `attempts` 与 `captures` **恒等**。原因是捕获确定性",
-            "> （`P_capture_success = 1.0`，参数总表占位）且每鱼每步至多一次判定（§17 S5）。",
-            "> 此时 `prey_capture` 只能取 1.0（有机会且吃到）或 0.0（从未有机会），均值实际含义是",
-            "> 「**有过至少一次机会的个体占比**」，而**不是**吃到成功率。",
-            "> 要让它成为成功率，需裁决：",
-            "> (a) 引入 `P_capture_success < 1`；或 (b) 分母改为「进入 `capture_radius` 的猎物数」",
-            "> （尺寸门之前）；或 (c) 保留公式但并列报告 `n_with_opportunity`。",
-            "> **未裁决前不得把该均值解释为成功率。**",
+            "> ❌ **不变式被破坏**：`captures / capture_attempts / encounters`"
+            " 三者的大小关系不成立。",
+            "> 这是计数器实现缺陷（不是口径问题），须先修 `arena/env.py` 再解释任何指标。",
             "",
         ]
+    if eq == n:
+        gap_note = (
+            f"本 run 中 {eq}/{n} 个体的差额为 0 —— **无**「进过口但吃不下」判定发生。"
+        )
     else:
-        lines += [f"- `attempts > captures` 的个体：{n - eq}（比例口径可用）", ""]
+        gap_note = (
+            f"本 run 中 {n - eq} 个个体的差额 > 0，来自「判定为太小（`arena.capture_attempt`）」。",
+        )
+    lines += [
+        "> ℹ️ **常数捕获（知会，非警告）**：`P_capture_success = 1.0` 为占位"
+        "（`arena` §8 待裁决项 a），故 `capture_attempts == captures` 普遍成立。",
+        f"> {gap_note}",
+        "> 该事实**不影响** `prey_capture` —— 其分母已是尺寸门之前的 `encounters`；"
+        "若未来引入 `P_capture_success < 1`，公式不变，该指标自动成为标准成功率。",
+        "",
+    ]
     return NL.join(lines) + NL
 
 
