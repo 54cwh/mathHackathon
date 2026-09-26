@@ -132,14 +132,30 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 
 ## 8. Baselines
 
-> 实现状态（2026-09-26）：本节与 §9 属实验层评估项，尚未实现。
+> 实现状态（2026-09-26）：**已实现**（`src/evogenesis/connectome/baselines.py`，`tests/test_baselines.py`）；§9（消融）仍属实验层待实现。
 - MLP
 - GRU
 - Fixed Sparse RNN
 
-要求 trainable parameter count 同一数量级。
+**公平性判据（定稿）**：`|log10(N_base) − log10(N_ours)| ≤ 1`，统一按**连接（权重）数**比较（不计 bias），不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。对照基准取本规范实例 `N_ours = E_A = 190`（支撑边数，seed 250927 / index 6）。
 
-依据与量化：发育编码网络的对照基线取 NEAT / HyperNEAT / ES-HyperNEAT（Stanley & Miikkulainen 2002；Stanley et al. 2009；Risi & Stanley 2012）。"同一数量级"建议判据 `|log10(N_base) − log10(N_ours)| ≤ 1`，统一按连接（权重）数比较，并注意不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。出处：`research/reference/design-basis-connectome.md`。
+**尺寸反解（定稿；按「连接数最接近 190 且满足判据」求解）**：
+
+| baseline | 连接数公式（权重） | 解 | 连接数 | `|log10 差|` |
+|---|---|---|---|
+| MLP | \(14H\)（\(12H + 2H\)） | \(H = 14\) | 196 | 0.013 |
+| GRU | \(3H^2 + 38H\)（\(3H\cdot12 + 3H\cdot H + 2H\)） | \(H = 4\) | 200 | 0.022 |
+| Fixed Sparse RNN | \(\lvert\text{mask}\rvert + 14H\)（见下） | \(H = 12\)，递归密度 \(\rho = 0.15\) | ≈190（实测 mask 决定） | ≈0 |
+
+- **Fixed Sparse RNN**：递归矩阵 \(W_{rec}\) 为**固定稀疏**（mask 于初始化时按 \(\mathrm{Bernoulli}(0.15)\) 抽样后**冻结**，与 §9 `w/o GRN` 同密度；禁 self-loop 不加限制），输入/读出为稠密；\(\rho\) 属**设计选择（D）**，无外部依据。
+- **符号约束**：三个 baseline **均不施加 Dale 符号约束**（等价 `sign_constrained=False`）；DanioNet 的 Dale 约束视作其归纳偏置计入对比，§9 另设「BC 有/无 Dale」消融单独隔离该变量。
+- **初始化**：权重由 `core §3` 的 `baseline_init` 命名空间（id = 10）派生，实体 `t` 取该个体在种群内的 `index`；与 DanioNet 的 `network_init`（全局单表）分离。`float32`。
+
+**接口契约（与 DanioNet 同构，保证同一套 BC 训练与测量可用）**：`n_neurons`（list，长度 = batch，元素 = H）、`active_counts`、`theta`（**唯一** `nn.Parameter`，供 `learning::train_bc` 的 Adam 更新）、`sign_constrained=False`、`reset()`、`step(observations) -> (ω, v)`（\(\tanh\) 输出，∈\([-1,1]\)，形状 `(batch,)`）、`support`（bool mask）、`complexity()`（返回 `parameter_count` / `active_edges` / `macs_implemented` / `macs_theoretical` / `flops_*`）。
+
+**FLOPs 口径（单步前向，含 bias 不计入 MACs）**：\(\text{MACs}_{impl}\) 按**稠密**权重数计（含被 mask 的位置），\(\text{MACs}_{theo}\) 按**实际连接数**计（Sparse RNN 二者不等）；\(\text{FLOPs} = 2 \times \text{MACs}\)；不含 \(\tanh\) 等非线性（与 `实验与评价体系.md` §2.4 同约定）。
+
+依据与量化：发育编码网络的对照基线取 NEAT / HyperNEAT / ES-HyperNEAT（Stanley & Miikkulainen 2002；Stanley et al. 2009；Risi & Stanley 2012）。出处：`research/reference/design-basis-connectome.md`。
 
 ## 9. Ablations
 - `w/o GRN`：关闭 GRN 发育步，`A` 改按 `Bernoulli(0.15)` 独立采样（禁 self-loop），保留同 `N`、同 \(\tau\)、同 `W⁰` 幅度与 Dale 符号——只隔离"GRN 发育"变量（同密度、同尺度）
