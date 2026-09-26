@@ -9,6 +9,9 @@ genome:
   motif_scan_scope: per_chromosome
   motif_subset_A: 0
   motif_subset_B: 1
+phenotype:
+  theta_N: 0.25
+  theta_H: 0.25
 grn:
   dim: 8
   development_steps: 12

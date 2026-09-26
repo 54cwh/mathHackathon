@@ -129,6 +129,58 @@
       "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
     },
     {
+      "name": "theta_N",
+      "value": 0.25,
+      "unit": "affinity",
+      "group": "genome",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "high_N ⟺ E_A>θ_N（genome §3）；MVP 下 E_A∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量，取区间中点使到 {0,0.5} 边际最大、对 E 连续化稳健",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/default_model.yaml → phenotype.theta_N",
+      "sensitivity": null,
+      "suggest": "约束 θ∈(0,0.5)；若 E 改为连续读出须重定"
+    },
+    {
+      "name": "theta_H",
+      "value": 0.25,
+      "unit": "affinity",
+      "group": "genome",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "high_H ⟺ E_B>θ_H（genome §3）；同 theta_N 的约定逻辑",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/default_model.yaml → phenotype.theta_H",
+      "sensitivity": null,
+      "suggest": "约束 θ∈(0,0.5)；若 E 改为连续读出须重定"
+    },
+    {
+      "name": "theta_N_obs",
+      "value": null,
+      "unit": "neuron_count",
+      "group": "genome",
+      "grade": "D",
+      "status": "missing",
+      "basis": "penetrance 观测档阈值，作用于发育产物 N=|M|（genome §3）；须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "待 Phase-1 RGCD 产出 N 分布后标定；属报告量，不阻断代码"
+    },
+    {
+      "name": "theta_H_obs",
+      "value": null,
+      "unit": "cv_tau",
+      "group": "genome",
+      "grade": "D",
+      "status": "missing",
+      "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "待 Phase-1 产出 CV_τ 分布后标定；属报告量，不阻断代码"
+    },
+    {
       "name": "mutation_rate",
       "value": 0.001,
       "unit": "per_base_per_gamete",
@@ -1023,8 +1075,7 @@
     "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。",
     "items": [
       "环境对照三组（Food Rich / Predator Rich / Resource Scarce）的参数取值与 environment_id",
-      "二基因位点表型阈值 θ_N、θ_H（genome §3/§6，G12；需 pilot 反解；约束 θ∈(0,0.5)，否则 Aa 退化为完全隐性）",
-      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 与 τ 异质性统计量（CV；genome §3；须在独立校准集上定）"
+      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 与 τ 异质性统计量（CV；genome §3；须在独立校准集上定，属报告量）"
     ]
   },
   "citation_risks": [
