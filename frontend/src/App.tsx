@@ -1,19 +1,13 @@
 import { AppFrame } from "@/components/AppFrame";
 import { TopBar } from "@/components/TopBar";
 import { BottomBar } from "@/components/BottomBar";
-import { Panel } from "@/components/Panel";
 import { DNA2BrainPanel } from "@/panels/DNA2BrainPanel";
 import { BrainForgePanel } from "@/panels/BrainForgePanel";
 import { DanioArenaPanel } from "@/panels/DanioArenaPanel";
 import { EvolutionDashboardPanel } from "@/panels/EvolutionDashboardPanel";
+import { PlaybackPanel } from "@/panels/PlaybackPanel";
 import { cn } from "@/lib/utils";
-import { useUiStore, type ViewId } from "@/store/ui";
-
-const VIEW_LABELS: Record<ViewId, string> = {
-  evolution: "Evolution Dashboard",
-  experiment: "Experiment Bench",
-  playback: "Playback",
-};
+import { useUiStore } from "@/store/ui";
 
 function App() {
   const activeView = useUiStore((state) => state.activeView);
@@ -44,9 +38,7 @@ function App() {
         </div>
 
         <div className={cn("h-full min-h-0", activeView !== "playback" && "hidden")}>
-          <Panel title={VIEW_LABELS.playback} className="h-full">
-            <p className="text-sm text-muted-foreground">此视图待实现。</p>
-          </Panel>
+          <PlaybackPanel />
         </div>
       </main>
       <BottomBar />

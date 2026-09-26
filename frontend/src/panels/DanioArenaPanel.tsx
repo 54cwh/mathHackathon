@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Fish } from "lucide-react";
 import { Panel } from "@/components/Panel";
 import { useUiStore } from "@/store/ui";
-import { ARENA } from "@/design/palette";
-import { CANVAS, arenaAspect, sr, sx, sy } from "@/design/geometry";
+import { arenaAspect, CANVAS } from "@/design/geometry";
+import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
+import { clearFrames, pushFrame } from "@/visuals/replayBuffer";
+import { subscribe } from "@/api/ws";
 import {
   MASTER_SEED,
   createSession,
@@ -14,17 +16,30 @@ import {
   release,
   type ArenaSnapshot,
   type FishCard,
+  type FishState,
   type Leaderboard,
 } from "@/api/arena";
 
-/** 稳定 ID 可能很长（`fish_00` / `session_xxx`）；截断只影响显示，不影响 identity。 */
+/**
+ * Danio Arena。
+ *
+ * 数据来源（hybrid，理由见 `API接口.md` §3/§8）：
+ *   - **鱼层**：`release` 每步推送 `arena.fish_state`（只含鱼）→ 走 WS，免去每 tick 的 snapshot 往返；
+ *   - **场景层**（猎物/捕食者/障碍）：WS 不推送，故每 `SCENE_EVERY` 个 tick 取一次 REST snapshot；
+ *   - **兜底**：WS 未连上时，鱼层回退到 snapshot 里的鱼（行为与改造前一致）。
+ * 每个 tick 把合成后的场景写入回放缓冲（Playback 视图消费）。
+ */
+
+const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
+/** 排行榜刷新节奏（每 20 tick ≈ 2s）。 */
+const LEADERBOARD_EVERY = 20;
+/** 场景层（猎物/捕食者/障碍）刷新节奏：每 5 tick ≈ 0.5s。 */
+const SCENE_EVERY = 5;
+
+/** 稳定 ID 可能很长；截断只影响显示，不影响 identity。 */
 function shortId(id: string): string {
   return id.length > 12 ? `${id.slice(0, 12)}…` : id;
 }
-
-const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
-/** 排行榜刷新节奏（每 20 个 tick ≈ 2s）：够新，又不给后端添堵。 */
-const LEADERBOARD_EVERY = 20;
 
 export function DanioArenaPanel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -36,16 +51,17 @@ export function DanioArenaPanel() {
   const selectedFishId = useUiStore((s) => s.selectedFishId);
   const setSelectedFish = useUiStore((s) => s.setSelectedFish);
   const setStats = useUiStore((s) => s.setStats);
-  const [snap, setSnap] = useState<ArenaSnapshot | null>(null);
+  const [scene, setScene] = useState<ArenaScene | null>(null);
   const [card, setCard] = useState<FishCard | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tickRef = useRef(0);
+  /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
+  const wsFishRef = useRef<Record<string, FishState> | null>(null);
+  /** 低频场景层（猎物/捕食者/障碍 + step）。 */
+  const sceneRef = useRef<ArenaScene | null>(null);
 
   // ---- session lifecycle: one live session per mount / reset ---------------
-  //  The store holds exactly one session at a time. A reset therefore releases
-  //  the previous session and tears the store's id down first, so the poll loop
-  //  can never fire against an already-deleted session.
   useEffect(() => {
     let cancelled = false;
     let created: string | null = null;
@@ -62,6 +78,9 @@ export function DanioArenaPanel() {
         setCard(null);
         setBoard(null);
         tickRef.current = 0;
+        wsFishRef.current = null;
+        sceneRef.current = null;
+        clearFrames();
       })
       .catch((e) => !cancelled && setError(String(e)));
     return () => {
@@ -71,9 +90,17 @@ export function DanioArenaPanel() {
     };
   }, [resetNonce, setSessionId, setRunning]);
 
-  // ---- poll while running: one release step + one snapshot per tick ---------
-  //  Self-scheduling rather than setInterval, so a slow backend delays the next
-  //  tick instead of stacking overlapping requests.
+  // ---- WS: 鱼层 + 事件 ----------------------------------------------------
+  useEffect(() => {
+    if (!sessionId) return;
+    return subscribe(sessionId, {
+      fishState: (payload) => {
+        wsFishRef.current = payload.fish;
+      },
+    });
+  }, [sessionId]);
+
+  // ---- poll while running: one release step per tick ----------------------
   useEffect(() => {
     if (!running || !sessionId) return;
     let stop = false;
@@ -82,9 +109,29 @@ export function DanioArenaPanel() {
     const tick = async () => {
       try {
         const summary = await release(sessionId, 1);
-        const s = await getSnapshot(sessionId);
+        tickRef.current += 1;
+
+        // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）
+        if (tickRef.current === 1 || tickRef.current % SCENE_EVERY === 0) {
+          const snap: ArenaSnapshot = await getSnapshot(sessionId);
+          sceneRef.current = { ...snap };
+        }
         if (stop) return;
-        setSnap(s);
+
+        const base = sceneRef.current;
+        if (base) {
+          const composed: ArenaScene = {
+            step: base.step,
+            prey: base.prey,
+            predators: base.predators,
+            obstacles: base.obstacles,
+            fish: wsFishRef.current ?? base.fish,
+          };
+          sceneRef.current = composed;
+          setScene(composed);
+          pushFrame(composed); // 回放缓冲（Playback 视图消费）
+        }
+
         setStats({
           environment: summary.environment,
           generation: summary.generation,
@@ -92,9 +139,9 @@ export function DanioArenaPanel() {
           fishAlive: summary.fish_alive,
           preyAlive: summary.prey_remaining,
           seed: summary.master_seed,
-          step: s.step,
+          step: base?.step ?? 0,
         });
-        tickRef.current += 1;
+
         if (tickRef.current % LEADERBOARD_EVERY === 0) {
           setBoard(await getLeaderboard(sessionId));
         }
@@ -119,96 +166,25 @@ export function DanioArenaPanel() {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    ctx.imageSmoothingEnabled = false; // hard pixel edges (rule 9(b))
-    ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
-    ctx.fillStyle = ARENA.canvas;
-    ctx.fillRect(0, 0, CANVAS.w, CANVAS.h);
-
-    if (!snap) return;
-
-    for (const o of snap.obstacles) {
-      ctx.beginPath();
-      ctx.arc(sx(o.x), sy(o.y), sr(o.radius), 0, Math.PI * 2);
-      ctx.fillStyle = ARENA.obstacleDark;
-      ctx.fill();
-      ctx.strokeStyle = ARENA.obstacleLight;
-      ctx.stroke();
+    if (!scene) {
+      ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+      return;
     }
-
-    for (const p of Object.values(snap.prey)) {
-      if (!p.alive) continue;
-      ctx.beginPath();
-      ctx.arc(sx(p.x), sy(p.y), Math.max(2, sr(p.size) * 1.5), 0, Math.PI * 2);
-      ctx.fillStyle = ARENA.prey;
-      ctx.fill();
-    }
-
-    for (const d of Object.values(snap.predators)) {
-      ctx.beginPath();
-      ctx.arc(sx(d.x), sy(d.y), sr(d.size) * 3, 0, Math.PI * 2);
-      ctx.fillStyle = ARENA.predator;
-      ctx.fill();
-      ctx.strokeStyle = ARENA.outline;
-      ctx.stroke();
-    }
-
-    for (const [fid, f] of Object.entries(snap.fish)) {
-      if (!f.alive) continue;
-      const x = sx(f.x);
-      const y = sy(f.y);
-      const len = Math.max(8, sr(f.size) * 10);
-      const headX = x + Math.cos(f.heading) * len;
-      const headY = y + Math.sin(f.heading) * len;
-      const leftX = x + Math.cos(f.heading + 2.6) * (len * 0.6);
-      const leftY = y + Math.sin(f.heading + 2.6) * (len * 0.6);
-      const rightX = x + Math.cos(f.heading - 2.6) * (len * 0.6);
-      const rightY = y + Math.sin(f.heading - 2.6) * (len * 0.6);
-      const isSelected = fid === selectedFishId;
-      ctx.beginPath();
-      ctx.moveTo(headX, headY);
-      ctx.lineTo(leftX, leftY);
-      ctx.lineTo(rightX, rightY);
-      ctx.closePath();
-      ctx.fillStyle = isSelected ? ARENA.fishSelected : ARENA.fishUnselected;
-      ctx.fill();
-      ctx.strokeStyle = ARENA.outline; // 统一轮廓（像素画惯例；见 design/palette.ts 的 ARENA 说明）
-      ctx.lineWidth = isSelected ? 2 : 1;
-      ctx.stroke();
-
-      if (isSelected) {
-        ctx.beginPath();
-        ctx.arc(x, y, len + 4, -Math.PI / 2, -Math.PI / 2 + f.energy * Math.PI * 2);
-        ctx.strokeStyle = f.energy > 0.3 ? ARENA.energyOk : ARENA.energyLow;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-    }
-  }, [snap, selectedFishId]);
+    drawArenaScene(ctx, scene, selectedFishId);
+  }, [scene, selectedFishId]);
 
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
   const shortSessionId = sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : null;
 
   function handleClick(e: React.MouseEvent<HTMLCanvasElement>) {
-    if (!snap) return;
+    if (!scene) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
     const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
-    let best: string | null = null;
-    let bestDist = Infinity;
-    for (const [fid, f] of Object.entries(snap.fish)) {
-      if (!f.alive) continue;
-      const d = Math.hypot(sx(f.x) - mx, sy(f.y) - my);
-      if (d < bestDist) {
-        bestDist = d;
-        best = fid;
-      }
-    }
-    // 命中半径按**屏幕**尺度给（24 CSS px 折回位图像素）：画布在窄列里被缩小显示
-    // （640 位图 -> ~220 CSS px），若沿用固定 20 位图像素，实际只有 ~7 CSS px，人几乎点不中。
-    const hitRadius = 24 * (CANVAS.w / rect.width);
-    if (best && bestDist < hitRadius) {
-      setSelectedFish(best);
-      void getFishCard(sessionId ?? "", best)
+    const hit = hitTestFish(scene, mx, my, fishHitRadius(rect.width));
+    if (hit) {
+      setSelectedFish(hit);
+      void getFishCard(sessionId ?? "", hit)
         .then(setCard)
         .catch(() => setCard(null));
     } else {
@@ -221,7 +197,7 @@ export function DanioArenaPanel() {
     <Panel title="Danio Arena" icon={<Fish className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* Explicit 5:3 contract (rule 3); the bitmap ratio must equal it, or
-            the click hit-test below drifts. 置顶（不再垂直居中，省下的纵向空间给读数）。 */}
+            the click hit-test below drifts. */}
         <div className="w-full shrink-0" style={{ aspectRatio: arenaAspect() }}>
           <canvas
             ref={canvasRef}
