@@ -258,6 +258,52 @@ export interface EnvironmentalSelectionDetail extends EnvironmentalSelectionSumm
   results: EnvironmentalSelectionResults;
 }
 
+// --- runs（磁盘 run 只读；`API接口.md` §2.4） -------------------------------
+
+export interface RunSummary {
+  run_id: string;
+  experiment_id: string;
+  seed: number | null;
+  status: string;
+  created_at: string;
+  /** `evolution.jsonl` 行数（= 已跑代数）；无该文件时 null。 */
+  generations: number | null;
+}
+
+/**
+ * `evolution.jsonl` 的一代。字段随 producer 版本变化（老 run 缺 `p_A`/`mean_*` 等），
+ * 故 §8 需要的项一律可选——**缺失就显示"未记录"，不补 0**（不许编造）。
+ */
+export interface RunGeneration {
+  generation: number;
+  n_individuals?: number;
+  n_viable?: number;
+  fitness_mean?: number;
+  fitness_std?: number;
+  bottleneck?: boolean;
+  /** 环境变更标记（非空即发生环境切换）。 */
+  event?: string | null;
+  p_A?: number;
+  p_B?: number;
+  phenotype_freq?: Record<string, number>;
+  mean_neuron?: number;
+  mean_edge?: number;
+  mean_tau?: number;
+}
+
+export interface RunFitnessDistribution {
+  generation: number;
+  values: number[];
+}
+
+export interface RunEvolution {
+  run_id: string;
+  experiment_id: string;
+  seed: number | null;
+  generations: RunGeneration[];
+  fitness: RunFitnessDistribution[];
+}
+
 export interface Health {
   status: string;
   /** 能力位：`true` = 后端 `release` 支持手动动作（`API接口.md` §1.10）。

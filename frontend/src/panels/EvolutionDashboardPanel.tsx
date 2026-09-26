@@ -11,6 +11,9 @@ import {
 } from "@/api/selections";
 import { useUiStore } from "@/store/ui";
 import { subscribe } from "@/api/ws";
+import { getRunEvolution, listRuns } from "@/api/runs";
+import { EvolutionMetrics } from "@/panels/EvolutionMetrics";
+import type { RunEvolution, RunSummary } from "@/api/types";
 import type {
   EnvironmentalSelectionDetail,
   EnvironmentalSelectionSummary,
@@ -73,6 +76,10 @@ export function EvolutionDashboardPanel() {
   // 会话内演化（§2.3 过渡实现：复用环境选择 job）
   const sessionId = useUiStore((s) => s.sessionId);
   const [sessionGens, setSessionGens] = useState(1);
+  // §8 指标：磁盘 run（重启不丢，含非本进程产生的 run）
+  const [runs, setRuns] = useState<RunSummary[]>([]);
+  const [runId, setRunId] = useState<string | null>(null);
+  const [evolution, setEvolution] = useState<RunEvolution | null>(null);
 
   const seeds = parseSeeds(seedsText);
   const seedsValid = seeds.length > 0 && seeds.length <= MAX_SEEDS;
@@ -89,6 +96,32 @@ export function EvolutionDashboardPanel() {
   useEffect(() => {
     void refreshList();
   }, [refreshList]);
+
+  const refreshRuns = useCallback(async () => {
+    try {
+      const page = await listRuns(20);
+      setRuns(page.items);
+      setRunId((current) => current ?? page.items[0]?.run_id ?? null);
+    } catch (e) {
+      setError(String(e));
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshRuns();
+  }, [refreshRuns]);
+
+  // 选中 run -> 拉逐代指标（§8）
+  useEffect(() => {
+    if (!runId) return;
+    let stop = false;
+    void getRunEvolution(runId)
+      .then((data) => !stop && setEvolution(data))
+      .catch((e) => !stop && setError(String(e)));
+    return () => {
+      stop = true;
+    };
+  }, [runId]);
 
   // WS 优先：`job.progress` 是**全局**推送（session_id=None，所有订阅者都收），
   // 有活动会话就顺带订阅，实时更新进度；无会话时纯靠下面的轮询兜底。
@@ -319,10 +352,13 @@ export function EvolutionDashboardPanel() {
         {/* 右：历史实验列表 + 详情 */}
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
           <div className="flex items-center justify-between">
-            <span className="font-pixel text-[10px] leading-none">RUNS</span>
+            <span className="font-pixel text-[10px] leading-none">SELECTION JOBS</span>
             <button
               type="button"
-              onClick={() => void refreshList()}
+              onClick={() => {
+                void refreshList();
+                void refreshRuns();
+              }}
               className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
             >
               <RefreshCw className="size-3" />
@@ -351,14 +387,57 @@ export function EvolutionDashboardPanel() {
               </li>
             ))}
             {items.length === 0 && (
-              <li className="font-mono text-[10px] text-muted-foreground">尚无实验记录</li>
+              <li className="font-mono text-[10px] text-muted-foreground">
+                本进程尚未发起实验（内存表，重启即空）；历史 run 见下方 DISK RUNS。
+              </li>
             )}
           </ul>
+
+          {/* §8 指标（磁盘 run；与内存实验表无关，重启后仍在） */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-pixel text-[10px] leading-none">DISK RUNS</span>
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {runId ?? "未选择 run"}
+              </span>
+            </div>
+            <ul className="flex max-h-24 flex-col gap-1 overflow-y-auto">
+              {runs.map((run) => (
+                <li key={run.run_id}>
+                  <button
+                    type="button"
+                    onClick={() => setRunId(run.run_id)}
+                    className={`flex w-full items-center justify-between border border-border px-2 py-0.5 text-left font-mono text-[10px] ${
+                      runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
+                    }`}
+                  >
+                    <span className="truncate">{run.run_id}</span>
+                    <span className="truncate text-muted-foreground">
+                      s{run.seed ?? "—"} · {run.generations ?? 0} 代
+                    </span>
+                    <span className="truncate text-muted-foreground">{run.status}</span>
+                  </button>
+                </li>
+              ))}
+              {runs.length === 0 && (
+                <li className="font-mono text-[10px] text-muted-foreground">
+                  results/runs 下暂无 run
+                </li>
+              )}
+            </ul>
+            {evolution ? (
+              <EvolutionMetrics evolution={evolution} />
+            ) : (
+              <div className="border border-border p-2 font-mono text-[10px] text-muted-foreground">
+                选择上方任一 run 查看 §8 九项指标。
+              </div>
+            )}
+          </div>
 
           {detail && (
             <div className="border border-border p-2">
               <div className="mb-1 flex items-center justify-between">
-                <span className="font-pixel text-[10px] leading-none">RUNS</span>
+                <span className="font-pixel text-[10px] leading-none">RUN DETAIL</span>
                 <span className="font-mono text-[10px] text-muted-foreground">
                   {detail.experiment_id}
                 </span>

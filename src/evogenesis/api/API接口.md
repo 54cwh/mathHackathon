@@ -282,6 +282,30 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 
 - **代码位置**：`genomes.py`（端点）、`genome_lab.py`（store 与原语）。
 
+### 2.4 运行记录（磁盘 run，只读；已实现）
+
+`results/runs/<run_id>/` 是 runlayout 的落盘契约，**重启进程也在**；故运行记录按**磁盘目录**暴露，
+而不是内存实验表（后者重启即空，`pilot20-s1103` 这类非本进程产生的 run 也就看不见）。
+
+| 端点 | 方法 | 响应 |
+|---|---|---|
+| `/v1/runs` | GET | `Page[RunSummary]`（按 `created_at` 降序，分页 `?limit=&cursor=`） |
+| `/v1/runs/{run_id}/evolution` | GET | `RunEvolution`（逐代指标 + 逐个体 fitness） |
+
+`RunSummary`：`run_id`（= 目录名）、`experiment_id`、`seed`、`status`、`created_at`、`generations`（`evolution.jsonl` 行数，缺文件为 `null`）。
+
+`RunEvolution`：`run_id`、`experiment_id`、`seed`、`generations`（**原样透传** `evolution.jsonl` 行）、
+`fitness`（`[{generation, values[]}]`，取自 `generations/g<NNNN>/fitness.jsonl`，缺则空表）。
+
+> ⚠️ **字段随 producer 版本变化**：`pilot*` 系列的老 run 缺 `p_A` / `p_B` / `phenotype_freq` /
+> `mean_neuron` / `mean_edge` / `mean_tau`（只有 7 个键），当前 producer 写全 13 个键。
+> 故 `generations` 行**不建强类型**（`dict[str, Any]` 透传）；前端对缺失项显示「未记录」，不补 0。
+> 另：`evolution.jsonl` 由代循环在结束时写出，**run 进行中该端点可能返回空表**。
+
+- **路径安全**：`run_id` 必须是单个路径段（含 `/`、`\`、`..` 一律 `404`），解析后再断言仍位于
+  `results/runs/` 之内；只读取该目录既有产物，不写入、不递归。
+- **代码位置**：`runs.py`。消费者：`frontend` Evolution Dashboard（`交互与可视化.md` §8 九项指标）。
+
 ## 3. WebSocket `/v1/ws`
 
 长连接；所有消息为同一信封：`{v, type, seq, ts, payload}`。
@@ -361,6 +385,8 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | POST | `/v1/genomes/{genome_id}/mutations` | **functional**（`201`） | 池伟豪 | `genomes.py::mutate_genome` |
 | POST | `/v1/developments` | **functional** | 池伟豪 | `genomes.py::develop` |
 | POST | `/v1/breedings` | **functional**（`201`） | 池伟豪 | `genomes.py::breed` |
+| GET | `/v1/runs` | **functional** | 池伟豪 | `runs.py::list_runs` |
+| GET | `/v1/runs/{run_id}/evolution` | **functional** | 池伟豪 | `runs.py::run_evolution` |
 | POST | `/v1/environmental-selections` | **functional**（`202`） | 池伟豪 | `environmental_selections.py::start_environmental_selection` |
 | GET | `/v1/environmental-selections` | **functional** | 池伟豪 | `environmental_selections.py::list_environmental_selections` |
 | GET | `/v1/environmental-selections/{experiment_id}` | **functional** | 池伟豪 | `environmental_selections.py::get_environmental_selection` |

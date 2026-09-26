@@ -68,9 +68,16 @@ def _create(master_seed: int = 250927, environment: str = "food_rich") -> dict:
 
 
 def test_health() -> None:
+    """`status` 是状态，`manual_control` 是**能力位**（`API接口.md` §1.10）。
+
+    能力位用于让前端识别"旧进程静默忽略新查询参数"（Manual Control 踩过）：
+    旧进程没有该字段，`release` 会忽略 `fish_id/omega/speed`。
+    """
     resp = client.get("/v1/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["manual_control"] is True
 
 
 def test_create_session_and_snapshot_full_field_set() -> None:

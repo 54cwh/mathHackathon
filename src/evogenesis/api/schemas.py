@@ -166,6 +166,36 @@ class EnvironmentalSelectionDetail(BaseModel):
     results: dict[str, Any] = Field(default_factory=dict)
 
 
+# --- runs (磁盘 run 只读；`API接口.md` §2.4) ---------------------------------
+class RunSummary(BaseModel):
+    """`results/runs/<run_id>/` 的一条索引（来自 `metadata.json` + `evolution.jsonl` 行数）。"""
+
+    run_id: str
+    experiment_id: str
+    seed: int | None = None
+    status: str = "unknown"
+    created_at: str = ""
+    #: `evolution.jsonl` 行数（= 已跑代数）；无该文件时 None。
+    generations: int | None = None
+
+
+class RunFitnessDistribution(BaseModel):
+    """某一代的**逐个体** fitness（`generations/g<NNNN>/fitness.jsonl`），用于分布直方图。"""
+
+    generation: int
+    values: list[float]
+
+
+class RunEvolution(BaseModel):
+    """一个 run 的逐代指标；`generations` 原样透传 `evolution.jsonl` 行（字段随 producer）。"""
+
+    run_id: str
+    experiment_id: str
+    seed: int | None = None
+    generations: list[dict[str, Any]]
+    fitness: list[RunFitnessDistribution] = Field(default_factory=list)
+
+
 # --- jobs ------------------------------------------------------------------
 class JobStatus(BaseModel):
     job_id: str
