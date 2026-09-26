@@ -37,9 +37,7 @@ class GenomeConfig(_Section):
     alphabet: list[str]
     motif_count: int
     motif_length: int
-    motif_window: int
     motif_topk: int
-    motif_scan_scope: str
     motif_subset_A: int
     motif_subset_B: int
 

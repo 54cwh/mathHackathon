@@ -14,14 +14,16 @@
   ],
   "properties": {
     "fish_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "generation": {
       "type": "integer",
       "minimum": 0
     },
     "genome_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "viable": {
       "type": "boolean"

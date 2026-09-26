@@ -1,6 +1,6 @@
 """genome 模块测试：结构 / motif affinity / E_A,E_B / 阈值 / 遗传算子 / 可复现。
 
-契约来源：``genome/生物学与进化遗传学基础.md``（v1.4 已定稿）、
+契约来源：``genome/生物学与进化遗传学基础.md``（v1.7 已定稿）、
 ``development/RGCD数学模型.md`` §2（参数）、``schemas/genome.schema.json``。
 固定种子取 ``configs/demo_seed.yaml`` 的 ``master_seed=250927``。
 """
@@ -97,6 +97,12 @@ def test_schema_exchange_shape_roundtrip():
         assert set(item["maternal"]) <= set(G.ALPHABET)
         assert set(item["paternal"]) <= set(G.ALPHABET)
     assert G.DiploidGenome.from_dict(payload) == genome
+
+
+def test_to_dict_requires_nonempty_genome_id():
+    genome = G.DiploidGenome((G.ChromosomePair(FUNC_A, LOSS), G.ChromosomePair(FUNC_B, LOSS)))
+    with pytest.raises(ValueError):
+        genome.to_dict()
 
 
 def test_from_dict_requires_genome_id():

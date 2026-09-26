@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.5",
+    "version": "v0.6",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -48,6 +48,24 @@
       "suggest": null
     },
     {
+      "name": "alphabet",
+      "value": [
+        "A",
+        "C",
+        "G",
+        "T"
+      ],
+      "unit": null,
+      "group": "genome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "DNA 四碱基字表，Hamming affinity 与 SNP 替换算子在其上定义",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §2",
+      "config": "configs/default_model.yaml → genome.alphabet",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
       "name": "bp_per_haplotype_chromosome",
       "value": 128,
       "unit": "bp",
@@ -87,7 +105,7 @@
       "suggest": null
     },
     {
-      "name": "n_motifs",
+      "name": "motif_count",
       "value": 8,
       "unit": null,
       "group": "genome",
@@ -104,7 +122,7 @@
       "suggest": "标「设计选择（未验证）」"
     },
     {
-      "name": "motif_subset_K_A",
+      "name": "motif_subset_A",
       "value": 0,
       "unit": null,
       "group": "genome",
@@ -117,7 +135,7 @@
       "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
     },
     {
-      "name": "motif_subset_K_B",
+      "name": "motif_subset_B",
       "value": 1,
       "unit": null,
       "group": "genome",
@@ -750,19 +768,6 @@
       "suggest": "设计选择（未验证）"
     },
     {
-      "name": "motif_window",
-      "value": 6,
-      "unit": "bp",
-      "group": "genome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "与 motif 等长的定长滑窗、步长 1",
-      "source": "src/evogenesis/development/RGCD数学模型.md §2",
-      "config": "configs/default_model.yaml → genome.motif_window",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
       "name": "motif_topk",
       "value": 3,
       "unit": null,
@@ -953,19 +958,6 @@
       "basis": "饱和判据 |h_i|>1-ε 的 ε",
       "source": "src/evogenesis/development/RGCD数学模型.md §7",
       "config": "configs/default_model.yaml → development.saturation_eps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "motif_scan_scope",
-      "value": "per_chromosome",
-      "unit": null,
-      "group": "genome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "haploid=2×128=256 bp；窗口逐染色体滑动、不跨边界，TopKMean 在窗口并集上取 top-K（避免虚构跨染色体 junction motif）",
-      "source": "src/evogenesis/development/RGCD数学模型.md §2",
-      "config": "configs/default_model.yaml → genome.motif_scan_scope",
       "sensitivity": null,
       "suggest": null
     },
@@ -1499,7 +1491,7 @@
     ]
   },
   "citation_risks": [
-    "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 n_motifs（见 research/notes/bibliography.md 引用规则）",
+    "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 motif_count（见 research/notes/bibliography.md 引用规则）",
     "initial_precursors=24 的口径未写清（substrate 节点数 vs 发育起始细胞数）",
     "『步数→秒』换算是推断，各来源 dt 不同",
     "BC 损失权重 λ_i=1/σ_i²（目标尺度归一化）属实现级惯例（robomimic/ACT/diffusion policy 逐维标准化 + 等权 MSE），无单篇论文证明其最优；正文按实现惯例表述",
@@ -1571,7 +1563,7 @@
   ],
   "sensitivity_plan": [
     {
-      "param": "n_motifs",
+      "param": "motif_count",
       "values": [
         4,
         8,

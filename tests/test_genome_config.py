@@ -7,6 +7,7 @@
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 import yaml
 
@@ -24,9 +25,7 @@ FIELDS = (
     "alphabet",
     "motif_count",
     "motif_length",
-    "motif_window",
     "motif_topk",
-    "motif_scan_scope",
     "motif_subset_A",
     "motif_subset_B",
 )
@@ -78,3 +77,75 @@ def test_injected_layout_drives_motif_topk():
     layout = GenomeLayout(motif_topk=1)
     values = G.window_affinities("A" * 128, "A" * 6)
     assert G.chain_affinity("A" * 128, "A" * 6, layout=layout) == G.top_k_mean(values, 1)
+
+
+SHORT = GenomeLayout(
+    bp_per_haplotype_chromosome=8,
+    chromosome_pairs=2,
+    motif_count=8,
+    motif_length=2,
+    motif_topk=1,
+    motif_subset_A=3,
+    motif_subset_B=5,
+)
+
+
+def test_injected_layout_haploid_bp_uses_layout():
+    assert SHORT.haploid_bp == 16
+    assert SHORT.diploid_bp == 32
+
+
+def test_injected_layout_end_to_end():
+    pair = G.ChromosomePair("ACGTACGT", "ACGTACGT", layout=SHORT)
+    genome = G.DiploidGenome((pair, pair), genome_id="g-0001", layout=SHORT)
+    assert genome.haploid_bp == 16
+
+    payload = {
+        "genome_id": "g-0001",
+        "chromosome_pairs": [
+            {"maternal": "ACGTACGT", "paternal": "ACGTACGT"},
+            {"maternal": "ACGTACGT", "paternal": "ACGTACGT"},
+        ],
+    }
+    assert G.DiploidGenome.from_dict(payload, layout=SHORT) == genome
+
+    child = G.fertilize(("ACGTACGT", "ACGTACGT"), ("ACGTACGT", "ACGTACGT"), layout=SHORT)
+    assert child.haploid_bp == 16
+    with pytest.raises(ValueError):
+        G.fertilize(("ACGTACGT",), ("ACGTACGT",), layout=SHORT)
+
+
+def test_injected_alphabet_drives_mutation():
+    tiny = GenomeLayout(
+        alphabet=("A", "C"),
+        bp_per_haplotype_chromosome=4,
+        chromosome_pairs=1,
+        motif_count=2,
+        motif_length=2,
+        motif_topk=1,
+        motif_subset_A=0,
+        motif_subset_B=1,
+    )
+    mutated = G.mutate_sequence("AAAA", 1.0, np.random.default_rng(0), layout=tiny)
+    assert set(mutated) == {"C"}
+
+
+def test_motif_subset_wired_into_expression():
+    catalog = ["GG", "GG", "GG", "AA", "GG", "CC", "GG", "GG"]
+    pair_a = G.ChromosomePair("AAGGGGGG", "AAGGGGGG", layout=SHORT)
+    pair_b = G.ChromosomePair("CCGGGGGG", "CCGGGGGG", layout=SHORT)
+    genome = G.DiploidGenome((pair_a, pair_b), genome_id="g-0001", layout=SHORT)
+    assert DEFAULT_LAYOUT.motif_subset("A") == (0,)
+    assert DEFAULT_LAYOUT.motif_subset("B") == (1,)
+    assert SHORT.motif_subset("A") == (3,)
+    assert SHORT.motif_subset("B") == (5,)
+    assert G.expression_A(genome, catalog) == pytest.approx(1.0)
+    assert G.expression_A(genome, catalog, (3,)) == pytest.approx(1.0)
+    assert G.expression_B(genome, catalog) == pytest.approx(1.0)
+
+
+def test_layout_rejects_invalid_motif_subset():
+    with pytest.raises(ValueError):
+        GenomeLayout(motif_subset_A=8, motif_subset_B=1)
+    with pytest.raises(ValueError):
+        GenomeLayout(motif_subset_A=1, motif_subset_B=1)

@@ -4,9 +4,7 @@ genome:
   alphabet: [A, C, G, T]
   motif_count: 8
   motif_length: 6
-  motif_window: 6
   motif_topk: 3
-  motif_scan_scope: per_chromosome
   motif_subset_A: 0
   motif_subset_B: 1
 phenotype:

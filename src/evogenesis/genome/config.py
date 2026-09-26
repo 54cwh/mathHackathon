@@ -29,11 +29,18 @@ class GenomeLayout:
     alphabet: tuple[str, ...] = ("A", "C", "G", "T")
     motif_count: int = 8
     motif_length: int = 6
-    motif_window: int = 6
     motif_topk: int = 3
-    motif_scan_scope: str = "per_chromosome"
     motif_subset_A: int = 0
     motif_subset_B: int = 1
+
+    def __post_init__(self) -> None:
+        for locus, index in (("A", self.motif_subset_A), ("B", self.motif_subset_B)):
+            if not 0 <= index < self.motif_count:
+                raise ValueError(
+                    f"motif_subset_{locus} 须落在 [0, {self.motif_count})，实际 {index}"
+                )
+        if self.motif_subset_A == self.motif_subset_B:
+            raise ValueError("K_A 与 K_B 必须互斥（genome §3）")
 
     @property
     def haploid_bp(self) -> int:
@@ -43,6 +50,14 @@ class GenomeLayout:
     def diploid_bp(self) -> int:
         return 2 * self.haploid_bp
 
+    def motif_subset(self, locus: str) -> tuple[int, ...]:
+        """位点 K_A / K_B 的 motif 索引元组（genome §3；MVP 单元素）。"""
+        if locus == "A":
+            return (self.motif_subset_A,)
+        if locus == "B":
+            return (self.motif_subset_B,)
+        raise ValueError(f"未知位点 {locus!r}；支持 'A' / 'B'")
+
     @classmethod
     def from_config(cls, cfg: GenomeConfig) -> GenomeLayout:
         return cls(
@@ -51,9 +66,7 @@ class GenomeLayout:
             alphabet=tuple(cfg.alphabet),
             motif_count=cfg.motif_count,
             motif_length=cfg.motif_length,
-            motif_window=cfg.motif_window,
             motif_topk=cfg.motif_topk,
-            motif_scan_scope=cfg.motif_scan_scope,
             motif_subset_A=cfg.motif_subset_A,
             motif_subset_B=cfg.motif_subset_B,
         )

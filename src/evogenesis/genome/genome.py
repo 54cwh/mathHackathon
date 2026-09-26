@@ -64,7 +64,7 @@ class ChromosomePair:
 class DiploidGenome:
     """二倍体基因组：``pairs[0]`` 承载 A 位点，``pairs[1]`` 承载 B 位点（genome §3）。"""
 
-    pairs: tuple[ChromosomePair, ChromosomePair]
+    pairs: tuple[ChromosomePair, ...]
     genome_id: str = ""
     layout: GenomeLayout = field(default=DEFAULT_LAYOUT, compare=False, repr=False)
 
@@ -85,14 +85,16 @@ class DiploidGenome:
 
     @property
     def haploid_bp(self) -> int:
-        return CHROMOSOME_PAIRS * BP_PER_HAPLOTYPE_CHROMOSOME
+        return self.layout.chromosome_pairs * self.layout.bp_per_haplotype_chromosome
 
     @property
     def diploid_bp(self) -> int:
         return sum(len(p.maternal) + len(p.paternal) for p in self.pairs)
 
     def to_dict(self) -> dict:
-        """``schemas/genome.schema.json`` 的交换形态。"""
+        """``schemas/genome.schema.json`` 的交换形态；要求非空 ``genome_id``（core §3.1）。"""
+        if not self.genome_id:
+            raise ValueError("序列化到 schema 边界要求非空 genome_id（core §3.1）")
         return {
             "genome_id": self.genome_id,
             "chromosome_pairs": [
@@ -101,18 +103,17 @@ class DiploidGenome:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> DiploidGenome:
+    def from_dict(cls, data: dict, *, layout: GenomeLayout = DEFAULT_LAYOUT) -> DiploidGenome:
         items = data["chromosome_pairs"]
-        if len(items) != CHROMOSOME_PAIRS:
-            raise ValueError(f"chromosome_pairs 必须恰有 {CHROMOSOME_PAIRS} 项")
-        pairs = (
-            ChromosomePair(items[0]["maternal"], items[0]["paternal"]),
-            ChromosomePair(items[1]["maternal"], items[1]["paternal"]),
+        if len(items) != layout.chromosome_pairs:
+            raise ValueError(f"chromosome_pairs 必须恰有 {layout.chromosome_pairs} 项")
+        pairs = tuple(
+            ChromosomePair(item["maternal"], item["paternal"], layout=layout) for item in items
         )
         genome_id = data["genome_id"]
         if not isinstance(genome_id, str):
             raise ValueError("genome_id 必须是字符串")
-        return cls(pairs, genome_id)
+        return cls(pairs, genome_id, layout=layout)
 
 
 # ---------------------------------------------------------------------------
@@ -265,25 +266,27 @@ def locus_expression(
 def expression_A(
     genome: DiploidGenome,
     motifs: Sequence[str],
-    motif_indices: Sequence[int],
+    motif_indices: Sequence[int] | None = None,
     *,
     k: int | None = None,
     step: int = 1,
 ) -> np.float32:
-    """A 位点表达量：只扫 ``pairs[0]``（1 号染色体对）。"""
-    return locus_expression(genome, motifs, motif_indices, 0, k=k, step=step)
+    """A 位点表达量：只扫 ``pairs[0]``；``motif_indices`` 缺省取 ``layout.motif_subset("A")``。"""
+    indices = genome.layout.motif_subset("A") if motif_indices is None else motif_indices
+    return locus_expression(genome, motifs, indices, 0, k=k, step=step)
 
 
 def expression_B(
     genome: DiploidGenome,
     motifs: Sequence[str],
-    motif_indices: Sequence[int],
+    motif_indices: Sequence[int] | None = None,
     *,
     k: int | None = None,
     step: int = 1,
 ) -> np.float32:
-    """B 位点表达量：只扫 ``pairs[1]``（2 号染色体对）。"""
-    return locus_expression(genome, motifs, motif_indices, 1, k=k, step=step)
+    """B 位点表达量：只扫 ``pairs[1]``；``motif_indices`` 缺省取 ``layout.motif_subset("B")``。"""
+    indices = genome.layout.motif_subset("B") if motif_indices is None else motif_indices
+    return locus_expression(genome, motifs, indices, 1, k=k, step=step)
 
 
 @dataclass(frozen=True)
@@ -306,6 +309,9 @@ class Architecture:
 
 def architecture(e_a: np.float32, e_b: np.float32, theta_N: float, theta_H: float) -> Architecture:
     """``high_N ⟺ E_A>θ_N``、``high_H ⟺ E_B>θ_H``（genome §3，严格大于）。"""
+    for name, theta in (("theta_N", theta_N), ("theta_H", theta_H)):
+        if not 0.0 < theta < 0.5:
+            raise ValueError(f"{name} 须落在 (0, 0.5)（genome §3 完全显性必要条件），实际 {theta}")
     return Architecture(high_N=bool(e_a > theta_N), high_H=bool(e_b > theta_H))
 
 
@@ -314,15 +320,18 @@ def architecture(e_a: np.float32, e_b: np.float32, theta_N: float, theta_H: floa
 # ---------------------------------------------------------------------------
 
 
-def mutate_sequence(seq: str, mu: float, rng: np.random.Generator) -> str:
+def mutate_sequence(
+    seq: str, mu: float, rng: np.random.Generator, *, layout: GenomeLayout = DEFAULT_LAYOUT
+) -> str:
     r"""SNP mutation：每碱基以 ``μ`` 概率替换（genome §5；替换碱基在其余三种上均匀抽取）。"""
     if not 0.0 <= mu <= 1.0:
         raise ValueError("μ 必须落在 [0, 1]")
-    _validate_alphabet(seq, "序列")
+    _validate_alphabet(seq, "序列", layout)
+    alphabet = "".join(layout.alphabet)
     out: list[str] = []
     for base in seq:
         if rng.random() < mu:
-            alternatives = ALPHABET.replace(base, "")
+            alternatives = alphabet.replace(base, "")
             out.append(alternatives[int(rng.integers(0, len(alternatives)))])
         else:
             out.append(base)
@@ -360,18 +369,23 @@ def make_gamete(
     crossover_probability: float,
     crossover_rng: np.random.Generator,
     mutation_rng: np.random.Generator,
+    *,
+    layout: GenomeLayout = DEFAULT_LAYOUT,
 ) -> Gamete:
     """gamete：crossover/选择，再 SNP mutation（分别用 crossover / mutation 命名空间）。"""
     base_gamete = meiosis(genome, crossover_probability, crossover_rng)
-    return tuple(mutate_sequence(chromosome, mu, mutation_rng) for chromosome in base_gamete)
-
-
-def fertilize(gamete_a: Gamete, gamete_b: Gamete) -> DiploidGenome:
-    """``gamete_A + gamete_B → offspring``（genome §4 / evolution §3）。"""
-    if len(gamete_a) != CHROMOSOME_PAIRS or len(gamete_b) != CHROMOSOME_PAIRS:
-        raise ValueError(f"gamete 必须含 {CHROMOSOME_PAIRS} 条染色体")
-    pairs = (
-        ChromosomePair(gamete_a[0], gamete_b[0]),
-        ChromosomePair(gamete_a[1], gamete_b[1]),
+    return tuple(
+        mutate_sequence(chromosome, mu, mutation_rng, layout=layout) for chromosome in base_gamete
     )
-    return DiploidGenome(pairs)
+
+
+def fertilize(
+    gamete_a: Gamete, gamete_b: Gamete, *, layout: GenomeLayout = DEFAULT_LAYOUT
+) -> DiploidGenome:
+    """``gamete_A + gamete_B → offspring``（genome §4 / evolution §3）。"""
+    if len(gamete_a) != layout.chromosome_pairs or len(gamete_b) != layout.chromosome_pairs:
+        raise ValueError(f"gamete 必须含 {layout.chromosome_pairs} 条染色体")
+    pairs = tuple(
+        ChromosomePair(a, b, layout=layout) for a, b in zip(gamete_a, gamete_b, strict=True)
+    )
+    return DiploidGenome(pairs, layout=layout)

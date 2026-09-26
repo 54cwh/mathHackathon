@@ -10,7 +10,8 @@
   ],
   "properties": {
     "genome_id": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "chromosome_pairs": {
       "type": "array",

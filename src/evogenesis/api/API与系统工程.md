@@ -41,6 +41,9 @@
 目录职责与 `AGENTS.md` 的「项目目录结构」一致。
 
 ## 3. 稳定 ID
+
+> **owner 已移出本文件**：`fish_id` / `genome_id` / `generation_id` / `experiment_id` / `environment_id` 的格式、派生与唯一性域归 `core/核心机制与数据流.md` §3.1（实现 `core/ids.py`）。本表仅列名。
+
 - fish_id
 - genome_id
 - generation_id
