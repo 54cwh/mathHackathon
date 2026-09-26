@@ -3,7 +3,6 @@ import { FlaskConical, RefreshCw, X } from "lucide-react";
 import { Panel } from "@/components/Panel";
 import {
   cancelJob,
-  evolveSession,
   getJob,
   getSelection,
   launchSelection,
@@ -67,15 +66,14 @@ export function EvolutionDashboardPanel() {
   // 运行状态
   const [job, setJob] = useState<JobStatus | null>(null);
   /** job 来源：只有环境选择 job 完成才刷新「详情=最新实验」，会话演化不产 ExperimentRun。 */
-  const [jobKind, setJobKind] = useState<"selection" | "session">("selection");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 列表与详情
   const [items, setItems] = useState<EnvironmentalSelectionSummary[]>([]);
   const [detail, setDetail] = useState<EnvironmentalSelectionDetail | null>(null);
   // 会话内演化（§2.3 过渡实现：复用环境选择 job）
+  /** Arena 会话 id：仅用于顺带订阅全局 `job.progress`（见下方 WS effect），无会话时靠轮询。 */
   const sessionId = useUiStore((s) => s.sessionId);
-  const [sessionGens, setSessionGens] = useState(1);
   // §8 指标：磁盘 run（重启不丢，含非本进程产生的 run）
   const [runs, setRuns] = useState<RunSummary[]>([]);
   const [runId, setRunId] = useState<string | null>(null);
@@ -165,7 +163,7 @@ export function EvolutionDashboardPanel() {
   }, [job]);
 
   useEffect(() => {
-    if (job?.status !== "done" || jobKind !== "selection") return;
+    if (job?.status !== "done") return;
     void refreshList();
     // 详情与 job 一一对应：实验列表首项即本次 launch 的 run（服务端按启动顺序追加）。
     void (async () => {
@@ -177,13 +175,12 @@ export function EvolutionDashboardPanel() {
         setError(String(e));
       }
     })();
-  }, [job?.status, jobKind, refreshList]);
+  }, [job?.status, refreshList]);
 
   async function handleLaunch() {
     setBusy(true);
     setError(null);
     setDetail(null);
-    setJobKind("selection");
     try {
       setJob(
         await launchSelection({
@@ -302,45 +299,6 @@ export function EvolutionDashboardPanel() {
               </div>
             </div>
           )}
-
-          {/* 会话内演化（`API接口.md` §2.3）：把当前 Arena 会话推进 N 代 */}
-          <div className="flex items-end gap-2 border border-border p-2">
-            <label className="flex flex-col gap-1">
-              <span className="font-pixel text-[10px] leading-none">SESSION GENS</span>
-              <input
-                type="number"
-                min={1}
-                value={sessionGens}
-                onChange={(e) => setSessionGens(Number(e.target.value))}
-                className="w-20 border border-border bg-transparent px-1 py-0.5 font-mono text-xs"
-              />
-            </label>
-            <button
-              type="button"
-              disabled={!sessionId || busy || running}
-              onClick={() => {
-                if (!sessionId) return;
-                void (async () => {
-                  setBusy(true);
-                  setError(null);
-                  try {
-                    setJobKind("session");
-                    setJob(await evolveSession(sessionId, Math.max(1, Math.trunc(sessionGens))));
-                  } catch (e) {
-                    setError(String(e));
-                  } finally {
-                    setBusy(false);
-                  }
-                })();
-              }}
-              className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
-            >
-              EVOLVE SESSION
-            </button>
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : "无活动会话"}
-            </span>
-          </div>
 
           <p className="text-xs text-muted-foreground">
             {error
