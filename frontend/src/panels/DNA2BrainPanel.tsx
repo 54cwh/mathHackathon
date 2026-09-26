@@ -115,12 +115,16 @@ export function DNA2BrainPanel() {
   return (
     <Panel title="DNA2Brain Lab" icon={<Dna className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <DnaHelixVisual />
+        {/* min-h-40 + flex-[3]：面板矮时视觉区不被下方内容挤成 0 高（实测过 0 高黑块）。 */}
+        <div className="min-h-40 flex-[3] overflow-hidden">
+          <DnaHelixVisual sequence={sequence} highlightPosition={position} />
         </div>
 
+        {/* 下方内容（条带 + 编辑器 + 表型 + 提示）独立成可滚区，矮面板下不裁剪。 */}
+        <div className="flex min-h-0 flex-[2] flex-col gap-2 overflow-y-auto pr-1">
+
         {/* Nucleotide strip：真实序列；窗口内可点选（点选 index 需加回 windowStart）。 */}
-        <div className="max-h-28 min-h-0 shrink-0 overflow-hidden">
+        <div className="max-h-20 min-h-0 shrink-0 overflow-hidden">
           <NucleotideStrip
             sequence={windowSequence}
             selectedPosition={position - windowStart}
@@ -237,9 +241,10 @@ export function DNA2BrainPanel() {
           </dl>
         </div>
 
-        <p className="shrink-0 text-sm text-muted-foreground">
-          {error ? `⚠ ${error}` : "点选碱基或用 POS 定位，MUTATE 单点突变后 DEVELOP 重算表型。"}
-        </p>
+          <p className="shrink-0 text-xs text-muted-foreground">
+            {error ? `⚠ ${error}` : "点选碱基或用 POS 定位，MUTATE 单点突变后 DEVELOP 重算表型。"}
+          </p>
+        </div>
       </div>
     </Panel>
   );

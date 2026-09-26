@@ -49,11 +49,12 @@ export function BrainForgePanel() {
   return (
     <Panel title="Brain Forge" icon={<Brain className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
-        <div className="min-h-0 flex-1 overflow-hidden">
-          <BrainForgeVisual />
+        {/* min-h-40：矮面板下视觉区不被读数块挤没（与 DNA 面板同因）。 */}
+        <div className="min-h-40 flex-[3] overflow-hidden">
+          <BrainForgeVisual activation={vector ?? undefined} />
         </div>
 
-        <div className="shrink-0 space-y-2 border border-border p-2">
+        <div className="shrink-0 space-y-2 overflow-y-auto border border-border p-2">
           <div className="flex items-center justify-between">
             <span className="font-pixel text-[10px] leading-none">ACTIVATION</span>
             <span className="font-mono text-[10px] text-muted-foreground">
@@ -99,7 +100,7 @@ export function BrainForgePanel() {
           )}
         </div>
 
-        <p className="shrink-0 text-sm text-muted-foreground">
+        <p className="shrink-0 text-xs text-muted-foreground">
           模型驱动会话（DanioNet + 冻结 checkpoint）经 release 推送激活；当前会话由 Arena 驱动。
         </p>
       </div>
