@@ -21,7 +21,9 @@ from torch import nn
 from evogenesis.core.seed import SeedManager
 from evogenesis.core.tensors import to_float32_tensor
 
-N_OURS = 190
+# N_ours（§8 的公平性基准）不在此：它是 DanioNet 的**实测参考值**（seed 250927 / index 12，
+# 支撑边数 190），登记于 docs/参数总表.json 的 reference_magnitudes，并由
+# tests/test_baselines.py 实测守护（避免支撑口径变动后静默过期）。
 SPARSE_DENSITY = 0.15
 DEFAULT_SENSORY_DIM = 12
 ACTION_DIM = 2
@@ -386,7 +388,6 @@ __all__ = [
     "FixedSparseRNNPolicy",
     "GRUPolicy",
     "MLPPolicy",
-    "N_OURS",
     "SPARSE_DENSITY",
     "build_baselines",
 ]

@@ -113,9 +113,15 @@ def _parse_action(value: Any, ctx: str) -> list[float]:
         raise TrajectoryFormatError(
             f"{ctx} expert_action 必须为长度 {ACTION_DIM} 的数组，实际 {value!r}"
         )
-    return [
-        _require_float(item, f"expert_action[{index}]", ctx) for index, item in enumerate(value)
-    ]
+    omega = _require_float(value[0], "expert_action[0]", ctx)
+    v = _require_float(value[1], "expert_action[1]", ctx)
+    if not -1.0 <= omega <= 1.0:
+        raise TrajectoryFormatError(
+            f"{ctx} expert_action[0] (ω*)={omega} 越界（DanioNet §4：[−1,1]）"
+        )
+    if not 0.0 <= v <= 1.0:
+        raise TrajectoryFormatError(f"{ctx} expert_action[1] (v*)={v} 越界（DanioNet §4：[0,1]）")
+    return [omega, v]
 
 
 @dataclass(frozen=True)

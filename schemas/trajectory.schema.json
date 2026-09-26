@@ -77,8 +77,12 @@
           "type": "array",
           "minItems": 2,
           "maxItems": 2,
-          "items": { "type": "number" },
-          "description": "专家动作 float[2]（action_dim=2）：(ω*, v*) 转向角速度 + 推进。"
+          "prefixItems": [
+            { "type": "number", "minimum": -1.0, "maximum": 1.0 },
+            { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+          ],
+          "items": false,
+          "description": "专家动作 float[2]（action_dim=2）：(ω*, v*) 转向角速度 + 推进。值域 ω*∈[-1,1]、v*∈[0,1]（DanioNet §4 输出空间；ExpertPolicy 输出经裁剪后必落此域）。"
         },
         "reward": { "type": "number", "description": "可选：该步回报（若记录）。" },
         "is_first": { "type": "boolean", "description": "可选：episode 首步标记。" },

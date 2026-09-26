@@ -8,11 +8,42 @@ import numpy as np
 import pytest
 import torch
 
-from evogenesis.connectome.baselines import BASELINES, N_OURS, build_baselines
+from evogenesis.connectome.baselines import BASELINES, build_baselines
+from evogenesis.pipeline import (
+    initial_population,
+    load_model_chain_config,
+    motif_catalog,
+    phenotypes_of,
+)
 
 MASTER_SEED = 250927
 SENSORY_DIM = 12
 HIDDEN = {"mlp": 14, "gru": 4, "fixed_sparse_rnn": 12}
+#: §8 公平性基准 N_ours 的 provenance：seed 250927 / index 12（参数总表 reference_magnitudes）
+N_OURS_INDEX = 12
+
+
+def _reference_support_edges() -> int:
+    """§8 `N_ours = E_A`：seed 250927 / index 12 的支撑边数（实测 190）。
+
+    从 DanioNet 管线**实测**而非硬编码：支撑口径（`RGCD §8`）一旦变动，会在
+    `test_n_ours_reference_is_reproducible` 失败，提醒同步 `connectome §8` 与参数总表。
+    """
+    chain = load_model_chain_config()
+    population = initial_population(
+        master_seed=MASTER_SEED,
+        experiment_id="baseline-ref",
+        n=N_OURS_INDEX + 1,
+        layout=chain.layout,
+    )
+    motifs = motif_catalog(MASTER_SEED, chain.layout)
+    phenotype = phenotypes_of(
+        population[N_OURS_INDEX : N_OURS_INDEX + 1],
+        motifs,
+        master_seed=MASTER_SEED,
+        config=chain.rgcd,
+    )[0]
+    return int(phenotype.adjacency.sum().item())
 
 
 def _obs() -> np.ndarray:
@@ -29,8 +60,14 @@ def baseline(request):
 def test_connection_count_within_one_order_of_magnitude(baseline):
     name, net = baseline
     edges = net.complexity()["active_edges"]
-    assert abs(math.log10(edges) - math.log10(N_OURS)) <= 1.0
-    assert abs(math.log10(edges) - math.log10(N_OURS)) <= 0.05
+    n_ours = _reference_support_edges()
+    assert abs(math.log10(edges) - math.log10(n_ours)) <= 1.0
+    assert abs(math.log10(edges) - math.log10(n_ours)) <= 0.05
+
+
+def test_n_ours_reference_is_reproducible():
+    """§8 / 参数总表 `reference_magnitudes`：`N_ours` 实测为 190（seed 250927 / index 12）。"""
+    assert _reference_support_edges() == 190
 
 
 def test_hidden_width_matches_spec(baseline):
