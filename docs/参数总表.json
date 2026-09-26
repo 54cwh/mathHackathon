@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.3",
+    "version": "v0.4",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -688,32 +688,6 @@
       "suggest": null
     },
     {
-      "name": "bc_loss_weight_omega",
-      "value": 0.4,
-      "unit": "dimensionless weight",
-      "group": "learning",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "目标尺度归一化 λ_i=1/σ_i²（σ_i=训练集动作标准差，下限 0.05·R_i，R_ω=2/R_v=1），整体缩放使 λ_ω+λ_v=2；0.4 为未取训练统计量前的预注册回退值（按 R² 归一）",
-      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §6",
-      "config": "configs/default_model.yaml → learning.loss_weight_omega",
-      "sensitivity": null,
-      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
-    },
-    {
-      "name": "bc_loss_weight_v",
-      "value": 1.6,
-      "unit": "dimensionless weight",
-      "group": "learning",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "目标尺度归一化 λ_i=1/σ_i²（σ_i=训练集动作标准差，下限 0.05·R_i，R_ω=2/R_v=1），整体缩放使 λ_ω+λ_v=2；1.6 为未取训练统计量前的预注册回退值（按 R² 归一）",
-      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §6",
-      "config": "configs/default_model.yaml → learning.loss_weight_v",
-      "sensitivity": null,
-      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
-    },
-    {
       "name": "motif_length",
       "value": 6,
       "unit": "bp",
@@ -1069,6 +1043,95 @@
       "config": "configs/evolution.yaml → fitness_normalization",
       "sensitivity": null,
       "suggest": "设计选择；min-max 在种群收敛期会放大噪声，报告须声明"
+    },
+    {
+      "name": "bc_optimizer",
+      "value": "adam",
+      "unit": null,
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "主流 BC/IL 实现（robomimic / imitation / SB3）默认 Adam [bib#34][bib#210]",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.optimizer",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_lr",
+      "value": 0.001,
+      "unit": "learning rate",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "小型 MLP BC 常用 1e-3；K=20 短程 regime 无直接文献，属设计选择，须报 {1e-3,3e-4} 敏感性 [bib#34][bib#210]",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.lr",
+      "sensitivity": [
+        0.0003,
+        0.001
+      ],
+      "suggest": null
+    },
+    {
+      "name": "bc_batch_size",
+      "value": 64,
+      "unit": "samples/update",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "主流 BC 默认 batch（imitation 32 / robomimic 100 / diffusion policy 64 / SB3 64）；K=20 budget 下无直接文献，须报 {32,64,128} 敏感性 [bib#34][bib#210][bib#211]",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.batch_size",
+      "sensitivity": [
+        32,
+        64,
+        128
+      ],
+      "suggest": null
+    },
+    {
+      "name": "bc_trajectories",
+      "value": 200,
+      "unit": "episodes",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "robomimic 每任务 200 条演示 [bib#34]；低维动作任务无直接文献，最小验证可取 10–50，须报 {10,50,200} 敏感性",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.trajectories",
+      "sensitivity": [
+        10,
+        50,
+        200
+      ],
+      "suggest": null
+    },
+    {
+      "name": "bc_loss_weight_omega",
+      "value": 0.4,
+      "unit": "dimensionless weight",
+      "group": "learning",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "目标尺度归一化 λ_i=1/max(σ_i,0.05·R_i)²（σ_i=训练集动作标准差，R_ω=2/R_v=1），整体缩放使 λ_ω+λ_v=2；0.4/1.6 为未取训练统计量前的预注册回退值（按 R² 归一）",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.loss_weight_omega",
+      "sensitivity": null,
+      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
+    },
+    {
+      "name": "bc_loss_weight_v",
+      "value": 1.6,
+      "unit": "dimensionless weight",
+      "group": "learning",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "目标尺度归一化 λ_i=1/max(σ_i,0.05·R_i)²（σ_i=训练集动作标准差，R_ω=2/R_v=1），整体缩放使 λ_ω+λ_v=2；0.4/1.6 为未取训练统计量前的预注册回退值（按 R² 归一）",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.loss_weight_v",
+      "sensitivity": null,
+      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
     }
   ],
   "missing_required": {
@@ -1082,7 +1145,7 @@
     "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 n_motifs（见 research/notes/bibliography.md 引用规则）",
     "initial_precursors=24 的口径未写清（substrate 节点数 vs 发育起始细胞数）",
     "『步数→秒』换算是推断，各来源 dt 不同",
-    "selection_beta 在适应度归一化未定前无意义（建议改排名/锦标赛，见 design-basis-evolution.md）"
+    "BC 损失权重 λ_i=1/σ_i²（目标尺度归一化）属实现级惯例（robomimic/ACT/diffusion policy 逐维标准化 + 等权 MSE），无单篇论文证明其最优；正文按实现惯例表述"
   ],
   "reference_magnitudes": [
     {

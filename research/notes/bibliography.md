@@ -920,3 +920,35 @@
 208. easystats/effectsize. `未标注（开源实现）`.
     链接: https://github.com/easystats/effectsize
     用途：R 语言效应量包，覆盖 Cohen's d / Hedges g / 配对设计口径。
+
+---
+
+## 依据新增（BC / 模仿学习超参，2026-09-26）
+
+> 来源：`research/reference/bc-hyperparameters.json`（BC 超参：损失权重口径 / optimizer+lr / batch size / 专家轨迹规模）。
+> 去重：已与 #1–#208 按 DOI / 标题比对。Kendall 2018 见 #170、GradNorm 见 #171、LeCun Efficient BackProp 见 #179，**均不重复登记**；robomimic 见 #34（arXiv 版，其同行评审版 CoRL 2021 PMLR 164:1678–1690 本次已核验）。以下 6 条为新增。
+> 核验：所有 DOI 于 2026-09-26 经 OpenAlex `get_work` 或 PMLR 官方页面解析（作者/年份/卷期页一致）。⚠️ 本文件在本次检索期间被其他子代理并发追加，故编号自当前最大 #208 之后续接（原任务下发的「从 138 起」已被并发写入占用）。
+
+209. Pomerleau D. **Efficient Training of Artificial Neural Networks for Autonomous Navigation.** *Neural Computation* 3(1), 88–97 (1991). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/neco.1991.3.1.88
+    用途：BC 奠基工作（ALVINN）：通过观看人类驾驶、在 5 分钟内学会控制 Navlab；支撑「专家演示 + 监督回归」为 BC 原型。⚠️ 仅作历史锚点，未含本文所需具体超参取值。
+
+210. Zhao TZ, Kumar V, Levine S, Finn C. **Learning Fine-Grained Bimanual Manipulation with Low-Cost Hardware.** *Proceedings of Robotics: Science and Systems (RSS) XIX* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.15607/rss.2023.xix.016
+    用途：ACT：动作逐维 z-score 标准化（std clip 1e-2）后单一损失；官方示例 lr=1e-5、batch_size=8、num_epochs=2000、kl_weight=10；真实精细任务仅需约 10 分钟演示。支撑「逐维标准化」与「少量演示即可」的数量级参照。
+
+211. Chi C, Feng S, Du Y, Xu Z, Cousineau EA, Burchfiel B, et al. **Diffusion Policy: Visuomotor Policy Learning via Action Diffusion.** *Proceedings of Robotics: Science and Systems (RSS) XIX* (2023). `peer-reviewed`.
+    DOI: https://doi.org/10.15607/rss.2023.xix.026
+    用途：官方实现逐动作维度 min-max 归一化到 [-1,1]；训练配置 batch_size=64、AdamW lr=1e-4、weight_decay=1e-6。支撑动作逐维标准化与 batch/lr 区间。⚠️ 期刊扩展版见 IJRR (2024), DOI 10.1177/02783649241273668，未逐页核对。
+
+212. Ren A, Veer S, Majumdar A. **Generalization Guarantees for Imitation Learning.** *Proceedings of the 2020 Conference on Robot Learning (CoRL)*, PMLR 155, 1426–1442 (2021). `peer-reviewed`.
+    链接: https://proceedings.mlr.press/v155/ren21a.html
+    用途：与本题规模相近的 MLP 模仿学习采用 lr=1e-3、weight decay=1e-5，作为小型 MLP 的 IL 学习率锚点。PMLR 页码已核验；会议录不注册 DOI。
+
+213. Foster DJ, Block A, Misra D. **Is Behavior Cloning All You Need? Understanding Horizon in Imitation Learning.** *Advances in Neural Information Processing Systems (NeurIPS)* (2024). `preprint`（此处登记 arXiv 版；正式版为 NeurIPS 2024）.
+    DOI: https://doi.org/10.48550/arxiv.2407.15007
+    用途：分析 BC 相对 horizon 的样本复杂度；实验使用约 500 条专家轨迹量级，作为专家数据规模的现代旁证。⚠️ 实验含 Atari 等大动作空间，与本题 2 维动作差异大，仅作数量级参考。
+
+214. Ross S, Gordon G, Bagnell D. **A Reduction of Imitation Learning and Structured Prediction to No-Regret Online Learning (DAgger).** *Proceedings of the 14th International Conference on Artificial Intelligence and Statistics (AISTATS)*, PMLR 15, 627–635 (2011). `peer-reviewed`.
+    链接: https://proceedings.mlr.press/v15/ross11a.html
+    用途：证明朴素 BC 存在协变量偏移与误差累积（quadratic horizon dependence），需在线交互纠正；本题 Stage 2 为纯离线 BC，须在论文中显式声明该局限。非超参文献。PMLR 页码已核验。

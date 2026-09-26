@@ -56,7 +56,11 @@ network:
   action_pooling: mean
 learning:
   method: behavior_cloning
+  optimizer: adam
+  lr: 0.001
   mini_batch_updates: 20
+  batch_size: 64
+  trajectories: 200
   optional_rl: false
   loss_weight_omega: 0.4
   loss_weight_v: 1.6

@@ -94,19 +94,7 @@ Motor neurons 标记 left/right side。Inhibitory prior 提高 contralateral inh
 ## 6. Lifetime Learning
 Stage 1：透明 ExpertPolicy 产生轨迹。
 
-Stage 2：Behavior Cloning。每条 viable DanioNet 相同学习预算：
-
-\[
-K=20
-\]
-
-mini-batch updates。
-
-\[
-\mathcal L=
-\lambda_\omega MSE(\hat\omega,\omega^*)+
-\lambda_v MSE(\hat v,v^*)
-\]
+Stage 2：Behavior Cloning。训练契约（预算、采样与标准化、损失与权重、优化器）归 `learning/行为克隆学习.md` §3（单一 owner）。本文件只固定两件事：被训练的对象是 §3/§4 的 DanioNet（权重 `W = W⁰ + ΔW`），以及 §4 的有界动作映射 \(\hat\omega=\tanh(y_\omega)\)、\(\hat v=\sigma(y_v)\)（标准化只改损失尺度，不改该映射）。
 
 Stage 3：PPO/SAC 仅作为 P2，可完全不做。
 
