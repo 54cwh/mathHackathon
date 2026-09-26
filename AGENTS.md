@@ -92,11 +92,9 @@ make experiment ARGS='--config configs/default_arena.yaml --seed 1'  # 创建实
 
 ## Git 分支策略
 
-- `main` 受保护：**禁止直接提交**，只通过合并 / PR 进入。
-- 个人长期分支：`cwh/dev`（池伟豪）、`lcz/dev`（李辰钊）；日常在此开发。
-- 任务分支：`<owner>/<topic>`（如 `cwh/api-skeleton`），从个人分支切出，完成后合回个人分支。
-- 合并进 `main` 前必须：`make lint && make test` 通过，且按 `docs/code-review.md` 完成审查。
-- 合并使用 `--no-ff`，保留合并记录。
+- 两人协作，直接在 `main` 上开发并推送（`git push origin main`）。
+- 提交前必须：`make lint && make test` 通过，且按 `docs/code-review.md` 完成审查。
+- 提交信息遵循 `<type>(<scope>): <summary>`，并保留 `审查：` 留痕行。
 
 
 # 技术栈
