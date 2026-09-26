@@ -1,4 +1,8 @@
-"""Arena 实验驱动器：跑 seeds × 600 步，落盘 `实验与评价体系.md` §11 要求的产物。
+"""Arena 实验驱动器（**ExpertPolicy 驱动**：环境 pre-check / 基线）：跑 seeds × 600 步，落盘产物。
+
+驱动方分工（`experiment §3.3`、`learning §5`）：本脚本用 `ExpertPolicy`；
+**模型评估**（BC/DanioNet）用 `scripts/run_chain.py`（DanioNet 驱动），
+本脚本不用于模型评估。规模：默认 `n_fish=12`（Live/ExpertPolicy）。
 
 每个 seed 一个 run 目录（`<experiment_id>-s<seed>`），目录布局由 `scripts/run_experiment.py`
 创建（它是 run 目录布局的唯一 owner；本脚本只负责补 Arena 侧产物）：
@@ -80,6 +84,7 @@ METRIC_COLUMNS = (
     "collisions",
     "energy_final",
     "survival",
+    "capture_rate",
     "prey_capture",
     "escape_success",
     "energy_efficiency",

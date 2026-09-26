@@ -216,7 +216,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | size trajectory | ✅ |
 | survival steps | ✅（步末对存活鱼自增；事件 payload 取自增前值） |
 | motor commands | ✅（裁剪后的 \((\omega,v)\)） |
-| selected neural activity snapshots | ❌ 未实现（需 DanioNet 接入） |
+| selected neural activity snapshots | ❌ 未实现——**不属 arena 职责**：激活量归 `connectome`/`DanioNet`（`brain.activation` 由 api/WS 推送），arena 不缓存网络隐藏状态（见 `M3`） |
 
 ## 14. 历史依赖探针任务（H3）
 **任务定义【已定稿】（2026-09-26）**：检验 H3（异质 \(\tau\) 的作用）需要一个体现历史依赖的探针：
@@ -574,7 +574,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 |---|---|---|
 | M1 | 神经控制 | 鱼由外部 `actions` 驱动；DanioNet 推理未接入。`generation` 可由构造注入（缺省 0，多代演化未接）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
-| M3 | selected neural activity snapshots | 规范 §13 最后一项，未实现（见 §6） |
+| M3 | selected neural activity snapshots | 规范 §13 最后一项未实现；**owner = `connectome`/`DanioNet`（+ api 推送）**，arena 不缓存网络激活（见 §6） |
 | M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；但「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**场景布置仍未做**，`environment` 字段已进 API 但**不改变任何参数**（见 `../api/API接口.md` §7.2） |
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | `PreyPolicy.avoid_gain` | 死参数（S12、F2） |

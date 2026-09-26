@@ -10,6 +10,7 @@ from evogenesis.experiment.metrics import (
     BLOCKED_METRICS,
     COMPOSITE_WEIGHTS,
     aggregate_by_seed,
+    capture_rate,
     composite_fitness,
     energy_efficiency,
     episode_metrics,
@@ -42,6 +43,14 @@ def test_survival_rate_is_ratio_of_episode_steps():
     assert survival_rate(300, 600) == 0.5
     with pytest.raises(ValueError):
         survival_rate(1, 0)
+
+
+def test_capture_rate_is_absolute_rate():
+    """§2.1 主口径：`captures / episode_steps`（单位时间捕食数）。"""
+    assert capture_rate(6, 600) == pytest.approx(0.01)
+    assert capture_rate(0, 600) == 0.0
+    with pytest.raises(ValueError):
+        capture_rate(1, 0)
 
 
 def test_escape_success_rate_uses_one_as_floor():
@@ -87,6 +96,7 @@ def test_episode_metrics_computes_four_metrics_plus_fitness():
     assert row["energy_final"] == 0.25
     assert row["captures"] == 3 and row["encounters"] == 40
     assert row["capture_attempts"] == 5  # 保留为**诊断列**（= captures + 吃不下）
+    assert row["capture_rate"] == pytest.approx(3 / 600)  # §2.1 主口径
     assert row["prey_capture"] == pytest.approx(3 / 40)  # 分母 = encounters
     # 四项齐备后 composite fitness 真的算出来，且等于文档权重的加权和
     expected = (

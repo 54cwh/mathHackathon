@@ -9,7 +9,6 @@
 `capture_attempts == captures`（捕获确定性 `P_capture_success = 1.0`），指标退化为「是否有过机会」。
 **2026-09-26 用户裁决改分母**：改用 **`encounters`**（进入 `capture_radius` 的猎物数，
 **尺寸门之前**，S6 距离口径）。`capture_attempts` 仍记录，作为**诊断列**。
-S6 距离口径）。`capture_attempts` 仍记录，作为**诊断列**。
 
 统计口径（补齐 `实验与评价体系.md` §1 的阅读问题 #1）：
 
@@ -52,6 +51,17 @@ def composite_fitness(
         + COMPOSITE_WEIGHTS["escape_success"] * escape_success
         + COMPOSITE_WEIGHTS["energy_efficiency"] * energy_efficiency
     )
+
+
+def capture_rate(captures: int, episode_steps: int) -> float:
+    """§2.1 **主口径**：`capture_rate = captures / episode_steps`（单位时间捕食数）。
+
+    2026-09-26 用户裁定：确定性捕获（`P_capture_success = 1.0`）下，任何以「接触」为单位的
+    比值口径都会退化/受停留影响，故主指标取绝对速率（无偏、可跨环境比较）。
+    """
+    if episode_steps <= 0:
+        raise ValueError("episode_steps 必须为正")
+    return captures / episode_steps
 
 
 def survival_rate(survival_steps: int, episode_steps: int) -> float:
@@ -103,7 +113,8 @@ def episode_metrics(
 
     返回列：原始计数（`captures` / `capture_attempts` / `encounters` / `predator_encounters` /
     `escape_successes` / `collisions` / `survival_steps` / `energy_final`）
-    + §4 的四项指标（`survival` / `prey_capture` / `escape_success` / `energy_efficiency`）
+    + 主口径 `capture_rate`（§2.1）
+    + 四项指标（`survival` / `prey_capture` / `escape_success` / `energy_efficiency`）
     + 由四项合成的 `composite_fitness`。
     """
     survival_steps = int(record["survival_steps"])
@@ -119,6 +130,7 @@ def episode_metrics(
         "capture_attempts": int(record["capture_attempts"]),
         "energy_final": energy_final,
         "survival": survival_rate(survival_steps, episode_steps),
+        "capture_rate": capture_rate(int(record["captures"]), episode_steps),
         "prey_capture": prey_capture_rate(
             int(record["captures"]), int(record["encounters"])
         ),  # 分母 = encounters（尺寸门之前），见 prey_capture_rate
@@ -140,6 +152,7 @@ def episode_metrics(
 #: `aggregate_by_seed` / `summarise_over_seeds` 默认汇总的指标列（未定义的列自动跳过）。
 SCALAR_METRICS: tuple[str, ...] = (
     "survival",
+    "capture_rate",
     "prey_capture",
     "escape_success",
     "energy_efficiency",

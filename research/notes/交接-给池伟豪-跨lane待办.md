@@ -22,6 +22,7 @@
 | D2 | **H3 探针实现** | `arena §14` 任务定义已定稿、实现未做；`§19 P1 #8` | 用 `integrator_memory` 激活替代（零代码）or 实现探针（会加字段/可能加事件） |
 | D3 | **`encounters` 去重口径** | `prey_capture=captures/max(encounters,1)`；实测中位 2/最大 225/前 3 占 65.7% | 是否改去重口径（`experiment §7 #1` 已由 arena S6 明确粒度，剩口径抉择） |
 | D4 | **捕获成功率随机化** | `arena §19 P0.3` 余项；当前 `P_capture_success=1.0` | 是否引入随机失败（影响指标方差与基线） |
+| D6 | **`composite_fitness` 捕食分量口径** | `experiment §2.3` 目标=`capture_rate`，实现=`prey_capture`（诊断）；`experiment §7` 已登记 | 切换会改 composite 数值（**作废基线**）→ 待裁决后改并重跑基线 |
 | D5 | **环境三组 M4** | `arena §12`/`M4`：`environment` 字段不改变任何参数，「环境选择」尚无实际因果 | 是否做高价值 prey 靠近 predator 等**场景布置** |
 
 ## 三、下游文档待纠正（零行为，需对方 lane）
@@ -29,9 +30,9 @@
 | # | 事项 | 证据 | 建议 |
 |---|---|---|---|
 | ~~C1~~ | ~~`predator_encounters` 口径~~ ✅ **已闭合（2026-09-26）**：`experiment §2.1/§2.2/§7` 与 `metrics.py` 已回写为 arena S7（被锁定次数）；`encounters` 粒度亦回写 S6（每鱼每步至多 1 次） | — | — |
-| C2 | **评估驱动方（部分闭合）** | 新增 `scripts/run_chain.py`（DanioNet 驱动 Arena，落 metrics/events/seed_summary）已提供模型评估入口；`experiment §3.3`「即 `run_arena.py` 现状」措辞待改（`run_arena`=ExpertPolicy pre-check/基线） | `experiment` 改措辞并指向 `run_chain.py` |
-| C3 | **规模口径** | `experiment §4` 泛述「n_fish=12 不变」与 Exp F 48-genome 协议张力（arena §3 已澄清两种规模） | `experiment` 同步限定「12=ExpertPolicy pre-check；48=演化评估」 |
-| C4 | **`configs/experiment_environments.yaml` 注释** | 称「填 `missing_required` 第 1 项」，但该项已变 penetrance | 修注释 |
+| ~~C2~~ | ~~评估驱动方~~ ✅ **已闭合（2026-09-26）**：`experiment §3.3` 改为「模型评估=`run_chain.py`(DanioNet)；`run_arena`=ExpertPolicy pre-check/基线」；两脚本 docstring/help 同步标注驱动方 | — |
+| ~~C3~~ | ~~规模口径~~ ✅ **已闭合（2026-09-26）**：`experiment §4` 限定「12=`ExpertPolicy` pre-check；48=Exp F 演化评估（按 viable 覆盖 n_fish）」 | — |
+| ~~C4~~ | ~~config 注释~~ ✅ **已闭合（2026-09-26）**：注释改为「三组已登记；`missing_required` 仅剩 penetrance」 | — |
 
 ## 四、契约 / 文献 / 声明债务
 

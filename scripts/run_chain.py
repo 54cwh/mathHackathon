@@ -1,4 +1,8 @@
-"""薄 CLI：用 DanioNet 驱动 Arena 跑一代评估（genome → 发育 → connectome → Arena）。
+"""薄 CLI：DanioNet 驱动 Arena 跑一代评估（**模型评估入口**）。
+
+链路：genome → 发育 → connectome → Arena。驱动方分工（`experiment §3.3`、`learning §5`）：
+本脚本为 **DanioNet 驱动**；`ExpertPolicy` 基线 / 环境 pre-check 见 `scripts/run_arena.py`。
+规模：默认 `--n` 取 `configs/evolution.yaml::population_size`（48）。
 
 上游链路的**生产入口**（`pipeline/模型链装配.md` §4）：业务逻辑全在 `evogenesis.pipeline`，
 落盘格式 owner 为 `experiment`（`metrics.csv` / `events.jsonl` / `seed_summary.json`，
