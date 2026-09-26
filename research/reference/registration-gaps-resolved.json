@@ -1,0 +1,114 @@
+{
+  "meta": {
+    "search_time": "2026-09-27",
+    "topic": "关闭 bibliography「待登记-3/4」与引用登记缺口核对（Fuiman 1986 / McKee & McHenry 2020 / tghbrk license / #222-#223 登记核对）",
+    "scope": "只读核验：(A) docs/参数总表.json reference_magnitudes 两条未登记文献的完整元数据；(B) GitHub tghbrk/fish-eat-fish 的 license 现状；(C) research/notes/引用登记缺口.md §3.1 行 6 与 §3.2 行 29-30 的 NEAT #222 / HyperNEAT #223 登记状态。不改 bibliography.md、不改引用登记缺口.md、不改代码、不 commit。",
+    "sources_summary": "OpenAlex get_work/search_works（DOI 直查 + 作者检索）、Crossref works API（query.bibliographic + DOI 直查）、GitHub REST API（repo/license/contents/git tree，经 gh CLI）、仓库内只读文件（bibliography.md、引用登记缺口.md、docs/参数总表.json、research/reference/param-basis-biology.json）。未使用 Google Scholar（无稳定 API，未接入）。",
+    "owns": "本文件是 Tier 6 证据文件，不构成契约；#222/#223 的契约事实以 research/notes/bibliography.md 为准。",
+    "files_read_only": [
+      "research/notes/bibliography.md",
+      "research/notes/引用登记缺口.md",
+      "docs/参数总表.json",
+      "research/reference/param-basis-biology.json"
+    ]
+  },
+  "items": [
+    {
+      "group": "A",
+      "name": "Fuiman 1986 — Burst-Swimming Performance of Larval Zebra Danios and the Effects of Diel Temperature Fluctuations",
+      "type": "paper",
+      "url": "https://doi.org/10.1577/1548-8659(1986)115<143:bpolzd>2.0.co;2",
+      "source": "OpenAlex + Crossref",
+      "source_url": "https://openalex.org/W2170287106",
+      "date": "1986-01 (published-print)",
+      "metrics": "citations: OpenAlex 54 / Crossref 35（口径差异：OpenAlex 计数通常更高）",
+      "license": null,
+      "summary": "单作者 Lee A. Fuiman；斑马鱼（Danio rerio）幼鱼爆发游速（burst-swimming performance）与昼夜水温波动的实验研究，是 docs/参数总表.json reference_magnitudes.larval_burst_speed（50-66 BL/s）标称的出处。",
+      "verified": true,
+      "match_confidence": "high",
+      "note": "完整元数据（Crossref DOI 直查 + OpenAlex DOI 直查双源一致）：authors=[Lee A. Fuiman]（single author，ORCID 0000-0003-2667-2684，Univ. of Michigan）；venue=Transactions of the American Fisheries Society 115(1):143-148；DOI=10.1577/1548-8659(1986)115<143:bpolzd>2.0.co;2；type=journal-article；peer-reviewed（Wiley/TAFS）。与 research/reference/param-basis-biology.json:227 所记「Fuiman 1986, Transactions of the American Fisheries Society 115(1):143-148（Burst-Swimming Performance of Larval Zebra Danios）」逐字吻合。歧义候选（均非本条，勿混）：① Fuiman LA. 1986. 'Swimming mechanics and the environmental biology of fishes'，Environmental Biology of Fishes，DOI 10.1007/bf00698201 / 10.1007/bf00002099（书评/短评，非爆发游速）；② Webb PW & Weihs D. 1986. 'Functional Locomotor Morphology of Early Life History Stages of Fishes'，同一期刊 TAFS 115(1):115-127，DOI 10.1577/1548-8659(1986)115<115:flmoel>2.0.co;2（同刊同期，易混）。注意：50-66 BL/s 的具体数值未出现在 OpenAlex 摘要中（摘要仅述最大速度随温度升高且高于既往报道），数值核验以原文正文为准，本报告只核验书目元数据。license 置 null 是「期刊未提供 OA 许可」之意，非「无版权」：OpenAlex 记 closed、license=null。"
+    },
+    {
+      "group": "A",
+      "name": "McKee & McHenry 2020 — The Strategy of Predator Evasion in Response to a Visual Looming Stimulus in Zebrafish (Danio rerio)",
+      "type": "paper",
+      "url": "https://doi.org/10.1093/iob/obaa023",
+      "source": "OpenAlex",
+      "source_url": "https://openalex.org/W3048611572",
+      "date": "2020 (publication_date 2020-01-01)",
+      "metrics": "citations: OpenAlex 14（cited_by_percentile_year 89-99）",
+      "license": "cc-by (OA gold)",
+      "summary": "Amberle McKee & Matthew J. McHenry（均 UC Irvine）；用视觉 looming 刺激研究成鱼斑马鱼逃避捕食者的阈值视角与潜伏期，是 docs/参数总表.json reference_magnitudes.looming_threshold_adult（10.3°-15.8°, latency 740-780 ms）标称的出处。",
+      "verified": true,
+      "match_confidence": "high",
+      "note": "完整元数据（OpenAlex DOI 直查）：authors=[Amberle McKee (first, corresponding, ORCID 0000-0001-9006-7927), Matthew J. McHenry (last, ORCID 0000-0001-5834-674X)]；venue=Integrative Organismal Biology 2(1):obaa023（Oxford University Press，ISSN 2517-4843）；DOI=10.1093/iob/obaa023；type=article；OA gold，license=cc-by。与引用登记缺口.md:99 给出的 DOI 完全一致，与 bibliography.md 无既有条目冲突（当前 bibliography 未登记该条）。歧义候选：未发现同名同年的其他同主题记录；DOI 唯一，置信度高。"
+    },
+    {
+      "group": "B",
+      "name": "tghbrk/fish-eat-fish（bibliography [bib#217]）",
+      "type": "repo",
+      "url": "https://github.com/tghbrk/fish-eat-fish",
+      "source": "GitHub REST API",
+      "source_url": "https://api.github.com/repos/tghbrk/fish-eat-fish",
+      "date": "created 2025-05-24T11:25:14Z; pushed 2025-05-24T14:40:07Z; 默认分支 master，当前 HEAD 0b3fc6ab61574464480d412783fe4cc72c5c5025（与 bibliography 记录 HEAD 0b3fc6ab 一致）",
+      "metrics": "stars 0 / forks 0（2026-09-27 经 GitHub API）",
+      "license": "ISC（在 package.json 与 README 中声明；但无独立 LICENSE 文件，GitHub license API 返回 null）",
+      "summary": "JS 多人在线「大鱼吃小鱼」小游戏；bibliography [bib#217] 采纳其「三态状态机 wander/hunt/flee + stateTimer 滞后 + 追击扰动」与三色可食性描边作 Tier 6 机制对照。",
+      "verified": true,
+      "match_confidence": "high",
+      "note": "与既有记录不符，须更正：bibliography.md:217/963 与引用登记缺口.md §6 记其「未声明许可证」，但实测该仓库**在 package.json 第 14 行 `\"license\": \"ISC\"`、README 第 175-177 节 'This project is licensed under the ISC License - see the package.json file for details'** 明确声明 ISC。同时确认：GitHub 全仓库文件树**无任何 LICENSE / COPYING / COPYRIGHT 文件**；GitHub REST `GET /repos/tghbrk/fish-eat-fish` 的 `.license` 字段为空（null），`GET /repos/tghbrk/fish-eat-fish/license` 返回 404。即「有 SPDX 声明、无许可证正文文件」。结论修订：**license 不是 null（并非无声明），而是 ISC（permissive，MIT 等效）**；可用作可复用代码/素材来源，但复用时应保留版权与许可声明（ISC 标准正文），且因仓库未含 LICENSE 文本，须自 SPDX/ISC 标准模板补齐。原「未声明许可证，不可作为可复用代码/素材来源」的表述应予更正。"
+    },
+    {
+      "group": "C",
+      "name": "bibliography #222 — Stanley & Miikkulainen 2002 (NEAT)",
+      "type": "paper",
+      "url": "https://doi.org/10.1162/106365602320169811",
+      "source": "仓库内只读核对（research/notes/bibliography.md）",
+      "source_url": "research/notes/bibliography.md:1038",
+      "date": "bibliography 登记时间 2026-09-26",
+      "metrics": null,
+      "license": null,
+      "summary": "Evolving Neural Networks through Augmenting Topologies，Evolutionary Computation 10(2):99-127 (2002)。",
+      "verified": true,
+      "match_confidence": null,
+      "note": "核对结果：**已登记**。bibliography.md:1038-1041 收录 #222，含 DOI https://doi.org/10.1162/106365602320169811，标注 peer-reviewed，用途为「相关工作」（NEAT 原始论文）。因此引用登记缺口.md 中「NEAT 未登记」的缺口已闭合。"
+    },
+    {
+      "group": "C",
+      "name": "bibliography #223 — Stanley, D'Ambrosio & Gauci 2009 (HyperNEAT)",
+      "type": "paper",
+      "url": "https://doi.org/10.1162/artl.2009.15.2.15202",
+      "source": "仓库内只读核对（research/notes/bibliography.md）",
+      "source_url": "research/notes/bibliography.md:1043",
+      "date": "bibliography 登记时间 2026-09-26",
+      "metrics": null,
+      "license": null,
+      "summary": "A Hypercube-Based Encoding for Evolving Large-Scale Neural Networks，Artificial Life 15(2):185-212 (2009)。",
+      "verified": true,
+      "match_confidence": null,
+      "note": "核对结果：**已登记**。bibliography.md:1043-1046 收录 #223，含 DOI https://doi.org/10.1162/artl.2009.15.2.15202，标注 peer-reviewed，用途为「相关工作」（HyperNEAT），并含参数量口径边界警示。因此引用登记缺口.md 中「HyperNEAT 未登记」的缺口已闭合。"
+    },
+    {
+      "group": "C",
+      "name": "引用登记缺口.md 应划销/改写行（§3.1 行 6、§3.2 行 29-30 及计数行）",
+      "type": "other",
+      "url": "research/notes/引用登记缺口.md",
+      "source": "仓库内只读核对（research/notes/引用登记缺口.md）",
+      "source_url": "research/notes/引用登记缺口.md",
+      "date": "文件生成日期 2026-09-26；工作区快照 2026-09-27",
+      "metrics": null,
+      "license": null,
+      "summary": "该缺口文件中 NEAT #222 / HyperNEAT #223 三行的状态单元格**已带 ✅ 已登记**，但配套的计数与说明行仍按「未登记」口径书写，自相矛盾，需同步改写。",
+      "verified": true,
+      "match_confidence": null,
+      "note": "只给建议，不改文件。实际行号（2026-09-27 工作区快照，git 无未提交改动）：① 第 92 行（§3.1 行 6，NEAT/#222）——状态已是「✅ **已登记 = #222**（2026-09-26，经 OpenAlex DOI 核实）（`#222` 已收录 Stanley & Miikkulainen 2002）」；建议删除句末重复小括号「（`#222` 已收录 Stanley & Miikkulainen 2002）」，或整行移出 §3「未登记的引用」，转入「已闭合」小节。② 第 120 行（§3.2 行 29，NEAT/#222）——已是「✅ **已登记 = #222**（2026-09-26）」；建议与第 92 行去重（同一事实两处列出），或补 DOI 与 bibliography 行号（bibliography.md:1038）。③ 第 121 行（§3.2 行 30，HyperNEAT/#223）——已是「✅ **已登记 = #223**（2026-09-26）——`bibliography-registration-rgcd.md:55` 明确「JSON 未提供 2009 原文链接，不登记」」；末尾引语是**登记前的历史理由**，与现状矛盾，建议改写为「已登记 = #223，DOI 10.1162/artl.2009.15.2.15202（见 bibliography.md:1043）」。④ 第 81 行（§3 开头「**契约层共 30 条**（`docs/参数总表.json` 22 条 + 模块文档 8 条）」）——3 条已闭合，建议改为「共 27 条未闭合（原 30 条，其中 #222/#223 已登记闭合；参数总表 19 条 + 模块文档 6 条）」或注明「30 条中有 3 条已闭合」。⑤ 第 4 行与第 79 行标题「## 3. 未登记的引用（缺陷）」——若保留已闭合条目于表内，建议标题或前言加「（含 3 条已闭合，见状态列）」以免读者误判总数。⑥ 附带发现（非本任务要求，仅记录）：同表第 94-99 行（§3.1 行 8-13）中 Fuiman & Webb 1988 / Plaut 2000 / Budick & O'Malley 2000 / Patterson 2013 四条现已在 bibliography.md:1062-1076 登记为 #227-#230（状态列仍写「未登记」，已过期）；Fuiman 1986（行 10）与 McKee & McHenry 2020（行 13）经本报告核验可登记（见 group A），登记完成后应一并更新。⑦ 另有第 1031 行 bibliography.md 的注释称「该缺口文件本身尚未同步划销」——与实测（缺口文件第 92/120/121 行已带 ✅）不符，属 bibliography 侧过期说明，须由 bibliography owner 更正（本任务不改该文件）。"
+    }
+  ],
+  "conclusions": [
+    "A. Fuiman 1986【已核验，建议直接用】——最可能且唯一匹配为 Fuiman LA (1986) 'Burst-Swimming Performance of Larval Zebra Danios and the Effects of Diel Temperature Fluctuations', Trans. Am. Fish. Soc. 115(1):143-148, DOI 10.1577/1548-8659(1986)115<143:bpolzd>2.0.co;2（match_confidence=high，OpenAlex+Crossref 双源一致，与 param-basis-biology.json:227 逐字吻合）。可补登记；登记时须注意 50-66 BL/s 的具体数值需回原文正文核实（摘要未给出该数值）。同刊同期的 Webb & Weihs 1986 与 Fuiman 1986 书评为易混候选，已列明。",
+    "A. McKee & McHenry 2020【已核验，建议直接用】——Amberle McKee & Matthew J. McHenry, Integrative Organismal Biology 2(1):obaa023, 2020, DOI 10.1093/iob/obaa023（match_confidence=high，OpenAlex DOI 直查；OA gold CC-BY；14 次引用）。可补登记。",
+    "B. tghbrk/fish-eat-fish license【原记录有误，须更正】——既非「null/无声明」，也非干净可识别的 LICENSE 文件：仓库无 LICENSE/COPYING 文件、GitHub license API=null/404，但 package.json 第 14 行与 README §License 均声明 ISC（permissive）。应把 license 由「未声明许可证」更正为「ISC（声明于 package.json/README，无许可证正文文件）」；ISC 允许复用，故原「不可作为可复用代码/素材来源」的结论应下调，但复用须保留 ISC 版权与许可声明。",
+    "C. NEAT #222 / HyperNEAT #223【已登记，缺口已闭合】——bibliography.md:1038-1041（#222）与 :1043-1046（#223）均已收录并标 peer-reviewed。引用登记缺口.md 第 92、120、121 行状态列**已带 ✅ 已登记**，无需再划销状态；应改写的是第 81 行的「共 30 条」计数、第 4/79 行的「未登记」总述，以及第 121 行末尾的历史引语与第 92 行的重复括注。另建议 bibliography.md 第 1031 行「缺口文件尚未同步划销」的过期说明由 owner 更正。",
+    "无法核实 / 需进一步验证：① 50-66 BL/s 与 10.3°-15.8°/740-780 ms 两个具体数值本身未在本轮核验（本轮只核验书目元数据；需回原文正文/PDF 复核数值与转述条件）。② Fuiman 1986 为闭源期刊（OpenAlex status=closed, license=null），无 OA 全文，数值核验受访问限制。③ 未能使用 Google Scholar（无稳定 API），Crossref 与 OpenAlex 引用数口径不同（Fuiman 1986：54 vs 35），引用数以两库为准不作单一断言。④ 本报告未对 tghbrk/fish-eat-fish 是否曾有 LICENSE 文件做历史提交级追溯（仅看当前 HEAD 0b3fc6ab 文件树）。"
+  ]
+}
