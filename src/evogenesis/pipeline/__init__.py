@@ -11,6 +11,12 @@ from evogenesis.pipeline.arena_episode import (
     run_arena_episode,
     viable_pairs,
 )
+from evogenesis.pipeline.checkpoint import (
+    DemoCheckpoint,
+    DemoIndividual,
+    load_demo_checkpoint,
+    save_demo_checkpoint,
+)
 from evogenesis.pipeline.model_chain import (
     ChainIndividual,
     ModelChainConfig,
@@ -25,6 +31,8 @@ from evogenesis.pipeline.model_chain import (
 __all__ = [
     "ArenaEpisodeResult",
     "ChainIndividual",
+    "DemoCheckpoint",
+    "DemoIndividual",
     "ModelChainConfig",
     "PopulationEvaluation",
     "arena_seeds_for",
@@ -33,11 +41,13 @@ __all__ = [
     "drive_arena_with_net",
     "evaluate_population",
     "initial_population",
+    "load_demo_checkpoint",
     "load_model_chain_config",
     "motif_catalog",
     "phenotype_of",
     "phenotypes_of",
     "run_arena_episode",
     "arena_eval_seeds_for",
+    "save_demo_checkpoint",
     "viable_pairs",
 ]

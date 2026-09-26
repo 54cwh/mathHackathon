@@ -430,3 +430,27 @@ def test_model_driven_session_pushes_brain_activation() -> None:
         assert ba["payload"]["session_id"] == sid
         fish = ba["payload"]["fish"]
         assert fish and all(isinstance(v, list) and v for v in fish.values())
+
+
+def test_model_driven_session_loads_checkpoint() -> None:
+    """`checkpoint_path`（`pipeline §6`）：直接加载冻结网络，population = checkpoint 个体数。"""
+    resp = client.post(
+        "/v1/sessions",
+        json={
+            "master_seed": 250927,
+            "model_driven": True,
+            "checkpoint_path": "artifacts/demo/checkpoint_v1.pt",
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["population"] == 1
+    with client.websocket_connect(f"/v1/ws?session_id={body['session_id']}") as ws:
+        assert ws.receive_json()["type"] == "sys.hello"
+        client.post(f"/v1/sessions/{body['session_id']}/release?steps=2")
+        frames = []
+        for _ in range(6):
+            frames.append(ws.receive_json())
+            if any(f["type"] == "brain.activation" for f in frames):
+                break
+        assert any(f["type"] == "brain.activation" for f in frames)

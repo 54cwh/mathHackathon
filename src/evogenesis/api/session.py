@@ -38,6 +38,7 @@ from evogenesis.pipeline import (
     arena_seeds_for,
     danionet_of,
     initial_population,
+    load_demo_checkpoint,
     load_model_chain_config,
     motif_catalog,
     phenotypes_of,
@@ -71,31 +72,42 @@ class Session:
         self.running = True
         cfg = load_arena_config(_resolve(create.arena_config_path))
         spawn_seed, dynamics_seed = arena_seeds_for(create.master_seed, _SESSION_ARENA_INDEX)
-        # 模型驱动会话（`API接口.md` §7.2，草案待确认）：由 DanioNet 驱动并推送 `brain.activation`。
+        # 模型驱动会话（`API接口.md` §7.2，已定稿）：由 DanioNet 驱动并推送 `brain.activation`。
         self.model_driven = bool(create.model_driven)
         self.net = None
         self._activation: dict[str, list[float]] = {}
         if self.model_driven:
             chain = load_model_chain_config(_resolve(create.model_config_path))
-            motifs = motif_catalog(create.master_seed, chain.layout)
-            individuals = initial_population(
-                master_seed=create.master_seed,
-                experiment_id=session_id,
-                n=cfg.population.n_fish,
-                layout=chain.layout,
-            )
-            phenotypes = phenotypes_of(individuals, motifs, master_seed=create.master_seed)
-            keep = [i for i, p in enumerate(phenotypes) if p.viable]
-            if not keep:
-                raise ValueError("模型驱动会话：该 seed 无 viable 个体（RGCD §7）")
-            self.net = danionet_of([phenotypes[i] for i in keep], master_seed=create.master_seed)
-            cfg = replace(cfg, population=replace(cfg.population, n_fish=len(keep)))
+            if create.checkpoint_path:
+                # 冻结 checkpoint 路径（`pipeline §6`）：直接加载，免重建/免训练。
+                ckpt = load_demo_checkpoint(_resolve(create.checkpoint_path))
+                self.net = ckpt.build_net(config=chain.network)
+                keep_fish = [ind.fish_id for ind in ckpt.individuals]
+                keep_genomes = [ind.genome_id for ind in ckpt.individuals]
+            else:
+                motifs = motif_catalog(create.master_seed, chain.layout)
+                individuals = initial_population(
+                    master_seed=create.master_seed,
+                    experiment_id=session_id,
+                    n=cfg.population.n_fish,
+                    layout=chain.layout,
+                )
+                phenotypes = phenotypes_of(individuals, motifs, master_seed=create.master_seed)
+                keep = [i for i, p in enumerate(phenotypes) if p.viable]
+                if not keep:
+                    raise ValueError("模型驱动会话：该 seed 无 viable 个体（RGCD §7）")
+                self.net = danionet_of(
+                    [phenotypes[i] for i in keep], master_seed=create.master_seed
+                )
+                keep_fish = [individuals[i].fish_id for i in keep]
+                keep_genomes = [individuals[i].genome_id for i in keep]
+            cfg = replace(cfg, population=replace(cfg.population, n_fish=len(keep_fish)))
             self.arena = DanioArena(
                 cfg,
                 spawn_seed=spawn_seed,
                 dynamics_seed=dynamics_seed,
-                fish_ids=[individuals[i].fish_id for i in keep],
-                genome_ids=[individuals[i].genome_id for i in keep],
+                fish_ids=keep_fish,
+                genome_ids=keep_genomes,
             )
         else:
             self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)

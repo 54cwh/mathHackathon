@@ -1,0 +1,11 @@
+{
+  "master_seed": 250927,
+  "experiment_id": "demo",
+  "n_fish": 12,
+  "viable_indices": [
+    11
+  ],
+  "genome_ids": [
+    "demo:g0:genome0011"
+  ]
+}

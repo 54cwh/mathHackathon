@@ -62,6 +62,7 @@ class LifetimeLearningResult:
     train_results: tuple[TrainResult, ...]
     reports: tuple[TrainingReport, ...]
     delta_w_norm: tuple[float, ...]  # 逐 viable 个体 `max|ΔW|`
+    trained_thetas: tuple[torch.Tensor, ...]  # 逐 viable 个体训练后 `Θ`（供 checkpoint 冻结）
     noninheritance: NonInheritanceEvidence | None
     sign_constrained: bool
 
@@ -166,6 +167,7 @@ def run_lifetime_learning(
             train_results=(),
             reports=(),
             delta_w_norm=(),
+            trained_thetas=(),
             noninheritance=None,
             sign_constrained=sign_constrained,
         )
@@ -195,7 +197,7 @@ def run_lifetime_learning(
         arena_config=arena_config,
         steps=steps,
         generation=generation,
-            arena_seeds=arena_eval_seeds_for(master_seed, 0),
+        arena_seeds=arena_eval_seeds_for(master_seed, 0),
     )
 
     # 逐个体训练自己的 DanioNet
@@ -243,7 +245,7 @@ def run_lifetime_learning(
         arena_config=arena_config,
         steps=steps,
         generation=generation,
-            arena_seeds=arena_eval_seeds_for(master_seed, 0),
+        arena_seeds=arena_eval_seeds_for(master_seed, 0),
     )
 
     with torch.no_grad():
@@ -284,6 +286,7 @@ def run_lifetime_learning(
         train_results=tuple(train_results),
         reports=tuple(reports),
         delta_w_norm=delta_w_norm,
+        trained_thetas=tuple(thetas),
         noninheritance=evidence,
         sign_constrained=sign_constrained,
     )

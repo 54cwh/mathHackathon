@@ -30,6 +30,9 @@ class SessionCreate(BaseModel):
     #: 模型驱动会话（`API接口.md` §7.2）：DanioNet 驱动并推送 `brain.activation`；默认
     #: false（ExpertPolicy）。
     model_driven: bool = False
+    #: 冻结 demo checkpoint 路径（`pipeline §6`）；仅 `model_driven=true` 时生效：
+    #: 直接加载该网络与种群，免重建/免训练。
+    checkpoint_path: str | None = None
 
 
 class SessionSummary(BaseModel):
