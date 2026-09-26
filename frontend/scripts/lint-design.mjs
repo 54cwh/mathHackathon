@@ -125,5 +125,5 @@ console.error(`lint:design 失败：${violations.length} 处\n`);
 for (const v of violations) {
   console.error(`  [${v.rule}] ${v.file}:${v.line}  ${v.msg}`);
 }
-console.error("\n规则说明见 scripts/lint-design.mjs 顶部；R2-4 / Q4 等决策见 frontend/交互与可视化.md §13。");
+console.error("\n规则说明见 scripts/lint-design.mjs 顶部；R2-4 / Q4 等决策见 frontend/交互与可视化.md §14；审计证据见其 §A。");
 process.exit(1);
