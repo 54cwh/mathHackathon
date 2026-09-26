@@ -332,3 +332,33 @@ Topologies*, Evol. Comput. 10(2):99–127 (2002) | peer-reviewed |
 - `scripts/` 保留同名**薄壳**，命令与参数不变。
 - `scripts/dump_connectome_matrix.py` / `probe_architecture.py` 为数据落盘层，**仍留 `scripts/`**（非 viz）。
 - **paper 路径已同步**（2026-09-26，用户授权）：`paper/图表-数据对照表.md` §1 的 `experiment/figdata.py` 已改 `viz/figdata.py`。
+
+## 追加（2026-09-26 深夜）：发育侧两处校准失配修复完成 —— 请 paper / viz lane 重推数字
+
+commit **3ab3e0e**（已推送）。修三处：Θ_D 改每-seed（新命名空间 `development_params = 17`）、ρ(W⁰) 确定性重定到
+新增配置项 `connectome.rho_w0_target`（0.9）、`U` 跨域散布按解析上界收口。机理与实测见 `契约决策记录.md`
+同日条目与 `development/RGCD数学模型.md` §6/§7。
+
+### 需你处理的（均属你 lane，我未越界）
+
+1. **报告 §2.1 的 F6 /「2/14」失效**：实测 seed 1103 / 2207 / 42 各 1000/1000 = **100.000%**
+   （Wilson [99.6%, 100.0%]），八条判据**一条也没有触发**。请重推 F6 与 §2.1 文字。
+2. **8 项断言用的是旧口径数字**（`test_fig_viability.py` ×3、`test_dump_connectome_matrix.py` ×1、
+   `test_baselines.py` ×4），且自带「**不要改断言去迁就**」纪律 ⇒ 由你重推数字后再改断言。
+3. **4 项断言的前提已消失**：`test_fig_connectome.py` ×2（`'seed 1103 index 4'` vs `'index 2'`、
+   `assert 0 > 0`）属 `viz/` ⇒ 归你；`test_probe_architecture.py` ×2 属 model 侧夹具 ⇒ 我改为
+   **显式注入**失败个体。
+4. **`paper/refs.bib` 与 `research/notes/bibliography.md` 失同步**（`test_paper_bib.py` ×2 +
+   `test_console_utf8.py::test_make_bib_check_survives_gbk_pipe`）：重跑 `scripts/make_bib.py`。
+5. **概念变化（须写进报告）**：默认配置下 §7 的发育期 viability 筛选**不再淘汰任何个体** ——
+   `n_danio` viable 数由约 10% 变为约 100%，`evolution` 的 `failure_reason` 分支在当前配置下
+   不再产生样本。若要保留**有约束力**的筛选，须重新标定默认配置（`configs/` owner 取值 +
+   `docs/参数总表.json` 依据同步）—— 我**未做**，已列为未决项。
+
+### 已由我同步（告知，非请求）
+
+- `core/核心机制与数据流.md` §3 注册表 + §4 新增 `development_params` 的 `t` 规则（`t ≡ 0`，同 `network_init`）。
+- `development/RGCD数学模型.md` §6（散布收口）/ §7（工作点重测 + 口径警告）/ §10（W⁰ 重定）/ §13（`U` 行）。
+- `genome/生物学与进化遗传学基础.md:70` 的旧门禁措辞（`separable = 错分 < 多数类基线`）已与
+  `experiment §3.9` 对齐 —— 上一轮 `fbec51e` 漏改此处，两处曾互相矛盾。
+
