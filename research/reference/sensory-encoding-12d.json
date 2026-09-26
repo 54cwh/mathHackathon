@@ -20,7 +20,7 @@
       "fov_degrees": 220.0,
       "e_max": 1.0,
       "capture_size_ratio_kappa": 1.25,
-      "capture_radius": 1.2,
+      "capture_radius": 4.61,
       "source": "configs/default_arena.yaml"
     }
   },

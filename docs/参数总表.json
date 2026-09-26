@@ -7,7 +7,8 @@
     "audit_source": "已并入本文件",
     "research": [
       "research/reference/param-basis-engineering.md",
-      "research/reference/param-basis-biology.md"
+      "research/reference/param-basis-biology.md",
+      "research/reference/zebrafish-escape-capture.md"
     ],
     "legend_grade": {
       "A": "结构/定义：由模型结构必然推出",
@@ -515,12 +516,17 @@
       "unit": "ratio",
       "group": "arena",
       "grade": "D",
-      "status": "proposed_change",
-      "basis": "斑马鱼为 gape-limited：口裂仅 4–5% SL，猎物远小于自身；1.25（允许猎物大于自身）与生物学相反；依据：斑马鱼 gape-limited(口裂 4–5% SL)，κ=1.25 与生物学相反，需改按口裂比",
-      "source": "research/reference/param-basis-biology.md",
+      "status": "no_basis",
+      "basis": "未找到斑马鱼直接的「最大可吞猎物/捕食者体长」上限；替代物种 20–27% SL 度量的是猎物体高，不可倒数为 κ。原 basis 的「1.25（允许猎物大于自身）」**已更正**：§8 判据为 size_hunter ≥ κ·size_target，等价 prey_size ≤ predator_size/κ，猎物必须更小。1.25 保持为设计选择；耦合约束 predator_size ≥ κ·max_size。",
+      "source": "research/reference/zebrafish-escape-capture.md",
       "config": "configs/default_arena.yaml → growth.capture_size_ratio",
-      "sensitivity": null,
-      "suggest": "重定义捕获判定（按口裂/尺寸比）"
+      "sensitivity": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ],
+      "suggest": "保持 1.25（设计选择）；扫描时必须与 predator_size 联动"
     },
     {
       "name": "sensing_radius",
@@ -528,12 +534,51 @@
       "unit": "world_unit",
       "group": "arena",
       "grade": "D",
-      "status": "proposed_change",
-      "basis": "幼虫探测 0.34–0.77 BL、打击 0.12–0.14 BL（成鱼未知）；若单位≈体长，18 远大于观测值；依据：幼虫探测 0.34–0.77 BL；18 若按 BL 远大于观测值，需重定口径",
+      "status": "no_basis",
+      "basis": "方案 B（2026-09-26 裁决）：wu 为抽象仿真长度单位，不与 BL 建立固定换算；18 wu 是项目尺度，不赋予真实视觉距离含义。原 basis 的「若单位≈体长，18 远大于观测值」不再作为改动依据。尺度声明见 arena/Danio_Arena设计与实现说明.md §2。",
       "source": "research/reference/param-basis-biology.md",
       "config": "configs/default_arena.yaml → sensing.radius",
-      "sensitivity": null,
-      "suggest": "先定世界单位→体长换算，再按 BL 设半径"
+      "sensitivity": [
+        12.0,
+        18.0,
+        24.0
+      ],
+      "suggest": "方案 B：不建立 BL 换算；保持 18 wu 作为项目尺度"
+    },
+    {
+      "name": "capture_radius",
+      "value": 4.61,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "C",
+      "status": "derived",
+      "basis": "由幼虫实测打击/探测距离比 0.16–0.41 取几何中心 √(0.16×0.41)=0.256，×sensing_radius 18 = 4.61 wu（可接受域 2.88–7.38）。斑马鱼成鱼以 BL 计的打击距离未检索到，故不按 BL 直接取值。",
+      "source": "research/reference/zebrafish-escape-capture.md",
+      "config": "configs/default_arena.yaml → growth.capture_radius",
+      "sensitivity": [
+        2.88,
+        4.61,
+        7.38
+      ],
+      "suggest": "已落地（方案 B）；扫描时与 sensing_radius 同比例"
+    },
+    {
+      "name": "predator_size",
+      "value": 3.125,
+      "unit": "size",
+      "group": "arena",
+      "grade": "C",
+      "status": "derived",
+      "basis": "耦合约束 predator_size ≥ κ·max_size = 1.25×2.5 = 3.125（§8）。低于此值则被 min(max_size,·) 钳住的最大体型个体永久不可捕食（吸收态）。未进 configs/default_arena.yaml（actors 段缺失，见 arena 文档 §18.2.3 / 认领表 A5）。",
+      "source": "arena/Danio_Arena设计与实现说明.md §8（内部耦合约束）",
+      "config": null,
+      "sensitivity": [
+        2.5,
+        3.125,
+        3.75,
+        5.0
+      ],
+      "suggest": "扫描 κ 时联动：predator_size = κ×max_size"
     },
     {
       "name": "sensing_fov_degrees",
@@ -1145,7 +1190,9 @@
     "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 n_motifs（见 research/notes/bibliography.md 引用规则）",
     "initial_precursors=24 的口径未写清（substrate 节点数 vs 发育起始细胞数）",
     "『步数→秒』换算是推断，各来源 dt 不同",
-    "BC 损失权重 λ_i=1/σ_i²（目标尺度归一化）属实现级惯例（robomimic/ACT/diffusion policy 逐维标准化 + 等权 MSE），无单篇论文证明其最优；正文按实现惯例表述"
+    "BC 损失权重 λ_i=1/σ_i²（目标尺度归一化）属实现级惯例（robomimic/ACT/diffusion policy 逐维标准化 + 等权 MSE），无单篇论文证明其最优；正文按实现惯例表述",
+    "selection_beta 在适应度归一化未定前无意义（建议改排名/锦标赛，见 design-basis-evolution.md）",
+    "arena 距离参数曾记「与生物量级冲突」：根因是 wu↔BL 换算未定义，已由方案 B 关闭——不再声称 wu↔BL，只按无量纲比率校准（见 arena/Danio_Arena设计与实现说明.md §2 尺度声明 / §8）"
   ],
   "reference_magnitudes": [
     {
@@ -1199,18 +1246,6 @@
   ],
   "changes_pending": [
     {
-      "param": "sensing_radius",
-      "from": 18.0,
-      "to": "按 BL 换算",
-      "reason": "生物学量级，待定世界单位"
-    },
-    {
-      "param": "capture_size_ratio",
-      "from": 1.25,
-      "to": "口裂/尺寸比",
-      "reason": "斑马鱼 gape-limited"
-    },
-    {
       "param": "world",
       "from": "100×60",
       "to": "保留或正方形",
@@ -1240,6 +1275,39 @@
         24,
         48,
         96
+      ]
+    },
+    {
+      "param": "capture_radius / sensing_radius",
+      "values": [
+        0.16,
+        0.256,
+        0.41
+      ]
+    },
+    {
+      "param": "capture_cone_deg（前向锥，待实现）",
+      "values": [
+        60,
+        120,
+        180
+      ]
+    },
+    {
+      "param": "capture_size_ratio κ（与 predator_size 联动）",
+      "values": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ]
+    },
+    {
+      "param": "sensing_radius",
+      "values": [
+        12,
+        18,
+        24
       ]
     }
   ]

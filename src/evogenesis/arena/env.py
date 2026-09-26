@@ -191,7 +191,7 @@ class DanioArena:
                     break
 
             # predation on prey (Danio_Arena设计与实现说明.md section 8):
-            # d < r_capture AND size > kappa * prey_size
+            # d < r_capture AND size >= kappa * prey_size
             for prey in self.prey.values():
                 if not prey.alive:
                     continue
@@ -200,7 +200,7 @@ class DanioArena:
                     continue
                 fish.encounters += 1
                 size_ratio = fish.size / prey.size
-                if size_ratio > self.cfg.growth.capture_size_ratio:
+                if size_ratio >= self.cfg.growth.capture_size_ratio:
                     prey.alive = False
                     fish.captures += 1
                     fish.biomass += prey.size
@@ -298,7 +298,7 @@ class DanioArena:
             d = float(np.linalg.norm(fish.pos - pred.pos))
             if (
                 d < self.cfg.growth.capture_radius
-                and pred.size > self.cfg.growth.capture_size_ratio * fish.size
+                and pred.size >= self.cfg.growth.capture_size_ratio * fish.size
             ):
                 fish.alive = False
                 pred.target_fish_id = None

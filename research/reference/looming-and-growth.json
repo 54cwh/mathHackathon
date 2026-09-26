@@ -21,7 +21,7 @@
       "predator_size": 2.0,
       "predator_cruise_speed": 0.40,
       "predator_chase_speed": 0.65,
-      "capture_radius": 1.2,
+      "capture_radius": 4.61,
       "initial_size": 1.0,
       "max_size": 2.5,
       "biomass_to_size_gain": 0.02,

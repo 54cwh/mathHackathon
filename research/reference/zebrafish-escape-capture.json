@@ -10,7 +10,8 @@
       "peer_reviewed": "true=期刊/会议同行评审；false=预印本/仓库/文档；null=无法判定",
       "evidence_grade": "A=斑马鱼直接实测且多来源一致；B=同行评审但为替代物种或单一来源；C=综述/推断；D=设计选择，无直接生物学证据"
     },
-    "note": "按任务指令，本文件不登记 research/notes/bibliography.md，也不修改 research/reference/ 以外任何文件。"
+    "note": "按任务指令，本文件不登记 research/notes/bibliography.md，也不修改 research/reference/ 以外任何文件。",
+    "disposition": "2026-09-26 裁决（方案 B，见 research/notes/契约决策记录.md）：采纳比率锚点 → capture_radius=4.61；未采纳 κ 改 2.0–2.5（保持 1.25，因实际判据 prey_size ≤ predator_size/κ，κ 越大越严格）；未采纳随机捕获失败（P_capture_success=1.0）；朝向锥 120° 已裁决待实现；T1/T3 本次未涉及。详见同目录 zebrafish-escape-capture.md §6。"
   },
   "themes": [
     {
@@ -76,7 +77,7 @@
     {
       "id": "T2_capture_geometry",
       "question": "斑马鱼捕食的探测距离（相对 BL）、追击/捕获距离、口裂限制的定量证据；捕食者捕获失败率/逃脱概率；如何映射到本项目抽象单位（capture_radius、κ、sensing.radius）？",
-      "current_impl": "capture_radius=1.2 wu、capture_size_ratio κ=1.25、sensing.radius=18 wu、predator detect=15 wu / release=22 wu；捕获判定为纯距离、无朝向/口部角度，且满足条件即确定捕获（无随机失败）。",
+      "current_impl": "capture_radius=4.61 wu（2026-09-26 方案 B）、capture_size_ratio κ=1.25（判据含边界 ≥）、sensing.radius=18 wu、predator_size=3.125、predator detect=15 wu / release=22 wu；捕获判定为纯距离、无朝向/口部角度（前向锥 120° 已裁决待实现），且满足条件即确定捕获（无随机失败）。",
       "evidence": [
         {
           "quantity": "幼虫探测距离（斑马鱼）",
