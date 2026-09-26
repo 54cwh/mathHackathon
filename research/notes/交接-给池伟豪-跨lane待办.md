@@ -84,3 +84,27 @@
 而 namespace id 属 **Tier-3 `schemas/` 契约**（现有 `mutation=0 … network_init=5`），
 **我不 invent 新 id**。请你给一个 namespace（或在 `core` §10 登记新项），我立刻改。
 在此之前，跨 lane 复现只能靠 master seed 整体复现，**无法按模块单独重放**。
+
+---
+
+## 追加（2026-09-26）：Stage-1 轨迹采集器已就绪，但有一个**标注缺口**要你补
+
+按用户裁定的归属（`experiment`/`scripts` 出 Stage-1 轨迹），已落地：
+
+- `scripts/run_arena.py --emit-trajectories` → 每个 run 目录落
+  `trajectories/episode_ep0001.jsonl`（首行 header + 逐 step），
+  字段/格式严格照 `schemas/trajectory.schema.json`（**测试用 jsonschema 逐条校验**，不是人眼对齐）。
+- 实跑验证：`exp_traj_smoke`（1 seed）= 6601 step（12 鱼 × 存活步），
+  obs ⊂ [0,1]、step ⊂ [0,599]、`is_first`/`is_last` 各 12 条，全量通过 schema。
+
+### ⚠️ P0-9（新）：轨迹的 `genome_id` 目前是占位符 `"unknown"`
+
+`arena/entities.py:55` 的 `Fish.genome_id` 默认值是字符串 `"unknown"`；
+真值在 evolution 侧的 `Individual.genome_id`（`mint_id(experiment_id, "genome", …)` 铸造）。
+**鱼目前不是从 `Individual` 出生的**，所以该字段没被填 —— 我**不 invent** ID，故只在 emitter 侧
+加了告警（全为 `"unknown"` 时打印 warn）。
+
+对你的影响：BC 轨迹暂时**没有基因型标识**，无法做「基因型 × 行为」的关联分析，
+也让 `schemas/fish.schema.json` 要求的「与 fish_id 相互独立的稳定 ID」落空。
+建议在 evolution→arena 接线时把 `Fish.genome_id` 从 `Individual.genome_id` 传入；
+我这边 emitter 无需改动（字段已在写）。

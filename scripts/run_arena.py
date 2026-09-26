@@ -6,6 +6,8 @@
 ```text
 results/runs/<experiment_id>-s<seed>/
   metadata.json               (由 run_experiment.py 写)
+  trajectories/               (仅在 --emit-trajectories 时写：
+                               episode_<id>.jsonl，契约见 schemas/trajectory.schema.json)
   arena_config_resolved.json  (由 run_experiment.py 写：实际生效的 ArenaConfig 快照)
   config_snapshot/  seed.txt  git_commit.txt
   metrics.csv                 逐个体一行：指标 + 原始计数
@@ -21,6 +23,7 @@ results/runs/<experiment_id>-s<seed>/
 
     .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1
     .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1 --seeds 1103,2207
+    .venv/Scripts/python.exe scripts/run_arena.py --experiment-id exp1 --emit-trajectories
 
 注意：`experiment_id` 必须唯一（沿用 `run_experiment.py` 的契约）；已存在时报错退出。
 """
@@ -34,6 +37,7 @@ import os
 import subprocess
 import sys
 import time
+from dataclasses import asdict
 from pathlib import Path
 
 from evogenesis.arena.config import load_arena_config
@@ -47,6 +51,11 @@ from evogenesis.experiment.metrics import (
     aggregate_by_seed,
     episode_metrics,
     summarise_over_seeds,
+)
+from evogenesis.experiment.trajectories import (
+    episode_header,
+    step_record,
+    write_episode,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,20 +118,52 @@ def create_run_dir(
 
 
 def run_episode(
-    cfg_path: Path, seed: int, steps: int, overrides: dict | None = None
-) -> tuple[dict[str, dict], list, float]:
-    """跑一局，返回 (每鱼记录, 事件列表, 墙钟秒)。"""
+    cfg_path: Path,
+    seed: int,
+    steps: int,
+    overrides: dict | None = None,
+    emit_trajectories: bool = False,
+) -> tuple[dict[str, dict], list, float, list[dict]]:
+    """跑一局，返回 (每鱼记录, 事件列表, 墙钟秒, 轨迹 step 记录)。
+
+    轨迹只在 `emit_trajectories=True` 时收集（BC 数据；见 `trajectories.py`）。
+    死鱼死亡后不再记录：没有 observation/动作就没有训练样本。
+    """
     cfg = load_arena_config(cfg_path, overrides=overrides)
     arena = DanioArena(cfg, master_seed=seed)
     arena.reset()
     expert = ExpertPolicy()
+    traj: list[dict] = []
+    first_step: set[str] = set()
     t0 = time.perf_counter()
-    for _ in range(steps):
+    for k in range(steps):
         alive = [(fid, f) for fid, f in arena.fish.items() if f.alive]
-        actions = {fid: expert(arena.observe(fid)) for fid, _ in alive}
+        obs = {fid: arena.observe(fid) for fid, _ in alive}
+        actions = {fid: expert(obs[fid]) for fid, _ in alive}
+        if emit_trajectories:
+            for fid, f in alive:
+                traj.append(
+                    step_record(
+                        fish_id=fid,
+                        genome_id=f.genome_id,
+                        step=k,
+                        observation=obs[fid],
+                        expert_action=actions[fid],
+                        is_first=fid not in first_step,
+                        is_last=False,
+                    )
+                )
+                first_step.add(fid)
         arena.step(actions)
+    if emit_trajectories and traj:
+        # 末步标记：每条鱼**最后一条**记录置 is_last
+        last: dict[str, int] = {}
+        for idx, rec in enumerate(traj):
+            last[rec["fish_id"]] = idx
+        for idx in last.values():
+            traj[idx]["is_last"] = True
     elapsed = time.perf_counter() - t0
-    return arena.per_fish_log(), list(arena.events), elapsed
+    return arena.per_fish_log(), list(arena.events), elapsed, traj
 
 
 def write_metrics_csv(run_dir: Path, rows: list[dict]) -> None:
@@ -194,6 +235,11 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--config", default="configs/default_arena.yaml")
     parser.add_argument(
+        "--emit-trajectories",
+        action="store_true",
+        help="落 Stage-1 专家轨迹到 <run>/trajectories/（BC 训练数据）",
+    )
+    parser.add_argument(
         "--environment",
         default=None,
         help="configs/experiment_environments.yaml 的 environment_id；缺省=基线",
@@ -222,7 +268,31 @@ def main() -> None:
     for seed in seeds:
         run_id = f"{args.experiment_id}-s{seed}"
         run_dir = create_run_dir(run_id, args.config, seed, overrides)
-        per_fish, events, elapsed = run_episode(cfg_path, seed, steps, overrides)
+        per_fish, events, elapsed, traj = run_episode(
+            cfg_path, seed, steps, overrides, args.emit_trajectories
+        )
+        if args.emit_trajectories:
+            ids = {r["genome_id"] for r in traj} if traj else set()
+            if ids == {"unknown"}:
+                print(
+                    '  [warn] trajectories 的 genome_id 全为占位符 "unknown"：'
+                    "鱼尚未从 Individual 出生（evolution→arena 接线未完成，"
+                    "见 handoff 跨 lane 待办 P0-9）。BC 数据暂时无基因型标识。"
+                )
+            gen = next(iter(per_fish.values()), {}).get("generation") or 0
+            write_episode(
+                run_dir / "trajectories" / "episode_ep0001.jsonl",
+                episode_header(
+                    experiment_id=args.experiment_id,
+                    episode_id="ep0001",
+                    environment_id=args.environment or "default",
+                    generation=int(gen),
+                    episode_seed=seed,
+                    total_steps=steps,
+                    environment_config=asdict(cfg.population),
+                ),
+                traj,
+            )
         rows = [
             {
                 "seed": seed,
@@ -249,6 +319,7 @@ def main() -> None:
         {
             "experiment_id": args.experiment_id,
             "environment": args.environment or "default",
+            "emit_trajectories": bool(args.emit_trajectories),
             "seeds": seeds,
             "steps": steps,
             "n_individuals": len(all_rows),
