@@ -34,6 +34,8 @@ q_k(S)=TopKMean_{s\subset S}a(M_k,s)
 \mathbf q(G)\in[0,1]^8
 \]
 
+说明：\(a=1-d_H/|M_k|\) 等价于"每列 one-hot、失配等权"的退化 PWM。标准 motif 表示是 PWM/PSSM（Stormo 2000），本项目采用简化式以提高可解释性与可编辑性，须在报告中声明为简化并配 PWM 对照。出处：`research/reference/design-basis-genome.md`。
+
 ## 3. Developmental domains
 初始 precursor：
 
@@ -169,6 +171,8 @@ d_{ij}=\|\mathbf p_i-\mathbf p_j\|_2
 
 不允许 self-loop。通过 bias calibration 使平均 density 约 10%–20%。
 
+依据：空间布线代价项 \(-\lambda d_{ij}\) 有充分文献支撑——在 logit 中加入线性距离项等价于指数距离规则 \(P\propto e^{-\lambda d}\)（Ercsey-Ravasz et al. 2013 *Neuron*；Waxman 1988；Kaiser & Hilgetag 2004；综述 Bullmore & Sporns 2012）；cell-type 兼容项 \(z_i^T C z_j\) 对应 `[bib#4]`。注意 \(\lambda\) 有量纲，Arena 为无量纲坐标，须重标定而非照搬文献值。\(R(\cdot)\) 的具体形式待定（G1，见 `docs/设计依据审计.md`）。出处：`research/reference/design-basis-connectome.md`。
+
 ## 9. Fixed compatibility prior
 | pre \\ post | S | P | T | M | I | O |
 |---|---:|---:|---:|---:|---:|---:|
@@ -179,7 +183,7 @@ d_{ij}=\|\mathbf p_i-\mathbf p_j\|_2
 | I | -2.0 | 0.4 | 0.4 | 0.9 | 0.0 | 1.5 |
 | O | -2.0 | -1.5 | -1.5 | -0.5 | -0.5 | -1.0 |
 
-该矩阵是人工 prior，MVP 不学习它。
+该矩阵是人工 prior，MVP 不学习它。其数值无外部依据，属项目设计选择；仅可引用脑区通路/连接 motif 的符号模式（如 `[bib#14]`）作定性参照，不代表定量测量。
 
 ## 10. Initial weight
 \[
@@ -200,6 +204,8 @@ sign(w_{ij})=
 \end{cases}
 \]
 
+依据：Dale's principle（Dale 1935；Eccles, Fatt & Koketsu 1954 形式化），符号由**突触前**神经元类型决定，与突触后无关。建模实现可参见 Parisien et al. 2008、Cornford et al. 2021。注意共释放反例（Saunders 2015）存在，本项目按简化处理。出处：`research/reference/design-basis-neuro.md`。
+
 ## 11. Time constant
 \[
 \tau_i
@@ -215,6 +221,8 @@ sign(w_{ij})=
 \[
 \tau_i\in[1,10]
 \]
+
+依据与限定：在 \(hz=20\)（\(\Delta t=50\) ms）下，\(\tau_i\) 步等效于 \(50\text{–}500\) ms 的网络级整合时间常数——与 NMDA / GABA_B 及数百 ms 决策整合同量级，可辩护；但作为单神经元膜时间常数偏大（皮层约 20 ms）。文档须写明此处 \(\tau\) 的语义为"网络级整合"，且 \(\tau=1\) 退化为无记忆。出处：`research/reference/design-basis-neuro.md`。
 
 ## 12. Genome Sensitivity
 单 base mutation：

@@ -10,6 +10,8 @@
 
 六类都属于基础谱系；viable individual 每类至少一个。
 
+依据：六类是**功能抽象**，其划分参照斑马鱼感觉运动回路 `[bib#6][bib#7]` 与全脑连接组组织 `[bib#14]`，不对应特定真实细胞类型（见 `docs/设计依据审计.md` 表 3）。
+
 ## 2. 12 维输入
 1. prey_left_signal
 2. prey_right_signal
@@ -23,6 +25,8 @@
 10. current_speed
 11. energy
 12. hunger
+
+依据：prey/threat 通道对应斑马鱼视觉捕食与威胁回避 `[bib#8]`；hunger/energy 对应内部状态调制决策 `[bib#9][bib#10]`；looming 为逃避触发量。维度顺序冻结，Arena↔DanioNet 的编码规则见 `arena/Danio_Arena设计规范.md`（待闭合）。
 
 ## 3. 神经动力学
 \[
@@ -43,6 +47,8 @@ m_iH_t
 \]
 
 默认 \(\phi=\tanh\)。
+
+依据：该式是标准漏积分发放（firing-rate）模型的离散形式；\(\tau_i\) 的语义与量级见 `development/RGCD数学模型.md` §11。
 
 所有网络 padding 到 48 nodes，通过 neuron mask / adjacency mask batch。
 
@@ -65,6 +71,8 @@ v_t=\sigma(y_v)
 
 ## 5. 左右竞争
 Motor neurons 标记 left/right side。Inhibitory prior 提高 contralateral inhibition，允许左右 motor pools 竞争。
+
+依据：左右转向竞争与 heading-direction 回路 `[bib#6]`；自发探索中的左右交替与 ARTR 群体 `[bib#7]`。marker 规则待定（G2）。
 
 ## 6. Lifetime Learning
 Stage 1：透明 ExpertPolicy 产生轨迹。
@@ -95,12 +103,16 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 \rightarrow Lifetime\ Learning
 \]
 
+依据：以 genome 编码先天结构、后天学习不遗传，是 genomic bottleneck 的核心主张 `[bib#1][bib#3]`。
+
 ## 8. Baselines
 - MLP
 - GRU
 - Fixed Sparse RNN
 
 要求 trainable parameter count 同一数量级。
+
+依据与量化：发育编码网络的对照基线取 NEAT / HyperNEAT / ES-HyperNEAT（Stanley & Miikkulainen 2002；Stanley et al. 2009；Risi & Stanley 2012）。"同一数量级"建议判据 `|log10(N_base) − log10(N_ours)| ≤ 1`，统一按连接（权重）数比较，并注意不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。出处：`research/reference/design-basis-connectome.md`。
 
 ## 9. Ablations
 - w/o GRN
