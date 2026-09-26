@@ -6,8 +6,9 @@ from pathlib import Path
 
 import pytest
 import torch
-from test_learning_common import MASTER_SEED, make_dataset, make_net
+from test_learning_common import MASTER_SEED, make_dataset, make_net, make_phenotype
 
+from evogenesis.connectome.danionet import DanioNet
 from evogenesis.core.config import ModelConfig, load_config
 from evogenesis.core.seed import SeedManager
 from evogenesis.learning.report import (
@@ -57,6 +58,12 @@ def test_spectral_radius_matches_torch_eigvals():
 
 def test_delta_w_identity_error_is_zero():
     net, _ = _trained()
+    assert delta_w_identity_error(net) == pytest.approx(0.0)
+
+
+def test_delta_w_identity_error_zero_for_unconstrained_net():
+    """无约束消融路径（sign_constrained=False，W = support ⊙ Θ）同样须报 0。"""
+    net = DanioNet([make_phenotype()], master_seed=MASTER_SEED, sign_constrained=False)
     assert delta_w_identity_error(net) == pytest.approx(0.0)
 
 

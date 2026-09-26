@@ -88,12 +88,16 @@ def spectral_radius(net: DanioNet) -> tuple[float, ...]:
 def delta_w_identity_error(net: DanioNet) -> float:
     """``ΔW`` 与由冻结缓冲/参数**独立重建**值的一致性（`DanioNet §3`）。
 
-    重建路径不经 ``effective_weights`` property：``W = support_sign0 ⊙ softplus(Θ)``，
-    再比对 ``delta_weights`` 与 ``W − W⁰``。用于检出 ``delta_weights`` /
-    ``effective_weights`` 偏离底层参数化（如漏乘支撑、符号因子）的错误。
+    重建路径不经 ``effective_weights`` property，且按 ``net.sign_constrained`` 走对应
+    参数化：约束路径 ``W = support ⊙ sign(W⁰) ⊙ softplus(Θ)``、非约束消融路径
+    ``W = support ⊙ Θ``；再比对 ``delta_weights`` 与 ``W − W⁰``。用于检出
+    ``delta_weights`` / ``effective_weights`` 偏离底层参数化（如漏乘支撑、符号因子）的错误。
     """
     with torch.no_grad():
-        rebuilt = net.support_sign0 * F.softplus(net.theta)
+        if net.sign_constrained:
+            rebuilt = net.support_sign0 * F.softplus(net.theta)
+        else:
+            rebuilt = net.support_f32 * net.theta
         error = net.delta_weights - (rebuilt - net.weights0)
         return float(error.abs().max())
 
