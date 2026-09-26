@@ -689,12 +689,12 @@
       "unit": "mm",
       "group": "arena",
       "grade": "B",
-      "status": "missing",
-      "basis": "成鱼标准体长 SL 25–35 mm（取 30，与 Palstra 2010 自洽）；幼虫 4.2 mm",
+      "status": "in_range",
+      "basis": "成鱼标准体长 SL 25–35 mm（取 30，与 Palstra 2010 自洽）；幼虫 4.2 mm；已按方案 B 退役（wu 不与 BL 固定换算），仅作生物学参考",
       "source": "research/reference/param-basis-biology.md:121-134",
       "config": null,
       "sensitivity": null,
-      "suggest": "新增，作为世界单位换算基准"
+      "suggest": null
     },
     {
       "name": "predator_turn_rate",
