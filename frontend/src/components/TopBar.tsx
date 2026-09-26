@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useUiStore } from "@/store/ui";
 import { getHealth } from "@/api/health";
+import { JourneyBar } from "@/components/JourneyBar";
 
 /**
  * Top bar: all text is real DOM (rule 7); values come from the backend session
@@ -60,6 +61,10 @@ export function TopBar() {
         <StatusItem label="Prey" value={stats?.preyAlive ?? "—"} />
         <StatusItem label="Step" value={stats?.step ?? "—"} />
         <StatusItem label="Seed" value={stats?.seed ?? "—"} />
+      </div>
+      {/* 导演线（`交互与可视化.md` §1）：尾随右对齐，不挤压左侧统计。 */}
+      <div className="ml-auto">
+        <JourneyBar />
       </div>
     </header>
   );

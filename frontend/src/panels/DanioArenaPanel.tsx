@@ -14,6 +14,7 @@ import {
   getLeaderboard,
   getSnapshot,
   release,
+  spawnIndividual,
   type ArenaSnapshot,
   type FishCard,
   type FishState,
@@ -65,6 +66,9 @@ export function DanioArenaPanel() {
   /** 已在 Arena 的实验室个体（chip 列表；来自 store 单一真相）。 */
   const individuals = useUiStore((s) => s.individuals);
   const focusGenome = useUiStore((s) => s.focusGenome);
+  const activeGenomeId = useUiStore((s) => s.activeGenomeId);
+  const addIndividual = useUiStore((s) => s.addIndividual);
+  const intent = useUiStore((s) => s.intent);
   const tickRef = useRef(0);
   /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
@@ -130,7 +134,9 @@ export function DanioArenaPanel() {
   // ---- poll while running: one release step per tick ----------------------
   useEffect(() => {
     // Playback 视图 = Manual Control 操场，由那个面板驱动同一条会话；此处让位，避免双驱动。
-    if (!running || !sessionId || activeView === "playback") return;
+    // 切走即停：三视图常驻挂载，仅 Playback 让位不足够 —— 非 experiment 视图下不再抽步，
+    // 避免隐藏时仍以 ~10 次/秒 打 `release`（实测持续 60% CPU）。
+    if (!running || !sessionId || activeView !== "experiment") return;
     let stop = false;
     let timer = 0;
 
@@ -187,6 +193,19 @@ export function DanioArenaPanel() {
       window.clearTimeout(timer);
     };
   }, [running, sessionId, activeView, setRunning, setStats]);
+
+  // 导演线意图（`交互与可视化.md` §1）：`ARENA` 段确保「当前个体」已在会话中。
+  // Lab 在其 DEVELOP 时已补送，这里兜底（会话尚未就绪 / 个体尚未入列时）。
+  const handledIntent = useRef(0);
+  useEffect(() => {
+    if (!intent || intent.stage !== "arena" || intent.nonce === handledIntent.current) return;
+    handledIntent.current = intent.nonce;
+    if (!sessionId || !activeGenomeId) return;
+    if (individuals.some((it) => it.genome_id === activeGenomeId)) return;
+    void spawnIndividual(sessionId, activeGenomeId)
+      .then((individual) => addIndividual(individual))
+      .catch((e) => setError(String(e)));
+  }, [intent, sessionId, activeGenomeId, individuals, addIndividual]);
 
   // ---- render -------------------------------------------------------------
   useEffect(() => {

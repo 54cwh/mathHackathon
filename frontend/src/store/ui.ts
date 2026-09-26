@@ -29,6 +29,39 @@ export const JOURNEY_STAGES: readonly JourneyStage[] = [
   "compare",
 ];
 
+/** 导演线段数。 */
+export const STAGE_COUNT = JOURNEY_STAGES.length;
+
+/** 门控判据所依赖的最小状态切片（`交互与可视化.md` §1 状态机表）。 */
+export interface JourneyGateState {
+  activeGenomeId: string | null;
+  development: LabDevelopment | null;
+  sessionId: string | null;
+  individuals: SpawnedIndividual[];
+  generation: number;
+}
+
+/**
+ * 某段能否进入（前端门控，`交互与可视化.md` §1）。
+ *
+ * 「下一步」只在**目标段**返回 `true` 时可点；`seed`/`genome` 无前置依赖。
+ */
+export function isStageReady(state: JourneyGateState, stage: JourneyStage): boolean {
+  switch (stage) {
+    case "seed":
+    case "genome":
+      return true;
+    case "develop":
+      return state.activeGenomeId !== null;
+    case "arena":
+      return state.development?.result != null;
+    case "evolve":
+      return state.sessionId !== null && state.individuals.length > 0;
+    case "compare":
+      return state.generation > 0;
+  }
+}
+
 /** 最近一次发育产物（DNA2Brain Lab 产出 → Brain Forge 消费；`API接口.md` §2.3）。 */
 export interface LabDevelopment {
   genomeId: string | null;
@@ -56,6 +89,10 @@ interface UiState {
   individuals: SpawnedIndividual[];
   /** 焦点事件计数；`focusGenome()` 自增，使"同一个体再点一次"也能被订阅到。 */
   focusNonce: number;
+  /** 导演线「下一步」下发的段意图；面板用 ref 去重后执行该段动作。 */
+  intent: { stage: JourneyStage; nonce: number } | null;
+  /** AUTO DEMO 开关：定时循环「下一步」，门控未通过即停。 */
+  autoPlay: boolean;
   // ---- 动作 ---------------------------------------------------------------
   setSelectedFish: (id: string | null) => void;
   setRunning: (v: boolean) => void;
@@ -78,6 +115,8 @@ interface UiState {
   ) => void;
   addIndividual: (individual: SpawnedIndividual) => void;
   focusGenome: (genomeId: string) => void;
+  requestIntent: (stage: JourneyStage) => void;
+  setAutoPlay: (v: boolean) => void;
   resetJourney: () => void;
 }
 
@@ -97,6 +136,8 @@ export const useUiStore = create<UiState>((set) => ({
   development: null,
   individuals: [],
   focusNonce: 0,
+  intent: null,
+  autoPlay: false,
   setSelectedFish: (selectedFishId) => set({ selectedFishId }),
   setRunning: (running) => set({ running }),
   setSessionId: (sessionId) => set({ sessionId }),
@@ -133,6 +174,9 @@ export const useUiStore = create<UiState>((set) => ({
     })),
   focusGenome: (genomeId) =>
     set((state) => ({ activeGenomeId: genomeId, focusNonce: state.focusNonce + 1 })),
+  requestIntent: (stage) =>
+    set((state) => ({ journey: stage, intent: { stage, nonce: (state.intent?.nonce ?? 0) + 1 } })),
+  setAutoPlay: (autoPlay) => set({ autoPlay }),
   resetJourney: () =>
     set({
       journey: "seed",
@@ -141,5 +185,6 @@ export const useUiStore = create<UiState>((set) => ({
       activeRunId: null,
       generation: 0,
       development: null,
+      autoPlay: false,
     }),
 }));

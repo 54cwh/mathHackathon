@@ -54,6 +54,7 @@ export function DNA2BrainPanel() {
   const individuals = useUiStore((s) => s.individuals);
   const addIndividual = useUiStore((s) => s.addIndividual);
   const publishDevelopment = useUiStore((s) => s.publishDevelopment);
+  const intent = useUiStore((s) => s.intent);
   /** 已请求过 spawn 的 genome（UI 本地簿记：防重复请求；不属领域状态）。 */
   const requestedRef = useRef<Set<string>>(new Set());
 
@@ -220,6 +221,21 @@ export function DNA2BrainPanel() {
       setBusy(false);
     }
   }
+
+  // 导演线意图（`交互与可视化.md` §1）：`GENOME` 段造基因组、`DEVELOP` 段发育。
+  // 用 ref 去重（同 `focusNonce` 口径）；`developRef` 持有最新 `handleDevelop`，避免每渲染换引用。
+  const developRef = useRef(handleDevelop);
+  developRef.current = handleDevelop;
+  const handledIntent = useRef(0);
+  useEffect(() => {
+    if (!intent || intent.nonce === handledIntent.current) return;
+    handledIntent.current = intent.nonce;
+    if (intent.stage === "genome") {
+      if (!genome) void loadFresh();
+    } else if (intent.stage === "develop") {
+      developRef.current();
+    }
+  }, [intent, genome, loadFresh]);
 
   /** 每条单倍体各自开窗，窗口以选中位点为中心（保证选中格可见；无 offset 参数故由本面板切片）。 */
   const rowWindow = (row: { seq: string; start: number }) => {
