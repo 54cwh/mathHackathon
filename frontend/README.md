@@ -62,6 +62,11 @@
    渐变 / opacity 淡出 / `transition` 颜色插值 / 动画 / 颜色透明后缀（`bg-x/50`）。
    另含 **token 漂移守卫**：`index.css` 的生成块必须等于 `src/design/tokens.ts` 的输出
    （不一致就跑 `npm run gen:design`）。
+7. **改了后端必须重启 API 进程**：`uvicorn`/`serve_api.py` 只在启动时加载代码；旧进程对**新加的查询参数
+   会静默忽略**（FastAPI 不报错），表现为"前端参数发出去了、后端毫无反应"——2026-09-27 实际踩过
+   （Manual Control 的 `fish_id/omega/speed`）。本项目已有两道防线：① `/v1/health` 的能力位
+   （如 `manual_control`），前端据此提示"后端版本落后"；② 排查时先确认端口上的进程是刚启动的
+   （`lsof -ti:8000` 会同时列出持有代理连接的 vite，杀进程要按 `ps` 的 args 过滤，别连带杀掉 dev server）。
    **⚠️ 注释与键名同样会泄漏（实测过三类）**：Tailwind 扫的是**原始文本**（不剥注释），
    凡与工具类同名的**小写单词**都会被切成候选并生成「没人用」的死 CSS —— 命中过
    `DNA.shadow`（属性访问）、`tokens.ts` 的 shell token 键 `ring:`（对象键）、以及英文注释里的

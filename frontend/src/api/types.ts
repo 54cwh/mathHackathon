@@ -260,4 +260,7 @@ export interface EnvironmentalSelectionDetail extends EnvironmentalSelectionSumm
 
 export interface Health {
   status: string;
+  /** 能力位：`true` = 后端 `release` 支持手动动作（`API接口.md` §1.10）。
+   *  旧进程缺该字段（FastAPI 静默忽略多余查询参数）⇒ 前端须显式提示"后端版本落后"。 */
+  manual_control?: boolean;
 }
