@@ -51,6 +51,10 @@
 3. **20Hz 热路径不走 React**：Arena 用 `requestAnimationFrame` + Canvas2D，状态放 `useRef`；zustand 只存低频摘要（选中鱼、代、指标），避免每帧 setState。
 4. **配置只由官方模板生成**：`vite`/`tsconfig`/`tailwind`/`postcss` 配置不手写，用 `npm create vite@5` + shadcn CLI 产出后再改。
 5. **契约同源**：TS 类型对齐 `schemas/`（JSON 字段一律 `snake_case`）。
+6. **颜色与圆角走检查**：`npm run lint:design`（`scripts/lint-design.mjs`）。
+   硬规则：hex 只允许出现在 `src/design/palette.ts`；禁止 `rounded*`（除 `rounded-none`）；
+   `--radius` 必须为 `0`；色板必须 24 项且不含洋红 `#FF00FF`（抠图键控色）。
+   **两人并行时这是唯一能自动兜住「各改一版颜色」的闸门** —— 提交前必跑。
 
 ## 目录规划
 
@@ -140,6 +144,15 @@ frontend/
 
 ## 主题 token（暗色"实验室"风）
 
+> **本表是镜像，不是 owner**（2026-09-26 起，Q2(c)/Q3 决策）。两份真实 owner：
+> - **外壳 token**（下表前 10 行）= `src/index.css` 的 `:root`；
+> - **品牌 24 色** = `src/design/palette.ts`（唯一数据源）。
+>
+> 本表与代码不一致时**以代码为准**，并把本表改回来 —— `npm run lint:design` 会抓
+> hex 越界与圆角残留（规则 R1–R5，见 `scripts/lint-design.mjs`）。
+> 品牌色的 Tailwind 用法是 **`brand` 命名空间**：`bg-brand-ink` / `text-brand-foam` /
+> `border-brand-stone-shadow`（不是 `bg-ink` —— 那是**错的**，Tailwind 会静默不生成）。
+
 | 语义 | 值 |
 |---|---|
 | `bg` 背景 | `#0B0F14` |
@@ -152,9 +165,23 @@ frontend/
 | `success` | `#34D399` |
 | `warn` | `#FBBF24` |
 | `danger` | `#F87171` |
-| 正文字体 | Inter（自托管） |
-| DNA 等宽字体 | JetBrains Mono（自托管） |
-| 圆角 | `10px` |
+| 圆角 | `0` —— `R2-4 无圆角`；原 `10px` **已废止**（该值同时被 `index.css` 的 `--radius` 与 `tailwind.config.ts` 的 `borderRadius` 硬零化） |
+
+### 字体（Q4(b)，2026-09-26 落地）
+
+全部**自托管**于 `public/fonts/`（现场离线；见下方防坑约定 2「不引 CDN」）。
+文件由 `scripts/fetch-fonts.mjs` 下载、并生成 `src/design/fonts.css`；`index.css` 顶部 `@import` 它。
+
+| 用途 | 字体 | 落地文件 |
+|---|---|---|
+| 正文 | Inter | `public/fonts/inter-latin.woff2` |
+| 数值 / 代码 | JetBrains Mono | `public/fonts/jetbrains-mono-latin.woff2` |
+| **英文标签与标题** | Press Start 2P（像素，OFL） | `public/fonts/press-start-2p-latin.woff2` |
+| 中文叙述 | 系统字体 | —（像素字体不覆盖 CJK，**不要**给中文套像素字体） |
+
+用法：像素字体只加在**英文**标签/标题上，类名 `font-pixel`（定义在 `src/index.css` 的
+`@layer utilities`，它同时关掉抗锯齿）。数值走 `font-mono`。
+**许可登记**：Press Start 2P 等第三方字体须登记 `docs/declaration/THIRD_PARTY.md`（`docs/` 归池伟豪）。
 
 ## 与后端的接口
 

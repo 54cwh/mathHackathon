@@ -48,7 +48,7 @@ function App() {
         <button
           type="button"
           onClick={toggleRunning}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary"
+          className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary"
         >
           {running ? <Pause className="size-4" /> : <Play className="size-4" />}
           {running ? "Pause" : "Release"}
@@ -56,7 +56,7 @@ function App() {
         <button
           type="button"
           onClick={bumpReset}
-          className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary"
+          className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm transition-colors hover:border-primary"
         >
           <RotateCcw className="size-4" />
           Reset

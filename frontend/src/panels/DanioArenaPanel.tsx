@@ -10,6 +10,7 @@ import {
   release,
   type ArenaSnapshot,
 } from "@/api/arena";
+import { ARENA } from "@/design/palette";
 
 const WORLD_W = 100;
 const WORLD_H = 60;
@@ -110,7 +111,7 @@ export function DanioArenaPanel() {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
-    ctx.fillStyle = "#0B1220";
+    ctx.fillStyle = ARENA.canvas;
     ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
 
     if (!snap) return;
@@ -118,9 +119,9 @@ export function DanioArenaPanel() {
     for (const o of snap.obstacles) {
       ctx.beginPath();
       ctx.arc(sx(o.x), sy(o.y), sr(o.radius), 0, Math.PI * 2);
-      ctx.fillStyle = "#374151";
+      ctx.fillStyle = ARENA.obstacleDark;
       ctx.fill();
-      ctx.strokeStyle = "#6B7280";
+      ctx.strokeStyle = ARENA.obstacleLight;
       ctx.stroke();
     }
 
@@ -128,16 +129,16 @@ export function DanioArenaPanel() {
       if (!p.alive) continue;
       ctx.beginPath();
       ctx.arc(sx(p.x), sy(p.y), Math.max(2, sr(p.size) * 1.5), 0, Math.PI * 2);
-      ctx.fillStyle = "#34D399";
+      ctx.fillStyle = ARENA.prey;
       ctx.fill();
     }
 
     for (const d of Object.values(snap.predators)) {
       ctx.beginPath();
       ctx.arc(sx(d.x), sy(d.y), sr(d.size) * 3, 0, Math.PI * 2);
-      ctx.fillStyle = "#F87171";
+      ctx.fillStyle = ARENA.predator;
       ctx.fill();
-      ctx.strokeStyle = "#DC2626";
+      ctx.strokeStyle = ARENA.outline;
       ctx.stroke();
     }
 
@@ -158,22 +159,24 @@ export function DanioArenaPanel() {
       ctx.lineTo(leftX, leftY);
       ctx.lineTo(rightX, rightY);
       ctx.closePath();
-      ctx.fillStyle = isSelected ? "#FBBF24" : "#60A5FA";
+      ctx.fillStyle = isSelected ? ARENA.fishSelected : ARENA.fishUnselected;
       ctx.fill();
-      ctx.strokeStyle = isSelected ? "#F59E0B" : "#2563EB";
+      ctx.strokeStyle = ARENA.outline; // 统一轮廓（像素画惯例；见 design/palette.ts 的 ARENA 说明）
       ctx.lineWidth = isSelected ? 2 : 1;
       ctx.stroke();
 
       if (isSelected) {
         ctx.beginPath();
         ctx.arc(x, y, len + 4, -Math.PI / 2, -Math.PI / 2 + f.energy * Math.PI * 2);
-        ctx.strokeStyle = f.energy > 0.3 ? "#34D399" : "#F87171";
+        ctx.strokeStyle = f.energy > 0.3 ? ARENA.energyOk : ARENA.energyLow;
         ctx.lineWidth = 2;
         ctx.stroke();
       }
     }
 
-    ctx.fillStyle = "#9CA3AF";
+    ctx.fillStyle = ARENA.hudText;
+    // 注：Canvas 要用自托管 webfont 必须先 await document.fonts.ready，
+    // 否则静默回退到系统等宽 —— 故此处仍用 monospace（Q4：数值走清晰等宽）。
     ctx.font = "12px monospace";
     ctx.fillText(`step ${snap.step}`, 8, 16);
   }, [snap, selectedFishId]);
@@ -211,7 +214,7 @@ export function DanioArenaPanel() {
             width={CANVAS_W}
             height={CANVAS_H}
             onClick={handleClick}
-            className="max-h-full max-w-full cursor-crosshair rounded-md"
+            className="max-h-full max-w-full cursor-crosshair"
           />
         </div>
         <div className="flex items-center justify-between text-xs text-muted-foreground">

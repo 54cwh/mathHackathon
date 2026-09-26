@@ -98,7 +98,7 @@ Subject: one 16-bit pixel-art zebrafish seen from directly above (top-down), dra
 
 Key details: long slender streamlined body; head facing right in every frame; dark body with lighter horizontal stripes; a clearly readable dorsal fin and a fan-shaped tail fin; a crisp 1-pixel dark outline around the whole silhouette.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing, no blending. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing, no blending. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: the 2x2 grid is centered and evenly spaced; all four cells are the same size; the four fish never touch each other or the image edge; a clear magenta gutter separates them; the whole grid fills about 70% of the frame. Full subject visible, centered, with an even margin on all sides.
 
@@ -126,7 +126,7 @@ Subject: one 16-bit pixel-art juvenile zebrafish seen from directly above, a sin
 
 Key details: same design language as an adult zebrafish - long slender streamlined body, dark body with lighter horizontal stripes - but clearly shorter and simpler: fewer stripes, fewer fin details, a chunkier and rounder body. The goal is a shape that is still instantly readable as a fish at a very tiny size, not a shapeless blob.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: single subject, centered, full subject visible with an even margin on all sides; the subject fills about 65% of the frame.
 
@@ -154,7 +154,7 @@ Subject: one 16-bit pixel-art tiny creature seen from directly above, a single s
 
 Key details: small, round and plump; bright warm color, clearly warmer in hue than the cool-toned fish; a simple full silhouette with the least amount of internal detail of any object in the scene - it must be the lightest visual weight of all arena objects while still reading clearly at a very small size.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: single subject, centered, full subject visible with an even margin on all sides.
 
@@ -182,7 +182,7 @@ Subject: one 16-bit pixel-art large aquatic predator seen from directly above, a
 
 Key details: its threat tier must read instantly, from three cues at once - clearly much larger than a fish, dark and low in value, and a sharp angular silhouette with pointed protrusions or a wide open jaw. It must be an original design, not resembling any existing game character.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: single subject, centered, full subject visible with an even margin on all sides; the subject fills about 70% of the frame.
 
@@ -210,7 +210,7 @@ Subject: three different 16-bit pixel-art underwater plants seen from directly a
 
 Key details, three distinct kinds: 1) a short dense clump; 2) several tall thin shoots; 3) a plant with rounded leaves. Use grass green as the base with a darker green outline and one lighter green for the lit edge. All three stand on a common baseline, evenly spaced, clearly different in height and silhouette, and never overlapping each other.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: the row is centered, each plant roughly twice as tall as it is wide, a clear magenta gutter between them, none touching the image edge; full subjects visible with an even margin on all sides.
 
@@ -238,7 +238,7 @@ Subject: three different 16-bit pixel-art underwater obstacles seen from directl
 
 Key details, three distinct kinds: 1) a single angular rock; 2) a small pile of two or three broken stones; 3) a piece of sunken driftwood with lengthwise grain, slightly tapered at both ends. All three use stone grey and wood brown with darker outlines. Every one of them must be lit from the same direction - the highlight pixels on the top-left of each edge, the shadow pixels on the bottom-right - so they look like they belong to one scene. Slightly larger than a fish, evenly spaced, never overlapping.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: the row is centered, a clear magenta gutter between items, none touching the image edge; full subjects visible with an even margin on all sides.
 
@@ -267,7 +267,7 @@ Subject: one seamless tileable 16-bit pixel-art ground texture seen from directl
 
 Key details: for shallow water, blue-green pixel blocks with dithered ripples; for deep water, the same family but clearly darker; for grass, green pixel blocks with a few lighter and darker speckles; for sand, warm yellow pixel blocks with fine grain.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}. Use dithering patterns for all grain and transition.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Use dithering patterns for all grain and transition.
 
 Composition: evenly distributed with NO focal point and no centre composition. The left edge must match the right edge and the top edge must match the bottom edge, so that tiling this image against itself produces no seam, no break and no visible repetition boundary.
 
@@ -298,7 +298,7 @@ Subject: a low-contrast, low-information 16-bit pixel-art underwater backdrop se
 
 Key details: a deep blue-green base that darkens toward 0B1220, with sparse dithering and pixel speckles suggesting depth and fine suspended particles. Gentle, evenly spread value changes only. No recognisable object of any kind.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, with the main mass in the deep blue-green range and the darkest areas approaching 0B1220.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, with the main mass in the deep blue-green range and the darkest areas approaching 0B1220.
 
 Composition: no focal point; the left edge must match the right edge and the top edge must match the bottom edge, so tiling produces no seam.
 
@@ -331,7 +331,7 @@ Subject: one seamless tileable 16-bit pixel-art texture of DNA base pairs, evenl
 
 Key details: interlocking abstract base-pair glyph blocks in four clearly distinguishable colors, joined by thin sugar-phosphate backbone links, interleaved to cover the entire surface at uniform density. The glyphs are abstract geometric marks only - they must NOT be readable letters, digits or any alphabet. No centre, no focal point, no gradient across the image.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}. Use dithering for all transitions.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8. Use dithering for all transitions.
 
 Composition: uniform density everywhere; the left edge must match the right edge and the top edge must match the bottom edge, so tiling this texture in any direction produces no seam and no obvious repetition.
 
@@ -359,7 +359,7 @@ Subject: one horizontal strip of 16-bit pixel-art base letters for a sequence ed
 
 Key details: exactly four characters in the row, in this order: "A", "C", "G", "T". Each character sits on its own small pixel cell with a clear empty gutter between cells. Each base has its own clearly distinct color so they are never confused. A dot-matrix pixel font, bold and chunky, large enough to read at a glance.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: the row is centred horizontally, occupying a narrow horizontal band with generous empty magenta above and below; the whole strip fills about 70% of the frame width. Full subject visible with an even margin on all sides.
 
@@ -388,7 +388,7 @@ Subject: six 16-bit pixel-art cell-type icons for a neural development diagram, 
 
 Key details: the six shapes are, in reading order: a circle with a nucleus, a square with cut corners, a diamond, a star, a ring, a teardrop. Every icon uses a 1-to-2-pixel dark outline around a fill of one or two flat colours, and every icon is a different shape - they must never be distinguishable by colour alone. All six use the same outline weight, the same optical size and the same level of internal detail, so they read as one icon set. Geometric and simple, still instantly recognisable when shrunk to 16-24 pixels.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: a regular 3-by-2 grid, evenly spaced, equal cell size, a clear magenta gutter between icons, none touching the image edge; full set visible with an even margin on all sides.
 
@@ -416,7 +416,7 @@ Subject: three 16-bit pixel-art neural-activity glow elements in a single horizo
 
 Key details, three distinct kinds: 1) a node activation - one bright core with a square halo whose brightness falls off outward; 2) an edge pulse - a short string of bright dots running along one axis, as if travelling along a connection; 3) a synapse hit flash - a short four-point star burst. All brightness falloff must be built from dithering patterns and stepped pixel values, never from a smooth radial gradient. Each element has a single brightest core.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background, with the glow built from the brightest entries.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background, with the glow built from the brightest entries.
 
 Composition: the three elements are centred in a row with a clear magenta gutter between them, none touching the image edge; full subjects visible with an even margin on all sides.
 
@@ -445,7 +445,7 @@ Subject: one set of 16-bit pixel-art UI status effects: {组别：危险 / 饥�
 
 Key details: danger uses red warning chevrons and sharp spikes closing inward from the edges; hunger uses warm yellow-to-orange pulsing rings; mutation uses violet spiral fragments and shattered pixel specks. Across the three levels the elements become denser, thicker and brighter, in that order. The three levels are clearly different in strength but obviously the same effect.
 
-Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art, hand-placed square pixels, hard pixel edges, no antialiasing, no smoothing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: the three levels are evenly spaced in one row; within each level the elements cluster near the outer edge of that cell, leaving the centre clear.
 
@@ -477,7 +477,7 @@ Subject: the EvoGenesis brand mark - a square icon containing NO text of any kin
 
 Key details: a simplified zebrafish silhouette and a segment of DNA double helix interlocking into a single ring, each motif taking about half of the shape. Built from flat high-saturation color blocks with a strong outer silhouette and well-balanced negative space, geometric and clean, with no volumetric lighting and no fine detail. It must still be recognisable when shrunk to 32 pixels.
 
-Style: 16-bit pixel art for the interior detail, but with a poster-like flat vector clarity in the overall silhouette. Hard pixel edges, no antialiasing. Limited palette, use only these hex colors: {色板}, plus magenta FF00FF used only as the flat background.
+Style: 16-bit pixel art for the interior detail, but with a poster-like flat vector clarity in the overall silhouette. Hard pixel edges, no antialiasing. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8, plus magenta FF00FF used only as the flat background.
 
 Composition: a square composition, the mark centred, occupying about 70% of the frame, full subject visible with an even margin on all sides.
 
@@ -504,7 +504,7 @@ Background: the composition itself fills the frame - a split scene where the lef
 
 Subject: an academic presentation cover visual for the EvoGenesis project. The left two thirds is a top-down 16-bit pixel-art pool arena: water, grass and stone pixel tiles, slender pixel zebrafish, much smaller prey dots, and one larger predator silhouette. The right third is a precisely drawn DNA double helix together with a neuron network diagram of nodes and thin clean lines, in a crisp vector-like rendering.
 
-Style: the pixel region keeps 16-bit hard edges and dithering; the precise region keeps clean vector sharpness; both regions share one bright palette and must not look pasted together. Limited palette, use only these hex colors: {色板}.
+Style: the pixel region keeps 16-bit hard edges and dithering; the precise region keeps clean vector sharpness; both regions share one bright palette and must not look pasted together. Limited palette, use only these hex colors: ink 1A1C2C, slate shadow 333C57, blue grey 566C86, deep water 1E6F9F, mid water 2E9BC7, shallow water 6FD3E8, foam B6F0F5, deep grass 2F6B3A, grass green 4C9A3F, light grass 8ED14B, bark dark 5A3A22, wood brown 8A5A33, sand warm C6854A, sand light E8C179, amber F2A93B, coral orange F08A5D, danger red E4595C, mutation violet 9B5DE5, white FFFFFF, bone D9E0E8, stone grey 7A8A99, stone shadow 4A4A5A, fish navy 2B3A67, fish blue 5C7CB8.
 
 Composition: the two regions meet along a soft gradient band about one fifth of the width; the whole image is evenly weighted with generous empty margin on all four sides so it can be cropped later; bright, saturated and clearly layered so it reads well when projected large.
 

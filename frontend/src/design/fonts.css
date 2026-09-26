@@ -1,0 +1,28 @@
+/* 由 scripts/fetch-fonts.mjs 生成，**不要手改**。
+ * 重新生成：cd frontend && node scripts/fetch-fonts.mjs --force
+ * 许可与登记：见 frontend/交接-给池伟豪-前端分工与开工包.md（须登记 THIRD_PARTY.md）。
+ * Latin 子集 only；中文一律走系统字体（像素字体不覆盖 CJK）。 */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 500 600 700;
+  font-display: swap;
+  src: url("/fonts/inter-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("/fonts/jetbrains-mono-latin.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Press Start 2P";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/press-start-2p-latin.woff2") format("woff2");
+}

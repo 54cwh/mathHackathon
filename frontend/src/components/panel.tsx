@@ -12,7 +12,7 @@ export function Panel({ title, icon, className, children }: PanelProps) {
   return (
     <section
       className={cn(
-        "flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card",
+        "flex min-h-0 flex-col overflow-hidden border border-border bg-card",
         className,
       )}
     >
