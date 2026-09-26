@@ -205,7 +205,7 @@
 
 | 端点 | 方法 | 用途 | 未实现原因 |
 |---|---|---|---|
-| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 替代方向**已定**（互补映射，`genome §5`）、坐标**已定**（0..511，§2.3）；但**分类判据仍开放**（Neutral/Integrator/Threat 的度量与阈值待定） |
+| `/v1/story-mutations` | GET | 预验证 SNP 列表 | 替代方向**已定**（互补映射，`genome §5`）、坐标**已定**（0..511，§2.3）；**判据标定未通过**：现配置下单点突变既无结构效应（512/512 拓扑不变、relΔW⁰≤0.2%）也无行为效应（Δ 落在噪声内）→ **保持 501**（详见 `research/notes/story-mutations-标定与501决定-给lcz.md`；是否改基因表达力待裁） |
 
 ```json
 {"type":"about:blank","title":"Not Implemented","status":501,
