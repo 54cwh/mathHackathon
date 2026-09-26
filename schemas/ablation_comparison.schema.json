@@ -4,7 +4,7 @@
   "title": "EvoGenesis Experiment D ablation comparison table",
   "meta": {
     "owns": "results/tables/<experiment_id>_ablations.json（producer=experiment/ablation_run.py，Experiment D §3.4）",
-    "status": "草案待确认"
+    "status": "已定稿（2026-09-27 用户签署：列与 τ* 代表值）"
   },
   "description": "Experiment D 消融对照表：控制 + 三臂（架构 homogeneous τ / w/o wiring cost；BC 有/无 Dale）任务指标 mean±std（seed 轴）+ 复杂度 + BC 学习量。",
   "type": "object",
