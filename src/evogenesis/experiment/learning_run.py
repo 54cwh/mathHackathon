@@ -76,7 +76,13 @@ class LifetimeLearningResult:
 
 
 def load_learning_config(path: str | Path | None = None) -> LearningConfig:
-    """读 `configs/default_model.yaml::learning`（`core §config`）。"""
+    """读 `configs/default_model.yaml::learning`（`core §config`）。
+
+    `learning` 参数无冻结镜像（`LearningConfig` 字段均必填），故 `path=None` 显式报错——
+    与 `core §0` 一致（`path=None` 不套用 env/overrides，且此处无默认值可返回）。
+    """
+    if path is None:
+        raise ValueError("learning 无内置默认值，必须提供 config 文件（core §7）")
     return load_config(path, model=ModelConfig).learning
 
 

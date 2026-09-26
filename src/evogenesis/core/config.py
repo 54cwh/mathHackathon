@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, model_validator
 
 ENV_PREFIX = "EVOGENESIS_"
 ENV_NESTED_DELIMITER = "__"
@@ -45,6 +45,15 @@ class GenomeConfig(_Section):
 class PhenotypeConfig(_Section):
     theta_N: float
     theta_H: float
+
+    @model_validator(mode="after")
+    def _check_theta_range(self) -> PhenotypeConfig:
+        for name, value in (("theta_N", self.theta_N), ("theta_H", self.theta_H)):
+            if not 0.0 < value < 0.5:
+                raise ValueError(
+                    f"{name} 须落在 (0, 0.5)（genome §3 完全显性必要条件），实际 {value}"
+                )
+        return self
 
 
 class GRNConfig(_Section):

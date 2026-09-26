@@ -229,6 +229,10 @@ def solve_bias_for_density(
     """
     if not 0.0 < target_density < 1.0:
         raise ValueError("target_density 必须落在 (0, 1)")
+    if logits.ndim != 2 or logits.shape[0] != logits.shape[1]:
+        raise ValueError(f"logits 必须为方阵，实际 {tuple(logits.shape)}")
+    if logits.shape[0] < 2:
+        raise ValueError("bias 反解需要 ≥2 个神经元（否则 off-diagonal density 无定义）")
     lo, hi = -60.0, 60.0
     while expected_off_diagonal_density(logits, lo) > target_density:
         lo -= 60.0
@@ -382,7 +386,9 @@ def viability_check(
         saturation = float((tail.abs() > 1.0 - saturation_eps).to(torch.float32).mean().item())
         if saturation >= saturation_ratio_max:
             reasons.append("persistent_saturation")
-    if not spectral_radius(weights0) < 1.0:
+    # 非有限 W⁰（如 softplus 溢出）时谱半径无定义，直接记「非收敛」失因，不调用
+    # `spectral_radius`（后者对 NaN/Inf 抛错，会把失因上报变成崩溃）。
+    if not bool(torch.isfinite(weights0).all()) or not spectral_radius(weights0) < 1.0:
         reasons.append("weight_spectral_radius_not_contractive")
 
     if reasons:

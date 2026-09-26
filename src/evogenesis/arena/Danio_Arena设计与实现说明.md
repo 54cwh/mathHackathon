@@ -508,7 +508,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 - `distance` / `size_ratio` 在发射前 `round(..., 3)`；`threshold` 与 `capture_radius` 直接取 config 原值（1.25 / 4.61），便于离线核对判据。
 - `arena.capture_attempt.result` 取值为 `"too_small_to_eat"`（尺寸门没过）或 `"missed"`（尺寸门过了但扑击失败，仅 `growth.capture_success_prob < 1` 时可能出现）；距离不足的猎物在判据前即被 `continue` 跳过、不产生事件。**草案里的 `"too_far"` 是永远不会出现的值**（见 §4.4）。
 - `arena.escape.threat_source` 是**捕食者实体 id**（`predator_NN`），不是类型名。
-- `arena.fish_captured.survival_steps` 与 `arena.energy_depleted.survival_steps` 同口径：发射时的 `Fish.survival_steps`（未自增）。
+- `arena.fish_captured.survival_steps` / `arena.energy_depleted.survival_steps` 均取**发射时**的 `Fish.survival_steps`。其中 `energy_depleted` 因当步跳过自增，取的是**死前已存活步数**；`fish_captured` 的鱼在本步鱼循环已自增，故该值**含本步**（口径见 §13「步末对存活鱼自增」）。
 - **障碍不发射 spawn**：只有 fish / prey / predator 三类活动实体入事件。障碍的位置与半径、以及所有实体的实时位置/尺寸，走 snapshot（`GET /v1/sessions/{session_id}/snapshot`）而非事件流。
 - `arena.episode_end` 的 `steps` 取 `step_idx`（此时已自增）：一律跑满，恒为 600。
 - **`escape_successes` 与 `predator_encounters` 都是"计数而非事件"**：它们只出现在 `per_fish_log()` / `FishCard.metrics` / leaderboard 侧，事件流里没有对应条目。
@@ -539,7 +539,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | D1 | **两条随机源（已拆，A14 闭合）** | `spawn_seed` → `np.random.default_rng(spawn_seed)`（**出生/再生**：`reset()` 布局、`_free_spot`、regrowth）；`dynamics_seed` → `np.random.default_rng(dynamics_seed)`（**逐步动力学**：猎物游走）。两者均为 `core §3` 整数子种子，由调用方经 `SeedManager.seed("arena_spawn"/"arena_dynamics", index)` 派生后传入（`core §3` 整数种子例外；实验路径 `experiment/collect.py`、`pipeline`）。`arena/` 内**不出现** `import random`、全局 `np.random.*` 调用、或任何时间/OS 熵来源 |
 | ⚠️ D2 | **`reset()` 幂等** | `reset()` **重建两条 RNG**（`default_rng(spawn_seed)` / `default_rng(dynamics_seed)`），并**先清空 `self.obstacles`** 再就地逐个生成障碍（S9）。因此同一 arena 反复 `reset()` 得到**逐字段一致**的初始局面（障碍位置与半径、每条鱼的位置/航向、每个猎物的位置/尺寸）。由 `test_reset_idempotent_on_same_instance` 守护（同时断言障碍的 `pos` 与 `radius`） |
 | D3 | **reset 内消费顺序** | 障碍 → 鱼 → 猎物 → 捕食者。每障碍：1 次半径 uniform + `_free_spot`（≥1 次）；每鱼：`_free_spot(2.0)` + 1 次航向 uniform；每猎物：`_free_spot(1.0)` + 1 次航向 uniform + 1 次尺寸 uniform；每捕食者：`_free_spot(3.0)` + 1 次航向 uniform |
-| D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `dynamics_rng.normal(0.0, 0.8)`（`PreyPolicy.act`）；再生（每 `prey_regrowth_steps` 步）消费 `spawn_rng`。鱼、捕食者、障碍、looming 记账**均不消费 RNG** |
+| D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `dynamics_rng.normal(0.0, 0.8)`（`PreyPolicy.act`）；再生（每 `prey_regrowth_steps` 步）消费 `spawn_rng`。鱼、捕食者、障碍、looming 记账**均不消费 RNG**（**例外**：`growth.capture_success_prob < 1` 时，鱼的捕食失败判定每次扑击消费 `dynamics_rng` 1 次；默认 `1.0` 不消费） |
 | D5 | **拒绝采样进入消费路径** | `_free_spot` 的采样**次数**取决于当前（本局）障碍布局，消费 `spawn_rng`，因此它是 spawn 流消费路径的一部分 —— 一旦改动障碍数量/半径范围/clearance，后续所有实体的随机流都会平移。**这是复现性最脆弱的一环**：改动障碍数量/半径范围/clearance 会使后续所有实体的随机流整体平移，同一 seed 下的初始世界随之改变，历史基线不可直接对比 |
 | D6 | **推进粒度的无关性** | 「推进 k 步」（原 `api/session.py::Session.advance(steps=k)`，该服务层已按用户决定移除）就是 `k` 次 `step()`；每一步内的 RNG 消费只由**该步的状态**决定（D4：存活猎物数 × 1 次 normal）。因此「同一 seed 下推进到第 $k$ 步的状态」与「分几次调用推进到第 $k$ 步」无关（在 600 步上限内）。**注意**：这条只说粒度无关，不代表 `step()` 不消费 RNG |
 | D7 | **测试守护** | `test_reset_deterministic_same_seed`（同 seed 实体一致）、`test_reset_different_seed_differs`（异 seed 不同）、`test_reset_idempotent_on_same_instance`（**同一实例二次 reset 一致**） |
