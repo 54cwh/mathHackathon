@@ -508,3 +508,88 @@
     链接: https://opengenetics.pressbooks.tru.ca/chapter/a-dihybrid-cross-showing-mendels-second-law-independent-assortment
     用途：genome #3——两独立位点、每基因完全显性时 AaBb×AaBb 后代 A_B_/A_bb/aaB_/aabb = 9/16:3/16:3/16:1/16；四类 phenotype 的孟德尔推导来源。
 
+---
+
+## 依据新增（RGCD 布线/放置/初始化，2026-09-26）
+
+> 来源：`research/reference/rgcd-wiring-and-placement.json`（OpenAlex 标题/DOI 核验 + 本次全量 OpenAlex `biblio` 复核）。登记记录见 `research/reference/bibliography-registration-rgcd.md`。
+
+111. Qiao M. **Deciphering the genetic code of neuronal type connectivity through bilinear modeling.** *eLife* 12, e91532 (2024). `peer-reviewed`.
+    DOI: https://doi.org/10.7554/eLife.91532
+    用途：RGCD §8——gene-expression 布线项 R 的双线性形式直接依据：预测连接矩阵 = X̂ Â (Ŷ B̂)^T ≡ X̂ (Â B̂^T) Ŷ^T，即 gene_i^T M gene_j（低秩 M=AB^T）；小鼠视网膜重建 r=0.83、隐维 2；C. elegans innexin→电突触 AUC≈0.64。⚠️ OpenAlex 记 publication_year 2023（reviewed preprint 版），电子正式版 2024-06-10（JSON）。
+
+112. Kovács IA, Barabási DL, Barabási AL. **Uncovering the genetic blueprint of the C. elegans nervous system.** *PNAS* 117(52), 33570–33577 (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.1073/pnas.2009093117
+    用途：RGCD §8——Spatial Connectome Model：B = X O X^T（对称双线性规则矩阵）+ 空间接触约束；支撑 R 用共享规则矩阵并与 -λd 联合使用（缺失接触当 0 会估错规则）。
+
+113. Kurmangaliyev YZ, Yoo J, LoCascio SA, Zipursky SL. **Modular transcriptional programs separately define axon and dendrite connectivity.** *eLife* 8, e50822 (2019). `peer-reviewed`.
+    DOI: https://doi.org/10.7554/eLife.50822
+    用途：RGCD §3/§8——果蝇 T4/T5 轴突/树突布线模块化转录程序；提示单一 g_i^T g_j 只捕捉汇总相似度，M=I 忽略轴突/树突规则分离。
+
+114. Arnatkevičiūtė A, Fulcher B, Pocock R, Fornito A. **Hub connectivity, neuronal diversity, and gene expression in the Caenorhabditis elegans connectome.** *PLoS Computational Biology* 14(2), e1005989 (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1371/journal.pcbi.1005989
+    用途：RGCD §8——表达↔连接统计关联的独立物种证据；关联非均匀，存在 hub 特异转录特征，R 不应当作均匀强预测器。
+
+115. Patiño M, Rossa M, Lagos WN, Patne NS, Callaway EM. **Transcriptomic cell-type specificity of local cortical circuits.** *Neuron* 112(23), 3851–3866.e4 (2024). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neuron.2024.09.003
+    用途：RGCD §3/§8——START（单突触狂犬病毒示踪 + snRNA-seq）：小鼠 V1 转录组亚型有特异局部输入连接；证据为亚型层级，非单细胞级精确可预测。
+
+116. Gamlin CR, Schneider-Mizell CM, Mallory M, Elabbady L, Gouwens NW, et al. **Connectomics of predicted Sst transcriptomic types in mouse visual cortex.** *Nature* 640(8058), 497–505 (2025). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41586-025-08805-6
+    用途：RGCD §3/§8——Patch-seq + EM：Sst 转录组类型参与不同皮层回路、各有连接规则；转录组类型携带连接规则信息（近期正向证据）。本次 OpenAlex 已补齐（W4409283541，引 23），修正 JSON「OpenAlex 未取到」。
+
+117. Tasic B, Yao Z, Graybuck LT, Smith KA, Nguyen TN, et al. **Shared and distinct transcriptomic cell types across neocortical areas.** *Nature* 563(7729), 72–78 (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/s41586-018-0654-5
+    用途：RGCD §3/§8——23,822 细胞 / 133 转录组细胞类型 ↔ 投射特异性分类学；只建立「类型↔投射特异」分类，不得据此声称给出 R 的函数形式。
+
+118. Sperry RW. **Chemoaffinity in the orderly growth of nerve fiber patterns and connections.** *PNAS* 50(4), 703–710 (1963). `peer-reviewed`.
+    DOI: https://doi.org/10.1073/pnas.50.4.703
+    用途：RGCD §8——chemoaffinity 假说：分子化学标记匹配靶点，是「分子匹配决定布线」的定性奠基；未给函数形式或量级，不能据此选定双线性/余弦。
+
+119. Sanes JR, Zipursky SL. **Synaptic Specificity, Recognition Molecules, and Assembly of Neural Circuits.** *Cell* 181(3), 536–556 (2020). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cell.2020.04.008
+    用途：RGCD §8——识别分子（cadherin/neurexin/LRR/Ig）为异源相互作用 ⇒ 支持 M 非单位阵（低秩 M=AB^T）；M=I 是可解释简化而非文献必然。
+
+120. Caron SJC, Ruta V, Abbott LF, Axel R. **Random convergence of olfactory inputs in the Drosophila mushroom body.** *Nature* 497(7447), 113–117 (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nature12063
+    用途：RGCD §8 边界——单神经元层级强随机性（约 2000 KC 采样约 50 类 PN，n=200 KC 无重复输入组合）；R 只宜作概率偏置，不能决定单细胞级精确连接。
+
+121. Hayashi T, MacKenzie AJ, Ganguly I, Ellis KE, Smihula HM, et al. **Mushroom body input connections form independently of sensory activity in Drosophila melanogaster.** *Current Biology* 32(18), 4000–4012.e5 (2022). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cub.2022.07.055
+    用途：RGCD §8——布线不依赖感觉活动的反例：R 不应默认采用 Hebbian/共激活形式；若用活动依赖项须另立机制并声明适用范围。
+
+122. Rosenbaum R, Smith MA, Kohn A, Rubin JE, Doiron B. **The spatial structure of correlated neuronal variability.** *Nature Neuroscience* 20(1), 107–114 (2016). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nn.4433
+    用途：RGCD §2——单位正方形域、距离以域边长归一、连接概率随距离衰减；为 -λd 的坐标归一化与 λ 标定提供范式。
+
+123. Hill S, Wang Y, Riachi I, Schürmann F, Markram H. **Statistical connectivity provides a sufficient foundation for specific functional connectivity in neocortical neural microcircuits.** *PNAS* 109(42), E2885–E2894 (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1073/pnas.1202128109
+    用途：RGCD §2——298 细胞独立随机放置 + 轴突-树突统计重叠即可复现特异功能连接；直接支持 p_i ~ U(域) 而非规则网格。⚠️ OpenAlex 末页记作「94」（截断），E2894 依 PNAS 页面；正式 BibTeX 前复核。
+
+124. Risi S, Stanley KO. **An Enhanced Hypercube-Based Encoding for Evolving the Placement, Density, and Connectivity of Neurons.** *Artificial Life* 18(4), 331–363 (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/artl_a_00071
+    用途：RGCD §2——ES-HyperNEAT：固定几何 substrate + CPPN 按 (源坐标,目标坐标) 查询连接；规则网格是 neuroevolution 工程惯例（仅作参考，非生物机制证据）。详见 `research/reference/design-basis-connectome.md` R6。
+
+125. Ercsey-Ravasz M, Markov NT, Lamy C, Van Essen DC, Knoblauch K, et al. **A Predictive Network Model of Cerebral Cortical Connectivity Based on a Distance Rule.** *Neuron* 80(1), 184–197 (2013). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neuron.2013.07.036
+    用途：RGCD §2——P ∝ exp(-λd) 距离依赖连接的最强实证规律；猕猴皮层 λ=0.188 mm^-1（二值密度约 66%），须按本项目无量纲尺度重标定，禁照搬。证据表另见 `research/reference/design-basis-connectome.md` R3。注：JSON 将其与 Waxman 1988、Kaiser & Hilgetag 2004 合并，后两者的独立链接见登记记录「未登记」。
+
+126. Glorot X, Bengio Y. **Understanding the difficulty of training deep feedforward neural networks.** *Proceedings of the 13th International Conference on Artificial Intelligence and Statistics (AISTATS), PMLR* 9, 249–256 (2010). `peer-reviewed`.
+    链接: https://proceedings.mlr.press/v9/glorot10a/glorot10a.pdf
+    用途：RGCD §10——Xavier/Glorot 初始化 Var(w)=2/(n_in+n_out)（uniform 上限 √(6/(n_in+n_out))）；用于 GRN 的 B、P、U、u 等非递归权重。⚠️ 无 DOI；页码 249–256 经 PMLR 官方页面核验。
+
+127. Yildiz IB, Jaeger H, Kiebel SJ. **Re-visiting the echo state property.** *Neural Networks* 35, 1–9 (2012). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.neunet.2012.07.005
+    用途：RGCD §10——谱半径 ρ(W)<1 与 echo state property；为 W_g 重标定到 ρ≈0.9 的「经验充分条件/稳定性启发式」提供依据（非定理，原文给出反例）。
+
+128. Bertschinger N, Natschläger T. **Real-Time Computation at the Edge of Chaos in Recurrent Neural Networks.** *Neural Computation* 16(7), 1413–1436 (2004). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/089976604323057443
+    用途：RGCD §10——随机递归网络的 ordered→chaotic 临界边界与「混沌边缘计算能力最高」；支持递归权重谱半径置于 ≈1 附近（对 D_M integrator-memory 相关）。
+
+129. Saxe AM, McClelland JL, Ganguli S. **Exact solutions to the nonlinear dynamics of learning in deep linear neural networks.** *arXiv* 1312.6120 (2013); ICLR 2014. `preprint`.
+    DOI: https://doi.org/10.48550/arXiv.1312.6120
+    用途：RGCD §10 备选——正交初始化（dynamical isometry）使奇异值均匀，缓解梯度爆炸/消失；仅作相关工作/现状，不作设计依据。⚠️ OpenAlex 记为 preprint（ICLR 2014 无正式 proceedings），JSON 的「peer-reviewed conference」标注不予采用。
+
+130. Weaver DC, Workman CT, Stormo GD. **Modeling Regulatory Networks with Weight Matrices.** *Pacific Symposium on Biocomputing (PSB)* 4, 112–123 (1999). `peer-reviewed`.
+    链接: https://psb.stanford.edu/psb-online/proceedings/psb99/Weaver.pdf
+    用途：RGCD §10——GRN 线性权重矩阵建模传统：随机权重矩阵 + 参数化非零比例/权值上下限 + 每基因至少一正一负输入；说明 GRN 历史上用「小随机+稀疏+有界」而非 Xavier，但稳定性判据与递归网络一致。
