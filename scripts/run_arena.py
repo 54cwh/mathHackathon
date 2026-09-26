@@ -40,8 +40,6 @@ results/runs/<experiment_id>-s<seed>/
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -66,35 +64,15 @@ from evogenesis.experiment.metrics import (
     episode_metrics,
     summarise_over_seeds,
 )
+from evogenesis.experiment.run_artifacts import (
+    dump_json,
+    episode_row,
+    write_metrics_csv,
+    write_population,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SEEDS = "1103,2207,3301"  # configs/experiment_seeds.yaml
-EVENT_KEYS = (
-    "arena.spawn",
-    "arena.capture_attempt",
-    "arena.prey_captured",
-    "arena.collision",
-    "arena.escape",
-    "arena.energy_depleted",
-    "arena.fish_captured",
-    "arena.episode_end",
-)
-METRIC_COLUMNS = (
-    "survival_steps",
-    "captures",
-    "capture_attempts",  # 诊断列（§2.1 分母为 encounters）
-    "encounters",
-    "predator_encounters",
-    "escape_successes",
-    "collisions",
-    "energy_final",
-    "survival",
-    "capture_rate",
-    "prey_capture",
-    "escape_success",
-    "energy_efficiency",
-    "composite_fitness",
-)
 
 
 def create_run_dir(
@@ -177,66 +155,6 @@ def run_episode(
         fish_ids=fish_ids,
         spawn_seed=spawn_seed,
         dynamics_seed=dynamics_seed,
-    )
-
-
-def write_metrics_csv(run_dir: Path, rows: list[dict]) -> None:
-    fields = ["seed", "fish_id", *METRIC_COLUMNS]
-    with (run_dir / "metrics.csv").open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=fields)
-        writer.writeheader()
-        for r in rows:
-            writer.writerow({k: r.get(k) for k in fields})
-
-
-def _population_record(seed: int, fid: str, rec: dict) -> dict:
-    energy = rec.get("energy_trajectory") or []
-    size = rec.get("size_trajectory") or []
-    return {
-        "seed": seed,
-        "fish_id": fid,
-        "generation": rec.get("generation"),
-        "survival_steps": rec.get("survival_steps"),
-        "captures": rec.get("captures"),
-        "encounters": rec.get("encounters"),
-        "predator_encounters": rec.get("predator_encounters"),
-        "escape_successes": rec.get("escape_successes"),
-        "collisions": rec.get("collisions"),
-        "energy_first": energy[0] if energy else None,
-        "energy_last": energy[-1] if energy else None,
-        "energy_min": min(energy) if energy else None,
-        "size_first": size[0] if size else None,
-        "size_last": size[-1] if size else None,
-        "n_motor_commands": len(rec.get("motor_commands") or []),
-    }
-
-
-def write_population(run_dir: Path, seed: int, per_fish: dict[str, dict]) -> None:
-    with (run_dir / "population.jsonl").open("w", encoding="utf-8", newline="") as fh:
-        for fid, rec in sorted(per_fish.items()):
-            row = _population_record(seed, fid, rec)
-            fh.write(json.dumps(row, ensure_ascii=False) + chr(10))
-
-
-def episode_row(
-    seed: int, events: list, per_fish: dict[str, dict], steps: int, elapsed: float
-) -> dict:
-    counts = {k: 0 for k in EVENT_KEYS}
-    for ev in events:
-        if ev.type in counts:
-            counts[ev.type] += 1
-    row = {"seed": seed, "steps": steps, "steps_per_s": round(steps / elapsed, 1)}
-    for k in EVENT_KEYS:
-        row[k.replace("arena.", "")] = counts[k]
-    row["fish_alive_end"] = sum(1 for r in per_fish.values() if r["survival_steps"] >= steps)
-    row["n_events_total"] = len(events)
-    return row
-
-
-def _dump(path: Path, payload: dict, *, indent: int | None = None) -> None:
-    path.write_text(
-        json.dumps(payload, indent=indent, ensure_ascii=False) + chr(10),
-        encoding="utf-8",
     )
 
 
@@ -339,9 +257,9 @@ def main() -> None:
         ]
         write_metrics_csv(run_dir, rows)
         write_population(run_dir, seed, per_fish)
-        _dump(run_dir / "episodes.jsonl", episode_row(seed, events, per_fish, steps, elapsed))
+        dump_json(run_dir / "episodes.jsonl", episode_row(seed, events, per_fish, steps, elapsed))
         by_seed = aggregate_by_seed(rows)
-        _dump(run_dir / "seed_summary.json", by_seed, indent=2)
+        dump_json(run_dir / "seed_summary.json", by_seed, indent=2)
         all_rows.extend(rows)
         seed_rows.extend(by_seed)
         print(f"[{run_id}] {steps} 步 / {len(rows)} 个体 / {elapsed:.1f}s")
@@ -350,7 +268,7 @@ def main() -> None:
     tables = ROOT / "results" / "tables"
     tables.mkdir(parents=True, exist_ok=True)
     out = tables / f"{args.experiment_id}_summary.json"
-    _dump(
+    dump_json(
         out,
         {
             "experiment_id": args.experiment_id,

@@ -14,6 +14,8 @@ from pathlib import Path
 
 import jsonschema
 
+from evogenesis.pipeline import arena_seeds_for
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "run_chain.py"
 SCHEMA = json.loads((ROOT / "schemas" / "event_log.schema.json").read_text(encoding="utf-8"))
@@ -67,3 +69,35 @@ def test_chain_cli_writes_run_artifacts(tmp_path: Path):
     for row in rows:
         assert row["fish_id"].startswith(f"{EXPERIMENT_ID}:g0:fish")
         assert 0.0 <= float(row["survival"]) <= 1.0
+
+
+def test_chain_cli_episode_seed_matches_generation(tmp_path: Path):
+    """`events.jsonl` header 的 episode_seed 必须与 Arena 实际使用的 arena_spawn 子种子一致。"""
+    generation = 1
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(SCRIPT),
+            "--experiment-id",
+            "cli-chain-gen",
+            "--seed",
+            str(SEED),
+            "--generation",
+            str(generation),
+            "--n",
+            "12",
+            "--steps",
+            "10",
+            "--out-root",
+            str(tmp_path),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert proc.returncode == 0, proc.stderr
+    run_dir = tmp_path / f"cli-chain-gen-s{SEED}"
+    header = json.loads((run_dir / "events.jsonl").read_text(encoding="utf-8").splitlines()[0])
+    assert header["generation"] == generation
+    assert header["episode_seed"] == arena_seeds_for(SEED, generation)[0]

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from evogenesis.arena.config import (
@@ -43,11 +43,14 @@ def create_run_dir(
     config_path: str | Path,
     overrides: Mapping[str, object] | None = None,
     out_root: str | Path | None = None,
+    extra_configs: Sequence[str | Path] = (),
 ) -> Path:
     """建 run 目录并写入元数据，返回目录路径。
 
     目录名 ``<experiment_id>-s<seed>``；**已存在即抛 `FileExistsError`**（同一
     ``experiment_id + seed`` 唯一）。``overrides`` 仅用于解析实际生效的 Arena 快照。
+    ``extra_configs`` 为**附加输入配置**（如 model/evolution/experiment），一并复制进
+    ``config_snapshot/`` 并登记于 ``metadata.json.extras``，使 run 自包含可复现。
     """
     path = Path(config_path)
     if not path.is_absolute():
@@ -73,6 +76,21 @@ def create_run_dir(
     (run_dir / "config_snapshot" / path.name).write_text(
         path.read_text(encoding="utf-8"), encoding="utf-8"
     )
+    extras: list[str] = []
+    for extra in extra_configs:
+        extra_path = Path(extra)
+        if not extra_path.is_absolute():
+            extra_path = _REPO_ROOT / extra_path
+        if not extra_path.is_file():
+            raise FileNotFoundError(f"附加配置不存在: {extra_path}")
+        (run_dir / "config_snapshot" / extra_path.name).write_text(
+            extra_path.read_text(encoding="utf-8"), encoding="utf-8"
+        )
+        extras.append(
+            str(extra_path.relative_to(_REPO_ROOT))
+            if extra_path.is_relative_to(_REPO_ROOT)
+            else str(extra_path)
+        )
     (run_dir / "seed.txt").write_text(f"{seed}\n", encoding="utf-8")
     if arena_resolved is not None:
         (run_dir / "arena_config_resolved.json").write_text(
@@ -88,6 +106,7 @@ def create_run_dir(
         else str(path),
         "status": "created",
         "arena_config_resolved": arena_resolved is not None,
+        "extras": extras,
         "created_at": now_iso(),
     }
     (run_dir / "metadata.json").write_text(

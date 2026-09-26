@@ -52,9 +52,7 @@ def test_track_ids_yields_dead_fish_pre_step_observation():
     for _ in range(STEPS):
         reference.append(arena_ref.observe(dead))
         actions = {
-            fid: policy(arena_ref.observe(fid))
-            for fid, f in arena_ref.fish.items()
-            if f.alive
+            fid: policy(arena_ref.observe(fid)) for fid, f in arena_ref.fish.items() if f.alive
         }
         arena_ref.step(actions)
 
@@ -62,9 +60,7 @@ def test_track_ids_yields_dead_fish_pre_step_observation():
     arena_new, _ = _make_arena()
     arena_new.fish[dead].alive = False
     recorded: list[np.ndarray] = []
-    for rollout in expert_rollout(
-        arena_new, steps=STEPS, expert=ExpertPolicy(), track_ids=(dead,)
-    ):
+    for rollout in expert_rollout(arena_new, steps=STEPS, expert=ExpertPolicy(), track_ids=(dead,)):
         assert dead in rollout.observations  # 死鱼也在（被跟踪）
         assert dead not in rollout.actions  # 但不产动作
         recorded.append(rollout.observations[dead])

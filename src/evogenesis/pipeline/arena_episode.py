@@ -41,6 +41,19 @@ class ArenaEpisodeResult:
     events: tuple[Event, ...]
 
 
+@dataclass(frozen=True)
+class PopulationEvaluation:
+    """一整代的评估结果（`experiment/代循环编排.md` §2）。
+
+    `phenotypes` 与输入个体**同序等长**（含 non-viable）；`episode` 只覆盖 `viable_indices`
+    选中的个体（无 viable 时为 `None`）。
+    """
+
+    phenotypes: tuple[ConnectomePhenotype, ...]
+    episode: ArenaEpisodeResult | None
+    viable_indices: tuple[int, ...]
+
+
 def arena_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
     """Arena 的两个整数子种子（`core §3`）：``(arena_spawn, arena_dynamics)``。
 
@@ -49,6 +62,8 @@ def arena_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
 
     Arena 只接受整数种子（`core §3` 例外条款），由编排层派生后传入；**不得**把
     `master_seed` 根部直接交给 Arena（会与 `development` / `network_init` 等命名空间同根）。
+    `index` 为 `core §3` 的实体序号 `t`：单次评估取 0；代循环内取**本代世代号**
+    （`experiment/代循环编排.md` §4），使各代随机流独立。
     """
     manager = SeedManager(master_seed)
     return manager.seed("arena_spawn", index), manager.seed("arena_dynamics", index)
@@ -73,7 +88,7 @@ def viable_pairs(
     ]
 
 
-def run_arena_episode(
+def evaluate_population(
     individuals: Sequence[ChainIndividual],
     *,
     master_seed: int,
@@ -82,21 +97,50 @@ def run_arena_episode(
     steps: int | None = None,
     generation: int = 0,
     device: str = "cpu",
-) -> ArenaEpisodeResult:
-    """用 DanioNet 驱动 Arena 跑一局（`steps=None` 取 `world.episode_steps`）。"""
+) -> PopulationEvaluation:
+    """评估一整代：全体发育（记 viability），仅 viable 进 DanioNet + Arena。
+
+    `phenotypes` 与 `individuals` 同序等长，供编排层按 `viable_indices` 折算 `F`
+    （`experiment/代循环编排.md` §3）。无 viable 个体时 `episode=None`（不抛异常）。
+    """
     motifs = motif_catalog(master_seed, chain.layout)
-    pairs = viable_pairs(
+    phenotypes = phenotypes_of(
         individuals, motifs, master_seed=master_seed, config=chain.rgcd, device=device
     )
-    if not pairs:
-        raise ValueError("没有 viable 个体可进 Arena（RGCD §7）")
+    viable_indices = tuple(i for i, p in enumerate(phenotypes) if p.viable)
+    if not viable_indices:
+        return PopulationEvaluation(tuple(phenotypes), None, ())
+    pairs = [(individuals[i], phenotypes[i]) for i in viable_indices]
+    episode = _drive_arena(
+        pairs,
+        master_seed=master_seed,
+        chain=chain,
+        arena_config=arena_config,
+        steps=steps,
+        generation=generation,
+        device=device,
+    )
+    return PopulationEvaluation(tuple(phenotypes), episode, viable_indices)
+
+
+def _drive_arena(
+    pairs: Sequence[tuple[ChainIndividual, ConnectomePhenotype]],
+    *,
+    master_seed: int,
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    steps: int | None,
+    generation: int,
+    device: str,
+) -> ArenaEpisodeResult:
+    """用 DanioNet 驱动 Arena 跑一局（`pairs` 非空，全为 viable 个体）。"""
     phenotypes = [phenotype for _, phenotype in pairs]
     fish_ids = [individual.fish_id for individual, _ in pairs]
     genome_ids = [individual.genome_id for individual, _ in pairs]
     n_eval = len(phenotypes)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
-    spawn_seed, dynamics_seed = arena_seeds_for(master_seed)
+    spawn_seed, dynamics_seed = arena_seeds_for(master_seed, generation)
     arena = DanioArena(
         config,
         spawn_seed=spawn_seed,
@@ -128,3 +172,32 @@ def run_arena_episode(
         per_fish=arena.per_fish_log(),
         events=tuple(arena.events),
     )
+
+
+def run_arena_episode(
+    individuals: Sequence[ChainIndividual],
+    *,
+    master_seed: int,
+    chain: ModelChainConfig,
+    arena_config: ArenaConfig,
+    steps: int | None = None,
+    generation: int = 0,
+    device: str = "cpu",
+) -> ArenaEpisodeResult:
+    """用 DanioNet 驱动 Arena 跑一局（`steps=None` 取 `world.episode_steps`）。
+
+    便捷封装：无 viable 个体时抛 `ValueError`（供单代入口显式失败）；需要「无 viable 也
+    返回结果」的代循环请用 `evaluate_population`。
+    """
+    evaluation = evaluate_population(
+        individuals,
+        master_seed=master_seed,
+        chain=chain,
+        arena_config=arena_config,
+        steps=steps,
+        generation=generation,
+        device=device,
+    )
+    if evaluation.episode is None:
+        raise ValueError("没有 viable 个体可进 Arena（RGCD §7）")
+    return evaluation.episode

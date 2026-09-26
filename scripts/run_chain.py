@@ -15,7 +15,6 @@ run 目录布局见 `experiment/实验与评价体系.md` §5.1）。本脚本�
 from __future__ import annotations
 
 import argparse
-import csv
 import json
 from pathlib import Path
 
@@ -25,6 +24,7 @@ from evogenesis.evolution.config import load_evolution_config
 from evogenesis.experiment import runlayout
 from evogenesis.experiment.events import episode_event_header, write_event_log
 from evogenesis.experiment.metrics import aggregate_by_seed, episode_metrics
+from evogenesis.experiment.run_artifacts import write_metrics_csv
 from evogenesis.pipeline import (
     arena_seeds_for,
     initial_population,
@@ -45,14 +45,6 @@ def _default_population_size() -> int:
         if value:
             return int(value)
     return 48
-
-
-def _write_metrics_csv(path: Path, rows: list[dict]) -> None:
-    fields = list(rows[0]) if rows else ["seed", "fish_id"]
-    with path.open("w", encoding="utf-8", newline="") as fh:
-        writer = csv.DictWriter(fh, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(rows)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -96,7 +88,7 @@ def main() -> None:
         config_path=args.arena_config,
         out_root=args.out_root,
     )
-    spawn_seed, _ = arena_seeds_for(args.seed)
+    spawn_seed, _ = arena_seeds_for(args.seed, args.generation)
     weights = load_evolution_config().fitness_weights.model_dump()
     write_event_log(
         run_dir / "events.jsonl",
@@ -124,7 +116,7 @@ def main() -> None:
         }
         for fish_id, rec in sorted(result.per_fish.items())
     ]
-    _write_metrics_csv(run_dir / "metrics.csv", rows)
+    write_metrics_csv(run_dir, rows)
     (run_dir / "seed_summary.json").write_text(
         json.dumps(aggregate_by_seed(rows), indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",
