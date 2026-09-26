@@ -26,7 +26,7 @@ def make_arena(seed: int = 7, **overrides) -> DanioArena:
     cfg = ArenaConfig()
     if overrides:
         cfg = ArenaConfig(**overrides)
-    return DanioArena(cfg, master_seed=seed)
+    return DanioArena(cfg, spawn_seed=seed, dynamics_seed=seed)
 
 
 def test_reset_deterministic_same_seed():
@@ -243,7 +243,7 @@ def _cfg(
 
 def _fish_captured(cfg: ArenaConfig, size: float) -> bool:
     """Put one predator next to one fish of the given size; was it eaten?"""
-    arena = DanioArena(cfg, master_seed=7)
+    arena = DanioArena(cfg, spawn_seed=7, dynamics_seed=7)
     arena.reset()
     for pid in list(arena.predators)[1:]:
         arena.predators[pid].pos = np.array([0.0, 0.0])
@@ -285,7 +285,7 @@ def test_prey_capture_boundary_is_inclusive():
     """section 8, fish-eats-prey side: size_ratio == kappa still eats (cone aligned)."""
     cfg = _cfg(cap_r=10.0)
     for size, expect_alive in ((1.0, False), (1.0 * (1 + 1e-6), True)):
-        arena = DanioArena(cfg, master_seed=7)
+        arena = DanioArena(cfg, spawn_seed=7, dynamics_seed=7)
         arena.reset()
         for pid in list(arena.prey)[1:]:
             arena.prey[pid].pos = np.array([0.0, 0.0])
@@ -372,7 +372,7 @@ def test_prey_regrowth_refills_toward_capacity():
         cfg,
         population=dataclasses.replace(cfg.population, prey_regrowth_steps=1),
     )
-    arena = DanioArena(cfg, master_seed=7)
+    arena = DanioArena(cfg, spawn_seed=7, dynamics_seed=7)
     arena.reset()
     assert len(arena.prey) == 24
     for pid in ("prey_00", "prey_01", "prey_02"):
@@ -396,7 +396,7 @@ def test_escape_requires_survival_window():
     """section 15 (A8): a released lock counts as an escape only after T_hold steps."""
     cfg = ArenaConfig()
     cfg = dataclasses.replace(cfg, actors=dataclasses.replace(cfg.actors, escape_hold_steps=3))
-    arena = DanioArena(cfg, master_seed=7)
+    arena = DanioArena(cfg, spawn_seed=7, dynamics_seed=7)
     arena.reset()
     hunter = arena.predators["predator_00"]
     for pid in list(arena.predators)[1:]:

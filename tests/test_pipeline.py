@@ -90,18 +90,22 @@ def test_arena_accepts_stable_fish_and_genome_ids():
     config = replace(base, population=replace(base.population, n_fish=2))
     fish_ids = ["exp:g0:fish0000", "exp:g0:fish0001"]
     genome_ids = ["exp:g0:genome0000", "exp:g0:genome0001"]
-    arena = DanioArena(config, master_seed=7, fish_ids=fish_ids, genome_ids=genome_ids)
+    arena = DanioArena(
+        config, spawn_seed=7, dynamics_seed=7, fish_ids=fish_ids, genome_ids=genome_ids
+    )
     arena.reset()
     assert set(arena.fish) == set(fish_ids)
     assert [arena.fish[fid].genome_id for fid in fish_ids] == genome_ids
     with pytest.raises(ValueError):
-        DanioArena(config, master_seed=7, fish_ids=fish_ids, genome_ids=["only-one"])
+        DanioArena(
+            config, spawn_seed=7, dynamics_seed=7, fish_ids=fish_ids, genome_ids=["only-one"]
+        )
 
 
 def test_arena_injects_generation_into_live_fish():
     base = load_arena_config(None)
     config = replace(base, population=replace(base.population, n_fish=1))
-    arena = DanioArena(config, master_seed=7, generation=3)
+    arena = DanioArena(config, spawn_seed=7, dynamics_seed=7, generation=3)
     arena.reset()
     assert next(iter(arena.fish.values())).generation == 3
 
@@ -122,8 +126,11 @@ def test_run_arena_episode_propagates_generation():
     assert all(rec["generation"] == 3 for rec in result.per_fish.values())
 
 
-def test_arena_seed_is_namespaced():
-    from evogenesis.pipeline.arena_episode import arena_seed_for
+def test_arena_seeds_are_namespaced():
+    from evogenesis.pipeline.arena_episode import arena_seeds_for
 
-    assert arena_seed_for(MASTER_SEED) == SeedManager(MASTER_SEED).seed("arena_spawn", 0)
-    assert arena_seed_for(MASTER_SEED) != MASTER_SEED
+    spawn_seed, dynamics_seed = arena_seeds_for(MASTER_SEED)
+    manager = SeedManager(MASTER_SEED)
+    assert spawn_seed == manager.seed("arena_spawn", 0)
+    assert dynamics_seed == manager.seed("arena_dynamics", 0)
+    assert spawn_seed != dynamics_seed != MASTER_SEED

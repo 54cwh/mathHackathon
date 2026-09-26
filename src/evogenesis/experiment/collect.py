@@ -23,8 +23,9 @@ from evogenesis.core.ids import mint_id
 from evogenesis.core.io import write_jsonl
 from evogenesis.core.seed import SeedManager
 
-#: `core §3` 定稿的 Arena spawn 命名空间
+#: `core §3` 定稿的 Arena 命名空间（出生 / 逐步动力学）
 ARENA_SPAWN_NAMESPACE = "arena_spawn"
+ARENA_DYNAMICS_NAMESPACE = "arena_dynamics"
 
 
 def episode_id(index: int) -> str:
@@ -38,9 +39,17 @@ def episode_seed(master_seed: int, index: int) -> int:
     """本 episode 的整数子种子（`core §3`）：``SeedManager.seed("arena_spawn", index)``。
 
     同一 ``(master_seed, index)`` 恒得同一子种子；直接交给
-    ``DanioArena(master_seed=...)``（后者只接受整数种子）。
+    ``DanioArena(spawn_seed=..., dynamics_seed=...)``（后者只接受整数种子）。
     """
     return SeedManager(master_seed).seed(ARENA_SPAWN_NAMESPACE, index)
+
+
+def episode_dynamics_seed(master_seed: int, index: int) -> int:
+    """本 episode 的逐步动力学子种子（`core §3`）。
+
+    ``SeedManager.seed("arena_dynamics", index)``。
+    """
+    return SeedManager(master_seed).seed(ARENA_DYNAMICS_NAMESPACE, index)
 
 
 def default_trajectories(model_config: Path) -> int:
@@ -60,6 +69,7 @@ def collect_episode(
     schema_version: str,
     episode_index: int,
     seed: int,
+    dynamics_seed: int,
     controlled_index: int = 0,
 ) -> tuple[dict, list[dict]]:
     """跑一条 episode，返回 (header, step 记录列表)；只记录受控鱼。
@@ -67,8 +77,9 @@ def collect_episode(
     受控鱼默认取 ``controlled_index=0``，其稳定身份由 ``core §3.1`` 铸造
     （``mint_id(..., "fish", generation, index)``）并**注入 Arena**（``fish_ids`` /
     ``genome_ids`` / ``generation``），故轨迹声明的身份与 Arena 实体身份一致。
-    其余存活个体同由 `ExpertPolicy` 驱动但不入轨迹。``terminated=False``（A9：无任务终止
-    信号）、``truncated=StepResult.done``（跑满 `episode_steps` 即时限截断）。
+    其余存活个体同由 `ExpertPolicy` 驱动但不入轨迹。``seed`` / ``dynamics_seed`` 为
+    `core §3` 的 ``arena_spawn`` / ``arena_dynamics`` 整数子种子（调用方派生）。
+    ``terminated=False``（A9：无任务终止信号）、``truncated=StepResult.done``（跑满即时限截断）。
     """
     n_fish = config.population.n_fish
     if config.world.episode_steps < 1:
@@ -81,7 +92,8 @@ def collect_episode(
     genome_ids = [mint_id(experiment_id, "genome", generation, i) for i in range(n_fish)]
     arena = DanioArena(
         config,
-        master_seed=seed,
+        spawn_seed=seed,
+        dynamics_seed=dynamics_seed,
         fish_ids=fish_ids,
         genome_ids=genome_ids,
         generation=generation,
@@ -157,6 +169,7 @@ def collect_trajectories(
             schema_version=schema_version,
             episode_index=index,
             seed=episode_seed(seed, index),
+            dynamics_seed=episode_dynamics_seed(seed, index),
             controlled_index=controlled_index,
         )
         path = out / f"episode_{header['episode_id']}.jsonl"

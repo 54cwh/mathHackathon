@@ -1,6 +1,6 @@
 """Danio Arena: continuous 2-D ecology env (Danio_Arena设计与实现说明.md).
 
-Deterministic given (config, master_seed). Emits the draft event vocabulary
+Deterministic given (config, spawn_seed, dynamics_seed). Emits the draft event vocabulary
 from core/核心机制与数据流.md section 5.1 in dot form (arena.*, R11) plus
 arena.fish_captured / arena.collision (vocabulary still DRAFT pending
 joint freeze).
@@ -46,13 +46,16 @@ class DanioArena:
     def __init__(
         self,
         config: ArenaConfig | None = None,
-        master_seed: int = 0,
+        *,
+        spawn_seed: int,
+        dynamics_seed: int,
         fish_ids: Sequence[str] | None = None,
         genome_ids: Sequence[str] | None = None,
         generation: int = 0,
     ):
         self.cfg = config or ArenaConfig()
-        self.master_seed = master_seed
+        self.spawn_seed = int(spawn_seed)
+        self.dynamics_seed = int(dynamics_seed)
         if fish_ids is None:
             self._fish_ids: tuple[str, ...] | None = None
         else:
@@ -86,7 +89,8 @@ class DanioArena:
         self.step_idx = 0
         self._seq = 0
         self._episode_ended = False
-        self._rng = np.random.default_rng(master_seed)
+        self._spawn_rng = np.random.default_rng(self.spawn_seed)
+        self._dynamics_rng = np.random.default_rng(self.dynamics_seed)
         self._prey_policy = PreyPolicy(
             speed=self.cfg.actors.prey_speed, turn_std=self.cfg.actors.wander_turn_std
         )
@@ -100,7 +104,8 @@ class DanioArena:
         )
 
     def reset(self) -> None:
-        self._rng = np.random.default_rng(self.master_seed)
+        self._spawn_rng = np.random.default_rng(self.spawn_seed)
+        self._dynamics_rng = np.random.default_rng(self.dynamics_seed)
         self.events.clear()
         self.step_idx = 0
         self._seq = 0
@@ -123,7 +128,7 @@ class DanioArena:
             self.fish[fid] = Fish(
                 fid,
                 self._free_spot(2.0),
-                float(self._rng.uniform(0, 2 * np.pi)),
+                float(self._spawn_rng.uniform(0, 2 * np.pi)),
                 size=self.cfg.growth.initial_size,
                 energy=self.cfg.energy.e_max,
                 genome_id=gid,
@@ -133,9 +138,11 @@ class DanioArena:
             f"prey_{i:02d}": Prey(
                 f"prey_{i:02d}",
                 self._free_spot(1.0),
-                float(self._rng.uniform(0, 2 * np.pi)),
+                float(self._spawn_rng.uniform(0, 2 * np.pi)),
                 size=float(
-                    self._rng.uniform(self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max)
+                    self._spawn_rng.uniform(
+                        self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max
+                    )
                 ),
             )
             for i in range(self.cfg.population.n_prey)
@@ -144,7 +151,7 @@ class DanioArena:
             f"predator_{i:02d}": Predator(
                 f"predator_{i:02d}",
                 self._free_spot(3.0),
-                float(self._rng.uniform(0, 2 * np.pi)),
+                float(self._spawn_rng.uniform(0, 2 * np.pi)),
                 size=self.cfg.actors.predator_size,
             )
             for i in range(self.cfg.population.n_predators)
@@ -158,7 +165,7 @@ class DanioArena:
         lo = self.cfg.actors.obstacle_radius_min
         hi = self.cfg.actors.obstacle_radius_max
         for i in range(self.cfg.population.n_obstacles):
-            r = float(self._rng.uniform(lo, hi))
+            r = float(self._spawn_rng.uniform(lo, hi))
             pos = self._free_spot(r + 1.0)
             self.obstacles.append(Obstacle(f"obstacle_{i:02d}", pos, r))
 
@@ -167,7 +174,7 @@ class DanioArena:
         w = self.cfg.world.width
         h = self.cfg.world.height
         for _ in range(200):
-            pos = np.array([self._rng.uniform(0, w), self._rng.uniform(0, h)])
+            pos = np.array([self._spawn_rng.uniform(0, w), self._spawn_rng.uniform(0, h)])
             if not any(o.contains(pos, clearance) for o in self.obstacles):
                 return pos
         return np.array([w / 2, h / 2])
@@ -424,7 +431,7 @@ class DanioArena:
         for prey in self.prey.values():
             if not prey.alive:
                 continue
-            omega, v = self._prey_policy.act(self._rng)
+            omega, v = self._prey_policy.act(self._dynamics_rng)
             prey.heading += omega * dt
             prey.speed = v
             self._steer_away_from_obstacles(prey, gain=2.0)
@@ -440,9 +447,9 @@ class DanioArena:
                 self.prey[pid] = Prey(
                     pid,
                     self._free_spot(1.0),
-                    float(self._rng.uniform(0, 2 * np.pi)),
+                    float(self._spawn_rng.uniform(0, 2 * np.pi)),
                     size=float(
-                        self._rng.uniform(
+                        self._spawn_rng.uniform(
                             self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max
                         )
                     ),

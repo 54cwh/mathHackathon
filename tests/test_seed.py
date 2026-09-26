@@ -78,6 +78,7 @@ def test_namespaces_frozen():
         "selection": 6,
         "initial_population": 7,
         "bc": 8,
+        "arena_dynamics": 9,
     }
 
 

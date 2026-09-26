@@ -175,7 +175,7 @@ DNA+motif   GRN+RGCD      DanioNet     behavior     fitness      │
 ## 约定
 
 - **稳定 ID**：`fish_id` / `genome_id` / `generation` / `experiment_id` / `environment_id`；前端不得用数组下标当 identity。
-- **种子**：所有随机过程由 `core/` 的 seed manager 统一派生（Python `random` / NumPy / PyTorch CPU / PyTorch CUDA）。**例外（`core §3`）**：只接受整数种子的下游（如 `DanioArena(master_seed=...)`）由调用方经 `SeedManager.seed(ns, index)` 取整数子种子后传入，不在下游内部自建命名空间（实验路径见 `experiment/collect.py`）。
+- **种子**：所有随机过程由 `core/` 的 seed manager 统一派生（Python `random` / NumPy / PyTorch CPU / PyTorch CUDA）。**例外（`core §3`）**：只接受整数种子的下游（如 `DanioArena(spawn_seed=..., dynamics_seed=...)`）由调用方经 `SeedManager.seed(ns, index)` 取整数子种子后传入，不在下游内部自建命名空间（实验路径见 `experiment/collect.py`）。
 - **空目录**：Git 不跟踪空目录，用 `.gitkeep` 占位；被忽略的目录（`data/raw/`、`results/*/`）长期保留。
 - **前端**：仅 `frontend/`；技术栈与版本锁定见 `frontend/README.md`。
 

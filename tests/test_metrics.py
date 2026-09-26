@@ -111,7 +111,7 @@ def test_episode_metrics_computes_four_metrics_plus_fitness():
 
 def test_episode_metrics_reads_only_keys_that_per_fish_log_provides():
     """漂移守护：`episode_metrics` 用到的键必须真的出现在 `per_fish_log()` 里。"""
-    arena = DanioArena(ArenaConfig(), master_seed=7)
+    arena = DanioArena(ArenaConfig(), spawn_seed=7, dynamics_seed=7)
     arena.reset()
     for _ in range(3):
         arena.step(None)

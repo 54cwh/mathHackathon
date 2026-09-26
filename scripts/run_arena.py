@@ -51,6 +51,7 @@ from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
 from evogenesis.core.ids import mint_id
+from evogenesis.core.seed import SeedManager
 from evogenesis.experiment.environments import (
     environment_env_vars,
     load_environment,
@@ -148,9 +149,11 @@ def run_episode(
     genome_ids = [
         mint_id(experiment_id, "genome", generation, i) for i in range(cfg.population.n_fish)
     ]
+    manager = SeedManager(seed)
     arena = DanioArena(
         cfg,
-        master_seed=seed,
+        spawn_seed=manager.seed("arena_spawn", 0),
+        dynamics_seed=manager.seed("arena_dynamics", 0),
         fish_ids=fish_ids,
         genome_ids=genome_ids,
         generation=generation,

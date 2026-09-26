@@ -21,7 +21,7 @@ SCHEMA = json.loads((ROOT / "schemas" / "event_log.schema.json").read_text(encod
 
 
 def _run_arena(steps: int = 20) -> DanioArena:
-    arena = DanioArena(ArenaConfig(), master_seed=7)
+    arena = DanioArena(ArenaConfig(), spawn_seed=7, dynamics_seed=7)
     arena.reset()
     expert = ExpertPolicy()
     for _ in range(steps):

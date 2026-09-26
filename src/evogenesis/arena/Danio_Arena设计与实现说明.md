@@ -321,13 +321,13 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | `src/evogenesis/arena/entities.py` | 实体：`Entity`（基类，含 `advance(boundary=...)`）、`Fish`、`Prey`、`Predator`、`Obstacle` | 97 | 数据类；`Entity.advance()`、`Obstacle.contains()` |
 | `src/evogenesis/arena/sensing.py` | 冻结 12 维感知编码器；`SENSORY_DIM = 12`、`DIM_NAMES`、`nearest_predator_relative_size()`（编码器与 env 共用口径） | 165 | `observe(...)`、`nearest_predator_relative_size(...)` |
 | `src/evogenesis/arena/policies.py` | 三条透明规则策略：`ExpertPolicy`、`PreyPolicy`、`PredatorPolicy`（巡游 / 追击 + 滞回 + **限时追击**） | 109 | `ExpertPolicy.__call__(obs)`、`PreyPolicy.act(rng, ...)`、`PredatorPolicy.plan(...)` |
-| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 517 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造可注入 `fish_ids` / `genome_ids` / `generation` |
+| `src/evogenesis/arena/env.py` | `DanioArena` 主循环：运动 / 边界 / 感知入口 / 能量 / 碰撞 / 捕食（双向 + 前向锥）/ prey 再生 / 逃脱结算 / 事件 / 每鱼记录 | 517 | `reset()`、`step(actions)`、`observe(fish_id)`、`per_fish_log()`、`.events`；构造 **必传** `spawn_seed` / `dynamics_seed`，可注入 `fish_ids` / `genome_ids` / `generation` |
 | `configs/default_arena.yaml` | 参数**唯一事实来源**；Arena 侧加载器已落地，**调用方已接线**（`scripts/run_experiment.py`，见 §18.2.3） | 45 | — |
 | `tests/test_arena.py` | 29 项冒烟 + 单元 + 回归测试；`KNOWN_EVENTS` 是事件词表的**机器可读权威名单** | 465 | — |
 
 `src/evogenesis/arena/__init__.py` 为空（无 re-export）；调用方一律从子模块显式导入。
 
-**实体 id（定稿）**：`DanioArena(config, master_seed, fish_ids=None, genome_ids=None)` 可注入 `fish_ids`（实体 id）与 `genome_ids`（写入 `Fish.genome_id`，供 `schemas/trajectory.schema.json` 的 `genome_id` 字段）——均取 `core §3.1` 稳定 ID（`pipeline/` 负责铸造）。传入时 `self.fish` 与 `per_fish_log()` 以稳定 `fish_id` 为键、`Fish.genome_id` 为稳定 `genome_id`；不传时保留旧默认（`fish_XX` / `"unknown"`，向后兼容，`tests/test_arena.py` 沿用）。两者长度须等于 `population.n_fish` 且各自互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。另可注入 `generation`（`int`，缺省 0），写入每个 `Fish.generation`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均透传本代代数。
+**实体 id（定稿）**：`DanioArena(config, *, spawn_seed, dynamics_seed, fish_ids=None, genome_ids=None)` 可注入 `fish_ids`（实体 id）与 `genome_ids`（写入 `Fish.genome_id`，供 `schemas/trajectory.schema.json` 的 `genome_id` 字段）——均取 `core §3.1` 稳定 ID（`pipeline/` 负责铸造）。传入时 `self.fish` 与 `per_fish_log()` 以稳定 `fish_id` 为键、`Fish.genome_id` 为稳定 `genome_id`；不传时保留旧默认（`fish_XX` / `"unknown"`，向后兼容，`tests/test_arena.py` 沿用）。两者长度须等于 `population.n_fish` 且各自互异，否则构造报 `ValueError`。prey/predator/obstacle 的 `prey_XX` 等不在 `core §3.1` 稳定 ID 之列，保持内部命名。另可注入 `generation`（`int`，缺省 0），写入每个 `Fish.generation`；`pipeline/arena_episode.py` 与 `experiment/collect.py` 均透传本代代数。
 
 ### 18.2 参数表（代码 ↔ `configs/default_arena.yaml` 逐项对齐）
 
@@ -510,19 +510,19 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 ### 18.5 确定性 / 复现判据
 
-**判据：同一 `(ArenaConfig 取值, master_seed)` ⇒ 逐事件一致的事件序列与逐字段一致的实体状态。** 该判据由 D1（唯一随机源）、D2（`reset()` 幂等）与 D3–D5 的消费顺序共同保障。
+**判据：同一 `(ArenaConfig 取值, spawn_seed, dynamics_seed)` ⇒ 逐事件一致的事件序列与逐字段一致的实体状态。** 该判据由 D1（两条随机源）、D2（`reset()` 幂等）与 D3–D5 的消费顺序共同保障。
 
 | # | 机制 | 代码事实 |
 |---|---|---|
-| D1 | **唯一随机源** | `np.random.default_rng(master_seed)`；`master_seed` 为 `core §3` 整数子种子（调用方经 `SeedManager.seed("arena_spawn", index)` 派生后传入——`core §3` 明确豁免整数种子下游，实验路径见 `experiment/collect.py`）。`arena/` 内**不出现** `import random`、全局 `np.random.*` 调用、或任何时间/OS 熵来源（全仓 `import random` 现仅存在于 `core/seed.py`）。**已知缺口（A14）**：出生与逐步游走共用本条随机流，未拆 `arena_spawn` / `arena_dynamics` 两命名空间 |
-| ⚠️ D2 | **`reset()` 幂等** | `reset()` **重建** RNG（`np.random.default_rng(self.master_seed)`），并**先清空 `self.obstacles`** 再就地逐个生成障碍（S9）。因此同一 arena 反复 `reset()` 得到**逐字段一致**的初始局面（障碍位置与半径、每条鱼的位置/航向、每个猎物的位置/尺寸）。由 `test_reset_idempotent_on_same_instance` 守护（同时断言障碍的 `pos` 与 `radius`） |
+| D1 | **两条随机源（已拆，A14 闭合）** | `spawn_seed` → `np.random.default_rng(spawn_seed)`（**出生/再生**：`reset()` 布局、`_free_spot`、regrowth）；`dynamics_seed` → `np.random.default_rng(dynamics_seed)`（**逐步动力学**：猎物游走）。两者均为 `core §3` 整数子种子，由调用方经 `SeedManager.seed("arena_spawn"/"arena_dynamics", index)` 派生后传入（`core §3` 整数种子例外；实验路径 `experiment/collect.py`、`pipeline`）。`arena/` 内**不出现** `import random`、全局 `np.random.*` 调用、或任何时间/OS 熵来源 |
+| ⚠️ D2 | **`reset()` 幂等** | `reset()` **重建两条 RNG**（`default_rng(spawn_seed)` / `default_rng(dynamics_seed)`），并**先清空 `self.obstacles`** 再就地逐个生成障碍（S9）。因此同一 arena 反复 `reset()` 得到**逐字段一致**的初始局面（障碍位置与半径、每条鱼的位置/航向、每个猎物的位置/尺寸）。由 `test_reset_idempotent_on_same_instance` 守护（同时断言障碍的 `pos` 与 `radius`） |
 | D3 | **reset 内消费顺序** | 障碍 → 鱼 → 猎物 → 捕食者。每障碍：1 次半径 uniform + `_free_spot`（≥1 次）；每鱼：`_free_spot(2.0)` + 1 次航向 uniform；每猎物：`_free_spot(1.0)` + 1 次航向 uniform + 1 次尺寸 uniform；每捕食者：`_free_spot(3.0)` + 1 次航向 uniform |
-| D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `rng.normal(0.0, 0.8)`（`PreyPolicy.act`）。鱼、捕食者、障碍、looming 记账**均不消费 RNG** |
-| D5 | **拒绝采样进入消费路径** | `_free_spot` 的采样**次数**取决于当前（本局）障碍布局，因此它是 RNG 消费路径的一部分 —— 一旦改动障碍数量/半径范围/clearance，后续所有实体的随机流都会平移。**这是复现性最脆弱的一环**：改动障碍数量/半径范围/clearance 会使后续所有实体的随机流整体平移，同一 seed 下的初始世界随之改变，历史基线不可直接对比 |
+| D4 | **每步唯一消费点** | 猎物游走：每条**存活**猎物 1 次 `dynamics_rng.normal(0.0, 0.8)`（`PreyPolicy.act`）；再生（每 `prey_regrowth_steps` 步）消费 `spawn_rng`。鱼、捕食者、障碍、looming 记账**均不消费 RNG** |
+| D5 | **拒绝采样进入消费路径** | `_free_spot` 的采样**次数**取决于当前（本局）障碍布局，消费 `spawn_rng`，因此它是 spawn 流消费路径的一部分 —— 一旦改动障碍数量/半径范围/clearance，后续所有实体的随机流都会平移。**这是复现性最脆弱的一环**：改动障碍数量/半径范围/clearance 会使后续所有实体的随机流整体平移，同一 seed 下的初始世界随之改变，历史基线不可直接对比 |
 | D6 | **推进粒度的无关性** | 「推进 k 步」（原 `api/session.py::Session.advance(steps=k)`，该服务层已按用户决定移除）就是 `k` 次 `step()`；每一步内的 RNG 消费只由**该步的状态**决定（D4：存活猎物数 × 1 次 normal）。因此「同一 seed 下推进到第 $k$ 步的状态」与「分几次调用推进到第 $k$ 步」无关（在 600 步上限内）。**注意**：这条只说粒度无关，不代表 `step()` 不消费 RNG |
 | D7 | **测试守护** | `test_reset_deterministic_same_seed`（同 seed 实体一致）、`test_reset_different_seed_differs`（异 seed 不同）、`test_reset_idempotent_on_same_instance`（**同一实例二次 reset 一致**） |
 
-**注意**：`DanioArena.__init__(config, master_seed)` 接受**已解析**的 `ArenaConfig`；要复现一局，必须记录 `ArenaConfig` 的**实际取值**而非 YAML 路径 —— `scripts/run_experiment.py` 落盘的 `arena_config_resolved.json` 即为此用。（原 `SessionCreate.arena_config_path` 随 `api/` 服务层一并移除。）
+**注意**：`DanioArena.__init__(config, *, spawn_seed, dynamics_seed)` 接受**已解析**的 `ArenaConfig` 与两个整数子种子；要复现一局，必须记录 `ArenaConfig` 的**实际取值**而非 YAML 路径 —— `scripts/run_experiment.py` 落盘的 `arena_config_resolved.json` 即为此用。（原 `SessionCreate.arena_config_path` 随 `api/` 服务层一并移除。）
 
 ---
 

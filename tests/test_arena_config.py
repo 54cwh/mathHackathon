@@ -113,5 +113,5 @@ def test_predator_policy_gets_max_chase_steps_from_config():
     """A7 回归：`actors.predator_max_chase_steps` 必须真的注入策略，而不是用策略自带的默认值。"""
     # 冻结 dataclass：用 replace 造一个与 policies.py 默认值 80 不同的 cfg，未注入即会暴露
     cfg = replace(ArenaConfig(), actors=replace(ActorDefaults(), predator_max_chase_steps=7))
-    arena = DanioArena(cfg, master_seed=1)
+    arena = DanioArena(cfg, spawn_seed=1, dynamics_seed=1)
     assert arena._pred_policy.max_chase_steps == 7

@@ -41,13 +41,17 @@ class ArenaEpisodeResult:
     events: tuple[Event, ...]
 
 
-def arena_seed_for(master_seed: int) -> int:
-    """Arena 的整数子种子（`core §3`）：``SeedManager.seed("arena_spawn", 0)``。
+def arena_seeds_for(master_seed: int, index: int = 0) -> tuple[int, int]:
+    """Arena 的两个整数子种子（`core §3`）：``(arena_spawn, arena_dynamics)``。
+
+    - `arena_spawn`：出生/再生（`reset()` 的布局与 `_free_spot`）；
+    - `arena_dynamics`：逐步动力学（猎物游走）。
 
     Arena 只接受整数种子（`core §3` 例外条款），由编排层派生后传入；**不得**把
     `master_seed` 根部直接交给 Arena（会与 `development` / `network_init` 等命名空间同根）。
     """
-    return SeedManager(master_seed).seed("arena_spawn", 0)
+    manager = SeedManager(master_seed)
+    return manager.seed("arena_spawn", index), manager.seed("arena_dynamics", index)
 
 
 def viable_pairs(
@@ -92,9 +96,11 @@ def run_arena_episode(
     n_eval = len(phenotypes)
 
     config = replace(arena_config, population=replace(arena_config.population, n_fish=n_eval))
+    spawn_seed, dynamics_seed = arena_seeds_for(master_seed)
     arena = DanioArena(
         config,
-        master_seed=arena_seed_for(master_seed),
+        spawn_seed=spawn_seed,
+        dynamics_seed=dynamics_seed,
         fish_ids=fish_ids,
         genome_ids=genome_ids,
         generation=generation,

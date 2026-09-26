@@ -14,6 +14,7 @@ import time
 from evogenesis.arena.config import ArenaConfig
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import ExpertPolicy
+from evogenesis.core.seed import SeedManager
 
 SEEDS = (1, 7, 42, 1234, 250927)
 STEPS = 600
@@ -28,7 +29,12 @@ KEYS = (
 
 
 def run(seed: int) -> dict:
-    arena = DanioArena(ArenaConfig(), master_seed=seed)
+    manager = SeedManager(seed)
+    arena = DanioArena(
+        ArenaConfig(),
+        spawn_seed=manager.seed("arena_spawn", 0),
+        dynamics_seed=manager.seed("arena_dynamics", 0),
+    )
     arena.reset()
     expert = ExpertPolicy()
     t0 = time.perf_counter()
