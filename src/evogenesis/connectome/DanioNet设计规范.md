@@ -66,6 +66,8 @@ m_iH_t
 
 **`U_i,m_i,b_i` 来源（定稿）**：三者按 **cell type** 取固定先验、不学习——`U_i=U_{type_i}`、`m_i=m_{type_i}`、`b_i=b_{type_i}`，其中 `U∈R^{6×12}`、`m,b∈R^6` 由 seed 初始化（`U~N(0,(1/√12)²)`、`m~N(0,0.1²)`、`b~N(0,0.1²)`）。理由：RGCD 输出契约 `(A,Z,τ,W⁰,M)` 保持冻结，感官增益经 cell type 与基因型挂钩；`ΔW` 只改 `w`，与 §7 遗传边界自洽。属**设计选择**（登记 `docs/参数总表.json`）。
 
+**与发育期 viability 的关系**：`development/RGCD数学模型.md` §7 的零输入动力学检查在发育期以 \(b_i=0\) 近似（该处不产出 \(b_i\)）；本模块用它自己的 \(b_{type_i}\) 对同一组 §7 判据复核，作为最终判定。
+
 所有网络 padding 到 48 nodes，通过 neuron mask / adjacency mask batch。
 
 ## 4. 连续动作

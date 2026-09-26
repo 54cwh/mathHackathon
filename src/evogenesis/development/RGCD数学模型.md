@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.6 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
+> 状态：**v1.7 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H\) 数值为标定任务（见 `docs/参数总表.json`）。
 
 ## 1. 输入输出
 
@@ -79,7 +79,7 @@ D_S,D_P,D_T,D_M,D_I,D_O
 
 和 domain bias \(\mathbf d_i\)。
 
-**放置（定稿）**：24 个 precursor 在六个 domain 间**均匀分配**（每域 4 个）。位置取 **domain-blocked 均匀随机**：把归一化发育单位方域 \([0,1]^2\) 划为 \(3\times2=6\) 个 block（尺寸 \(1/3\times1/2\)），domain 按 \([S,P,T,M,I,O]\) 顺序映射到 block；每个 precursor
+**放置（定稿）**：24 个 precursor 在六个 domain 间**均匀分配**（每域 4 个）。位置取 **domain-blocked 均匀随机**：把归一化发育单位方域 \([0,1]^2\) 划为 \(3\times2=6\) 个 block（尺寸 \(1/3\times1/2\)），block 网格为 **2 行 \(\times\) 3 列**（x 方向 3 列、步长 \(1/3\)；y 方向 2 行、步长 \(1/2\)），domain 按 \([S,P,T,M,I,O]\) 顺序**行优先**填入；每个 precursor
 
 \[
 \mathbf p_i=\mathbf{origin}_{domain(i)}+(u_1/3,\;u_2/2),\qquad u\sim U[0,1]^2 .
@@ -111,11 +111,11 @@ P\mathbf p_i+
 - \(\rho=0.35\)
 - sigmoid
 
-报告、代码、可视化均使用这一式。
+报告、代码、可视化均使用这一式。**初始态（定稿）**：\(\mathbf g_i^{0}=\mathbf 0\)（echo-state 惯例；与 §7 零输入动力学的 \(h^0=\mathbf 0\) 一致）。
 
 **形状（定稿）**：\(\mathbf g_i\in\mathbb R^8\)（`grn.dim=8`）、\(\mathbf q(G)\in\mathbb R^8\)、\(\mathbf p_i\in\mathbb R^2\) 原样输入（不做 embedding）；\(W_g\in\mathbb R^{8\times8}\)、\(B\in\mathbb R^{8\times8}\)、\(P\in\mathbb R^{8\times2}\)、\(\mathbf b\in\mathbb R^8\)。
 
-**初始化（定稿）**：\(W_g\) 取 Glorot/Xavier `[bib#126]` 后重标定谱半径 \(\rho_{\mathrm{spec}}(W_g)=0.9\)；\(B,P\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf b\sim\mathcal N(0,0.1^2)\)。全部由 seed manager 派生。
+**初始化（定稿）**：\(W_g\) 取 **Xavier uniform**（Glorot & Bengio 2010，`[bib#126]`）后重标定谱半径 \(\rho_{\mathrm{spec}}(W_g)=0.9\)；\(B,P\sim\mathcal N(0,(1/\sqrt8)^2)\)；\(\mathbf b\sim\mathcal N(0,0.1^2)\)。全部由 seed manager 派生。
 
 依据与限定："谱半径 \(<1\Rightarrow\) echo-state property"是**经验条件**（Yildiz et al. 2012 `[bib#127]` 给出反例），故按稳定性启发式使用、并记录 \(\rho_{\mathrm{spec}}(W_g)\)；未找到阻尼 sigmoid GRN 的专属初始化惯例，其余尺度为**设计选择**。
 
@@ -187,11 +187,13 @@ Sensory\rightsquigarrow Motor
 ### Dynamical viability
 zero-input（\(x_t\equiv0,\ H_t\equiv0\)）从 \(h^0=\mathbf 0\) 运行 50 steps，\(\phi=\tanh\)。判据与阈值（**定稿**）：
 - (i) 无 NaN、无 Inf；
-- (ii) \(|h_i^t|<1\) 对所有 \(i,t\) 成立（**解析保证**：更新是 \(h_i^t\) 与 \(\tanh(\cdot)\in(-1,1)\) 的凸组合，权重 \((1-1/\tau_i),\,1/\tau_i\ge0\) 且和为 1，由 \(h^0=0\) 归纳即得——非工程阈值）；
+- (ii) \(|h_i^t|<1\) 对所有 \(i,t\) 成立（**解析保证**：更新是 \(h_i^t\) 与 \(\tanh(\cdot)\in(-1,1)\) 的凸组合，权重 \((1-1/\tau_i),\,1/\tau_i\ge0\) 且和为 1，由 \(h^0=0\) 归纳即得——非工程阈值。**float32 下 \(\tanh\) 饱和可恰取 \(1.0\)，实现按 \(|h|\le1\) 判定，属舍入而非动力学发散**）；
 - (iii) 不永久全饱和：尾 10 步（\(t=40..49\)）平均饱和比例 \(<0.9\)，饱和定义为 \(|h_i^t|>1-10^{-3}\)；
-- (iv) \(\rho_{\mathrm{spec}}(W_g)<1\)（tanh 稳定性启发式，`[bib#127]`）。
+- (iv) \(\rho_{\mathrm{spec}}(W^{(0)})<1\)（有效权重矩阵的 tanh 稳定性启发式，`[bib#127]`；注意对象是 **connectome 权重 \(W^{(0)}\)**，非 §4 的 GRN 矩阵 \(W_g\)）。
 
 (iii)(iv) 为**工程判据**（设计选择）；(ii) 是模型的数学性质，报告可直接引用。
+
+**\(b_i\) 的处理（定稿）**：零输入更新式含 per-neuron bias \(b_i\)，其 owner 为 `connectome/DanioNet设计规范.md` §3（\(b_i=b_{type_i}\)，seed 初始化；RGCD 输出契约 \((A,Z,\tau,W^{(0)},M)\) 不含它）。故本节动力学检查**接受调用方传入的 \(b_i\)**；发育阶段默认 \(b_i=0\)（**无偏置近似**），最终 viability 由 DanioNet 用其 \(b_{type_i}\) 复核。
 
 ## 8. Connection probability
 \[
@@ -215,11 +217,13 @@ d_{ij}=\|\mathbf p_i-\mathbf p_j\|_2
 
 依据：空间布线代价项 \(-\lambda d_{ij}\) 有充分文献支撑——在 logit 中加入线性距离项等价于指数距离规则 \(P\propto e^{-\lambda d}\)（Ercsey-Ravasz et al. 2013 *Neuron*；Waxman 1988；Kaiser & Hilgetag 2004；综述 Bullmore & Sporns 2012）；cell-type 兼容项 \(z_i^T C z_j\) 对应 `[bib#4]`。注意 \(\lambda\) 有量纲，本项目在**归一化发育单位方域**上取值（见下），不照搬文献的 mm 口径值。出处：`research/reference/design-basis-connectome.md`。
 
-**\(\gamma R(\cdot)\) 形式（定稿）**：取**中心化双线性 / Pearson 相关**。令 \(\bar g,\hat\sigma\) 为本代 \(N\) 个神经元在各分量上的均值与标准差，\(\hat{\mathbf g}_i=(\mathbf g_i-\bar g)\oslash\hat\sigma\)，则
+**\(\gamma R(\cdot)\) 形式（定稿）**：取**逐分量标准化后的双线性（弱偏置）**。令 \(\bar g,\hat\sigma\) 为本代 \(N\) 个神经元在各分量上的均值与**总体标准差（ddof=0）**，\(\hat{\mathbf g}_i=(\mathbf g_i-\bar g)\oslash\hat\sigma\)（**若某分量 \(\hat\sigma_k=0\)，该分量取 \(\hat g_{ik}=0\)，即该项贡献 0**），则
 
 \[
-R_{ij}=\frac{1}{8}\sum_{k=1}^{8}\hat g_{ik}\hat g_{jk}\in[-1,1],\qquad K=I\ (\text{零参数}).
+R_{ij}=\frac{1}{8}\sum_{k=1}^{8}\hat g_{ik}\hat g_{jk},\qquad K=I\ (\text{零参数}).
 \]
+
+\(R_{ij}\) 为标准化内积，**不声明其落在 \([-1,1]\)**（对角线亦不为 1：标准化用的是本代种群矩）；其量级由 \(b_A\) 的二分校准吸收。
 
 中心化**只用于 \(R\) 项**，§4 的 \(\mathbf g\) 语义不变。依据：转录组/细胞类型相似度预测连线的双线性模型（Qiao et al. 2024 *eLife* `[bib#111]`；Kovács et al. 2020 *PNAS* `[bib#112]`；识别分子为异源、\(K\) 可非对角但 \(I\) 为可解释 MVP，Sanes & Zipursky 2020 `[bib#119]`）。**限定**：单用表达相似度预测连线的证据仅 AUC≈0.64（`[bib#111]`；Hayashi et al. 2022 反 Hebbian `[bib#121]`），故 \(R\) 按**弱偏置**使用并须报 \(\gamma=0\) 消融。
 
@@ -338,7 +342,7 @@ x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
 
 | 参数 | 形状 / 取值 | 初始化 / 校准 | 依据或状态 |
 |---|---|---|---|
-| \(W_g\) | \(\mathbb R^{8\times8}\) | Glorot/Xavier → 谱半径 \(\rho=0.9\) | `[bib#126]`；稳定性启发式 `[bib#127]` |
+| \(W_g\) | \(\mathbb R^{8\times8}\) | Xavier uniform → 谱半径 \(\rho=0.9\) | `[bib#126]`；稳定性启发式 `[bib#127]` |
 | \(B\) | \(\mathbb R^{8\times8}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | 设计选择 |
 | \(P\) | \(\mathbb R^{8\times2}\) | \(\mathcal N(0,(1/\sqrt8)^2)\) | \(\mathbf p_i\) 原样输入（不 embedding） |
 | \(\mathbf b\) | \(\mathbb R^8\) | \(\mathcal N(0,0.1^2)\) | 设计选择 |

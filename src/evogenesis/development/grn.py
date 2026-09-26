@@ -1,15 +1,64 @@
+"""唯一正式离散 GRN（RGCD §4，v1.7 已定稿）。
+
+    g^{r+1} = (1 - rho) g^r + rho * sigmoid(W_g g^r + B q(G) + P p_i + b)
+
+形状（§4）：``g_i ∈ R^8``、``q(G) ∈ R^8``、``p_i ∈ R^2`` 原样输入（不 embedding）；
+``W_g ∈ R^{8×8}``、``B ∈ R^{8×8}``、``P ∈ R^{8×2}``、``b ∈ R^8``。默认 steps=12、rho=0.35、sigmoid。
+
+随机数纪律：本模块不派生随机数；参数由调用方（``rgcd.initialize_parameters``）用
+``SeedManager(master).torch_generator("development", index)`` 初始化（`core §3`）。
+dtype 统一 ``float32``（`core §7`）。
+"""
+
+from __future__ import annotations
+
 import torch
 
 
-def discrete_grn(g0, q, pos, Wg, B, P, bias, rho: float = 0.35, steps: int = 12):
-    """Frozen equation:
-    g_{r+1}=(1-rho)g_r+rho*sigmoid(Wg g_r+B q+P p+b)
+def spectral_radius(matrix: torch.Tensor) -> float:
+    """矩阵谱半径 ``max |lambda_i|``（RGCD §4 稳定性启发式、§7 判据 (iv)）。"""
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError(f"spectral_radius 需要方阵，实际形状 {tuple(matrix.shape)}")
+    if not bool(torch.isfinite(matrix).all()):
+        raise ValueError("spectral_radius 不接受含 NaN/Inf 的矩阵（LAPACK 会崩溃）")
+    eigenvalues = torch.linalg.eigvals(matrix.to(torch.float32))
+    return float(eigenvalues.abs().max().item())
+
+
+def discrete_grn(
+    g0: torch.Tensor,
+    q: torch.Tensor,
+    pos: torch.Tensor,
+    Wg: torch.Tensor,
+    B: torch.Tensor,
+    P: torch.Tensor,
+    bias: torch.Tensor,
+    rho: float = 0.35,
+    steps: int = 12,
+) -> torch.Tensor:
+    """按 §4 字面迭代 ``steps`` 步并返回 ``g``（``(..., N, dim)``）。
+
+    ``g0``/``pos`` 共享神经元维，``q`` 为 ``(..., dim)``。支持单个体 ``(N, dim)``
+    与 ``(B, N, dim)`` 两种前导批量形状（本任务只用单个体）。
     """
-    g = g0
+    if g0.shape[-1] != Wg.shape[0]:
+        raise ValueError(f"g0 末维 {g0.shape[-1]} 与 Wg 维数 {Wg.shape[0]} 不一致")
+    if q.shape[-1] != B.shape[1]:
+        raise ValueError(f"q 末维 {q.shape[-1]} 与 B 输入维 {B.shape[1]} 不一致")
+    if pos.shape[-1] != P.shape[1]:
+        raise ValueError(f"pos 末维 {pos.shape[-1]} 与 P 输入维 {P.shape[1]} 不一致")
+    if steps < 0:
+        raise ValueError("steps 必须非负")
+
+    g = g0.to(torch.float32)
+    Wg = Wg.to(torch.float32)
+    B = B.to(torch.float32)
+    P = P.to(torch.float32)
+    bias = bias.to(torch.float32)
     for _ in range(steps):
-        recurrent = torch.einsum("...cd,de->...ce", g, Wg)
+        recurrent = torch.einsum("...nd,de->...ne", g, Wg)
         genome_term = torch.einsum("...d,ed->...e", q, B).unsqueeze(-2)
-        pos_term = torch.einsum("...cp,ep->...ce", pos, P)
+        pos_term = torch.einsum("...np,ep->...ne", pos, P)
         target = torch.sigmoid(recurrent + genome_term + pos_term + bias)
         g = (1.0 - rho) * g + rho * target
     return g
