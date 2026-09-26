@@ -90,3 +90,79 @@
 > (a) `evolution/population.py::advance_generation` 无生产调用方 ⇒ id 只是确定性标签，
 > 不对应真实演化出的基因型；(b) 本条记录的 `exp_traj_smoke` 产物采于接线之前，
 > 仍是 `"unknown"`，须重采。详见 `paper/latex/sections/07-reproducibility.tex` §已知缺口。
+
+---
+
+## 追加（2026-09-26 晚）：本轮跨 lane 发现（leader 侧，第二轮）
+
+> 来源：报告正文四章写作 + 架构/viability 取证 + 文档指针审计。**我未改动你 lane 的
+> 实质内容**（唯一例外见第 4 条，是加法式追加且已在此声明）。每条带证据位置。
+
+### 1. `paper/latex/refs.bib` 是**派生产物**，请勿手改
+唯一来源 = `research/notes/bibliography.md`。本轮有人手工给 `.bib` 加了 Mihalitsis 2017，
+但 note 里的 `#` 未转义 ⇒ 编译报「macro parameter character #」，门禁三红。已按单一来源
+重新生成（221 条 / 0 丢弃），并加了守护测试（`tests/test_paper_bib.py` 同步检查 +
+`tests/test_paper_latex_safety.py` 字符检查）。**要加文献请登记 `bibliography.md` 后重跑
+`scripts/make_bib.py`**；生成器现已转义 `# & % $ _ ^ ~` 与反斜杠，url 字段保持裸 URL
+（plainnat 自己会包 `url` 宏；再包一层会与它叠加成嵌套调用 ⇒ hyperref 递归 ⇒ 编译崩）。
+
+### 2. 环境对照三组的状态：**以参数总表为准 = `no_basis` +「草案待确认」**
+`docs/参数总表.json` 的三条 `env_*` 现为 `status: "no_basis"`，且 `missing_required.note` 写
+「状态『草案待确认』…并从本清单移出」（`items` 现仅剩 `penetrance`）。
+`configs/experiment_environments.yaml` 头注已与之一致（本轮有 agent 误改成「已定稿」并被
+leader 推翻）。若你希望统一措辞（词表值 `no_basis` vs 散文「草案待确认」），属你的表。
+
+### 3. 你 lane 仍有指向旧 `§4` 的**失效指针**（`实验与评价体系.md` 已重构为 §1–§7）
+映射：旧 §4「指标定义」→ 新 **§2.1**；旧 §9「Efficiency」→ **§2.4**；旧 §7「环境三组」→ **§4**；
+旧 §10「正式结果原则」→ **§1.4**；旧 §11「目录布局」→ **§5.1**。
+
+| 文件 | 位置 | 现写 | 应为 |
+|---|---|---|---|
+| `core/核心机制与数据流.md` | L159 公平性红线 | §4 | §3.3 / §3.4 |
+| `core/核心机制与数据流.md` | L282 `#9 指标定义…见` | §4 | §2.1 |
+| `evolution/fitness.py` | L9 跨代/跨环境用原始指标 | §4 | §2.1 / §2.3 |
+| `evolution/遗传繁殖与演化模型.md` | L97 各分量原始字段 | §4 | §2.1 |
+| `learning/行为克隆学习.md` | L41 公平性红线 | §4 | §3.3 / §3.4 |
+
+（我 lane 内同类失效指针已全部修掉，共 13 个文件；`core` L67/167/228/240 用 `§5` 属粒度较粗
+但**不是断链**，无需改。）
+
+### 4. 声明：`development/RGCD数学模型.md` §7 追加了一小节
+在 §7 `Dynamical viability` 之后新增「**实测工作点（2026-09-26，可复现）**」（约 16 行）：
+记录随机 q 通过率与判据 (iv) 的绑定关系，**只加这一节，未改动任何原有判据/阈值文字**。
+成因：本轮为 F6 图取证需要把 viability 数字变成可重放凭证。若你认为该内容应换位置或措辞，
+直接改即可（我不会有后续依赖）。
+
+### 5. 一条实质性观察（**不是 bug 主张**，请你裁决是否调参）
+viability 判据 **(iv) `ρ(W⁰) < 1` 是唯一绑定约束**：1000 次随机 q 发育里 **898 次（89.8%）**
+因它失败；活跃子矩阵 ρ 中位 **1.63**，仅 **10.2%** 落在阈值下。判据 (i)(ii)(iii) 在 1000 次中
+**一次也未触发**（与文档「(ii) 是解析保证、非阈值判据」相符，可反向当作 (ii) 实现的旁证）。
+机理线索：`configs/default_model.yaml` 的 `w_bar_initial: 0.5` 配 `target_density: 0.15`、
+约 37 个活跃神经元时，ρ 的典型值刚好越过 1。是否调属 model lane；我只记录实测分布。
+凭证：`scripts/make_fig_viability.py` → `results/figs/dev_viability/data/fig_viability.xlsx`
+（首 sheet `_manifest`，含 seed 与复现命令）。
+
+### 6. P0-9 的**精确**状态（此前文档自相矛盾，已就地更正）
+- **代码层已闭合**：`scripts/run_arena.py` 经 `core/ids.py::mint_id`（纯函数、确定性）铸造并
+  注入 `genome_id`；`tests/test_collect_trajectories.py` 有断言。`arena/entities.py` 的
+  `"unknown"` 现仅是「调用方不传」时的向后兼容缺省。
+- **仍存两点**：(a) `evolution/population.py::advance_generation` **无生产调用方** ⇒ 该 id 只是
+  确定性标签，**不对应真实演化出的基因型**；(b) 接线前采集的历史产物（`exp_traj_smoke`）
+  仍是 `"unknown"`，须重采。
+
+### 7. 两处小项
+- `configs/experiment_seeds.yaml` 的**键名是 `seeds:`**，而多处文档以概念名 `formal_seeds` 引用
+  （`research/notes/参数一致性审计.md` 已记为半登记）。报告正文已统一写 `seeds=`。
+- viability 的 reason 词表（`missing_fate:*` / `motor_side_empty` / `no_sided_...` 等）已在
+  `development/rgcd.py` 实现，但**尚未在 `core §10` 登记**；F6 脚本以消费方身份镜像了一份
+  并用漂移守护测试钉住。**词表 owner 是否登记，属契约层决定**。
+  另：`connectome/DanioNet设计规范.md` §5 只写「$x_i$ 低于中位者标 left」，实现是
+  `left_count = |motor| // 2`（两者在偶/奇数下结果一致，且实现保证 `left ≤ right`）——
+  **建议 spec 补这一句**。
+
+### 8. 报告侧现状（供你判断优先级）
+- 已完成并可编译：引言 / 方法 / 实验设计 / 局限与价值 / 可复现性（**29 页，0 错误，
+  0 未定义引用**）。
+- **仍空**：`04 基线与消融`（MLP/GRU/Fixed Sparse RNN 未实现）、`05 结果`（阻塞：BC 模块与
+  契约已就绪，但**未接入流水线**，评估仍由 `ExpertPolicy` 驱动 ⇒ 「学习前/学习后」对照无数据）。
+  这两章我不会用编造数字填。
