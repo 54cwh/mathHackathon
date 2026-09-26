@@ -607,6 +607,32 @@
       "config": "configs/default_model.yaml → learning.mini_batch_updates",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "bc_loss_weight_omega",
+      "value": null,
+      "unit": "dimensionless weight",
+      "group": "learning",
+      "grade": "D",
+      "status": "missing",
+      "basis": "core §4.3 行为克隆损失 L=λ_ω·MSE(ω)+λ_v·MSE(v) 引入该权重，但全文未给取值；属未定项，回写定稿前实现不得自行选定",
+      "source": "src/evogenesis/core/核心机制与数据流.md §4.3",
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_loss_weight_v",
+      "value": null,
+      "unit": "dimensionless weight",
+      "group": "learning",
+      "grade": "D",
+      "status": "missing",
+      "basis": "core §4.3 行为克隆损失 L=λ_ω·MSE(ω)+λ_v·MSE(v) 引入该权重，但全文未给取值；属未定项，回写定稿前实现不得自行选定",
+      "source": "src/evogenesis/core/核心机制与数据流.md §4.3",
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
     }
   ],
   "missing_required": {
@@ -622,7 +648,8 @@
       "动作合成 y_ω, y_v 的左右池合成规则（G3）",
       "motor 左/右归属规则（G2）",
       "dynamical viability 判据阈值（RGCD数学模型.md 阅读问题 #8）",
-      "位置 p_i 的分布"
+      "位置 p_i 的分布",
+      "BC 损失权重 λ_ω、λ_v（core §4.3）"
     ]
   },
   "citation_risks": [

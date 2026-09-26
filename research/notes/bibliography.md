@@ -84,3 +84,19 @@
 16. Sudarshan TP. **Scaling Neural DNA to GPT-2: 354 Parameters Wire a Language Model.** Zenodo (2026). `preprint`（非同行评审，0 引用）。
     DOI: https://doi.org/10.5281/zenodo.19390927
     用途：同上，规模外推。⚠️ 同 #15 的边界。
+
+---
+
+## 斑马鱼外部数据资源（仅作校验 / 命名，不导入训练）
+
+17. Marques JC, Lackner S, Félix R, Orger MB. **Structure of the Zebrafish Locomotor Repertoire Revealed with Unsupervised Behavioral Clustering.** *Current Biology* 28(2), 181–195.e5 (2018). `peer-reviewed`.
+    DOI: https://doi.org/10.1016/j.cub.2017.12.002
+    用途：幼鱼运动 repertoire 运动学统计。仅用于 core §8 生物合理性校验图（转向角分布 / bout 时长），不用于训练。
+
+18. Hildebrand DGC, Cicconet M, Torres RM, Choi W, Quan TM, et al. **Whole-brain serial-section electron microscopy in larval zebrafish.** *Nature* 545(7654), 345–349 (2017). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nature22356
+    用途：幼鱼全脑 ssEM 体积（原始对齐图像约 2.7 TB）。仅用于引用佐证六类 fate / 连接密度 / 距离代价规则的生物学来源，不导入模型（违背"不做真实大脑逐神经元复刻"的冻结范围）。
+
+19. Randlett O, Wee CL, Naumann EA, Nnaemeka O, Schoppik D, et al. **Whole-brain activity mapping onto a zebrafish brain atlas.** *Nature Methods* 12(11), 1039–1046 (2015). `peer-reviewed`.
+    DOI: https://doi.org/10.1038/nmeth.3581
+    用途：Z-Brain 脑区图谱。仅用于给 6 个 developmental domains 对应真实脑区命名。
