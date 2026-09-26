@@ -119,6 +119,13 @@
   |---|---|---|---|
   | `steps` | int | `1` | 前进步数 |
   | `use_expert` | bool | `true` | `true` 时用 ExpertPolicy 驾驶 |
+  | `fish_id` | string \| null | `null` | **Manual Control**（`交互与可视化.md` §10）：该鱼改用下方手动动作；缺省 = 不接管 |
+  | `omega` | float | `0.0` | 手动转向角速度（rad/s），裁剪到 `[-1, 1]` |
+  | `speed` | float | `0.0` | 手动速度（世界单位/秒），裁剪到 `[0, 1]`（动作语义见 `arena §461 S1`） |
+
+  **Manual Control 语义（已定稿 2026-09-27，用户批准最小集）**：手动动作**只覆盖被控那一条鱼**，
+  其余鱼照旧按 `use_expert`（或网络输出）驱动；`fish_id` 不存在或该鱼已死时**静默忽略**
+  （前端 10 Hz 连发，报错会刷屏）。裁剪在 API 层做一次，与 `DanioArena.step` 同口径。
 
 - **成功响应** `200` → `SessionSummary`。
 - **副作用**：推进仿真；到 `episode_steps`（默认 600）后不再前进。
