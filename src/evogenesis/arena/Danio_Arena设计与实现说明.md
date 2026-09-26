@@ -229,6 +229,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | size trajectory | ✅ |
 | survival steps | ✅（步末对存活鱼自增；事件 payload 取自增前值） |
 | motor commands | ✅（裁剪后的 \((\omega,v)\)） |
+| `spawn_fish` | ✅ 运行期追加个体（`api/API接口.md` §1.11）：只追加、不改既有鱼；会话期实体（`reset` 清除）；缺省位置消耗**生成流**、显式传坐标则不消耗 |
 | selected neural activity snapshots | ❌ 未实现——**不属 arena 职责**：激活量归 `connectome`/`DanioNet`（`brain.activation` 由 api/WS 推送），arena 不缓存网络隐藏状态（见 `M3`） |
 
 ## 14. 历史依赖探针任务（H3）

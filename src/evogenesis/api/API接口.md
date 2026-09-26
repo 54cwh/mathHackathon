@@ -197,6 +197,31 @@
 - **错误**：`404` —— 会话不存在。
 - **代码位置**：`session.py` → `leaderboard`。
 
+### 1.11 POST `/v1/sessions/{session_id}/individuals` — 追加实验室个体
+
+把**发育好的个体**追加进会话 Arena（`交互与可视化.md` §4 的"三个面板是一个个体"闭环）。
+
+- **请求体** `IndividualSpawn`：`genome_id`（必填）、`seed`（发育种子，默认 0）。
+- **成功响应** `201` → `SpawnedIndividual`
+
+  | 字段 | 类型 | 说明 |
+  |---|---|---|
+  | `fish_id` | string | **== `genome_id`**（稳定 ID，`core §3.1`） |
+  | `genome_id` | string | 真实基因组 ID（鱼卡据此回查） |
+  | `generation` | int | 世代（会话 generation） |
+  | `viable` | bool | 发育可行性 |
+  | `n_neurons` / `n_edges` | int | 该个体的连接组规模（来自其发育产物） |
+  | `tau_mean` | float | 时间常数均值 |
+  | `cell_type_counts` | object | 六类 fate 计数（键 = fate 序号） |
+
+- **语义**：`phenotype_of(genome, motifs, seed, index=stable_index(genome_id))` → `danionet_of([phenotype])`
+  → `arena.spawn_fish(...)`。之后该鱼由**它自己的网**驱动（覆盖 ExpertPolicy / 全局网），
+  `brain.activation` 也会带上它；其余鱼照旧按 `use_expert`。
+- **错误**：`404` 基因组不存在；`409` 该个体已在本会话；`422` 该基因组发育不 viable。
+- **边界**：追加是**会话期实体** —— `reset` 会按构造时的 `fish_ids` 重建种群，追加的个体被清掉
+  （追加属交互行为，不属于实验配置）。位置缺省时消耗 `spawn_seed` 的**生成流**（不动动力学流）。
+- **代码位置**：`session.py::spawn_individual`；Arena 侧 `arena/env.py::spawn_fish`。
+
 ### 1.10 GET `/v1/health` — 健康检查
 
 - **成功响应** `200` → `{"status":"ok","manual_control":true}`。

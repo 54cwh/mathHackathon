@@ -125,6 +125,29 @@ class BreedingResult(BaseModel):
     meiosis_trace: dict[str, Any]
 
 
+# --- lab individuals (API接口.md §1.11) ---------------------------------------
+class IndividualSpawn(BaseModel):
+    """把实验室个体追加进会话 Arena 的请求体。"""
+
+    genome_id: str
+    #: 发育随机种子（`DevelopmentRequest.seed` 同口径）。
+    seed: int = 0
+
+
+class SpawnedIndividual(BaseModel):
+    """已追加个体的摘要（发育产物 + Arena 侧稳定 ID）。"""
+
+    fish_id: str
+    genome_id: str
+    generation: int
+    viable: bool
+    n_neurons: int
+    n_edges: int
+    tau_mean: float
+    #: 六类 fate 计数（键 = fate 序号 0..5）。
+    cell_type_counts: dict[str, int] = Field(default_factory=dict)
+
+
 # --- fish card (API与系统工程.md §4.3) -------------------------------------------
 class FishCard(BaseModel):
     fish_id: str

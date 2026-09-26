@@ -230,6 +230,63 @@ def test_develop_cell_type_counts_are_real_counts() -> None:
     assert counts != {str(i): i for i in range(6)}, "计数退化为 enumerate(Counter) 的旧错误"
 
 
+def test_spawn_individual_into_session() -> None:
+    """§1.11：把发育好的个体追加进 Arena —— 真实 genome_id、自己的网驱动、可回查卡片。"""
+    sid = _create()["session_id"]
+    genome = client.post("/v1/genomes", json={}).json()
+    before = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+    resp = client.post(
+        f"/v1/sessions/{sid}/individuals",
+        json={"genome_id": genome["genome_id"], "seed": 0},
+    )
+    assert resp.status_code == 201
+    spawned = resp.json()
+    assert spawned["fish_id"] == genome["genome_id"], "稳定 ID：fish_id == genome_id"
+    assert spawned["n_neurons"] > 0 and spawned["n_edges"] > 0
+    assert sum(spawned["cell_type_counts"].values()) == spawned["n_neurons"]
+
+    after = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+    assert len(after) == len(before) + 1
+    assert genome["genome_id"] in after, "新个体必须出现在快照里"
+
+    card = client.get(f"/v1/sessions/{sid}/fish/{genome['genome_id']}").json()
+    assert card["genome_id"] == genome["genome_id"], "鱼卡必须回真实基因组（旧版恒 unknown）"
+    assert card["metrics"]["n_edges"] == spawned["n_edges"]
+    assert sum(card["cell_counts"].values()) == spawned["n_neurons"]
+
+    # 重复追加同一 genome -> 409；未知 genome -> 404
+    assert (
+        client.post(
+            f"/v1/sessions/{sid}/individuals", json={"genome_id": genome["genome_id"]}
+        ).status_code
+        == 409
+    )
+    assert (
+        client.post(
+            f"/v1/sessions/{sid}/individuals", json={"genome_id": "lab:g0:genome9999"}
+        ).status_code
+        == 404
+    )
+
+
+def test_spawned_individual_is_driven_by_its_own_net() -> None:
+    """实验室个体由**自己的网**驱动：`use_expert=false` 时它动、默认鱼不动。"""
+    sid = _create()["session_id"]
+    genome = client.post("/v1/genomes", json={}).json()
+    client.post(f"/v1/sessions/{sid}/individuals", json={"genome_id": genome["genome_id"]})
+    before = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+    client.post(f"/v1/sessions/{sid}/release?steps=1&use_expert=false")
+    after = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
+
+    moved = (
+        after[genome["genome_id"]]["x"] != before[genome["genome_id"]]["x"]
+        or after[genome["genome_id"]]["y"] != before[genome["genome_id"]]["y"]
+    )
+    assert moved, "实验室个体必须由其网络驱动而移动"
+    assert after["fish_00"]["x"] == pytest.approx(before["fish_00"]["x"])
+    assert after["fish_00"]["y"] == pytest.approx(before["fish_00"]["y"])
+
+
 def test_reset_returns_to_step_zero() -> None:
     sid = _create()["session_id"]
     client.post(f"/v1/sessions/{sid}/release?steps=50")

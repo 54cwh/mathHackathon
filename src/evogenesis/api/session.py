@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import threading
 import uuid
+from collections import Counter
 from dataclasses import replace
 from pathlib import Path
 
@@ -19,9 +20,12 @@ import numpy as np
 from fastapi import APIRouter, HTTPException
 
 from evogenesis.api import environmental_selections as selections
+from evogenesis.api import genome_lab as lab
 from evogenesis.api import ws as ws_hub
+from evogenesis.api.genome_lab import stable_index
 from evogenesis.api.schemas import (
     FishCard,
+    IndividualSpawn,
     JobStatus,
     Leaderboard,
     LeaderboardEntry,
@@ -29,6 +33,7 @@ from evogenesis.api.schemas import (
     SessionCreate,
     SessionSummary,
     Snapshot,
+    SpawnedIndividual,
 )
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
@@ -41,6 +46,7 @@ from evogenesis.pipeline import (
     load_demo_checkpoint,
     load_model_chain_config,
     motif_catalog,
+    phenotype_of,
     phenotypes_of,
 )
 
@@ -76,8 +82,12 @@ class Session:
         self.model_driven = bool(create.model_driven)
         self.net = None
         self._activation: dict[str, list[float]] = {}
+        #: 模型链配置：模型驱动会话在此加载；其余会话**惰性**加载（§1.11 追加个体需要）。
+        self._chain = None
+        self._model_config_path = create.model_config_path
         if self.model_driven:
             chain = load_model_chain_config(_resolve(create.model_config_path))
+            self._chain = chain
             if create.checkpoint_path:
                 # 冻结 checkpoint 路径（`pipeline §6`）：直接加载，免重建/免训练。
                 ckpt = load_demo_checkpoint(_resolve(create.checkpoint_path))
@@ -112,6 +122,10 @@ class Session:
         else:
             self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)
         self.expert = expert_policy_from_config(self.arena.cfg)
+        # 实验室个体（`API接口.md` §1.11）：每条鱼各自的网 + 发育元数据。
+        # 与 `self.net`（model_driven 全局网）并存：per-fish 网优先。
+        self.individuals: dict[str, SpawnedIndividual] = {}
+        self.nets: dict[str, object] = {}
         # 同步 `def` 路由由 FastAPI 丢进线程池并发执行，单 worker ≠ 单线程；同一会话的
         # 并发调用须串行化（见 `API接口.md` §7.1）。
         self._lock = threading.Lock()
@@ -125,6 +139,62 @@ class Session:
             self._activation = {}
             self.generation = 0
             self.running = True
+
+    @property
+    def chain(self):
+        """模型链配置（惰性、只加载一次）。"""
+        if self._chain is None:
+            self._chain = load_model_chain_config(_resolve(self._model_config_path))
+        return self._chain
+
+    def spawn_individual(self, genome_id: str, *, seed: int = 0) -> SpawnedIndividual:
+        """把实验室个体（genome → 发育 → DanioNet）**追加**进本会话的 Arena（`API接口.md` §1.11）。
+
+        流程（全部复用既有模块，不新造模型）：
+        `phenotype_of(genome, motifs, seed, index=stable_index(genome_id))` →
+        `danionet_of([phenotype])`
+        → `arena.spawn_fish(fish_id=genome_id, genome_id=...)`，并把该网登记到 `self.nets`，
+        于是 `advance` 里这条鱼由**它自己的网**驱动（其余鱼照旧按 `use_expert`）。
+
+        稳定 ID（`core §3.1`）：`fish_id == genome_id`（自描述、可回查发育产物）。
+        重复追加同一 genome → `409`；未知 genome → `404`（由路由层抛）。
+        """
+        if genome_id in self.individuals:
+            raise HTTPException(
+                status_code=409, detail=f"individual {genome_id!r} already in this session"
+            )
+        with self._lock:
+            genome = lab.get(genome_id)
+            if genome is None:
+                raise HTTPException(status_code=404, detail=f"genome {genome_id!r} not found")
+            phenotype = phenotype_of(
+                genome,
+                lab.motifs(self.chain.layout),
+                master_seed=seed,
+                index=stable_index(genome_id),
+            )
+            if not phenotype.viable:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"genome {genome_id!r} not viable: {phenotype.viability_reason}",
+                )
+            net = danionet_of([phenotype], master_seed=seed, config=self.chain.network)
+            fish = self.arena.spawn_fish(genome_id, genome_id=genome_id)
+            self.nets[fish.entity_id] = net
+            counts = Counter(int(v) for v in phenotype.cell_type.tolist())
+            individual = SpawnedIndividual(
+                fish_id=fish.entity_id,
+                genome_id=genome_id,
+                generation=fish.generation,
+                viable=phenotype.viable,
+                n_neurons=int(phenotype.cell_type.numel()),
+                n_edges=int((phenotype.adjacency != 0).sum().item()),
+                tau_mean=float(phenotype.tau.mean().item()),
+                cell_type_counts={str(k): int(v) for k, v in sorted(counts.items())},
+            )
+            self.individuals[fish.entity_id] = individual
+            self._activation.setdefault(fish.entity_id, [])
+            return individual
 
     def advance(
         self,
@@ -148,7 +218,10 @@ class Session:
                 if self.arena.step_idx >= self.arena.cfg.world.episode_steps:
                     break
                 actions: dict[str, tuple[float, float]] = {}
+                alive_ids = [fid for fid, f in self.arena.fish.items() if f.alive]
                 if self.net is not None:
+                    # 全局网（model_driven）：**必须喂全部鱼**——它的内部状态维度固定
+                    # （checkpoint / 初始种群），子集化会形状不匹配。死鱼也过一遍以保持维度。
                     fish_ids = list(self.arena.fish)
                     obs = np.stack([self.arena.observe(fid) for fid in fish_ids])
                     omega, speed = self.net.step(obs)
@@ -160,9 +233,20 @@ class Session:
                             actions[fid] = (float(omega[index]), float(speed[index]))
                             self._activation[fid] = [float(x) for x in activation[index]]
                 elif use_expert:
-                    for fid, fish in self.arena.fish.items():
-                        if fish.alive:
+                    # ExpertPolicy 只补「没有自己的网」的鱼（`use_expert=false` 时不给任何鱼补）。
+                    for fid in alive_ids:
+                        if fid not in self.nets:
                             actions[fid] = self.expert(self.arena.observe(fid))
+
+                # 实验室个体（§1.11）：各自用自己的网，**覆盖**上面任何来源的动作
+                for fid in alive_ids:
+                    net = self.nets.get(fid)
+                    if net is None:
+                        continue
+                    obs = self.arena.observe(fid)[None, :]
+                    omega, speed = net.step(obs)
+                    actions[fid] = (float(omega.detach()[0]), float(speed.detach()[0]))
+                    self._activation[fid] = [float(x) for x in net.h.detach()[0]]
 
                 # Manual Control：单鱼动作覆盖（`交互与可视化.md` §10）
                 if control is not None:
@@ -243,15 +327,18 @@ class Session:
 
     def _fish_card(self, fish_id: str) -> FishCard:
         f = self.arena.fish[fish_id]
+        # 实验室个体（§1.11）：卡片带上**真实** genome_id 与发育产物摘要；
+        # 默认竞技场鱼没有基因组，仍为 "unknown" + 空 cell_counts（不编造）。
+        individual = self.individuals.get(fish_id)
         return FishCard(
             fish_id=f.entity_id,
             generation=f.generation,
             genome_id=f.genome_id,
-            viable=True,  # developmental viability; arena survival is in metrics
+            viable=individual.viable if individual else True,
             energy=float(f.energy),
             size=float(f.size),
             fitness=None,
-            cell_counts={},
+            cell_counts=dict(individual.cell_type_counts) if individual else {},
             metrics={
                 "alive": f.alive,
                 "captures": f.captures,
@@ -259,6 +346,16 @@ class Session:
                 "predator_encounters": f.predator_encounters,
                 "escape_successes": f.escape_successes,
                 "survival_steps": f.survival_steps,
+                # 实验室个体额外带上连接组摘要（`metrics` 是开放字典，§1.5）
+                **(
+                    {
+                        "n_neurons": individual.n_neurons,
+                        "n_edges": individual.n_edges,
+                        "tau_mean": individual.tau_mean,
+                    }
+                    if individual
+                    else {}
+                ),
             },
         )
 
@@ -380,6 +477,19 @@ def release(
         ws_hub.publish_fish_state(s.session_id, s.arena.step_idx, s.fish_state())
         ws_hub.publish_events(s.session_id, [e.to_dict() for e in events])
     return _manager.summary(s)
+
+
+@router.post(
+    "/sessions/{session_id}/individuals", status_code=201, response_model=SpawnedIndividual
+)
+def spawn_individual(session_id: str, body: IndividualSpawn) -> SpawnedIndividual:
+    """把发育好的实验室个体追加进会话 Arena（`API接口.md` §1.11）。
+
+    之后该鱼由**它自己的 DanioNet** 驱动（其余鱼照旧按 `use_expert`），
+    `brain.activation` 也会带上它（`fish[<fish_id>]`）。
+    """
+    s = _get_session(session_id)
+    return s.spawn_individual(body.genome_id, seed=body.seed)
 
 
 @router.post("/sessions/{session_id}/pause", response_model=SessionSummary)

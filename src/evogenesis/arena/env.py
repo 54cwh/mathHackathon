@@ -164,6 +164,47 @@ class DanioArena:
         for eid in (*self.fish, *self.prey, *self.predators):
             self._emit("arena.spawn", {"entity_id": eid})
 
+    def spawn_fish(
+        self,
+        fish_id: str,
+        *,
+        genome_id: str,
+        position: np.ndarray | None = None,
+        heading: float | None = None,
+        size: float | None = None,
+        energy: float | None = None,
+        generation: int | None = None,
+    ) -> Fish:
+        """运行期**追加**一条鱼（`api/API接口.md` §1.11：把发育好的个体送进 Arena）。
+
+        语义与边界：
+
+        - 只追加、不改既有鱼；返回新建的 `Fish`。
+        - `position=None` 时用 `_free_spot` 找空位 —— 这会消耗 `spawn_seed` 的**生成随机流**，
+          但该流只在生成期使用，**不影响**已有实体与 `dynamics_seed` 的动力学流；
+          显式传入 `position` 则完全不消耗随机数（调用方若要严格可复现，传固定坐标）。
+        - **会话期实体**：`reset()` 会按构造时的 `fish_ids` 重建种群，故追加的个体会被清掉。
+          这是刻意的——追加是交互行为，不属于实验配置。
+        - `fish_id` 必须非空且未占用（`core §3.1`：稳定 ID，禁数组下标当 identity）。
+        """
+        if not fish_id:
+            raise ValueError("fish_id 必须非空（core §3.1）")
+        if fish_id in self.fish:
+            raise ValueError(f"fish_id {fish_id!r} 已存在")
+        pos = self._free_spot(2.0) if position is None else np.asarray(position, dtype=float)
+        fish = Fish(
+            fish_id,
+            pos,
+            float(self._spawn_rng.uniform(0, 2 * np.pi)) if heading is None else float(heading),
+            size=self.cfg.growth.initial_size if size is None else float(size),
+            energy=self.cfg.energy.e_max if energy is None else float(energy),
+            genome_id=genome_id,
+            generation=self._generation if generation is None else int(generation),
+        )
+        self.fish[fish_id] = fish
+        self._emit("arena.spawn", {"entity_id": fish_id, "genome_id": genome_id, "added": True})
+        return fish
+
     def _spawn_obstacles(self) -> None:
         """Place obstacles one by one into ``self.obstacles`` (which must start
         empty) so later obstacles avoid earlier ones; keeps ``reset`` idempotent."""
