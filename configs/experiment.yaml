@@ -1,0 +1,13 @@
+# experiment 协议参数（E–F 环境选择的代循环）
+#
+# owner：`experiment/实验与评价体系.md` §3.6（`docs/参数总表.json` 的 `generations` 条目）
+# 值冲突以本文件为准；依据与状态以 `docs/参数总表.json` 为准。
+#
+# generations=20 的依据（属**设计选择**，无文献实测依据）：
+#   1. 预算允许：实测 Arena 吞吐 301 steps/s（12 鱼 × 600 步），20 代 ≈ 40 min
+#      （4 episodes/代 × 4 条件 × 3 seed × 2.5 s）；
+#   2. 选择压需要时间：种群 48、seed 3，漂变强，代数过少时漂变会盖过环境效应。
+# 强制前置门（见 experiment §3.6）：正式跑满 20 代前，先跑 10 代 pilot，
+# 用「同环境 seed 间 spread」作噪声带判断区分力；落入噪声带内不得当结论。
+
+generations: 20

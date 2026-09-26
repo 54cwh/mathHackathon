@@ -689,16 +689,16 @@
     },
     {
       "name": "generations",
-      "value": "10–20",
+      "value": 20,
       "unit": "generations",
       "group": "evolution",
       "grade": "D",
-      "status": "in_range",
-      "basis": "区间来自 experiment/实验与评价体系.md §7 Experiment F；无外部依据",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §7",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "属 experiment §7 协议参数（无 config 键）；configs/evolution.yaml 仅有 generation_buttons: [1,5,10,20]（推进档位，非实验总代数）；待代循环编排落地后再定是否入 config"
+      "status": "no_basis",
+      "basis": "E–F 环境选择的代循环上限（区间 10–20）。属**设计选择**（无文献实测依据）：预算允许（实测 Arena 吞吐 301 steps/s，12 鱼×600 步；20 代≈40 min = 4 episodes/代 × 4 条件 × 3 seed × 2.5 s），且种群 48 / seed 3 漂变强，需要足够代数让选择压与漂变分离。**强制 pilot 门**：正式跑满前先跑 10 代，用同环境 seed 间 spread 作噪声带判断区分力，落入带内不得当结论。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.6",
+      "config": "configs/experiment.yaml → generations",
+      "sensitivity": [10, 20],
+      "suggest": "读取该键的执行编排尚未实现；pilot 无区分力时须延长代数或如实报无效应"
     },
     {
       "name": "crossover_probability",
@@ -1561,8 +1561,8 @@
       "group": "experiment",
       "grade": "D",
       "status": "no_basis",
-      "basis": "E-F 环境对照之一「Food Rich」（猎物可得性 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §7）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成**（基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）：predator_rich 区分力明确（escape d=+2.89、prey_capture d=+1.92、fitness d=+1.86）；food_rich / resource_scarce 在**比值**指标上区分力弱（d≤0.25），但**绝对量**差异显著（捕获 55→100 / 55→38），故 E-F 记录项须含绝对量。详见 §7.1。状态：**草案待确认** —— 需用户签署后冻结。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §7.1",
+      "basis": "E-F 环境对照之一「Food Rich」（猎物可得性 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成**（基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）：predator_rich 区分力明确（escape d=+2.89、prey_capture d=+1.92、fitness d=+1.86）；food_rich / resource_scarce 在**比值**指标上区分力弱（d≤0.25），但**绝对量**差异显著（捕获 55→100 / 55→38），故 E-F 记录项须含绝对量。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
       "config": "configs/experiment_environments.yaml → environments.food_rich",
       "sensitivity": [
         24,
@@ -1578,8 +1578,8 @@
       "group": "experiment",
       "grade": "D",
       "status": "no_basis",
-      "basis": "E-F 环境对照之二「Predator Rich」（捕食压力 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §7）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成**（基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）：predator_rich 区分力明确（escape d=+2.89、prey_capture d=+1.92、fitness d=+1.86）；food_rich / resource_scarce 在**比值**指标上区分力弱（d≤0.25），但**绝对量**差异显著（捕获 55→100 / 55→38），故 E-F 记录项须含绝对量。详见 §7.1。状态：**草案待确认** —— 需用户签署后冻结。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §7.1",
+      "basis": "E-F 环境对照之二「Predator Rich」（捕食压力 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成**（基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）：predator_rich 区分力明确（escape d=+2.89、prey_capture d=+1.92、fitness d=+1.86）；food_rich / resource_scarce 在**比值**指标上区分力弱（d≤0.25），但**绝对量**差异显著（捕获 55→100 / 55→38），故 E-F 记录项须含绝对量。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
       "config": "configs/experiment_environments.yaml → environments.predator_rich",
       "sensitivity": [
         3,
@@ -1595,8 +1595,8 @@
       "group": "experiment",
       "grade": "D",
       "status": "no_basis",
-      "basis": "E-F 环境对照之三「Resource Scarce」（猎物可得性 ↓）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §7）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成**（基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）：predator_rich 区分力明确（escape d=+2.89、prey_capture d=+1.92、fitness d=+1.86）；food_rich / resource_scarce 在**比值**指标上区分力弱（d≤0.25），但**绝对量**差异显著（捕获 55→100 / 55→38），故 E-F 记录项须含绝对量。详见 §7.1。状态：**草案待确认** —— 需用户签署后冻结。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §7.1",
+      "basis": "E-F 环境对照之三「Resource Scarce」（猎物可得性 ↓）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成**（基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）：predator_rich 区分力明确（escape d=+2.89、prey_capture d=+1.92、fitness d=+1.86）；food_rich / resource_scarce 在**比值**指标上区分力弱（d≤0.25），但**绝对量**差异显著（捕获 55→100 / 55→38），故 E-F 记录项须含绝对量。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
       "config": "configs/experiment_environments.yaml → environments.resource_scarce",
       "sensitivity": [
         6,
