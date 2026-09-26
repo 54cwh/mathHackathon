@@ -67,6 +67,47 @@ def _create(master_seed: int = 250927, environment: str = "food_rich") -> dict:
     return resp.json()
 
 
+def _layout(snap: dict) -> list:
+    """把快照的鱼层压成与 ID 无关的布局（会话 ID 会进 fish_id，不能直接比字典）。"""
+    return sorted(
+        (round(f["x"], 9), round(f["y"], 9), round(f["heading"], 9)) for f in snap["fish"].values()
+    )
+
+
+def test_session_population_is_genome_driven() -> None:
+    """§1.1（2026-09-27 定稿）：默认会话种群由 genome 生成，每条鱼可回查 DNA、由自己的网驱动。"""
+    sid = _create()["session_id"]
+    entries = client.get(f"/v1/sessions/{sid}/leaderboard").json()["entries"]
+    assert len(entries) == 12
+    for entry in entries:
+        card = client.get(f"/v1/sessions/{sid}/fish/{entry['fish_id']}").json()
+        assert card["genome_id"] == card["fish_id"]  # fish_id == genome_id
+        assert card["metrics"]["n_neurons"] > 0 and card["metrics"]["n_edges"] > 0
+        # 该 genome 在 Lab 可查（点 Arena 的鱼回看 DNA）
+        assert client.get(f"/v1/genomes/{card['genome_id']}").status_code == 200
+
+
+def test_population_size_is_honoured() -> None:
+    """§1.1：`population_size` 决定生成多少个基因组（demo 小种群用）。"""
+    resp = client.post("/v1/sessions", json={"master_seed": 250927, "population_size": 4})
+    assert resp.status_code == 201
+    sid = resp.json()["session_id"]
+    assert resp.json()["population"] == 4
+    assert len(client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]) == 4
+
+
+def test_list_individuals_returns_population() -> None:
+    """§1.11 GET：会话内个体列表 = 初始种群（+ 追加），与 Arena 的鱼一一对应。"""
+    sid = _create()["session_id"]
+    items = client.get(f"/v1/sessions/{sid}/individuals").json()
+    assert len(items) == 12
+    snap = client.get(f"/v1/sessions/{sid}/snapshot").json()
+    assert {it["fish_id"] for it in items} == set(snap["fish"])
+    for it in items:
+        assert it["fish_id"] == it["genome_id"]
+        assert it["n_neurons"] > 0 and it["n_edges"] > 0
+
+
 def test_health() -> None:
     """`status` 是状态，`manual_control` 是**能力位**（`API接口.md` §1.10）。
 
@@ -113,12 +154,15 @@ def test_get_session() -> None:
 
 def test_fish_card_and_leaderboard() -> None:
     sid = _create()["session_id"]
-    card = client.get(f"/v1/sessions/{sid}/fish/fish_00")
-    assert card.status_code == 200
-    assert card.json()["fish_id"] == "fish_00"
     board = client.get(f"/v1/sessions/{sid}/leaderboard")
     assert board.status_code == 200
-    assert len(board.json()["entries"]) == 12
+    entries = board.json()["entries"]
+    assert len(entries) == 12
+    fid = entries[0]["fish_id"]
+    card = client.get(f"/v1/sessions/{sid}/fish/{fid}")
+    assert card.status_code == 200
+    assert card.json()["fish_id"] == fid
+    assert card.json()["genome_id"] == fid  # §1.1：种群基因组化后 fish_id == genome_id
 
 
 def test_release_advances_and_returns_summary() -> None:
@@ -143,49 +187,34 @@ def test_release_use_expert_false_advances() -> None:
     assert client.get(f"/v1/sessions/{sid}/snapshot").json()["step"] == 5
 
 
-def test_release_manual_control_moves_only_that_fish() -> None:
-    """Manual Control（`交互与可视化.md` §10）：手动动作只作用于被控鱼。
+def test_release_manual_control_overrides_that_fish() -> None:
+    """Manual Control（`交互与可视化.md` §10）：手动动作**覆盖**被控鱼自己的网。
 
-    `use_expert=false` 且不给动作时全鱼停在原地；给 `fish_id=fish_00&speed=1` 后
-    只有 fish_00 的位移非零（`v=1` × `dt=0.05` = 0.05 世界单位/步，arena §461 S1）。
+    默认种群由逐鱼 DanioNet 驱动（§1.1），故 `use_expert` 不再决定"动不动"；
+    本测试钉住：给 `fish_id` 手动动作后该鱼确实按指令运动、航向被 `omega` 改变。
     """
     sid = _create()["session_id"]
-    before = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
-    client.post(f"/v1/sessions/{sid}/release?steps=1&use_expert=false")
-    still = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
-    for fid, f in still.items():
-        assert f["x"] == pytest.approx(before[fid]["x"])
-        assert f["y"] == pytest.approx(before[fid]["y"])
-
+    fid = client.get(f"/v1/sessions/{sid}/leaderboard").json()["entries"][0]["fish_id"]
+    before = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"][fid]
     resp = client.post(
-        f"/v1/sessions/{sid}/release?steps=1&use_expert=false"
-        "&fish_id=fish_00&omega=1.0&speed=1.0"
+        f"/v1/sessions/{sid}/release?steps=1&use_expert=false&fish_id={fid}&omega=1.0&speed=1.0"
     )
     assert resp.status_code == 200
-    after = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
-    moved = (after["fish_00"]["x"] - still["fish_00"]["x"]) ** 2 + (
-        after["fish_00"]["y"] - still["fish_00"]["y"]
-    ) ** 2
+    after = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"][fid]
+    moved = (after["x"] - before["x"]) ** 2 + (after["y"] - before["y"]) ** 2
     assert moved > 0, "被控鱼必须动起来"
-    assert after["fish_00"]["heading"] != still["fish_00"]["heading"], "omega 必须改变航向"
-    for fid, f in after.items():
-        if fid == "fish_00":
-            continue
-        assert f["x"] == pytest.approx(still[fid]["x"]), f"{fid} 不应被手动动作影响"
-        assert f["y"] == pytest.approx(still[fid]["y"]), f"{fid} 不应被手动动作影响"
+    assert after["heading"] != before["heading"], "omega 必须改变航向"
 
 
 def test_release_manual_control_clamps_and_ignores_unknown_fish() -> None:
     """越界动作被裁剪；未知 / 已死 fish_id 静默忽略（前端 10Hz 连发不报错）。"""
     sid = _create()["session_id"]
     resp = client.post(
-        f"/v1/sessions/{sid}/release?steps=1&use_expert=false"
-        "&fish_id=fish_99&omega=9.0&speed=9.0"
+        f"/v1/sessions/{sid}/release?steps=1&use_expert=false&fish_id=fish_99&omega=9.0&speed=9.0"
     )
     assert resp.status_code == 200
     after_clamped = client.post(
-        f"/v1/sessions/{sid}/release?steps=1&use_expert=false"
-        "&fish_id=fish_00&omega=9.0&speed=9.0"
+        f"/v1/sessions/{sid}/release?steps=1&use_expert=false&fish_id=fish_00&omega=9.0&speed=9.0"
     )
     assert after_clamped.status_code == 200
     snap = client.get(f"/v1/sessions/{sid}/snapshot").json()
@@ -278,13 +307,16 @@ def test_spawned_individual_is_driven_by_its_own_net() -> None:
     client.post(f"/v1/sessions/{sid}/release?steps=1&use_expert=false")
     after = client.get(f"/v1/sessions/{sid}/snapshot").json()["fish"]
 
-    moved = (
-        after[genome["genome_id"]]["x"] != before[genome["genome_id"]]["x"]
-        or after[genome["genome_id"]]["y"] != before[genome["genome_id"]]["y"]
-    )
+    fid = genome["genome_id"]
+    moved = after[fid]["x"] != before[fid]["x"] or after[fid]["y"] != before[fid]["y"]
     assert moved, "实验室个体必须由其网络驱动而移动"
-    assert after["fish_00"]["x"] == pytest.approx(before["fish_00"]["x"])
-    assert after["fish_00"]["y"] == pytest.approx(before["fish_00"]["y"])
+    # §1.1：默认种群也是逐鱼网 —— `use_expert=false` 不妨碍它们运动
+    default_moved = any(
+        after[k]["x"] != before[k]["x"] or after[k]["y"] != before[k]["y"]
+        for k in before
+        if k != fid
+    )
+    assert default_moved, "默认种群应由各自的网驱动"
 
 
 def test_reset_returns_to_step_zero() -> None:
@@ -334,7 +366,8 @@ def test_master_seed_reproducible() -> None:
     b = _create(master_seed=250927)["session_id"]
     sa = client.get(f"/v1/sessions/{a}/snapshot").json()
     sb = client.get(f"/v1/sessions/{b}/snapshot").json()
-    assert sa["fish"] == sb["fish"]  # 同一 master_seed 布局完全一致
+    # fish_id 含 session_id（稳定 ID 前缀），故比**布局**而非字典键。
+    assert _layout(sa) == _layout(sb)  # 同一 master_seed 布局完全一致
 
 
 def test_environment_is_echo_only() -> None:
@@ -343,7 +376,7 @@ def test_environment_is_echo_only() -> None:
     assert a["environment"] == "food_rich" and b["environment"] == "predator_rich"
     sa = client.get(f"/v1/sessions/{a['session_id']}/snapshot").json()
     sb = client.get(f"/v1/sessions/{b['session_id']}/snapshot").json()
-    assert sa["fish"] == sb["fish"]  # environment 不改变任何 Arena 参数（§7 硬边界）
+    assert _layout(sa) == _layout(sb)  # environment 不改变任何 Arena 参数（§7 硬边界）
 
 
 def test_snapshot_within_world_bounds() -> None:
@@ -460,12 +493,13 @@ def test_ws_pushes_fish_state_and_events() -> None:
         assert hello["type"] == "sys.hello" and hello["seq"] == 1
         assert hello["payload"]["session_id"] == sid
         client.post(f"/v1/sessions/{sid}/release?steps=3")
-        msgs = [ws.receive_json(), ws.receive_json()]
+        # §1.1 后默认会话也有逐鱼网 ⇒ 额外推 `brain.activation`（共 3 帧）
+        msgs = [ws.receive_json(), ws.receive_json(), ws.receive_json()]
         by_type = {m["type"]: m for m in msgs}
-        assert "arena.fish_state" in by_type and "arena.events" in by_type
+        assert {"arena.fish_state", "arena.events", "brain.activation"} <= set(by_type)
         fs = by_type["arena.fish_state"]["payload"]
         assert fs["session_id"] == sid and fs["step"] == 3 and len(fs["fish"]) == 12
-        assert sorted(m["seq"] for m in msgs) == [2, 3]  # 每连接单调
+        assert sorted(m["seq"] for m in msgs) == [2, 3, 4]  # 每连接单调
 
 
 def test_ws_does_not_push_other_session() -> None:

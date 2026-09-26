@@ -105,6 +105,8 @@ export interface SessionCreate {
   model_driven: boolean;
   /** Frozen demo checkpoint (`pipeline §6`); only honoured when `model_driven`. */
   checkpoint_path: string | null;
+  /** 初始基因组种群大小（`API接口.md` §1.1）；缺省用 Arena 配置。 */
+  population_size?: number | null;
 }
 
 /** 已追加进会话 Arena 的实验室个体（`API接口.md` §1.11）。 */

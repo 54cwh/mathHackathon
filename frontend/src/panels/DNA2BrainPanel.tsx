@@ -140,6 +140,8 @@ export function DNA2BrainPanel() {
   /** 把某 genome 送进 Arena（幂等：同 genome 只送一次；无会话则排队）。 */
   const sendToArena = useCallback(
     async (genomeId: string) => {
+      // 已在会话内（初始种群 / 早先追加）→ 无需再送，避免 409 噪声。
+      if (individuals.some((it) => it.genome_id === genomeId)) return;
       if (!sessionId) {
         setPendingSpawn((current) =>
           current.includes(genomeId) ? current : [...current, genomeId],
@@ -150,14 +152,14 @@ export function DNA2BrainPanel() {
       requestedRef.current.add(genomeId);
       try {
         const individual = await spawnIndividual(sessionId, genomeId);
-        addIndividual(individual); // → Arena 的可点 chip + Lab 的 IN ARENA 列表
+        addIndividual(individual); // → store.individuals（去重/门控用）
       } catch (e) {
         requestedRef.current.delete(genomeId); // 失败允许重试
         // 已存在（409）/ 非 viable（422）等：不打断开发流程，只在提示区显示
         setError(String(e));
       }
     },
-    [sessionId, addIndividual],
+    [sessionId, addIndividual, individuals],
   );
 
   /** 把某个 genome 载入编辑器并**立即发育**（育种产出的子代走这条路）。 */
@@ -411,22 +413,6 @@ export function DNA2BrainPanel() {
             ))}
           </dl>
         </div>
-
-          {individuals.length > 0 && (
-            <div className="shrink-0 border border-border p-2">
-              <div className="mb-1 font-pixel text-[10px] leading-none">IN ARENA</div>
-              <ul className="space-y-0.5 font-mono text-[10px]">
-                {individuals.map((individual) => (
-                  <li key={individual.fish_id} className="flex justify-between gap-2">
-                    <span className="truncate">{individual.fish_id}</span>
-                    <span className="text-muted-foreground">
-                      N{individual.n_neurons} · E{individual.n_edges}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
 
           {/* §5 / §11 compare：基线 vs 改后 */}
           <section className="border border-border p-2">

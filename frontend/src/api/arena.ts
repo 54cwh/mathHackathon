@@ -30,6 +30,9 @@ export type {
 /** Frozen demo master seed -- one source of truth for the whole live demo. */
 export const MASTER_SEED = 250927;
 
+/** Demo 小种群（`交互与可视化.md` §1；2026-09-27 裁决：全基因组化 + N=16）。 */
+export const DEMO_POPULATION = 16;
+
 /** Session options that are only meaningful for model-driven sessions. */
 export type SessionDriving =
   | { model_driven?: false; checkpoint_path?: null }
@@ -39,12 +42,14 @@ export function createSession(
   masterSeed = MASTER_SEED,
   environment: Environment = "food_rich",
   driving: SessionDriving = {},
+  populationSize?: number,
 ): Promise<SessionSummary> {
   const body: Partial<SessionCreate> = {
     master_seed: masterSeed,
     environment,
     model_driven: driving.model_driven ?? false,
     checkpoint_path: driving.checkpoint_path ?? null,
+    population_size: populationSize ?? null,
   };
   return req<SessionSummary>("/v1/sessions", { method: "POST", body: JSON.stringify(body) });
 }
@@ -98,6 +103,11 @@ export function spawnIndividual(
     method: "POST",
     body: JSON.stringify({ genome_id: genomeId, seed }),
   });
+}
+
+/** 会话内已登记个体（初始种群 + §1.11 追加；`API接口.md` §1.11 GET）。 */
+export function listIndividuals(sessionId: string): Promise<SpawnedIndividual[]> {
+  return req<SpawnedIndividual[]>(`/v1/sessions/${sessionId}/individuals`);
 }
 
 /** Toggle pause/resume (`API接口.md` §1.7: one endpoint, not pause+resume). */

@@ -38,6 +38,8 @@ from evogenesis.api.schemas import (
 from evogenesis.arena.config import load_arena_config
 from evogenesis.arena.env import DanioArena
 from evogenesis.arena.policies import expert_policy_from_config
+from evogenesis.connectome.danionet import DanioNet
+from evogenesis.development.rgcd import ConnectomePhenotype
 from evogenesis.experiment.config import load_experiment_config
 from evogenesis.pipeline import (
     arena_seeds_for,
@@ -82,6 +84,11 @@ class Session:
         self.model_driven = bool(create.model_driven)
         self.net = None
         self._activation: dict[str, list[float]] = {}
+        # 逐鱼登记（`core §3.1`）：默认会话 = 初始基因组种群（下方 `else` 分支填充）；
+        # model_driven 会话为空，后续经 `POST /individuals`（§1.11）追加。
+        # 每条鱼的网优先于 `self.net`（model_driven 的全局网）。
+        self.individuals: dict[str, SpawnedIndividual] = {}
+        self.nets: dict[str, DanioNet] = {}
         #: 模型链配置：模型驱动会话在此加载；其余会话**惰性**加载（§1.11 追加个体需要）。
         self._chain = None
         self._model_config_path = create.model_config_path
@@ -120,12 +127,46 @@ class Session:
                 genome_ids=keep_genomes,
             )
         else:
-            self.arena = DanioArena(cfg, spawn_seed=spawn_seed, dynamics_seed=dynamics_seed)
+            # 默认会话（`API接口.md` §1.1，2026-09-27 定稿）：整种群基因组化。
+            # 每个 genome 经 `initial_population` 生成 → 发育 → 只保留 viable → 各建自己的
+            # DanioNet。发育口径与 Lab 的 DEVELOP / §1.11 追加个体**一致**：
+            # `seed=0` + `index=stable_index(genome_id)` + 参考 motif 目录（`lab.motifs`），
+            # 故 Arena 里这条鱼的行为 = 点开它在 Lab/Forge 看到的那次发育。
+            chain = self.chain
+            n = (
+                create.population_size
+                if create.population_size is not None
+                else cfg.population.n_fish
+            )
+            if n < 1:
+                raise ValueError("population_size 必须 ≥ 1")
+            population = initial_population(
+                master_seed=create.master_seed,
+                experiment_id=session_id,
+                n=n,
+                layout=chain.layout,
+            )
+            phenotypes = phenotypes_of(population, lab.motifs(chain.layout), master_seed=0)
+            keep = [i for i, p in enumerate(phenotypes) if p.viable]
+            if not keep:
+                raise ValueError("默认会话：该 seed 无 viable 个体（RGCD §7）")
+            cfg = replace(cfg, population=replace(cfg.population, n_fish=len(keep)))
+            # 鱼 ID 用 `genome_id`（不是 `initial_population` 另铸的 `fish_id`）：保持
+            # §1.11 的不变量 `fish_id == genome_id`，否则同一 genome 会被重复追加。
+            self.arena = DanioArena(
+                cfg,
+                spawn_seed=spawn_seed,
+                dynamics_seed=dynamics_seed,
+                fish_ids=[population[i].genome_id for i in keep],
+                genome_ids=[population[i].genome_id for i in keep],
+            )
+            for i in keep:
+                # 登记进 Lab store：`GET /v1/genomes/{id}` 能查到，点 Arena 的鱼即可回看 DNA。
+                lab.store(population[i].genome)
+                self._register_individual(
+                    population[i].genome_id, population[i].genome_id, phenotypes[i], generation=0
+                )
         self.expert = expert_policy_from_config(self.arena.cfg)
-        # 实验室个体（`API接口.md` §1.11）：每条鱼各自的网 + 发育元数据。
-        # 与 `self.net`（model_driven 全局网）并存：per-fish 网优先。
-        self.individuals: dict[str, SpawnedIndividual] = {}
-        self.nets: dict[str, object] = {}
         # 同步 `def` 路由由 FastAPI 丢进线程池并发执行，单 worker ≠ 单线程；同一会话的
         # 并发调用须串行化（见 `API接口.md` §7.1）。
         self._lock = threading.Lock()
@@ -136,7 +177,12 @@ class Session:
             self.arena.reset()
             if self.net is not None:
                 self.net.reset()
-            self._activation = {}
+            # `reset` 按构造时的 `fish_ids` 重建初始基因组种群、丢掉 §1.11 追加的个体，
+            # 故这里同步剪掉已不存在的登记（否则重复追加检测会误判 409）。
+            keep = set(self.arena.fish)
+            self.individuals = {k: v for k, v in self.individuals.items() if k in keep}
+            self.nets = {k: v for k, v in self.nets.items() if k in keep}
+            self._activation = {k: [] for k in self.nets}
             self.generation = 0
             self.running = True
 
@@ -147,14 +193,45 @@ class Session:
             self._chain = load_model_chain_config(_resolve(self._model_config_path))
         return self._chain
 
+    def _register_individual(
+        self,
+        fish_id: str,
+        genome_id: str,
+        phenotype: ConnectomePhenotype,
+        *,
+        generation: int,
+        seed: int = 0,
+    ) -> SpawnedIndividual:
+        """登记一条**已存在**的鱼（由 Arena 造好）：建它自己的网 + 发育元数据。
+
+        仅供本类内部使用：默认会话的初始种群（`__init__`）与 `spawn_individual` 共用，
+        保证两条路径产出的 `SpawnedIndividual` 与网**完全一致**（`core §3.1`）。
+        `seed` 即 `danionet_of` 的 `master_seed`（默认 0，与 Lab 的 DEVELOP 同口径）。
+        """
+        self.nets[fish_id] = danionet_of([phenotype], master_seed=seed, config=self.chain.network)
+        counts = Counter(int(v) for v in phenotype.cell_type.tolist())
+        individual = SpawnedIndividual(
+            fish_id=fish_id,
+            genome_id=genome_id,
+            generation=generation,
+            viable=bool(phenotype.viable),
+            n_neurons=int(phenotype.cell_type.numel()),
+            n_edges=int((phenotype.adjacency != 0).sum().item()),
+            tau_mean=float(phenotype.tau.mean().item()),
+            cell_type_counts={str(k): int(v) for k, v in sorted(counts.items())},
+        )
+        self.individuals[fish_id] = individual
+        self._activation.setdefault(fish_id, [])
+        return individual
+
     def spawn_individual(self, genome_id: str, *, seed: int = 0) -> SpawnedIndividual:
         """把实验室个体（genome → 发育 → DanioNet）**追加**进本会话的 Arena（`API接口.md` §1.11）。
 
         流程（全部复用既有模块，不新造模型）：
         `phenotype_of(genome, motifs, seed, index=stable_index(genome_id))` →
         `danionet_of([phenotype])`
-        → `arena.spawn_fish(fish_id=genome_id, genome_id=...)`，并把该网登记到 `self.nets`，
-        于是 `advance` 里这条鱼由**它自己的网**驱动（其余鱼照旧按 `use_expert`）。
+        → `arena.spawn_fish(fish_id=genome_id, genome_id=...)`，并登记进 `self.nets` /
+        `self.individuals`（`_register_individual`），于是 `advance` 里这条鱼由**它自己的网**驱动。
 
         稳定 ID（`core §3.1`）：`fish_id == genome_id`（自描述、可回查发育产物）。
         重复追加同一 genome → `409`；未知 genome → `404`（由路由层抛）。
@@ -178,23 +255,10 @@ class Session:
                     status_code=422,
                     detail=f"genome {genome_id!r} not viable: {phenotype.viability_reason}",
                 )
-            net = danionet_of([phenotype], master_seed=seed, config=self.chain.network)
             fish = self.arena.spawn_fish(genome_id, genome_id=genome_id)
-            self.nets[fish.entity_id] = net
-            counts = Counter(int(v) for v in phenotype.cell_type.tolist())
-            individual = SpawnedIndividual(
-                fish_id=fish.entity_id,
-                genome_id=genome_id,
-                generation=fish.generation,
-                viable=phenotype.viable,
-                n_neurons=int(phenotype.cell_type.numel()),
-                n_edges=int((phenotype.adjacency != 0).sum().item()),
-                tau_mean=float(phenotype.tau.mean().item()),
-                cell_type_counts={str(k): int(v) for k, v in sorted(counts.items())},
+            return self._register_individual(
+                fish.entity_id, genome_id, phenotype, generation=fish.generation, seed=seed
             )
-            self.individuals[fish.entity_id] = individual
-            self._activation.setdefault(fish.entity_id, [])
-            return individual
 
     def advance(
         self,
@@ -325,10 +389,15 @@ class Session:
         with self._lock:
             return self._fish_card(fish_id)
 
+    def individuals_list(self) -> list[SpawnedIndividual]:
+        """会话内已登记的个体（初始种群 + §1.11 追加），按 Arena 的鱼顺序列出。"""
+        with self._lock:
+            return [self.individuals[k] for k in self.arena.fish if k in self.individuals]
+
     def _fish_card(self, fish_id: str) -> FishCard:
         f = self.arena.fish[fish_id]
-        # 实验室个体（§1.11）：卡片带上**真实** genome_id 与发育产物摘要；
-        # 默认竞技场鱼没有基因组，仍为 "unknown" + 空 cell_counts（不编造）。
+        # 每条鱼都有真实 genome_id（§1.1 种群基因组化 / §1.11 追加）；登记的个体
+        # 额外带上连接组摘要（`metrics` 是开放字典，§1.5）。
         individual = self.individuals.get(fish_id)
         return FishCard(
             fish_id=f.entity_id,
@@ -471,7 +540,8 @@ def release(
     s = _get_session(session_id)
     control = (fish_id, omega, speed) if fish_id else None
     events = s.advance(steps=steps, use_expert=use_expert, control=control)
-    if s.net is not None:
+    # 模型驱动会话（全局网）与默认会话（逐鱼网，`self.nets`）都推 `brain.activation`。
+    if s.net is not None or s.nets:
         ws_hub.publish_brain_activation(s.session_id, s.arena.step_idx, s.activation())
     if events:
         ws_hub.publish_fish_state(s.session_id, s.arena.step_idx, s.fish_state())
@@ -485,11 +555,16 @@ def release(
 def spawn_individual(session_id: str, body: IndividualSpawn) -> SpawnedIndividual:
     """把发育好的实验室个体追加进会话 Arena（`API接口.md` §1.11）。
 
-    之后该鱼由**它自己的 DanioNet** 驱动（其余鱼照旧按 `use_expert`），
-    `brain.activation` 也会带上它（`fish[<fish_id>]`）。
+    之后该鱼由**它自己的 DanioNet** 驱动；`brain.activation` 也会带上它（`fish[<fish_id>]`）。
     """
     s = _get_session(session_id)
     return s.spawn_individual(body.genome_id, seed=body.seed)
+
+
+@router.get("/sessions/{session_id}/individuals", response_model=list[SpawnedIndividual])
+def list_individuals(session_id: str) -> list[SpawnedIndividual]:
+    """列出会话内已登记的个体（初始种群 + §1.11 追加）（`API接口.md` §1.11）。"""
+    return _get_session(session_id).individuals_list()
 
 
 @router.post("/sessions/{session_id}/pause", response_model=SessionSummary)

@@ -87,6 +87,15 @@ def get(genome_id: str) -> DiploidGenome | None:
     return _genomes.get(genome_id)
 
 
+def store(genome: DiploidGenome, parent: str | None = None) -> DiploidGenome:
+    """把一个**已存在**的基因组登记进 store（会话初始种群用；`API接口.md` §1.1）。
+
+    与 `create`/`mutate_at_site`/`breed` 的产物共用同一 store，故 `/v1/genomes/{id}`
+    能查到会话种群里的 genome —— "点 Arena 的鱼回看 DNA"依赖这条。
+    """
+    return _store(genome, parent)
+
+
 def lineage(genome_id: str) -> str | None:
     return _lineage.get(genome_id)
 
@@ -182,4 +191,5 @@ __all__ = [
     "mutate_at_site",
     "reference_seed",
     "stable_index",
+    "store",
 ]

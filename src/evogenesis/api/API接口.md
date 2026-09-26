@@ -35,7 +35,14 @@
 
 创建一个内存中的 Arena 会话（后端权威），初始化种群并返回摘要。
 
-- **请求体**：无。
+- **请求体**：可选（`SessionCreate`，§7.2）。演示用小种群时传 `population_size`。
+
+- **初始种群（2026-09-27 定稿）**：创建即调 `initial_population(master_seed, session_id, n)` 生成
+  `n` 个基因组（`n` = `population_size`，缺省 `arena_config.population.n_fish`），逐个发育
+  （`phenotypes_of`，seed=0 + `index=stable_index(genome_id)`，与 Lab 的 `DEVELOP` 同口径）并
+  **只保留 viable**；每条鱼由**自己的 DanioNet** 驱动，`fish_id == genome_id`。整 `n` 个都
+  non-viable 时 `422`。这些基因组同时登记进 Lab store，故 `GET /v1/genomes/{id}` 可查（点 Arena
+  的鱼即可回看 DNA）。
 
 - **成功响应** `201` → `SessionSummary`
 
@@ -44,7 +51,7 @@
   | `session_id` | string | 会话 ID，形如 `session_<12hex>` |
   | `generation` | int | 代次，新会话为 `0` |
   | `environment` | string | `default` / `food_rich` / `predator_rich` / `resource_scarce`（owner：`experiment §4`） |
-  | `population` | int | 鱼总数 |
+  | `population` | int | 鱼总数（= 初始种群中 viable 的个体数） |
   | `running` | bool | 是否运行中（新会话为 `true`） |
   | `master_seed` | int | 主种子 |
   | `fish_alive` | int | 存活鱼数 |
@@ -110,7 +117,8 @@
 
 ### 1.6 POST `/v1/sessions/{session_id}/release` — 释放 / 推进 Arena
 
-驱动 Arena 前进若干步；默认由 `ExpertPolicy` 驾驶每条存活鱼。
+驱动 Arena 前进若干步。每条鱼由其**自己的 DanioNet** 驱动（`§1.1` 种群基因组化）；
+只有**没有自己的网**的鱼才回退到 `ExpertPolicy`（`use_expert=true` 时）。
 
 - **路径参数**：`session_id`（string，必填）。
 - **查询参数**：
@@ -118,13 +126,13 @@
   | 名称 | 类型 | 默认 | 说明 |
   |---|---|---|---|
   | `steps` | int | `1` | 前进步数 |
-  | `use_expert` | bool | `true` | `true` 时用 ExpertPolicy 驾驶 |
+  | `use_expert` | bool | `true` | `true` 时给**没有自己的网**的鱼用 ExpertPolicy 兜底 |
   | `fish_id` | string \| null | `null` | **Manual Control**（`交互与可视化.md` §10）：该鱼改用下方手动动作；缺省 = 不接管 |
   | `omega` | float | `0.0` | 手动转向角速度（rad/s），裁剪到 `[-1, 1]` |
   | `speed` | float | `0.0` | 手动速度（世界单位/秒），裁剪到 `[0, 1]`（动作语义见 `arena §461 S1`） |
 
   **Manual Control 语义（已定稿 2026-09-27，用户批准最小集）**：手动动作**只覆盖被控那一条鱼**，
-  其余鱼照旧按 `use_expert`（或网络输出）驱动；`fish_id` 不存在或该鱼已死时**静默忽略**
+  其余鱼照旧由各自的网驱动（无网者按 `use_expert`）；`fish_id` 不存在或该鱼已死时**静默忽略**
   （前端 10 Hz 连发，报错会刷屏）。裁剪在 API 层做一次，与 `DanioArena.step` 同口径。
 
 - **成功响应** `200` → `SessionSummary`。
@@ -216,11 +224,17 @@
 
 - **语义**：`phenotype_of(genome, motifs, seed, index=stable_index(genome_id))` → `danionet_of([phenotype])`
   → `arena.spawn_fish(...)`。之后该鱼由**它自己的网**驱动（覆盖 ExpertPolicy / 全局网），
-  `brain.activation` 也会带上它；其余鱼照旧按 `use_expert`。
+  `brain.activation` 也会带上它。
 - **错误**：`404` 基因组不存在；`409` 该个体已在本会话；`422` 该基因组发育不 viable。
-- **边界**：追加是**会话期实体** —— `reset` 会按构造时的 `fish_ids` 重建种群，追加的个体被清掉
-  （追加属交互行为，不属于实验配置）。位置缺省时消耗 `spawn_seed` 的**生成流**（不动动力学流）。
+- **边界**：追加是**会话期实体** —— `reset` 会按构造时的 `fish_ids` 重建**初始基因组种群**、丢掉
+  追加的个体（追加属交互行为，不属于实验配置）。位置缺省时消耗 `spawn_seed` 的**生成流**（不动动力学流）。
 - **代码位置**：`session.py::spawn_individual`；Arena 侧 `arena/env.py::spawn_fish`。
+
+### 1.11b GET `/v1/sessions/{session_id}/individuals` — 列出会话内个体
+
+- **成功响应** `200` → `SpawnedIndividual[]`（字段同 §1.11），顺序与 Arena 的鱼一致。
+- **内容** = 初始基因组种群（§1.1）∪ 已追加个体。前端据此填充 store 的 `individuals`（去重 / 导演线门控）；**个体选择走点击 Arena 画布上的鱼**，不枚举。
+- **代码位置**：`session.py::list_individuals` → `Session.individuals_list`。
 
 ### 1.10 GET `/v1/health` — 健康检查
 
@@ -459,7 +473,7 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
 | `session_id` 规则 | `f"session_{uuid.uuid4().hex[:12]}"` —— 前缀 `session_` + **12 位十六进制**（48 bit 随机）。**不是顺序号**；调用方**不得据其结构推断顺序或身份**，仅可作展示用途剥离前缀（`frontend/src/panels/DanioArenaPanel.tsx` 即仅做前缀剥离 + 截断展示）。注意这是**运行期会话令牌**，与 `core §3.1` 的稳定 ID（`fish_id` / `genome_id` …）不是同一物 |
 | 不存在时行为 | 所有 `/v1/sessions/{session_id}/*` 端点走 `_get_session()`，未命中抛 `HTTPException(404, detail=f"session {session_id} not found")`，响应体为 RFC 7807（见 §4） |
 
-### 7.2 `SessionCreate`：被接收但未生效的字段
+### 7.2 `SessionCreate` 各字段的实际效果
 
 ```python
 class SessionCreate(BaseModel):
@@ -476,11 +490,14 @@ class SessionCreate(BaseModel):
 | `master_seed` | ✅ 生效 | 经 `arena_seeds_for(master_seed, session._SESSION_ARENA_INDEX)`（`=0`）派生 `spawn_seed` / `dynamics_seed` 传入 `DanioArena`（`core §3`）；是**唯一的复现开关** |
 | `environment` | ⚠️ **仅存储回显** | 写入 `Session.environment` 并在 `SessionSummary` 回显；**不改变任何 Arena 参数** —— `food_rich` / `predator_rich` / `resource_scarce` 三档行为完全一致（实测三档位的 `population` / `prey_remaining` 与初始世界完全相同）。场景布置见 `../arena/Danio_Arena设计与实现说明.md` §12 |
 | `arena_config_path` | ✅ 生效 | `Session.__init__` 经 `arena.config.load_arena_config` 读取（相对路径按仓库根解析），Arena 实际取值以该文件为准 |
-| `model_config_path` | ⚠️ **仅模型驱动会话生效** | `model_driven=true` 时经 `load_model_chain_config` 读取（构建 DanioNet）；否则接收但不参与（ExpertPolicy） |
+| `model_config_path` | ✅ 生效 | 经 `load_model_chain_config` 读取模型链：`model_driven=true` 构建**全局** DanioNet；默认会话构建**逐鱼** DanioNet（§1.1） |
 | `checkpoint_path` | ✅ **已定稿（2026-09-27）** | 冻结 demo checkpoint 路径（`pipeline §6`）；仅 `model_driven=true` 时生效：直接加载网络与种群，**免重建/免训练**；缺省时按 `master_seed` 现场发育 |
-| `model_driven` | ✅ **已定稿（2026-09-27 用户认可）** | `true` 时由 **DanioNet** 驱动（`initial_population→phenotypes_of→danionet_of`，仅保留 viable；无 viable 则 `422`），`release` 后经 WS 推 `brain.activation`。默认 `false`（ExpertPolicy，行为不变） |
+| `population_size` | ✅ **已定稿（2026-09-27）** | 初始种群**代数**（`§1.1`）：缺省 `arena_config.population.n_fish`；实际鱼数为其中 viable 的个数。仅决定生成多少个基因组，不改变 Arena 世界参数 |
+| `model_driven` | ✅ **已定稿（2026-09-27 用户认可）** | `true`：单个**全局** DanioNet 驱动全部鱼并推 `brain.activation`（`initial_population→phenotypes_of→danionet_of`，仅保留 viable；无 viable 则 `422`）。`false`（默认）：**逐鱼** DanioNet（§1.1 种群基因组化；`fish_id == genome_id`），同样推 `brain.activation` |
 
-**结论：`master_seed`、`arena_config_path` 生效；`model_config_path` 与 `model_driven` 仅**模型驱动会话**参与（`model_driven=true` 时由 DanioNet 驱动并推 `brain.activation`）。** 前端只发 `master_seed` + `environment` → 默认 ExpertPolicy，行为不变。
+**结论：`master_seed`、`arena_config_path`、`population_size` 生效；默认会话（`model_driven=false`）已是
+**基因组种群 + 逐鱼网**（`§1.1`），不再是 ExpertPolicy 的无脑鱼。** 前端发 `master_seed` +
+`environment` + `population_size`。
 
 ### 7.3 `release` 的实现细节
 
@@ -577,7 +594,6 @@ class SessionCreate(BaseModel):
 - `DELETE` / `204` 无响应体路径无测试
 - 10 个 stub 中只测了 2 个
 - WS 的 **`sys.error` 非法分支**无测试
-- `SessionCreate.arena_config_path` / `model_config_path` **被接收但未生效**这件事无测试守护（静默行为）
 - `release` 的 `use_expert=false` 分支、团灭后空转分支无测试
 - **路由级 404 / 405 不走 RFC 7807**（§9 边界）无测试
 
@@ -602,7 +618,7 @@ class SessionCreate(BaseModel):
 | # | 待决项 | 说明 |
 |---|---|---|
 | **L1** | 会话纯内存 | 无持久化 / TTL / 淘汰；进程重启全丢；唯一释放途径是 `DELETE`。多 worker 会表现为随机 404 |
-| **L2** | `model_config_path` 接收但未生效（`arena_config_path` 已生效） | Demo 走 `ExpertPolicy`，不加载 DanioNet；已回写 §7.2；接入模型驱动时生效 |
+| **L2** | ✅ **已闭合（2026-09-27）** | `model_config_path` 已生效：默认会话加载模型链构建**逐鱼** DanioNet（`§1.1` 种群基因组化）；`§7.2` 已同步 |
 | **L3** | `release` 的 `steps` 无上界、端点同步阻塞 | 实测 `steps=100000` 被接受并同步跑（止步 600，但仍占满请求）；慢客户端会阻塞 worker |
 | **L4** | 暂停无调度器 | `pause` 真的阻塞 `release`，但服务端仍**无调度器 / 无后台推进 / 无独立 resume 端点**；前端仍须自停轮询 |
 | **L5** | `snapshot.events` 的 `200` 是无文档魔数 | 后改它无从知晓影响面；建议提为模块常量并纳入本文档 |

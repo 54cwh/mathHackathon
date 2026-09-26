@@ -33,6 +33,9 @@ class SessionCreate(BaseModel):
     #: 冻结 demo checkpoint 路径（`pipeline §6`）；仅 `model_driven=true` 时生效：
     #: 直接加载该网络与种群，免重建/免训练。
     checkpoint_path: str | None = None
+    #: 初始基因组种群大小（`API接口.md` §1.1）。缺省用 Arena 配置的 `population.n_fish`；
+    #: 实际鱼数为其中 viable 的个数（全 non-viable 则 `422`）。演示用小种群（如 16）。
+    population_size: int | None = None
 
 
 class SessionSummary(BaseModel):

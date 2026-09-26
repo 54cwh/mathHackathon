@@ -114,6 +114,7 @@ interface UiState {
     trace?: DevelopmentTraceSample[] | null,
   ) => void;
   addIndividual: (individual: SpawnedIndividual) => void;
+  setIndividuals: (individuals: SpawnedIndividual[]) => void;
   focusGenome: (genomeId: string) => void;
   requestIntent: (stage: JourneyStage) => void;
   setAutoPlay: (v: boolean) => void;
@@ -172,6 +173,7 @@ export const useUiStore = create<UiState>((set) => ({
         ? state.individuals.map((it) => (it.fish_id === individual.fish_id ? individual : it))
         : [...state.individuals, individual],
     })),
+  setIndividuals: (individuals) => set({ individuals }),
   focusGenome: (genomeId) =>
     set((state) => ({ activeGenomeId: genomeId, focusNonce: state.focusNonce + 1 })),
   requestIntent: (stage) =>

@@ -10,9 +10,11 @@ import {
   MASTER_SEED,
   createSession,
   deleteSession,
+  DEMO_POPULATION,
   getFishCard,
   getLeaderboard,
   getSnapshot,
+  listIndividuals,
   release,
   spawnIndividual,
   type ArenaSnapshot,
@@ -63,11 +65,12 @@ export function DanioArenaPanel() {
   const [card, setCard] = useState<FishCard | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
   const [error, setError] = useState<string | null>(null);
-  /** 已在 Arena 的实验室个体（chip 列表；来自 store 单一真相）。 */
+  /** 会话内整种群个体（来自 store 单一真相；用于去重与门控，不枚举渲染）。 */
   const individuals = useUiStore((s) => s.individuals);
   const focusGenome = useUiStore((s) => s.focusGenome);
   const activeGenomeId = useUiStore((s) => s.activeGenomeId);
   const addIndividual = useUiStore((s) => s.addIndividual);
+  const setIndividuals = useUiStore((s) => s.setIndividuals);
   const intent = useUiStore((s) => s.intent);
   const tickRef = useRef(0);
   /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
@@ -89,6 +92,7 @@ export function DanioArenaPanel() {
         MASTER_SEED,
         "food_rich",
         modelDriven ? { model_driven: true, checkpoint_path: DEMO_CHECKPOINT } : {},
+        modelDriven ? undefined : DEMO_POPULATION,
       )
         .then((s) => {
           if (cancelled) {
@@ -104,6 +108,12 @@ export function DanioArenaPanel() {
           tickRef.current = 0;
           wsFishRef.current = null;
           sceneRef.current = null;
+          // 初始种群（§1.1 已基因组化）拉进 store：供去重与导演线门控（选择走点击画布上的鱼）。
+          void listIndividuals(s.session_id)
+            .then((items) => {
+              if (!cancelled) setIndividuals(items);
+            })
+            .catch(() => undefined);
         })
         .catch((e) => {
           if (cancelled) return;
@@ -119,7 +129,7 @@ export function DanioArenaPanel() {
       setSessionId(null);
       if (created) void deleteSession(created).catch(() => undefined);
     };
-  }, [resetNonce, modelDriven, setSessionId, setRunning]);
+  }, [resetNonce, modelDriven, setSessionId, setRunning, setIndividuals]);
 
   // ---- WS: 鱼层 + 事件 ----------------------------------------------------
   useEffect(() => {
@@ -222,7 +232,7 @@ export function DanioArenaPanel() {
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
   const shortSessionId = sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : null;
 
-  /** 选中某条鱼（画布点选与 chip 点选共用）：取卡片；若为实验室个体则把焦点交给 Lab。 */
+  /** 选中画布上的某条鱼：取卡片；把它的基因组焦点交给 DNA2Brain Lab。 */
   function selectFish(fishId: string | null) {
     setSelectedFish(fishId);
     if (!fishId) {
@@ -246,6 +256,18 @@ export function DanioArenaPanel() {
     selectFish(hit);
   }
 
+  // 排行榜只显示前 12；若选中的鱼不在其中，把它补在末尾，保证"选中即有行可高亮"。
+  const boardEntries = board?.entries ?? [];
+  const boardTop = boardEntries.slice(0, 12);
+  const selectedEntry =
+    selectedFishId !== null
+      ? boardEntries.find((entry) => entry.fish_id === selectedFishId)
+      : undefined;
+  const boardRows =
+    selectedEntry && !boardTop.some((entry) => entry.fish_id === selectedFishId)
+      ? [...boardTop, selectedEntry]
+      : boardTop;
+
   return (
     <Panel title="Danio Arena" icon={<Fish className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
@@ -262,30 +284,6 @@ export function DanioArenaPanel() {
             className="pixelated h-full w-full cursor-crosshair"
           />
         </div>
-
-        {individuals.length > 0 && (
-          <div className="shrink-0">
-            <div className="mb-0.5 font-pixel text-[10px] leading-none">LAB INDIVIDUALS</div>
-            <div className="flex flex-wrap gap-1">
-              {individuals.map((individual) => (
-                <button
-                  key={individual.fish_id}
-                  type="button"
-                  title={`选中 ${individual.fish_id}（N${individual.n_neurons} · E${individual.n_edges}）并把焦点交给 DNA2Brain Lab`}
-                  onClick={() => selectFish(individual.fish_id)}
-                  className={`border border-border px-2 py-0.5 font-mono text-[10px] ${
-                    selectedFishId === individual.fish_id
-                      ? "bg-brand-fish-navy text-brand-bone"
-                      : ""
-                  }`}
-                >
-                  {individual.fish_id.replace(/^lab:g0:/, "")} N{individual.n_neurons}/E
-                  {individual.n_edges}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
           {/* Fish Card（§1.5）：点选后的真实读数 */}
@@ -366,15 +364,24 @@ export function DanioArenaPanel() {
                 </tr>
               </thead>
               <tbody>
-                {(board?.entries ?? []).slice(0, 12).map((entry) => (
-                  <tr key={entry.fish_id}>
-                    <td>{entry.rank}</td>
-                    <td className="truncate">{shortId(entry.fish_id)}</td>
-                    <td className="text-right">{entry.captures}</td>
-                    <td className="text-right">{entry.survival_steps}</td>
-                  </tr>
-                ))}
-                {(board?.entries ?? []).length === 0 && (
+                {boardRows.map((entry) => {
+                  const isSelected = entry.fish_id === selectedFishId;
+                  return (
+                    <tr
+                      key={entry.fish_id}
+                      aria-current={isSelected ? "true" : undefined}
+                      className={
+                        isSelected ? "bg-brand-fish-navy text-brand-bone" : undefined
+                      }
+                    >
+                      <td>{entry.rank}</td>
+                      <td className="truncate">{shortId(entry.fish_id)}</td>
+                      <td className="text-right">{entry.captures}</td>
+                      <td className="text-right">{entry.survival_steps}</td>
+                    </tr>
+                  );
+                })}
+                {boardEntries.length === 0 && (
                   <tr>
                     <td colSpan={4} className="text-muted-foreground">
                       尚无排名（释放若干步后出现）
