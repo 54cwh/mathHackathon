@@ -5,6 +5,14 @@
 > **已闭合（不再列出）**：P0-2 DanioNet、P0-4 learning BC、P0-5 选择机制与 loader、P0-9 `Fish.genome_id`、
 > A3/A4/A6/A11/A12 参数总表形态、event log 无 producer、事件样例陈旧、Mihalitsis 登记、arena H3 探针状态。
 
+## 状态刷新（2026-09-27）—— 读下列历史追加时，以本节为准
+
+**已闭合（本轮落地）**：B1 代循环；**B3 Demo 服务层**（`api/{app,session,schemas,environments…}` + `scripts/serve_api.py` + `start_demo.sh` + `Makefile demo`）；B4 轨迹双产出；**D2 H3 探针**（`arena §14` 实现 + `configs/default_arena.yaml::probe`，数值已定稿）；**E8 arena 实体快照生产者**（`GET /v1/sessions/{id}/snapshot`）；**artificial selection**（`f7ee56f`，`evolution §5` 定稿）；**Experiment D 三臂对照表 producer**（`2c8c2d5`）、**Experiment E（robustness）定稿**、**Experiment BC 生命周期学习**；C1–C4、D4、D6、D5′、E2、E6、E7、E10、A14 种子拆分；api lane 端点全实现（仅 `story-mutations` 501）、`brain.activation`（模型驱动会话）、WS 信道、基因组实验室、Experiment F。
+
+**仍开放**：B2（BC「ΔW 不遗传」**正式实证表待跑**，即 Experiment D 正式表）；D3 `encounters` 去重口径；D4 `capture_success_prob` 定值；D5 环境 M4 场景；D1 残留（改障碍数量/半径/clearance 平移 spawn 流）；E1 penetrance `θ^obs`；E3/E4 文献与第三方声明；E5 参数总表 arena 组；E9 `run_chain --environment`；E11 Tier6 旧分母；**Experiment C 基线表重跑中（2026-09-27）**。
+
+> 下列 §一～§六 等为**历史追加（保留）**；其中 §六「Demo 服务层」、§二 D2、§四 E8、§三 C1–C4 已过时，状态以上表为准。
+
 ## 一、阻断主线（代码未接）
 
 | # | 事项 | 证据 | 影响 |
