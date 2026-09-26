@@ -1,8 +1,8 @@
 # Schema Examples（契约示例）
 
-> 状态：示例数据（**draft**）。`trajectory_*` 与 `event_log_*` 的字段格式是
-> `core/核心机制与数据流.md` §10 待冻结项的草案实例，**冻结前不可被代码依赖**；
-> 冻结需双方同步（`api/API与系统工程.md` §10）。
+> 状态：示例数据。`genome/fish/experiment` 实例已通过各自 schema 校验；
+> `trajectory_example.jsonl` 与 `event_log_example.jsonl` 为**旧草案**，与已定稿契约不一致（见下表），
+> **不得被代码依赖**，待重生成。
 >
 > 本目录是**契约示例**，不是仿真运行产物——真实 run 数据属于
 > `results/runs/`（不入库）。
@@ -14,8 +14,8 @@
 | `genome_example.json` | `schemas/genome.schema.json` | schema 已冻结，实例已通过校验 |
 | `fish_example.json` | `schemas/fish.schema.json` | schema 已冻结，实例已通过校验 |
 | `experiment_example.json` | `schemas/experiment.schema.json` | schema 已冻结，实例已通过校验 |
-| `trajectory_example.jsonl` | （草案）core/核心机制与数据流.md §4.2 字段表 | draft，待冻结 |
-| `event_log_example.jsonl` | （草案）core/核心机制与数据流.md §5.1 事件词表 | draft，待冻结 |
+| `trajectory_example.jsonl` | 已定稿 `schemas/trajectory.schema.json` | ⚠️ 陈旧：8 行仅 4 键、无 header，未通过校验（`research/notes/评估指标与事件映射-草案.md` S-09）；待重生成 |
+| `event_log_example.jsonl` | 事件词表 v1（`arena/Danio_Arena实现说明.md` §4.2） | ⚠️ 陈旧：4 行、payload/result 与实现不符、缺 4 类（实现说明 §4.4）；待重生成 |
 
 ## 生成来源（provenance）
 

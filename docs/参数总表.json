@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.2",
+    "version": "v0.3",
     "date": "2026-09-26",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -492,7 +492,7 @@
       "status": "no_basis",
       "basis": "斑马鱼 C 形逃避 6,000–21,200 deg/s 是体弯曲角速度，非航向 yaw 率，不可直接套用",
       "source": "research/reference/param-basis-biology.md:74-84",
-      "config": "src/evogenesis/arena/env.py（默认值）",
+      "config": "src/evogenesis/arena/config.py → actors.predator_turn_rate（默认值）",
       "sensitivity": null,
       "suggest": "航向率需另取依据"
     },
@@ -514,19 +514,6 @@
       "suggest": "保留但须说明并报敏感性"
     },
     {
-      "name": "selection_beta",
-      "value": 3.0,
-      "unit": null,
-      "group": "evolution",
-      "grade": "D",
-      "status": "proposed_change",
-      "basis": "softmax 无推荐 β；β 强度依赖适应度尺度，而分量归一化方式尚未定义，故 3.0 无确定含义；依据：softmax β 与适应度尺度不可分离，归一化未定前无确定含义；建议改排名/锦标赛选择",
-      "source": "research/reference/design-basis-evolution.md",
-      "config": "configs/evolution.yaml → selection_beta",
-      "sensitivity": null,
-      "suggest": "改用尺度无关的锦标赛/排名选择，或先定归一化再定 β"
-    },
-    {
       "name": "generations",
       "value": "10–20",
       "unit": "generations",
@@ -545,12 +532,12 @@
       "unit": "per_chromosome",
       "group": "evolution",
       "grade": "D",
-      "status": "proposed_change",
-      "basis": "单点/两点交叉常见 0.6–0.9（De Jong 0.6；Grefenstette 0.9）；0.5 仅适合均匀交叉，而本项目为单点交叉；依据：单点/两点交叉常见 0.6–0.9；0.5 对应均匀交叉。按『每染色体』口径时每配子至少一次交叉概率=1-0.5^2=0.75，可接受",
+      "status": "no_basis",
+      "basis": "每对染色体交叉概率 0.5（每配子≥1次交叉=1-0.5²=0.75）；属计算抽象，不代表真实重组率；GA 单点交叉率惯例 0.6–0.9 针对优化问题，不适用",
       "source": "research/reference/design-basis-evolution.md",
       "config": "configs/evolution.yaml → crossover_probability_per_chromosome",
       "sensitivity": null,
-      "suggest": "单点交叉下改 0.6–0.7"
+      "suggest": "保留 0.5（设计选择，非可调超参）"
     },
     {
       "name": "max_crossovers_per_chromosome",
@@ -572,11 +559,11 @@
       "group": "evolution",
       "grade": "D",
       "status": "no_basis",
-      "basis": "用于展示 9:3:3:1（期望 90/30/30/10），统计功效未反解",
+      "basis": "用于展示 9:3:3:1（期望 90/30/30/10）；160 为展示规模、非假设检验（χ² df=3 临界 7.8147；功效见 genome §3）",
       "source": null,
       "config": "configs/evolution.yaml → mendel_display_offspring",
       "sensitivity": null,
-      "suggest": "由卡方检验功效反解 160 是否足够"
+      "suggest": null
     },
     {
       "name": "fitness_weights",
@@ -589,12 +576,12 @@
       "unit": "weights",
       "group": "evolution",
       "grade": "D",
-      "status": "proposed_change",
-      "basis": "权重为拍定值；且分量归一化方式未定（min-max / 相对 / 理论上界），故权重无确定含义；依据：人为权重，且依赖未定的归一化方式；须做敏感度分析",
+      "status": "no_basis",
+      "basis": "人为权重；归一化口径已定（代内 min-max），权重可解释为对标准化分量的偏好；须做敏感度分析",
       "source": "research/reference/design-basis-evolution.md",
       "config": "configs/evolution.yaml → fitness_weights",
       "sensitivity": null,
-      "suggest": "先定归一化方式，再定权重"
+      "suggest": "设计选择；须报权重敏感性"
     },
     {
       "name": "formal_seeds",
@@ -975,6 +962,35 @@
       "config": "configs/default_model.yaml → connectome.ablation_random_density",
       "sensitivity": null,
       "suggest": null
+    },
+    {
+      "name": "tournament_size",
+      "value": 2,
+      "unit": null,
+      "group": "evolution",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "binary tournament k=2：Blickle & Thiele 1996 证明在期望适应度分布上等价于最大线性排名；tournament 对适应度的平移/线性变换不变（Eiben & Smith 2015 §5.2.4）；替代比例/softmax 选择（其压力与尺度不可分离）",
+      "source": "[bib#136][bib#137] research/reference/ga-selection-methods.md",
+      "config": "configs/evolution.yaml → tournament_size",
+      "sensitivity": [
+        2,
+        3
+      ],
+      "suggest": "k=2 有等价性证明；k=3 为经验选择"
+    },
+    {
+      "name": "fitness_normalization",
+      "value": "within_generation_minmax",
+      "unit": null,
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "S/P/E/Q 四项代内 min-max（viable 个体）到 [0,1]，max=min 置 0；F 为代内相对分数，跨代/跨环境比较须用原始指标",
+      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md §6",
+      "config": "configs/evolution.yaml → fitness_normalization",
+      "sensitivity": null,
+      "suggest": "设计选择；min-max 在种群收敛期会放大噪声，报告须声明"
     }
   ],
   "missing_required": {
@@ -1044,18 +1060,6 @@
     }
   ],
   "changes_pending": [
-    {
-      "param": "crossover_probability",
-      "from": 0.5,
-      "to": "0.6–0.7",
-      "reason": "单点交叉惯例"
-    },
-    {
-      "param": "selection_beta",
-      "from": 3.0,
-      "to": "排名/锦标赛选择",
-      "reason": "尺度无关，规避未定义归一化"
-    },
     {
       "param": "sensing_radius",
       "from": 18.0,

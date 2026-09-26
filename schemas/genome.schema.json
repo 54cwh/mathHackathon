@@ -1,6 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://evogenesis.local/schemas/genome.schema.json",
   "title": "DiploidGenome",
+  "meta": { "owns": "DiploidGenome 交换/落盘形态：genome_id + chromosome_pairs（2×(128+128) bp, ACGT）", "status": "已冻结" },
   "type": "object",
   "required": [
     "genome_id",

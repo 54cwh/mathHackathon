@@ -2,6 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://evogenesis.local/schemas/trajectory.schema.json",
   "title": "EvoGenesis BC trajectory (JSONL, per episode)",
+  "meta": { "owns": "BC 专家轨迹文件形态：header(episode 级) + step(逐步) 两级，JSONL", "status": "已冻结" },
   "description": "专家轨迹，逐 episode 一个 JSONL 文件：首行为 episode header（record_type=header），其后每行为一条 step 样本（record_type=step）。字段语义见 src/evogenesis/core/核心机制与数据流.md §4.2；决策见 research/notes/契约决策记录.md。落盘见 §4.5：results/runs/<experiment_id>/trajectories/episode_<episode_id>.jsonl。状态：已定稿。",
   "oneOf": [
     { "$ref": "#/$defs/header" },
