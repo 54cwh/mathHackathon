@@ -10,7 +10,8 @@ run 目录布局见 `experiment/实验与评价体系.md` §5.1）。本脚本�
 
 用法：
     uv run python scripts/run_chain.py --experiment-id exp-chain --seed 1103
-    uv run python scripts/run_chain.py --experiment-id exp-chain --seeds 1103,2207,3301  # 跨 seed 汇总
+    uv run python scripts/run_chain.py --experiment-id exp-chain \\
+        --seeds 1103,2207,3301  # 跨 seed 汇总
 """
 
 from __future__ import annotations
