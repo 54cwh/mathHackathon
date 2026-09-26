@@ -16,7 +16,7 @@
 
 **事实来源优先级：代码 > `configs/default_arena.yaml` > 本文档。** 本文档只做映射与记录，不发明规则；与代码冲突以代码为准（发现冲突请直接改本文档）。
 
-**上游参数表**：`../../../docs/参数总表.json`（43 项 + `missing_required` 11 项）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，Arena 侧收录量 **13**）。
+**上游参数表**：`../../../docs/参数总表.json`（46 项 + `missing_required` 14 项）是本文档全部参数交叉引用的目标路径；§2.1 / §2.2 的「收录」列与 §2.3-2 的结论按该表核对（`sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate` 均在表内，Arena 侧收录量 **13**）。
 
 ---
 
@@ -72,7 +72,7 @@
 |---|---|---|---|---|---|---|
 | `growth.initial_size` | 1.0 | `growth.initial_size` | 1.0 | ✅ | ❌ | 实现值 |
 | `growth.max_size` | 2.5 | `growth.max_size` | 2.5 | ✅ | ❌ | 实现值 |
-| `growth.capture_size_ratio` | 1.25 | `growth.capture_size_ratio` | 1.25 | ✅ | ✅ `capture_size_ratio` | **冻结**（规范 §8 明示 $\kappa = 1.25$，最终由 play-test 校准） |
+| `growth.capture_size_ratio` | 1.25 | `growth.capture_size_ratio` | 1.25 | ✅ | ✅ `capture_size_ratio` | 已进表，`status=proposed_change`（规范 §8 当前取值 $\kappa = 1.25$，待 play-test 标定） |
 | `growth.capture_radius` | 1.2 | `growth.capture_radius` | 1.2 | ✅ | ❌ | 实现值 |
 | `growth.turn_inertia_scale` | 0.35 | `growth.turn_inertia_scale` | 0.35 | ✅ | ❌ | 实现值（$k_{turn}$） |
 | `growth.biomass_to_size_gain` | 0.02 | **缺失** | — | ❌ | ❌ | **MVP 标定旋钮**（规范只说"缓慢增长并设上限"，未给数值） |
@@ -92,7 +92,7 @@
 ### 2.3 三条必须写明的结论
 
 1. **`ActorDefaults` 整块（12 项）与 `growth.biomass_to_size_gain` 在 `configs/default_arena.yaml` 中不存在。** 即共 **13 项**未进 YAML。`config.py::ActorDefaults` 的 docstring 自己声明："MVP calibration knobs -- Danio_Arena设计规范.md says final values come from play-testing"，`biomass_to_size_gain` 也带 `# MVP calibration knob (play-test later)` 注释。因此这 13 项**不是冻结量**，报告引用时必须标注为"实现取值，待 play-test 标定"。
-2. **`../../../docs/参数总表.json` 现收录 Arena 侧 13 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"的行才可称为冻结量。**
+2. **`../../../docs/参数总表.json` 现收录 Arena 侧 13 个量**：`world_width` / `world_height` / `sim_hz` / `episode_seconds` / `episode_steps` / `live_fish` / `live_prey` / `live_predators` / `live_obstacles` / `capture_size_ratio` / `sensing_radius` / `sensing_fov_degrees` / `predator_turn_rate`。（该表另有 `sensory_dim` / `action_dim` / `body_length_mm` 等，属 DanioNet 侧契约，不是 Arena 世界参数。）`energy.*` 4 项、`growth` 除 `capture_size_ratio` 外的 4 项、`actors` 除 `predator_turn_rate` 外的 11 项**仍未进表** —— 它们与 `config.py` docstring 中"frozen values"的措辞有落差。**按代码口径处理：只有上表"`../../../docs/参数总表.json` 收录 = ✅"且该表 `status=confirmed` 的行才可称为冻结量；`capture_size_ratio` 虽已收录，但其 `status=proposed_change`，按此口径暂不算冻结量。**
 3. **`configs/default_arena.yaml` 目前没有任何代码读取它。** 全仓库对 `default_arena` 的引用只有两处非执行字符串：`api/schemas.py::SessionCreate.arena_config_path` 的默认值，以及 `arena/config.py` docstring 的注释。`DanioArena.__init__` 在 `config=None` 时构造 `ArenaConfig()`，即**用 Python 硬编码默认值跑仿真**，YAML 是并行的、可能漂移的副本。这一点与"所有数值必须由 config 读取"（`../../../docs/参数总表.json` 末行）的要求尚未闭环，属已知实现债（见 §8 M8、`../api/API接口.md` §11 L2、认领表 B7）。
 
 ---
@@ -193,29 +193,29 @@
 
 ### 4.3 与 `../core/核心机制与数据流.md` §5.1 的关系
 
-- `../core/核心机制与数据流.md` §5.1 是**设计侧的草案事件表**（6 类，待冻结，载荷要点按设计口径写）。**实现侧实际发射的 8 类点分层事件名与 payload 以本文档 §4.2 为准**。两者分工不同：设计侧列"应有哪些事件"，实现侧列"代码当前发什么"，字段名只在 §4.2 维护一套。
+- `../core/核心机制与数据流.md` §5.1 已定为**设计侧参考**（该文件状态行注明"权威词表见 arena"，非待冻结）：它列"应有哪些事件"、命名 `arena.<event>`、**只增不删**。**事件词表的唯一权威是本文档 §4.2 + `tests/test_arena.py::KNOWN_EVENTS`（v1，已生效）**，字段名只在 §4.2 维护一套。
 - **机器可读权威名单是 `tests/test_arena.py::KNOWN_EVENTS`**，由 `test_all_events_in_known_vocabulary` 守护（断言：整局事件的 `type` 均以 `arena.` 开头且属于该集合）。任何一方改词表都必须同时改这个集合。
 - 命名风格与 WS 消息 `type` 的点分层约定（`../api/API与系统工程.md` §4.1 R11）一致：**磁盘与推送共用同一词表**。
 - 词表状态：**v1 已生效**（池伟豪确认 2026-09-26；见 `research/notes/契约决策记录.md`）。本文件 §4.2 + `tests::KNOWN_EVENTS` 为事件词表的唯一权威。
 
 ### 4.4 与草案实例 `schemas/examples/event_log_example.jsonl` 的差异
 
-该实例按 §5.1 **草案**生成，早于当前实现。逐行对比：
+该实例按 §5.1 **草案**生成，早于当前实现。**现状核对（已部分对齐，但未闭环）**：
 
-| 实例行 | 实例内容 | 当前实现 | 差异 |
+| 实例行 | 实例现状 | 实现口径 | 状态 |
 |---|---|---|---|
-| 1 | `arena.spawn`, payload `{entity, x, y, size}` | `{entity_id}`, **无坐标与尺寸** | 键名 `entity` → `entity_id`；位置/尺寸**移出事件**，改走 snapshot；实例描述的是"某个 `prey_07` 在 step 300 出生"，而当前实现的 spawn 只可能出现在 `reset()` 后的 step 0，且一次 39 条 |
-| 2 | `arena.capture_attempt`, `result: "too_far"` | `result` 恒为 `"too_small_to_eat"` | `"too_far"` **在当前实现中不可能出现**（距离不足被 `continue` 跳过，不发事件）；且实例的 `size_ratio: 1.28 > threshold: 1.25` 应为捕获而非 attempt —— 与判据自相矛盾 |
-| 3 | `arena.prey_captured`, `{fish_id, prey_id, distance, size_ratio, food_reward}` | 同字段，**完全一致** | ✅ 唯一逐字对齐的一行 |
-| 4 | `arena.escape`, `{fish_id, threat_source, reaction_latency_steps: 1}` | `{fish_id, threat_source}` | `reaction_latency_steps` **当前实现无此字段**；不做反应时延建模 |
-| — | （实例共 4 行） | 当前实现有 8 类 | 实例**未覆盖** `arena.collision`、`arena.energy_depleted`、`arena.fish_captured`、`arena.episode_end` |
+| 1 | `arena.spawn`, payload `{entity_id}` | `{entity_id}`（无坐标/尺寸；位置尺寸走 snapshot） | ✅ 键名已对齐 |
+| 2 | `arena.capture_attempt`, `result: "too_small_to_eat"`, `size_ratio: 1.28`, `threshold: 1.25` | `capture_attempt` 仅在 `size_ratio ≤ κ` 时发射 | ❌ **判据自相矛盾**：`1.28 > 1.25` 应走 `prey_captured`，该行非法 |
+| 3 | `arena.prey_captured`, `{fish_id, prey_id, distance, size_ratio, food_reward}` | 同字段 | ✅ 逐字对齐 |
+| 4 | `arena.escape`, `{fish_id, threat_source}` | `{fish_id, threat_source}` | ✅ 字段已对齐（`reaction_latency_steps` 已移除） |
+| — | 共 4 行 | 实现有 8 类 | ❌ **缺** `arena.collision` / `arena.energy_depleted` / `arena.fish_captured` / `arena.episode_end` |
 
-**动作（二选一，由词表确认后执行，责任人李辰钊）**：
+**动作（二选一，尚未执行；责任人李辰钊）**：
 
-- **首选**：依 v1 词表**重生成** `schemas/examples/event_log_example.jsonl`，使其覆盖 8 类事件（或至少覆盖实例尚未包含的 4 类），并与 `tests/test_arena.py::KNOWN_EVENTS` 同源；重生成后同步更新 `schemas/examples/README.md` 的 provenance 段。
-- **备选**：**降级**为"字段形状示意"，在文件头（或 README）显式标注"该实例仅示意信封形状，**字段名与取值不以本文为准**，以 `src/evogenesis/arena/Danio_Arena实现说明.md` §4.2 为准"，并保留"待重生成"标记。
+- **首选**：依 v1 词表**重生成** `schemas/examples/event_log_example.jsonl`，覆盖 8 类事件并与 `tests/test_arena.py::KNOWN_EVENTS` 同源；同步更新 `schemas/examples/README.md` 的 provenance 段。**现状：未重生成**（仍 4 行，第 2 行判据矛盾未除）。
+- **备选**：**降级**为"字段形状示意"，在文件头（或 README）显式标注"该实例仅示意信封形状，**字段名与取值不以本文为准**，以 `src/evogenesis/arena/Danio_Arena实现说明.md` §4.2 为准"，并保留"待重生成"标记。**现状：未降级。**
 
-在词表确认前，**该实例不得被代码依赖**（`schemas/examples/README.md` 已声明"冻结前不可被代码依赖"）。
+在该实例闭环（重生成或降级）前，**不得被代码依赖**（`schemas/examples/README.md` 已声明"冻结前不可被代码依赖"）。
 
 ---
 
