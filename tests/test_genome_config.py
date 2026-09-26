@@ -149,3 +149,55 @@ def test_layout_rejects_invalid_motif_subset():
         GenomeLayout(motif_subset_A=8, motif_subset_B=1)
     with pytest.raises(ValueError):
         GenomeLayout(motif_subset_A=1, motif_subset_B=1)
+
+
+TINY = GenomeLayout(
+    alphabet=("A", "C"),
+    bp_per_haplotype_chromosome=4,
+    chromosome_pairs=1,
+    motif_count=2,
+    motif_length=2,
+    motif_topk=1,
+    motif_subset_A=0,
+    motif_subset_B=1,
+)
+
+
+def test_make_gamete_defaults_to_genome_layout():
+    pair = G.ChromosomePair("ACAC", "CACA", layout=TINY)
+    genome = G.DiploidGenome((pair,), genome_id="g-0001", layout=TINY)
+    gamete = G.make_gamete(
+        genome,
+        mu=1.0,
+        crossover_probability=0.0,
+        crossover_rng=np.random.default_rng(0),
+        mutation_rng=np.random.default_rng(1),
+    )
+    assert set("".join(gamete)) <= set(TINY.alphabet)
+
+
+def test_from_dict_rejects_empty_genome_id():
+    payload = {
+        "genome_id": "",
+        "chromosome_pairs": [
+            {"maternal": "ACGTACGT", "paternal": "ACGTACGT"},
+            {"maternal": "ACGTACGT", "paternal": "ACGTACGT"},
+        ],
+    }
+    with pytest.raises(ValueError):
+        G.DiploidGenome.from_dict(payload, layout=SHORT)
+
+
+def test_mutate_sequence_requires_two_symbol_alphabet():
+    single = GenomeLayout(
+        alphabet=("A",),
+        bp_per_haplotype_chromosome=4,
+        chromosome_pairs=1,
+        motif_count=2,
+        motif_length=2,
+        motif_topk=1,
+        motif_subset_A=0,
+        motif_subset_B=1,
+    )
+    with pytest.raises(ValueError):
+        G.mutate_sequence("AAAA", 1.0, np.random.default_rng(0), layout=single)

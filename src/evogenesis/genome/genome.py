@@ -111,8 +111,8 @@ class DiploidGenome:
             ChromosomePair(item["maternal"], item["paternal"], layout=layout) for item in items
         )
         genome_id = data["genome_id"]
-        if not isinstance(genome_id, str):
-            raise ValueError("genome_id 必须是字符串")
+        if not isinstance(genome_id, str) or not genome_id:
+            raise ValueError("genome_id 必须是非空字符串（core §3.1）")
         return cls(pairs, genome_id, layout=layout)
 
 
@@ -326,6 +326,8 @@ def mutate_sequence(
     r"""SNP mutation：每碱基以 ``μ`` 概率替换（genome §5；替换碱基在其余三种上均匀抽取）。"""
     if not 0.0 <= mu <= 1.0:
         raise ValueError("μ 必须落在 [0, 1]")
+    if len(layout.alphabet) < 2:
+        raise ValueError("SNP 替换要求 alphabet 至少 2 个符号")
     _validate_alphabet(seq, "序列", layout)
     alphabet = "".join(layout.alphabet)
     out: list[str] = []
@@ -370,12 +372,17 @@ def make_gamete(
     crossover_rng: np.random.Generator,
     mutation_rng: np.random.Generator,
     *,
-    layout: GenomeLayout = DEFAULT_LAYOUT,
+    layout: GenomeLayout | None = None,
 ) -> Gamete:
-    """gamete：crossover/选择，再 SNP mutation（分别用 crossover / mutation 命名空间）。"""
+    """gamete：crossover/选择，再 SNP mutation（分别用 crossover / mutation 命名空间）。
+
+    ``layout`` 缺省取 ``genome.layout``。
+    """
+    active_layout = genome.layout if layout is None else layout
     base_gamete = meiosis(genome, crossover_probability, crossover_rng)
     return tuple(
-        mutate_sequence(chromosome, mu, mutation_rng, layout=layout) for chromosome in base_gamete
+        mutate_sequence(chromosome, mu, mutation_rng, layout=active_layout)
+        for chromosome in base_gamete
     )
 
 

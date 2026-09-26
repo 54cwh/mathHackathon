@@ -1,5 +1,7 @@
 """稳定 ID 铸造（``core §3.1``）。"""
 
+from typing import cast
+
 import pytest
 
 from evogenesis.core.ids import mint_id
@@ -27,3 +29,7 @@ def test_mint_id_rejects_bad_inputs():
         mint_id("exp", "genome", -1, 0)
     with pytest.raises(ValueError):
         mint_id("exp", "genome", 0, -1)
+    with pytest.raises(ValueError):
+        mint_id("exp", "genome", cast(int, 1.5), 0)
+    with pytest.raises(ValueError):
+        mint_id("exp", "genome", 0, True)

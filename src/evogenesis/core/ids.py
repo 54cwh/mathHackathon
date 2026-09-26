@@ -18,6 +18,10 @@ def mint_id(experiment_id: str, role: str, generation_id: int, index: int) -> st
         raise ValueError("experiment_id 不得含 ':'（ID 以其为分隔符，须可无歧义解析）")
     if role not in _ROLES:
         raise ValueError(f"未知 role {role!r}；支持 {_ROLES}")
+    if isinstance(generation_id, bool) or not isinstance(generation_id, int):
+        raise ValueError("generation_id 必须是 int")
+    if isinstance(index, bool) or not isinstance(index, int):
+        raise ValueError("index 必须是 int")
     if generation_id < 0:
         raise ValueError("generation_id 必须 ≥ 0")
     if index < 0:
