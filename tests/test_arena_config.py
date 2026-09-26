@@ -50,16 +50,19 @@ def test_env_overrides_nested_actors_field():
 
 def test_unknown_key_rejected(tmp_path):
     bad = tmp_path / "bad.yaml"
-    bad.write_text(LF.join(["actors:", "  predator_size: 3.125",
-                            "  predator_sizes: 1.0", ""]), encoding="utf-8")
+    bad.write_text(
+        LF.join(["actors:", "  predator_size: 3.125", "  predator_sizes: 1.0", ""]),
+        encoding="utf-8",
+    )
     with pytest.raises(ValueError, match="predator_sizes"):
         load_arena_config(bad)
 
 
 def test_unknown_section_rejected(tmp_path):
     bad = tmp_path / "bad.yaml"
-    bad.write_text(LF.join(["world:", "  hz: 20", "not_a_section:", "  x: 1", ""]),
-                   encoding="utf-8")
+    bad.write_text(
+        LF.join(["world:", "  hz: 20", "not_a_section:", "  x: 1", ""]), encoding="utf-8"
+    )
     with pytest.raises(ValueError, match="not_a_section"):
         load_arena_config(bad)
 

@@ -148,11 +148,15 @@ frontend/
 - 实时流走 `/v1/ws`，消息信封 `{v,type,seq,ts,payload}`，`type` 为点分层（`arena.fish_state` 等）。
 
 ### 实现现状（2026-09-25）
+> ⚠️ **2026-09-26 状态变更（本节以下内容部分失效）**：用户决定**移除对外服务层**（`d894cbb` 删除 `src/evogenesis/api/{app,schemas,session,stubs,ws}.py` 与 `tests/test_api_contract.py`）。
+> 因此「N 个端点已 functional / 其余为 501 占位 / WS 为 MVP 回显」这些**实现状态描述已不再成立**，仅作为**前端契约设计的历史参照**保留；后端需按 `api/API与系统工程.md` 重写。
+> 前端 `src/api/arena.ts` / `ws.ts` 的**调用契约本身不变**（资源式 `/v1` 路径、`{v,type,seq,ts,payload}` 信封、错误体取 `body.detail`）——待后端重写后应能直接复用。
+
 
 - **REST 客户端就是 `src/api/arena.ts`（唯一）**，没有 `rest.ts`。内部统一的 `req()`：失败时抛 `detail`（取后端 body 的 `detail` 字段）或 `HTTP <status>`；**对 204 无响应体返回 `void`**，专门适配 `DELETE /v1/sessions/{id}`。
 - **WS 客户端 `src/api/ws.ts`**：`connectWs()` 按当前页面协议自动选 `ws` / `wss`（`location.protocol === "https:"` → `wss`），默认路径 `/v1/ws`；信封类型为 `WsEnvelope<T> { v: 1; type: string; seq: number; ts: number; payload: T }`。
-- **端点实现状态**：Arena / session 侧 **9 个端点已 functional**（`src/evogenesis/api/session.py`），另有 `GET /v1/health`：
+- **端点实现状态（历史；2026-09-26 起失效）**：~~Arena / session 侧 9 个端点已 functional（`src/evogenesis/api/session.py`）~~ —— 该实现层已按用户决定移除，见上方状态变更。当时的清单：
   `POST /v1/sessions`、`GET /v1/sessions/{id}`、`POST /v1/sessions/{id}/reset`、`DELETE /v1/sessions/{id}`、`POST /v1/sessions/{id}/release`、`POST /v1/sessions/{id}/pause`、`GET /v1/sessions/{id}/snapshot`、`GET /v1/sessions/{id}/fish/{fish_id}`、`GET /v1/sessions/{id}/leaderboard`。
-  其余端点（developments / breedings / experiments / jobs / mutations 等，`src/evogenesis/api/stubs.py`）为 **501 占位**。
-- **WS 尚为 MVP 回显契约**：连上先收 `sys.hello`，随后发送任意信封会收到 `sys.echo`；真正的 `arena.*` 推送流尚未实现。
-- 端点的逐条实现状态与验收口径详见 `src/evogenesis/api/API接口.md`。
+  其余端点（developments / breedings / experiments / jobs / mutations 等）当时为 **501 占位**；**当前全部无实现**。
+- **WS（历史；2026-09-26 起失效）**：~~当时只是回显契约~~（连上收 `sys.hello`，发任意信封收 `sys.echo`，`arena.*` 推送流从未实现）；实现层已移除，真实推送的契约仍按 `api/API与系统工程.md` §R11 词表设计。
+- 端点契约（**设计**，非实现状态）见 `api/API与系统工程.md` 与 `api/API接口.md`；后者已由池伟豪标注「实现层已移除、待重写」。

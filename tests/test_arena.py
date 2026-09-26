@@ -219,8 +219,9 @@ def test_predator_encounter_recorded_on_acquisition():
     assert arena.fish["fish_00"].predator_encounters >= 1
 
 
-def _cfg(pred_size: float | None = None, kappa: float | None = None,
-         cap_r: float | None = None) -> ArenaConfig:
+def _cfg(
+    pred_size: float | None = None, kappa: float | None = None, cap_r: float | None = None
+) -> ArenaConfig:
     """Default config with selected growth/actor fields overridden."""
     cfg = ArenaConfig()
     return dataclasses.replace(
@@ -252,8 +253,7 @@ def _fish_captured(cfg: ArenaConfig, size: float) -> bool:
     hunter.target_fish_id = "fish_00"
     res = arena.step({})
     return any(
-        e.type == "arena.fish_captured" and e.payload["fish_id"] == "fish_00"
-        for e in res.events
+        e.type == "arena.fish_captured" and e.payload["fish_id"] == "fish_00" for e in res.events
     )
 
 
@@ -379,16 +379,20 @@ def test_prey_regrowth_refills_toward_capacity():
     assert len(arena.prey) == 27  # one spawn per step while below capacity
     assert {"prey_24", "prey_25", "prey_26"} <= set(arena.prey)
     assert all(arena.prey[f"prey_{i}"].alive for i in (24, 25, 26))
-    assert sum(1 for e in arena.events if e.type == "arena.spawn" and
-               e.payload["entity_id"] == "prey_24") == 1
+    assert (
+        sum(
+            1
+            for e in arena.events
+            if e.type == "arena.spawn" and e.payload["entity_id"] == "prey_24"
+        )
+        == 1
+    )
 
 
 def test_escape_requires_survival_window():
     """section 15 (A8): a released lock counts as an escape only after T_hold steps."""
     cfg = ArenaConfig()
-    cfg = dataclasses.replace(
-        cfg, actors=dataclasses.replace(cfg.actors, escape_hold_steps=3)
-    )
+    cfg = dataclasses.replace(cfg, actors=dataclasses.replace(cfg.actors, escape_hold_steps=3))
     arena = DanioArena(cfg, master_seed=7)
     arena.reset()
     hunter = arena.predators["predator_00"]
@@ -408,8 +412,14 @@ def test_escape_requires_survival_window():
             break
         arena.step({})
     assert arm.escape_successes == 1
-    assert sum(1 for e in arena.events if e.type == "arena.escape" and
-               e.payload["fish_id"] == "fish_00") == 1
+    assert (
+        sum(
+            1
+            for e in arena.events
+            if e.type == "arena.escape" and e.payload["fish_id"] == "fish_00"
+        )
+        == 1
+    )
 
 
 def test_extinction_does_not_end_episode_early():

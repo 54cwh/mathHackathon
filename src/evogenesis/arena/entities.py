@@ -15,9 +15,7 @@ class Entity:
     speed: float = 0.0
     size: float = 1.0
 
-    def advance(
-        self, dt: float, world_w: float, world_h: float, boundary: str = "reflect"
-    ) -> None:
+    def advance(self, dt: float, world_w: float, world_h: float, boundary: str = "reflect") -> None:
         """Move by the NEW heading; boundary handling per that doc §2.1.
 
         ``reflect`` is a specular, fully deterministic bounce -- it draws no random

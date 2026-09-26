@@ -17,8 +17,14 @@ from evogenesis.arena.policies import ExpertPolicy
 
 SEEDS = (1, 7, 42, 1234, 250927)
 STEPS = 600
-KEYS = ("arena.prey_captured", "arena.fish_captured", "arena.collision",
-        "arena.escape", "arena.energy_depleted", "arena.spawn")
+KEYS = (
+    "arena.prey_captured",
+    "arena.fish_captured",
+    "arena.collision",
+    "arena.escape",
+    "arena.energy_depleted",
+    "arena.spawn",
+)
 
 
 def run(seed: int) -> dict:
@@ -42,16 +48,19 @@ def run(seed: int) -> dict:
 
 def main() -> None:
     rows = [run(s) for s in SEEDS]
-    print("| seed | `arena.prey_captured` | `arena.fish_captured` | `arena.collision`"
-          " | `arena.escape` | `arena.energy_depleted` | 存活 |")
+    print(
+        "| seed | `arena.prey_captured` | `arena.fish_captured` | `arena.collision`"
+        " | `arena.escape` | `arena.energy_depleted` | 存活 |"
+    )
     print("|---|---|---|---|---|---|---|")
     for r in rows:
-        print(f"| {r['seed']} | {r['prey_captured']} | {r['fish_captured']} | {r['collision']}"
-              f" | {r['escape']} | {r['energy_depleted']} | {r['alive']} |")
+        print(
+            f"| {r['seed']} | {r['prey_captured']} | {r['fish_captured']} | {r['collision']}"
+            f" | {r['escape']} | {r['energy_depleted']} | {r['alive']} |"
+        )
     ref = rows[-1]
     print()
-    print(f"seed {ref['seed']}: spawn={ref['spawn']}, "
-          f"throughput={ref['steps_per_s']:.0f} steps/s")
+    print(f"seed {ref['seed']}: spawn={ref['spawn']}, throughput={ref['steps_per_s']:.0f} steps/s")
 
 
 if __name__ == "__main__":

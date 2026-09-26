@@ -150,12 +150,8 @@ class DanioArena:
     def _in_forward_cone(self, hunter: Entity, target_pos: np.ndarray, d: float) -> bool:
         if d <= 0.0:
             return True
-        bearing = float(
-            np.arctan2(target_pos[1] - hunter.pos[1], target_pos[0] - hunter.pos[0])
-        )
-        rel = float(
-            np.arctan2(np.sin(bearing - hunter.heading), np.cos(bearing - hunter.heading))
-        )
+        bearing = float(np.arctan2(target_pos[1] - hunter.pos[1], target_pos[0] - hunter.pos[0]))
+        rel = float(np.arctan2(np.sin(bearing - hunter.heading), np.cos(bearing - hunter.heading)))
         half = float(np.deg2rad(self.cfg.growth.capture_cone_degrees) / 2.0)
         return abs(rel) <= half
 
@@ -206,9 +202,7 @@ class DanioArena:
 
             fish.heading = fish.heading + self._omega_eff(fish, omega) * dt
             fish.speed = v
-            fish.advance(
-                dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary
-            )
+            fish.advance(dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary)
 
             # obstacle contact: hard non-penetration (project back onto the surface, zero
             # bounce) + soft energy penalty by penetration depth (section 18.7 A7). The event
@@ -249,9 +243,9 @@ class DanioArena:
                     fish.captures += 1
                     fish.size = min(
                         self.cfg.growth.max_size,
-                        float(np.sqrt(
-                            fish.size**2 + self.cfg.growth.prey_area_gain * prey.size**2
-                        )),
+                        float(
+                            np.sqrt(fish.size**2 + self.cfg.growth.prey_area_gain * prey.size**2)
+                        ),
                     )
                     new_events.append(
                         self._emit(
@@ -318,9 +312,11 @@ class DanioArena:
             # a limited-chase ban expires once the fish is dead or out of detect range
             if pred.banned_fish_id is not None:
                 banned_pos = fish_pos.get(pred.banned_fish_id)
-                if banned_pos is None or float(
-                    np.linalg.norm(banned_pos - pred.pos)
-                ) >= self.cfg.actors.predator_detection_radius:
+                if (
+                    banned_pos is None
+                    or float(np.linalg.norm(banned_pos - pred.pos))
+                    >= self.cfg.actors.predator_detection_radius
+                ):
                     pred.banned_fish_id = None
             target, desired, speed = self._pred_policy.plan(
                 pred.pos,
@@ -384,9 +380,7 @@ class DanioArena:
             prey.heading += omega * dt
             prey.speed = v
             self._steer_away_from_obstacles(prey, gain=2.0)
-            prey.advance(
-                dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary
-            )
+            prey.advance(dt, self.cfg.world.width, self.cfg.world.height, self.cfg.world.boundary)
 
         # --- prey regrowth (section 12, R2 open replenishment): deterministic timing
         regrow = self.cfg.population.prey_regrowth_steps
@@ -399,9 +393,11 @@ class DanioArena:
                     pid,
                     self._free_spot(1.0),
                     float(self._rng.uniform(0, 2 * np.pi)),
-                    size=float(self._rng.uniform(
-                        self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max
-                    )),
+                    size=float(
+                        self._rng.uniform(
+                            self.cfg.actors.prey_size_min, self.cfg.actors.prey_size_max
+                        )
+                    ),
                 )
                 new_events.append(self._emit("arena.spawn", {"entity_id": pid}))
 
