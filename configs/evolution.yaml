@@ -1,5 +1,6 @@
 population_size: 48
-selection_beta: 3.0
+tournament_size: 2
+fitness_normalization: within_generation_minmax
 mutation_rate_per_base_per_gamete: 0.001
 crossover_probability_per_chromosome: 0.5
 max_crossovers_per_chromosome: 1

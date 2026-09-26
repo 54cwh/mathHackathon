@@ -49,15 +49,14 @@
 |---|---|---|---|
 | **softmax / 玻尔兹曼** `p_i ∝ exp(β F_i)` | 温度 β 与适应度分布共同决定 | **依赖**：`F→cF` 等价于 `β→cβ`；Goldberg 1990 的伪代码用 `logistic(Δf/temperature)`，温度直接与适应度差值比较 | Goldberg 1990, *Complex Systems* 4(4):445–460，[存档 PDF](https://content.wolfram.com/sites/13/2018/02/04-4-5.pdf) |
 | **排名选择**（rank） | 排名顺序，选择压力由排名分布设定 | **不依赖**线性缩放（单调变换不变） | Whitley 1989, ICGA；Blickle & Thiele 1996, *Evolutionary Computation* 4(4):361–394，DOI [10.1162/evco.1996.4.4.361](https://doi.org/10.1162/evco.1996.4.4.361) |
-| **锦标赛选择**（tournament） | 锦标赛规模 k（k 越大压力越高） | **不依赖**适应度尺度 | Miller & Goldberg 1995, *Complex Systems* 9(3):193–212；Blickle & Thiele 1996（二元锦标赛 ≈ 线性排名） |
+| **锦标赛选择**（tournament） | 锦标赛规模 k（k 越大压力越高） | **不依赖**适应度尺度（Blickle & Thiele 1996；Eiben & Smith 2015 §5.2.4） | Miller & Goldberg 1995, *Complex Systems* 9(3):193–212（仅证 k 决定压力，未讲尺度无关）；**Blickle & Thiele 1996 证明 binary tournament 与最大线性排名在期望适应度分布上 *identical*** `[bib#136]` |
 
-补充：比例/softmax 型选择对适应度方差敏感，Goldberg & Deb 1991 因此提出 **sigma scaling** 等适应度缩放方法来控制选择压力、避免早熟收敛（DOI [10.1016/b978-0-08-050684-5.50008-2](https://doi.org/10.1016/b978-0-08-050684-5.50008-2)）。Eiben & Smith《Introduction to Evolutionary Computing》(2015, DOI [10.1007/978-3-662-44874-8](https://doi.org/10.1007/978-3-662-44874-8)) 将“选择压力需相对适应度尺度定义”写入教科书。
+补充：比例/softmax 型选择对适应度方差敏感，需 **fitness scaling**（sigma truncation）控制选择压力、避免早熟——其标准出处是 Forrest 1985（未刊手稿）/ Goldberg 1989《Genetic Algorithms in Search, Optimization, and Machine Learning》`[bib#132]`（**注：Goldberg & Deb 1991 只是对比分析并指出比例选择需 scaling/ranking，并未提出 sigma scaling** `[bib#135]`）。Eiben & Smith《Introduction to Evolutionary Computing》(2015, DOI [10.1007/978-3-662-44874-8](https://doi.org/10.1007/978-3-662-44874-8)) `[bib#137]` 将“选择压力需相对适应度尺度定义”写入教科书。
 
-**结论：β=3 在适应度未归一化时没有确定意义。**
-- 本项目 `composite_fitness` 是四分量加权和（权重和=1），但 `metrics.py` 与 `evolution.py` 均未显式归一化各分量。
-- **若**各分量∈[0,1]，则 F∈[0,1]、βF∈[0,3]，最优/最差选择比 ≤ e³ ≈ **20:1**，属温和、可用的选择压力。
-- **若**分量未归一化（如 counts、能量绝对量），β=3 的实际压力不可预测，可能过强（接近贪心）或过弱（接近均匀）。
-- 判定：**仅作参考 / 需进一步验证**。建议任选其一：①在 `composite_fitness` 内显式归一化每个分量到 [0,1]；②改用排名/锦标赛选择（对尺度不敏感）；③用种群内 z-score/min-max 标准化后再 softmax，并把 β 解释为“标准化适应度的温度”。
+**结论（已采用）：`binary tournament (k=2)`。**
+- 比例/softmax 的选择强度与适应度尺度不可分离（`F→cF` 等价于 `β→cβ`），在本项目小种群（N=48）+ 单 episode 含噪适应度下不可靠。
+- `binary tournament` 尺度无关，且在期望适应度分布上等价于最大线性排名 `[bib#136]`，对平移/线性变换不变 `[bib#137]`；`k=2` 是有定理支撑的最小压力选择。
+- `F` 的分量归一化（`S/P/E/Q` 代内 min-max）**只用于本代选择与展示**；跨代/跨环境比较用原始指标。参见 `evolution/遗传繁殖与演化模型.md` §5/§6、`research/notes/契约决策记录.md`。
 
 ### R2.2 交叉概率推荐值
 
@@ -85,5 +84,5 @@
 ## 一句话总纲
 
 - **μ=0.001**：作为生物突变率高了约 10⁵–5×10⁵ 倍，但作为数字生物/GA 的计算速率属常见惯例 → 保留但标注为抽象。
-- **β=3**：softmax 温度与适应度尺度绑定；只有归一化后 β=3 才有确定含义（若 F∈[0,1] 则选择比约 20:1，温和可用）。
+- **选择算子**：采用 `binary tournament (k=2)`（尺度无关，等价最大线性排名 `[bib#136]`）；不使用 softmax/β（其压力与适应度尺度绑定）。
 - **crossover=0.5/染色体**：落在典型 0.5–1.0 下端，2 条染色体下每配子交叉概率 0.75，可用；需统一“每染色体 vs 每配子”口径。

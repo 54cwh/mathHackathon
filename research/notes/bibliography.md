@@ -593,3 +593,39 @@
 130. Weaver DC, Workman CT, Stormo GD. **Modeling Regulatory Networks with Weight Matrices.** *Pacific Symposium on Biocomputing (PSB)* 4, 112–123 (1999). `peer-reviewed`.
     链接: https://psb.stanford.edu/psb-online/proceedings/psb99/Weaver.pdf
     用途：RGCD §10——GRN 线性权重矩阵建模传统：随机权重矩阵 + 参数化非零比例/权值上下限 + 每基因至少一正一负输入；说明 GRN 历史上用「小随机+稀疏+有界」而非 Xavier，但稳定性判据与递归网络一致。
+
+---
+
+## 依据新增（GA 选择方法，2026-09-26）
+
+> 来源：`research/reference/ga-selection-methods.json`（含 7 条文献的存在性 / DOI / 卷期页 / 评审状态 / 断言支撑核验）。
+> 去重：已与 #1–#130 按 DOI / 标题比对，**无重复**（GA 选择方法此前未登记）。
+> 核验：4 条带 DOI 者于 2026-09-26 经 OpenAlex `batch_resolve_references` 解析（作者/年份/卷期页一致）；2 条无 DOI 的 ICGA 会议论文经 OpenAlex `biblio` 核页码；图书经出版方 / Internet Archive 核 ISBN。登记记录见 `research/reference/bibliography-registration-ga.md`。
+
+131. Holland JH. **Adaptation in Natural and Artificial Systems: An Introductory Analysis with Applications to Biology, Control, and Artificial Intelligence.** *MIT Press*（University of Michigan Press 1975 原版；1992 MIT 重印版）(1992). `未标注`（学术专著，非期刊同行评审）.
+    DOI: https://doi.org/10.7551/mitpress/1090.001.0001
+    用途：GA 领域奠基原著；适应度比例繁殖（fitness proportionate selection）与 schema theorem 的思想源头。⚠️ 1975 原版无 DOI，此处以 1992 MIT 重印版 DOI 登记；本次未逐句核对原书正文。
+
+132. Goldberg DE. **Genetic Algorithms in Search, Optimization, and Machine Learning.** *Addison-Wesley*, Reading, MA (1989). `未标注`（学术专著，非期刊同行评审）.
+    链接: https://archive.org/details/geneticalgorithm0000gold（ISBN 0-201-15767-5）
+    用途：sigma truncation（sigma scaling 的标准可引锚点）与线性、幂律 fitness scaling 的提出/命名来源；系统讨论比例选择的尺度问题。⚠️ sigma scaling 首提为 Forrest 1985（未正式发表技术文档，本次未取得可核实稳定链接），故本项目以 Goldberg 1989 作为 sigma truncation 的正式锚点；归属边界见 #135。
+
+133. Baker JE. **Adaptive Selection Methods for Genetic Algorithms.** *Proc. 1st International Conference on Genetic Algorithms (ICGA)*, 101–111 (1985). `未标注`（会议论文，评审状态本次未独立核验；会议录不注册 DOI）.
+    链接: https://dl.acm.org/doi/proceedings/10.5555/645511
+    用途：rank selection（排名选择）首提——由 #135 Goldberg & Deb 1991 明文确认（"Baker (1985) introduced the notion of ranking selection to genetic algorithm practice"）。
+
+134. Whitley LD. **The GENITOR Algorithm and Selection Pressure: Why Rank-Based Allocation of Reproductive Trials is Best.** *Proc. 3rd International Conference on Genetic Algorithms (ICGA)*, 116–123 (1989). `未标注`（会议论文，评审状态本次未独立核验；会议录不注册 DOI）.
+    链接: https://dl.acm.org/doi/10.5555/645512.657257
+    用途：rank-based selection 的系统论证——按排名分配繁殖次数优于比例繁殖；**非** rank selection 首提（首提为 #133 Baker 1985），两者须区分「系统论证」与「首提」。⚠️ 页码著录冲突：ACM DL 与 OpenAlex `biblio` 记 116–123，SCIRP/Springer 等大量文献记 116–121；本表择 116–123（一手著录），正式 BibTeX 前须按目标期刊核实。
+
+135. Goldberg DE, Deb K. **A Comparative Analysis of Selection Schemes Used in Genetic Algorithms.** In *Foundations of Genetic Algorithms 1*, 69–93, Morgan Kaufmann/Elsevier (1991). `peer-reviewed`（FoGA 会议衍生的经典卷，书章）.
+    DOI: https://doi.org/10.1016/b978-0-08-050684-5.50008-2
+    用途：比例选择依赖目标函数尺度、需 scaling/ranking 缓解（原文："proportionate selection is dependent on the objective function used … It is exactly this effect that has caused researchers to turn to scaling techniques and ranking methods."）。**不得**写「Goldberg & Deb 1991 提出 sigma scaling」——原文全文无 "sigma scaling"；该归属应为 Forrest 1985（首提）/#132 Goldberg 1989（sigma truncation）。
+
+136. Blickle T, Thiele L. **A Comparison of Selection Schemes Used in Evolutionary Algorithms.** *Evolutionary Computation* 4(4), 361–394 (1996). `peer-reviewed`.
+    DOI: https://doi.org/10.1162/evco.1996.4.4.361
+    用途：以 fitness distribution 建模选择算子，定理级证明 **binary tournament（t=2）与最大线性排名（s=2 / η⁻=0）在期望适应度分布上等价（identical）**。⚠️ 等价限于该特定（最大压力）线性排名参数，不可推广到任意线性排名；免费预印本（ETH TIK-Report 11, 1995）为 OCR 扫描、参数符号有乱码，引用精确参数以 MIT Press 正式版为准。
+
+137. Eiben AE, Smith JE. **Introduction to Evolutionary Computing** (2nd ed.). *Springer, Natural Computing Series* (2015). `未标注`（教科书，非期刊同行评审）.
+    DOI: https://doi.org/10.1007/978-3-662-44874-8
+    用途：教科书级明文（§5.2.4）——tournament selection 比较相对而非绝对适应度，故对 fitness 的 translation/transposition 不变，与 ranking 同具尺度不变性；支撑「tournament 对绝对适应度不变」命题的主引用。
