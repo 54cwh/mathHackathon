@@ -1,7 +1,7 @@
 # Danio Arena 设计规范
 
 > **管辖范围**：Arena 世界/感官/物理/规则/事件与 **12 维 observation 编码**（§4.1）。产出：observation、事件、每鱼记录。不拥有：DanioNet 网络语义（见 `../connectome/DanioNet设计规范.md`）、参数取值（owner：`configs/default_arena.yaml` + `docs/参数总表.json`）。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**规范与实现合并稿（契约草案 v1.0，2026-09-26）**。条款分两级：`【已定稿】` 可被论文与正式实验依赖；`【草案待确认】` 由实现先行落地、待认领，**不得进论文与正式实验**。待裁决清单见 §17 与 `research/notes/arena-api-决策认领表.md`。
+> 状态：**规范与实现合并稿（契约草案 v1.0，2026-09-26）**。条款分两级：`【已定稿】` 可被论文与正式实验依赖；`【草案待确认】` 由实现先行落地、待认领，**不得进论文与正式实验**。待裁决清单见 §17 与 `research/notes/arena-api-决策认领表.md`（A1–A10 已于 2026-09-27 全闭合）。
 > 本文件合并定义 Arena 的契约（应当怎样）与实现映射（代码现在怎样）。契约条款优先；实现映射记录代码事实、参数映射、事件词表和未认领决定。
 
 **条款状态图例**：`【已定稿】` 可直接依赖；`【草案待确认】` 附"现状（代码）"与"备选"，认领后转已定稿。
@@ -305,7 +305,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 | 组 | 条款 |
 |---|---|
-| 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）；✅ 环境三组已改参数（§12，单因子 `n_prey`/`n_predators` + 派生 regrowth）。**余**：M4 空间场景布置 |
+| 行为语义 | ✅ A6 边界策略；✅ A7 碰撞后果；✅ A8 逃脱判定；✅ A9 团灭提前结束；✅ 捕食双向/被吃后果（§8）；✅ prey 重生/守恒（§12）；✅ survival 定义（§15）；✅ 环境三组已改参数（§12，单因子 `n_prey`/`n_predators` + 派生 regrowth）。**余**：M4 空间场景布置（**2026-09-27 决定：不做**，保持参数级对照；列为已知限制） |
 | 编码接口 | ✅ A1 12 维归一化**已定稿**（含 looming 角尺寸扩张率、每通道截断口径）；`looming_norm`（R_loom）已冻结为设计选择（D） |
 | 参数 | ✅ A2 r_capture + 前向锥（4.61 + 120° 均已实现）；A3 能量四系数（已签，已进参数总表）；✅ A4 growth/biomass（面积式；g 为设计选择（D））；A5 actors **17 项**（已签，**已进 YAML 与参数总表**）；✅ A10 转向量纲；✅ §12 高价值 prey 分级；G4 ExpertPolicy 权重（已落 config，§11） |
 | 契约/工程 | ~~§18 实例事件~~ ✅ 已重生成（§18.4.4）；~~config 接线~~ ✅ 已闭合（loader + Arena 映射 + 调用方接线，2026-09-26）；~~api 语义 B1–B6~~ ✅ 已闭合（2026-09-27）；本文件的契约与实现映射分界 |
@@ -588,7 +588,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 
 ### 18.7 未认领的实现决定（指向 `research/notes/arena-api-决策认领表.md` A 节）
 
-> **本节是本文档的契约状态核心。** 以下数值与语义由实现先于设计落地。**2026-09-26 已有 9 项被认领并落地**（A2/A4/A5/A6/A7/A8/A9/§12/§15，用户签署「按建议」，见 `research/notes/契约决策记录.md`「A3 签署结果」）：这些行转为**已定稿**，其余仍为 **`草案待确认`**，**不得写进论文与正式实验**。
+> **本节是本文档的契约状态核心。** A1–A10 已**全部认领并定稿**（A2/A4/A5/A6/A7/A8/A9/§12/§15 于 2026-09-26；认领表 A1–A10 于 2026-09-27 全闭合，见 `research/notes/arena-api-决策认领表.md`）。下表各行状态以行内标注为准；`looming_norm`（R_loom）为设计选择（D）。
 
 | 认领编号 | 未认领的内容 | 本文档对应节 | 实现现状 |
 |---|---|---|---|
@@ -621,7 +621,7 @@ u=w_p u_{prey}-w_d u_{predator}-w_o u_{obstacle},\qquad w_p=w_{p0}+k_H H
 | M1 | 神经控制 | 鱼由外部 `actions` 驱动，Arena 不内嵌网络；DanioNet 推理已由 `pipeline/arena_episode.py` 接入（`scripts/run_chain.py`，DanioNet 驱动模型评估）。`generation` 可由构造注入（缺省 0；代循环已接入）。`Fish.genome_id` 已可由构造注入（`genome_ids`，P0-9，2026-09-26），缺省仍 `"unknown"` |
 | M2 | ~~`predator_encounters` 恒 0~~ | ✅ **已实现**：目标获取计数，见 S7 |
 | M3 | selected neural activity snapshots | 规范 §13 最后一项未实现；**owner = `connectome`/`DanioNet`（+ api 推送）**，arena 不缓存网络激活（见 §6） |
-| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；环境三组**已改变参数**（`configs/experiment_environments.yaml`，单因子：`n_prey`/`n_predators` + 派生 regrowth，登记参数总表 `env_*`）。仍未做：「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**空间场景布置**（现为参数级对照，无布局） |
+| M4 | 规范 §12 风险—收益冲突**场景布置** | **2026-09-26**：高价值 prey 的**定义**与 prey 再生已落地（§12）；环境三组**已改变参数**（`configs/experiment_environments.yaml`，单因子：`n_prey`/`n_predators` + 派生 regrowth，登记参数总表 `env_*`）。仍未做：「高价值 prey 靠近捕食者 / resource-scarce 抬升 hunger」的**空间场景布置**（现为参数级对照，无布局）；**2026-09-27 决定：不做空间布置** |
 | M5 | 猎物主动逃跑 | `PreyPolicy` 不感知鱼；规范 §10 的 "proximity avoidance" 目前只有避障版本 |
 | M6 | ~~`PreyPolicy.avoid_gain`~~ | ✅ **已删除（2026-09-26）**（S12、F2） |
 | M7 | 捕食者能量 / 成长 / 死亡 | 捕食者恒存活、无代谢（S16、S18） |
