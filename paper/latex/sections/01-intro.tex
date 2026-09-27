@@ -5,7 +5,7 @@
 当代深度网络的能力主要由两件事决定：\textbf{人工指定的架构}与大数据上的参数拟合。
 生物智能体则不同：它的网络拓扑由一段紧凑的基因组经\textbf{发育过程}生成，
 而个体一生中由经验造成的突触改变\textbf{不会写回基因组}，
-即所谓 genomic bottleneck：遗传信息必须先于网络结构，后天学习不得遗传
+即所谓genomic bottleneck：遗传信息必须先于网络结构，后天学习不得遗传
 \citep{bib1_zador2019,bib2_barabasi2023,bib3_shuvaev2024}。
 
 由此产生两个可检验的问题，它们构成本文的主线：
@@ -31,9 +31,9 @@ $\mathcal{T}$ 为个体在环境 $E$ 中的行为轨迹，$F$ 为适应度，$\m
 \textbf{当代学习}发生在 $\mathcal{T}$ 之前：$W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，
 $L$ 只更新连接权重的幅度，且产生的增量 $\Delta W$ 不进入下一代（\S\ref{sec:method}）。
 
-本文的定位是\textbf{机制研究}而非刷榜：我们的贡献是一组互相约束的、
-关于生成式编码 + 演化 + 有限当代学习的系统性结论，
-而不是某个基准上的单点最优。
+本文的定位是\textbf{机制研究}，区别于刷榜。我们的贡献是一组系统性结论，
+它们围绕生成式编码、演化与有限当代学习展开并互相约束，
+不以某个基准上的单点最优为目标。
 
 \subsection{研究问题与假设}\label{sec:rq}
 
@@ -42,7 +42,7 @@ $L$ 只更新连接权重的幅度，且产生的增量 $\Delta W$ 不进入下�
 \begin{itemize}
   \item \textbf{RQ1}：紧凑基因组能否经发育算子生成\textbf{多样且可运行}的网络？\quad 对应 \textbf{H1}：
         不同基因组在相同随机种子控制下产生\textbf{系统性}的连接组差异。
-  \item \textbf{RQ2}：单碱基变化能否经 motif $\to$ GRN $\to$ 连接组产生连续或突变式的结构变化？
+  \item \textbf{RQ2}：单碱基变化能否经motif $\to$ GRN $\to$ 连接组产生连续或突变式的结构变化？
   \item \textbf{RQ3}：异质时间常数 $\tau_i$ 与发育生成的稀疏拓扑，是否改变性能、效率或鲁棒性？
         \quad 对应 \textbf{H3}（异质 $\tau_i$ 形成与同质 $\tau$ 不同的\textbf{性能—效率权衡}）
         与 \textbf{H4}（空间布线代价改变网络的局部性、稀疏性与有效边效率）。
@@ -54,17 +54,17 @@ $L$ 只更新连接权重的幅度，且产生的增量 $\Delta W$ 不进入下�
 \end{itemize}
 
 \textbf{量化判据}（阈值属独立标定任务，不在本文主张内）：
-H1 用 within-ensemble 图距离（以重连零模型为基线）\citep{bib20_hartle2020}；
-H2 用 Mantel 检验 \citep{bib21_smouse1986}；
-H3 用性能—效率 Pareto 前沿 \citep{bib23_deb2002}；
-H4 以平均连接距离度量局部性、并与图论 efficiency 区分命名 \citep{bib22_latora2001}；
-H5 用 reaction norm / AMMI 检验基因型$\times$环境的秩反转
+H1用within-ensemble图距离（以重连零模型为基线）\citep{bib20_hartle2020}；
+H2用Mantel检验 \citep{bib21_smouse1986}；
+H3用性能—效率Pareto前沿 \citep{bib23_deb2002}；
+H4以平均连接距离度量局部性、并与图论efficiency区分命名 \citep{bib22_latora2001}；
+H5用reaction norm / AMMI检验基因型$\times$环境的秩反转
 \citep{bib24_via1985,bib25_malosetti2013}。
 
-\textbf{注意（统计能力）}：正式实验的独立随机种子数为 3，
-此时3 对 3标签置换检验的双侧最小 $p\approx0.10$，
-\textbf{不足以支持逐假设的置换检验}。因此 H1 采用 within-ensemble 口径、
-H2 采用 Mantel 检验，二者均不依赖 3 对 3 置换；其余结论以效应量与跨种子波动并列报告
+\textbf{注意（统计能力）}：正式实验的独立随机种子数为3，
+此时3对3标签置换检验的双侧最小 $p\approx0.10$，
+\textbf{不足以支持逐假设的置换检验}。因此H1采用within-ensemble口径、
+H2采用Mantel检验，二者均不依赖3对3置换；其余结论以效应量与跨种子波动并列报告
 （见 \S\ref{sec:experiment}）。
 
 \subsection{与已有工作的差异}\label{sec:related}
@@ -72,31 +72,31 @@ H2 采用 Mantel 检验，二者均不依赖 3 对 3 置换；其余结论以效
 \textbf{与神经演化（neuroevolution）}：神经演化的经典路线是在\textbf{网络结构或权重空间}上直接搜索，
 其与生物神经计算的对应关系近年被系统梳理 \citep{bib5_miikkulainen2025}。
 本文把可演化的对象\textbf{上移一层}：搜索空间是\textbf{生成网络结构的基因组}，
-网络结构是发育的产物而非被直接编码的量。这一上移使同源基因组 + 不同随机种子
-与单碱基扰动都成为可测量的结构变异来源（RQ1/RQ2）。
+网络结构是发育的产物，并不被直接编码。这一上移使同源基因组与不同随机种子、单碱基扰动都成为
+可测量的结构变异来源（RQ1/RQ2）。
 
 \textbf{与发育式编码 / genomic bottleneck}：已有工作已经证明紧凑基因组可以编码先天能力
 \citep{bib1_zador2019,bib3_shuvaev2024}，并以发育先验生成权重矩阵
 \citep{bib2_barabasi2023}，或用简单随机发育生成模型重建小脑连接组 \citep{bib4_richter2025}。
 本文的差别在三处：(i) 评价场景是\textbf{闭环生态仿真}（觅食、避敌、能量与生长），
-行为通过感知—动作回路与环境耦合，而非静态分类任务；
+行为通过感知—动作回路与环境耦合，并不归结为静态分类任务；
 (ii) 同时检验结构多样性、结构—行为联系、时间常数异质性、空间代价与环境依赖这五组问题，
 使各机制之间互相约束；
-(iii) 显式测量\textbf{后天权重的当代扰动不遗传}这一边界的代价，而不只展示先天编码的能力上限。
+(iii) 显式测量\textbf{后天权重的当代扰动不遗传}这一边界的代价，不限于展示先天编码的能力上限。
 
-\textbf{与神经架构搜索（NAS）}：NAS 的两条主流路线都在\textbf{架构本身}上搜索，
+\textbf{与神经架构搜索（NAS）}：NAS的两条主流路线都在\textbf{架构本身}上搜索，
 在离散的层 / 算子 / 连接空间上直接搜索 \citep{bib224_elsken2019}，
 或把该空间\textbf{连续松弛}为混合算子权重以便梯度优化 \citep{bib225_liu2019}，
 目标都是静态基准上的验证精度。神经演化中的生成式路线则把可演化对象从\textbf{权重}
-扩展到\textbf{结构或生成规则}：NEAT 以 historical marking 交叉与物种保护直接演化拓扑
-\citep{bib222_stanley2002}，HyperNEAT 再由一个 CPPN 按几何坐标查询生成连接权重
+扩展到\textbf{结构或生成规则}：NEAT以historical marking交叉与物种保护直接演化拓扑
+\citep{bib222_stanley2002}，HyperNEAT再由一个CPPN按几何坐标查询生成连接权重
 \citep{bib223_stanley2009}。本文与之有三处差别：
-(i) 搜索对象是\textbf{基因组}（DNA + motif）而非架构，架构只是发育算子的产物，
-同源基因组 + 不同随机种子与单碱基扰动本身即是可测量的变异来源（RQ1/RQ2）；
+(i) 搜索对象是\textbf{基因组}（DNA与motif），区别于架构：架构只是发育算子的产物，
+同源基因组与不同随机种子、单碱基扰动本身即是可测量的变异来源（RQ1/RQ2）；
 (ii) 生成规则是\textbf{发育过程}（GRN $\to$ 细胞命运 $\to$ RGCD），
-而 HyperNEAT 的 substrate 布局与几何是\textbf{给定}的、CPPN 只做坐标到权重的映射
-（其增强版 ES-HyperNEAT \citep{bib124_risi2012} 让位置与密度也可演化，但仍无基因组层面的显式结构）；
-(iii) 适应度来自\textbf{闭环生态仿真}而非静态基准，近年用发育程序长出网络的近作
+而HyperNEAT的substrate布局与几何是\textbf{给定}的、CPPN只做坐标到权重的映射
+（其增强版ES-HyperNEAT \citep{bib124_risi2012} 让位置与密度也可演化，但仍无基因组层面的显式结构）；
+(iii) 适应度来自\textbf{闭环生态仿真}，区别于静态基准。近年用发育程序长出网络的近作
 \citep{bib226_najarro2023} 仍以静态机器学习基准评价，且其发育程序本身由梯度 / 演化训练得到，
 不测量后天权重的当代扰动不遗传这一边界的代价。
 
