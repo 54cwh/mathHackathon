@@ -81,8 +81,20 @@ def main(argv: list[str] | None = None) -> int:
         print("penetrance 校准（AaBb×AaBb 独立校准集；草案待确认）")
         print(f"  n_rows={cal['n_rows']}  sampled_per_class={payload['sampled_per_class']}")
         print(
-            f"  可分离: N={cal['separation_N']['separable']}  H={cal['separation_H']['separable']}"
+            f"  生效轴 {cal['active_axes']}  =>  confirmable={cal['confirmable']}"
+            f"  (auc_floor={cal['auc_floor']})"
         )
+        for _axis in ("N", "H"):
+            _sep = cal[f"separation_{_axis}"]
+            _auc = _sep["auc"]
+            _p = _sep["mannwhitney_p"]
+            _auc_s = "None" if _auc is None else f"{_auc:.4f}"
+            _p_s = "None" if _p is None else f"{_p:.3g}"
+            _tag = "生效" if _axis in cal["active_axes"] else "已退役/仅上报"
+            print(
+                f"    {_axis} 轴[{_tag}] 可分离={_sep['separable']}"
+                f"  AUC={_auc_s}  p={_p_s}"
+            )
         print(
             f"  θ_N^obs: min-misclass={cal['theta_N_obs_min_misclass']:.4g}"
             f"  median-midpoint={cal['theta_N_obs_median_midpoint']:.4g}"
@@ -93,10 +105,15 @@ def main(argv: list[str] | None = None) -> int:
             f"  median-midpoint={cal['theta_H_obs_median_midpoint']:.4g}"
             f"  misclass={cal['misclass_rate_H']:.3f}"
         )
-        if not (cal["separation_N"]["separable"] and cal["separation_H"]["separable"]):
+        if not cal["confirmable"]:
             print(
-                "  提示：存在不可分离轴 → θ 不可辨识，不可置 confirmed；"
+                "  提示：生效轴存在不可分离轴 → θ 不可辨识，不可置 confirmed；"
                 "仅演示可设 threshold_status=placeholder。"
+            )
+        else:
+            print(
+                "  生效轴全部可分离 → θ 可由人签署（threshold_status=confirmed）；"
+                "非生效轴仍照常上报，不参与门禁。"
             )
     else:
         payload = P.run_report(

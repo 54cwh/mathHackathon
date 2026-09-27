@@ -162,6 +162,7 @@
         "majority_baseline_error": { "type": "number", "minimum": 0, "maximum": 1 },
         "separable": { "type": "boolean" },
         "auc": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "auc_floor": { "type": ["number", "null"], "description": "本条 separation 生效的效应量下限（AUC）；null = 未启用。" },
         "mannwhitney_p": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
       }
     },

@@ -251,3 +251,117 @@ def test_report_payload_matches_schema():
     demo = report["demo_9331"]
     assert sum(demo["pooled_expected_counts"].values()) == 32 * 2
     assert sum(demo["observed_counts"].values()) == 32 * 2
+
+
+# ---------------------------------------------------------------------------
+# 效应量下限（separation_auc_floor）
+# ---------------------------------------------------------------------------
+
+
+def test_auc_floor_off_by_default_is_bit_identical():
+    """`auc_floor=None`（默认）不得改动任何既有字段 —— 口径与历史逐位一致。"""
+    values = [float(v) for v in range(1, 17)]
+    labels = [False] * 8 + [True] * 8
+    base = P.axis_separation(values, labels)
+    explicit_none = P.axis_separation(values, labels, auc_floor=None)
+    assert explicit_none == base
+    assert base["auc_floor"] is None
+    assert base["separable"] is True
+
+
+def test_auc_floor_filters_a_significant_but_small_effect():
+    """floor 的用处：把「显著但效应小」的轴拦下。
+
+    此前后两条只查 ``AUC > 0.5`` 与 ``p < α`` —— 大 n 下 ``AUC=0.51`` 也能过。
+    边界用实测 AUC 自身（不手算），使断言与实现同源。
+    """
+    values = [float(v) for v in range(1, 17)] + [float(v) for v in range(9, 25)]
+    labels = [False] * 16 + [True] * 16
+    bare = P.axis_separation(values, labels)
+    assert bare["separable"] is True           # 前两条仍过
+    assert 0.5 < bare["auc"] < 1.0             # 但效应远非完美
+    auc = bare["auc"]
+    assert P.axis_separation(values, labels, auc_floor=auc + 1e-6)["separable"] is False
+    assert P.axis_separation(values, labels, auc_floor=auc)["separable"] is True
+    floored = P.axis_separation(values, labels, auc_floor=auc + 1e-6)
+    assert floored["auc_floor"] == pytest.approx(auc + 1e-6)
+
+
+# ---------------------------------------------------------------------------
+# 生效轴（active_axes）—— 2026-09-27 裁决：H 轴退役，门禁只看 N
+# ---------------------------------------------------------------------------
+
+
+def test_active_axes_default_is_single_axis_n():
+    assert P.SEPARATION_AXES == ("N", "H")     # 两轴仍可声明
+    assert P._parse_active_axes(None) == ("N",)
+    assert P._parse_active_axes(["N", "H"]) == ("N", "H")
+
+
+def test_active_axes_rejects_empty_unknown_and_duplicate():
+    for bad in ([], ["X"], ["N", "N"]):
+        with pytest.raises(ValueError):
+            P._parse_active_axes(bad)
+
+
+def _rows_n_separable_h_not() -> list[P.PenetranceRow]:
+    """N 轴完全分离、H 轴恒值（不可分离）的最小样本 —— 复现 H 轴退役的现场。"""
+    rows: list[P.PenetranceRow] = []
+    for i, label in enumerate(P.CLASS_ORDER):
+        for k in range(4):
+            rows.append(
+                P.PenetranceRow(
+                    genome_id=f"g{i:02d}{k}",
+                    fish_id=f"f{i:02d}{k}",
+                    expected_class=label,
+                    e_a=1.0 if label in P.EXPECTED_HIGH_N else 0.0,
+                    e_b=1.0 if label in P.EXPECTED_HIGH_H else 0.0,
+                    n_neurons=(40 if label in P.EXPECTED_HIGH_N else 20) + k,
+                    cv_tau=0.010 + 0.001 * k,
+                    viable=True,
+                )
+            )
+    return rows
+
+
+def test_confirmable_ignores_retired_axis():
+    """门禁只看生效轴：N 可分离而 H 不可分离时，`active_axes=("N",)` ⇒ confirmable=True。
+
+    这就是 2026-09-27 裁决要兑现的行为 —— 此前「两轴都要可分离」会让 θ 永远无法签署。
+    旧行为仍可显式复现（`active_axes=("N","H")`），故不是把判据改松，而是把它参数化。
+    """
+    rows = _rows_n_separable_h_not()
+    only_n = P.calibrate(rows, active_axes=("N",))
+    assert only_n.separation_N["separable"] is True
+    assert only_n.separation_H["separable"] is False     # H 仍被测量上报
+    assert only_n.confirmable is True                    # 但不阻塞
+    assert only_n.to_dict()["active_axes"] == ["N"]
+    assert only_n.to_dict()["confirmable"] is True
+
+    both = P.calibrate(rows, active_axes=("N", "H"))
+    assert both.confirmable is False                     # 旧行为可复现
+
+
+def test_config_parses_active_axes_and_floor():
+    base = {
+        "theta_N_obs": None,
+        "theta_H_obs": None,
+        "threshold_status": "unset",
+        "calibration": {"master_seeds": [1103], "per_class": 4},
+        "report": {"master_seeds": [1103], "per_class": 4, "demo_offspring": 8},
+    }
+    default = P.PenetranceConfig.from_dict(base)
+    assert default.active_axes == ("N",)                 # 缺省即单轴 N
+    assert default.separation_auc_floor is None           # floor 缺省不启用
+
+    explicit = P.PenetranceConfig.from_dict(
+        {**base, "active_axes": ["N", "H"], "separation_auc_floor": 0.7}
+    )
+    assert explicit.active_axes == ("N", "H")
+    assert explicit.separation_auc_floor == pytest.approx(0.7)
+
+
+def test_shipped_penetrance_config_declares_single_axis_n():
+    cfg = P.load_penetrance_config()
+    assert cfg.active_axes == ("N",)
+    assert cfg.separation_auc_floor is None

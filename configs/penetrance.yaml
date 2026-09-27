@@ -20,6 +20,14 @@ threshold_status: unset
 # ⇒ **K 只有配 β=1.0 才起作用**；K→∞ 即 E[N]，退化为 pen≡1，故不取极限。
 # 依据：`docs/参数总表.json` penetrance_realisations_k + `research/notes/契约决策记录.md` 2026-09-27。
 realisations_k: 16
+# 生效轴：`confirmed` 门禁**只看这些轴**。2026-09-27 用户裁决：H 轴退役 ⇒ 单轴 N。
+# 非生效轴（H）仍照常测量并写进 `separation_H`，作为「该轴无区分力」这一退役理由的证据。
+active_axes: [N]
+# 可选**效应量下限**（AUC）。null = 不启用（当前行为，逐位一致）；启用后门禁为
+# (AUC > 0.5) ∧ (p < 0.05) ∧ (AUC >= floor)，用于回答「p<α 只说明显著、不说明效应大」
+# （大 n 下 AUC=0.51 也会通过前两条）。**数值须由人签署**（同 θ^obs；禁止 AI 填空）。
+# 实测（出货配置、官方校准 seeds、n=3200、K=16）：N 轴 AUC 0.7991 —— 故 floor 若取 0.65 通过、取 0.85 不通过。
+separation_auc_floor: null
 theta_N_obs: null  # 观测量阈值（作用于 N=|M|）；校准产出后人工签署写入
 theta_H_obs: null  # 观测量阈值（作用于 CV_τ）；同上
 calibration:

@@ -72,6 +72,10 @@ TAU_STATISTIC = "cv_tau"
 #: 分离度门禁（``axis_separation``）的显著水平；须与 ``AUC>0.5`` 同时成立。
 #: 两条件叠加使该门禁偏保守——它锁的是 ``threshold_status=confirmed``，宜保守。
 SEPARATION_ALPHA: float = 0.05
+#: 观测轴顺序（genome §3 的两轴）。``active_axes`` 取子集，只有**生效轴**参与
+#: ``confirmed`` 门禁；非生效轴仍照常测量并上报（保留「该轴无区分力」这一证据）。
+#: 2026-09-27 用户裁决：H 轴退役，生效轴 = ("N",)。
+SEPARATION_AXES: tuple[str, ...] = ("N", "H")
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_PENETRANCE_CONFIG = _REPO_ROOT / "configs" / "penetrance.yaml"
@@ -243,13 +247,23 @@ def _axis_arrays(
     return n_values, high_n, h_values, high_h
 
 
-def axis_separation(values: Sequence[float], expected_high: Sequence[bool]) -> dict[str, Any]:
+def axis_separation(
+    values: Sequence[float],
+    expected_high: Sequence[bool],
+    *,
+    auc_floor: float | None = None,
+) -> dict[str, Any]:
     """观测轴对期望档的**区分力诊断**（无信号时 ``θ^obs`` 不可辨识，不得冻结）。
 
     判据为 ``separable = (AUC > 0.5) ∧ (Mann–Whitney 双侧 p < SEPARATION_ALPHA)``：
     AUC 的零假设中心 **0.5 与抽样比例无关**，故判据抽样不变；``AUC > 0.5`` 同时钉住
     方向——反序轴（high 档取值反而更低）无法用 ``1[v > θ]`` 口径恢复，须判不可分离。
     两条件叠加使实际水平偏保守（约 α/2），对「解锁 ``confirmed``」的门禁是良性的。
+
+    ``auc_floor`` 是**可选的效应量下限**：``None``（默认）不启用，口径与历史逐位一致；
+    给定数值后门禁叠加第三条 ``AUC >= auc_floor``。它回答的是「``p<α`` 只说显著、
+    不说效应大」——大 ``n`` 下 ``AUC=0.51`` 也会通过前两条。**floor 数值须由人签署**
+    （同 ``θ^obs``；`AGENTS.md` 禁止 AI 填空），产物里连同实测 ``auc`` 一并上报。
 
     **不再**用「错分 < 多数类基线」作判据：``majority_baseline_error =
     min(n_high, n_low)/n`` **随抽样比例变化**（分层平衡下恒为 0.5），而候选阈值集含约
@@ -273,6 +287,7 @@ def axis_separation(values: Sequence[float], expected_high: Sequence[bool]) -> d
             "min_misclassification_error": error,
             "majority_baseline_error": baseline,
             "separable": False,
+            "auc_floor": auc_floor,
             "auc": None,
             "mannwhitney_p": None,
         }
@@ -283,8 +298,14 @@ def axis_separation(values: Sequence[float], expected_high: Sequence[bool]) -> d
         "min_misclassification_error": error,
         "majority_baseline_error": baseline,
         # 抽样不变判据（见 docstring）；min-错分率仅上报，不参与门禁。
-        "separable": bool(auc > 0.5 and float(test.pvalue) < SEPARATION_ALPHA),
+        # auc_floor=None 时不启用第三条（口径与历史逐位一致）。
+        "separable": bool(
+            auc > 0.5
+            and float(test.pvalue) < SEPARATION_ALPHA
+            and (auc_floor is None or auc >= float(auc_floor))
+        ),
         "auc": auc,
+        "auc_floor": auc_floor,
         "mannwhitney_p": float(test.pvalue),
     }
 
@@ -302,6 +323,12 @@ class CalibrationResult:
     misclass_rate_H: float
     separation_N: dict[str, Any]
     separation_H: dict[str, Any]
+    #: 参与门禁的生效轴（非生效轴仍上报，作为退役理由的证据）。2026-09-27：("N",)。
+    active_axes: tuple[str, ...] = ("N",)
+    #: 所有生效轴都 ``separable`` 才为真 —— 「θ^obs 可被签署」的机器判据。
+    confirmable: bool = False
+    #: 本次生效的效应量下限（None = 未启用）；数值由人签署。
+    auc_floor: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -314,16 +341,29 @@ class CalibrationResult:
             "misclass_rate_H": self.misclass_rate_H,
             "separation_N": self.separation_N,
             "separation_H": self.separation_H,
+            "active_axes": list(self.active_axes),
+            "confirmable": self.confirmable,
+            "auc_floor": self.auc_floor,
         }
 
 
-def calibrate(rows: Sequence[PenetranceRow], *, rule: str = "min_misclass") -> CalibrationResult:
+def calibrate(
+    rows: Sequence[PenetranceRow],
+    *,
+    rule: str = "min_misclass",
+    active_axes: tuple[str, ...] = ("N",),
+    auc_floor: float | None = None,
+) -> CalibrationResult:
     """在**独立校准集**上定 ``θ^obs``；两种口径都算并回报（``rule`` 只影响主读数选择）。"""
     if not rows:
         raise ValueError("校准集为空")
+    axes = _parse_active_axes(active_axes)
     n_values, high_n, h_values, high_h = _axis_arrays(rows)
     n_min, n_err = min_misclassification_threshold(n_values, high_n)
     h_min, h_err = min_misclassification_threshold(h_values, high_h)
+    sep_n = axis_separation(n_values, high_n, auc_floor=auc_floor)
+    sep_h = axis_separation(h_values, high_h, auc_floor=auc_floor)
+    sep_by_axis = {"N": sep_n, "H": sep_h}
     return CalibrationResult(
         theta_N_obs_min_misclass=n_min,
         theta_N_obs_median_midpoint=median_midpoint_threshold(n_values, high_n),
@@ -332,8 +372,11 @@ def calibrate(rows: Sequence[PenetranceRow], *, rule: str = "min_misclass") -> C
         n_rows=len(rows),
         misclass_rate_N=n_err,
         misclass_rate_H=h_err,
-        separation_N=axis_separation(n_values, high_n),
-        separation_H=axis_separation(h_values, high_h),
+        separation_N=sep_n,
+        separation_H=sep_h,
+        active_axes=axes,
+        confirmable=all(sep_by_axis[a]["separable"] for a in axes),
+        auc_floor=auc_floor,
     )
 
 
@@ -598,6 +641,23 @@ def rows_of(
 # ---------------------------------------------------------------------------
 
 
+def _parse_active_axes(raw: Any) -> tuple[str, ...]:
+    """解析并校验生效轴（``active_axes``）。空 / 未知轴 / 重复即报错。
+
+    默认 ``("N",)`` —— 单轴 N（2026-09-27 裁决：H 轴退役）。门禁只看生效轴，
+    非生效轴仍照常测量上报。
+    """
+    axes = tuple(str(a) for a in (("N",) if raw is None else raw))
+    if not axes:
+        raise ValueError("active_axes 不能为空（门禁将无轴可判）")
+    unknown = [a for a in axes if a not in SEPARATION_AXES]
+    if unknown:
+        raise ValueError(f"active_axes 含未知轴 {unknown}；合法值 {SEPARATION_AXES}")
+    if len(set(axes)) != len(axes):
+        raise ValueError(f"active_axes 有重复：{axes}")
+    return axes
+
+
 @dataclass(frozen=True)
 class PenetranceConfig:
     """``configs/penetrance.yaml`` 的解析结果（校准/报告独立样本 + 冻结后的 θ^obs）。
@@ -621,6 +681,11 @@ class PenetranceConfig:
     #: 1（默认）= 单次实现，口径与历史逐位一致。依据见 docs/参数总表.json 的
     #: penetrance_realisations_k（含实测 K 曲线）。
     realisations_k: int = 1
+    #: 参与 ``confirmed`` 门禁的**生效轴**（默认单轴 N；H 已按 2026-09-27 裁决退役）。
+    #: 非生效轴仍在 ``separation_*`` 里测量上报，作为退役理由的证据。
+    active_axes: tuple[str, ...] = ("N",)
+    #: 可选的效应量下限（AUC）；None = 不启用。**数值由人签署**（同 θ^obs）。
+    separation_auc_floor: float | None = None
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PenetranceConfig:
@@ -638,6 +703,12 @@ class PenetranceConfig:
             report_max_offspring=report.get("max_offspring"),
             report_demo_offspring=int(report.get("demo_offspring", 0)),
             realisations_k=int(data.get("realisations_k", 1)),
+            active_axes=_parse_active_axes(data.get("active_axes")),
+            separation_auc_floor=(
+                None
+                if data.get("separation_auc_floor") is None
+                else float(data["separation_auc_floor"])
+            ),
         )
 
 
@@ -724,8 +795,16 @@ def run_calibration(
             realisations_k=penetrance_config.realisations_k,
         )
         pooled.extend(rows)
-        per_seed[str(seed)] = calibrate(rows).to_dict()
-    result = calibrate(pooled)
+        per_seed[str(seed)] = calibrate(
+            rows,
+            active_axes=penetrance_config.active_axes,
+            auc_floor=penetrance_config.separation_auc_floor,
+        ).to_dict()
+    result = calibrate(
+        pooled,
+        active_axes=penetrance_config.active_axes,
+        auc_floor=penetrance_config.separation_auc_floor,
+    )
     payload: dict[str, Any] = {
         "kind": "penetrance_calibration",
         "experiment_id": experiment_id,
@@ -746,16 +825,24 @@ def run_calibration(
     return payload
 
 
-def _separation_of_rows(rows: Sequence[PenetranceRow]) -> dict[str, Any]:
-    """两观测轴对期望档的分离度诊断（用于报告 payload）。"""
+def _separation_of_rows(
+    rows: Sequence[PenetranceRow], *, auc_floor: float | None = None
+) -> dict[str, Any]:
+    """两观测轴对期望档的分离度诊断（用于报告 payload）。
+
+    两轴**都**测量上报（含已退役的 H 轴 —— 那是退役理由的证据）；``auc_floor`` 与
+    ``run_calibration`` 用同一个值，使报告里展示的 ``separable`` 与门禁判定一致。
+    """
     return {
         "N": axis_separation(
             [_readout_n(r) for r in rows],
             [r.expected_class in EXPECTED_HIGH_N for r in rows],
+            auc_floor=auc_floor,
         ),
         "H": axis_separation(
             [r.cv_tau for r in rows],
             [r.expected_class in EXPECTED_HIGH_H for r in rows],
+            auc_floor=auc_floor,
         ),
     }
 
@@ -868,7 +955,9 @@ def run_report(
             "pooled": pooled_stats,
             "cross_seed": _aggregate_per_class(per_seed_stats),
             "continuous": continuous_summary(all_rows),
-            "separation": _separation_of_rows(all_rows),
+            "separation": _separation_of_rows(
+                all_rows, auc_floor=penetrance_config.separation_auc_floor
+            ),
             "demo_9331": {
                 "offspring_per_seed": penetrance_config.report_demo_offspring,
                 "pooled_expected_counts": _genotype_counts(demo_rows),

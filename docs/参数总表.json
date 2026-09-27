@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.21",
+    "version": "v0.24",
     "date": "2026-09-27",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -149,29 +149,29 @@
     },
     {
       "name": "theta_N",
-      "value": 0.25,
+      "value": 0.67,
       "unit": "affinity",
       "group": "genome",
       "grade": "D",
       "status": "confirmed",
-      "basis": "high_N ⟺ E_A>θ_N（genome §3）；MVP 下 E_A∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量，取区间中点使到 {0,0.5} 边际最大、对 E 连续化稳健",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "basis": "high_N ⟺ E_A>θ_N（genome §3）。原：MVP 下 E∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量、取区间中点。**2026-09-27 重定**（并发 lane 提交 `8a5cf81`，本次仅补同步参数表）：E 已是**连续读出**（实测值域 0.56–0.81），原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使**全体判 high**、p(A)=p(B)≡1（Evolution 面板退化）。按本条的既有约定「若 E 改为连续读出须重定」，在**独立校准集**（seed=20260926, n=200，非演示种子）取每轴中位。故阈值合法区间由 (0,0.5) 放宽为 (0,1)（原「完全显性必要条件 (0,0.5)」只在离散 E 口径下成立）。项目自定义演示装置，非生物学结论。实测中位 E_A=0.667 ⇒ θ=0.67。",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3（2026-09-27 重定，见提交 8a5cf81）",
       "config": "configs/default_model.yaml → phenotype.theta_N",
       "sensitivity": null,
-      "suggest": "约束 θ∈(0,0.5)；若 E 改为连续读出须重定"
+      "suggest": "约束 θ∈(0,1)（连续 E 口径）。已按独立校准集**中位**重定 ⇒ 是**校准量**、非拟合量；若 E 的读出方式再变须重定。"
     },
     {
       "name": "theta_H",
-      "value": 0.25,
+      "value": 0.69,
       "unit": "affinity",
       "group": "genome",
       "grade": "D",
       "status": "confirmed",
-      "basis": "high_H ⟺ E_B>θ_H（genome §3）；同 theta_N 的约定逻辑",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "basis": "high_H ⟺ E_B>θ_H（genome §3）。原：MVP 下 E∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量、取区间中点。**2026-09-27 重定**（并发 lane 提交 `8a5cf81`，本次仅补同步参数表）：E 已是**连续读出**（实测值域 0.56–0.81），原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使**全体判 high**、p(A)=p(B)≡1（Evolution 面板退化）。按本条的既有约定「若 E 改为连续读出须重定」，在**独立校准集**（seed=20260926, n=200，非演示种子）取每轴中位。故阈值合法区间由 (0,0.5) 放宽为 (0,1)（原「完全显性必要条件 (0,0.5)」只在离散 E 口径下成立）。项目自定义演示装置，非生物学结论。实测中位 E_B=0.694 ⇒ θ=0.69。",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3（2026-09-27 重定，见提交 8a5cf81）",
       "config": "configs/default_model.yaml → phenotype.theta_H",
       "sensitivity": null,
-      "suggest": "约束 θ∈(0,0.5)；若 E 改为连续读出须重定"
+      "suggest": "约束 θ∈(0,1)（连续 E 口径）。已按独立校准集**中位**重定 ⇒ 是**校准量**、非拟合量；若 E 的读出方式再变须重定。"
     },
     {
       "name": "theta_N_obs",
@@ -184,7 +184,7 @@
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
       "config": "configs/penetrance.yaml → theta_N_obs",
       "sensitivity": null,
-      "suggest": "数值须**由人签署**（`configs/penetrance.yaml` 头部「禁止 AI 填空」；`placeholder` 亦然）。当前通道已开、两轴中 N 轴可分离但 H 轴不可分离：签署时须同时决定 `threshold_status`，并注意判据「两轴都 separable」在本 run 不成立。"
+      "suggest": "数值须**由人签署**（`configs/penetrance.yaml` 头部「禁止 AI 填空」；`placeholder` 亦然）。当前通道已开、两轴中 N 轴可分离但 H 轴不可分离：签署时须同时决定 `threshold_status`，并注意判据「两轴都 separable」在本 run 不成立。 ⚠️ 签署须**取同一产物内的成对值**（`theta_N_obs_min_misclass` 与 `theta_N_obs_median_midpoint` 同出一跑）；跨命名空间的数值（如 36.22/36.09、36.34/36.47、36.469/36.062）**不可混用**，否则报告与校准不自洽。"
     },
     {
       "name": "theta_H_obs",
@@ -2119,6 +2119,34 @@
       "config": "configs/penetrance.yaml → realisations_k",
       "sensitivity": null,
       "suggest": "已设 16（2026-09-27）。取 16 而非 64：曲线 16→64 已饱和（misclass 0.288→0.265），且**不完全外显率正是 penetrance 的生物学含义**（Cooper et al.）；须与 β=1.0 同批启用。"
+    },
+    {
+      "name": "penetrance_active_axes",
+      "value": [
+        "N"
+      ],
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "`confirmed` 门禁只判定这些轴。2026-09-27 用户裁决：H 轴退役 ⇒ 单轴 N。非生效轴仍照常测量并写进 separation_H（作为退役理由的证据），但不阻塞 θ 签署。合法轴 = SEPARATION_AXES = (\"N\", \"H\")；空 / 未知 / 重复即报错。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
+      "config": "configs/penetrance.yaml → active_axes",
+      "sensitivity": null,
+      "suggest": "H 轴退役是**设计裁决**（实测 H 轴两臂均不可分：β=1.0 时 AUC 0.4912 / p=0.389，β=0.0 时 0.4993；最小错分 0.488–0.496 ≈ 随机），故 no_basis = 设计选择。若日后 H 轴换读数后恢复区分力，把 \"H\" 加回本列表即可复检。"
+    },
+    {
+      "name": "penetrance_separation_auc_floor",
+      "value": null,
+      "unit": "AUC",
+      "group": "experiment",
+      "grade": "D",
+      "status": "missing",
+      "basis": "可选的**效应量下限**：启用后门禁叠加第三条 (AUC >= floor)。存在理由：p<α 只说明显著、不说明效应大（大 n 下 AUC=0.51 也通过前两条）。默认 null = 不启用（口径与历史逐位一致）。实测（出货配置、官方校准 seeds、n=3200、K=16）：N 轴 AUC **0.770–0.799**（三个独立 seed 命名空间 0.7701 / 0.7861 / 0.7991）⇒ floor 取 0.65 通过、取 0.85 不通过；AUC 随命名空间有抽样波动，故报区间。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py::axis_separation",
+      "config": "configs/penetrance.yaml → separation_auc_floor",
+      "sensitivity": null,
+      "suggest": "**数值须由人签署**（同 θ^obs；`AGENTS.md` 禁止 AI 填空）。签署时与 θ^obs / threshold_status 一并决定。现成判据参考：N 轴实测 AUC 0.770–0.799 ⇒ 取 0.65 通过、取 0.85 不通过；建议同时把该 floor 写进 §7 判据文本。"
     }
   ],
   "missing_required": {
