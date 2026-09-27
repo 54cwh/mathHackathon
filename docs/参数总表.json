@@ -2146,7 +2146,7 @@
       "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py::axis_separation",
       "config": "configs/penetrance.yaml → separation_auc_floor",
       "sensitivity": null,
-      "suggest": "**数值须由人签署**（同 θ^obs；`AGENTS.md` 禁止 AI 填空）。签署时与 θ^obs / threshold_status 一并决定。现成判据参考：N 轴实测 AUC 0.770–0.799 ⇒ 取 0.65 通过、取 0.85 不通过；建议同时把该 floor 写进 §7 判据文本。"
+      "suggest": "**数值须由人签署**（同 θ^obs；`AGENTS.md` 禁止 AI 填空）。签署时与 θ^obs / threshold_status 一并决定。现成判据参考：N 轴实测 AUC 0.770–0.799 ⇒ 取 0.65 通过、取 0.85 不通过；建议同时把该 floor 写进 §7 判据文本。 **2026-09-27 居中化（补记）**：参考 AUC 改为**居中读数**刻度 —— 校准集 0.8433 / 报告集 0.8678 ⇒ 取 0.65 通过、取 0.85 不通过（0.8433 < 0.85）。"
     }
   ],
   "missing_required": {

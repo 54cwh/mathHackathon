@@ -135,7 +135,7 @@ N_i=|M_i|\in[24,48],\quad H_i=\mathrm{CV}_\tau(i)=\frac{\mathrm{SD}_i(\tau)}{\ma
 
 1. 四个 \(\mathrm{pen}(g)\) 各带 Wilson 95% CI。
 2. 每个 genotype 类附 2×2 观测架构档混淆矩阵（8 格计数），定位是 N 轴还是 H 轴泄漏。
-3. 连续 \(N\) 与 \(\mathrm{CV}_\tau\) 的分布（violin/ECDF）与 pen **并列**报告；pen 是派生摘要，不是主读数。
+3. 连续 \(N\) 与 \(\mathrm{CV}_\tau\) 的分布（violin/ECDF）与 pen **并列**报告；pen 是派生摘要，不是主读数。 \(N\) 须同时报**原始** \(\bar N_K\) 与**逐 seed 居中**读数（基线 = 该 seed 分层集读数中位数；2026-09-27，见 `experiment §3.9`）—— 只有居中读数进判档。
 4. genotype 计数（理想 9:3:3:1）与 phenotype penetrance（含噪声）分成两个数。
 5. \(\theta^{\mathrm{obs}}\)、所用 \(\tau\) 异质性统计量、校准集代数与 seed 全部落盘。
 
