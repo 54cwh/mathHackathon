@@ -79,7 +79,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
       <div className="border border-border p-2">
         <div className="mb-1"><SectionLabel en="DNA DIFFERENCE" zh="碱基差异" /></div>
         {mutations.length === 0 ? (
-          <p className="font-mono text-[10px] text-muted-foreground">
+          <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             尚无突变（MUTATE 后在此累计）
           </p>
         ) : (
@@ -97,7 +97,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
       <div className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between font-pixel text-[10px] leading-none">
           <span>MOTIF AFFINITY (q)</span>
-          <span className="font-mono text-[9px] text-muted-foreground">q∈[0,1]，8 motif</span>
+          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">q∈[0,1]，8 motif</span>
         </div>
         <MetricChart
           height={40}
@@ -180,7 +180,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
         得到略有差别的表型。故单碱基编辑的 Δ 不可直接读作突变效应；要分离遗传效应，需多次抽样取均值。
       </p>
 
-      <p className="font-mono text-[10px] text-muted-foreground">
+      <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
         未展示：边的增删差集、GRN 逐步表达、Arena 行为指标。
       </p>
     </div>

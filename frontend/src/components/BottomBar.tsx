@@ -37,18 +37,20 @@ export function BottomBar() {
       <button
         type="button"
         onClick={() => void handleToggle()}
+        title="Pause 暂停 / Release 推进"
         className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm"
       >
         {running ? <Pause className="size-4" /> : <Play className="size-4" />}
-        {running ? "Pause · 暂停" : "Release · 推进"}
+        {running ? "Pause" : "Release"}
       </button>
       <button
         type="button"
         onClick={bumpReset}
+        title="Reset 重置会话"
         className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm"
       >
         <RotateCcw className="size-4" />
-        Reset · 重置
+        Reset
       </button>
       <div className="ml-auto">
         <ViewTabs />

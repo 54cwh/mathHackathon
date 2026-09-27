@@ -68,6 +68,8 @@ export function EvolutionDashboardPanel() {
   const [job, setJob] = useState<JobStatus | null>(null);
   /** job 来源：只有环境选择 job 完成才刷新「详情=最新实验」，会话演化不产 ExperimentRun。 */
   const [busy, setBusy] = useState(false);
+  /** 发起新实验的表单默认折叠（演示时不抢戏）。 */
+  const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 列表与详情
   const [items, setItems] = useState<EnvironmentalSelectionSummary[]>([]);
@@ -210,81 +212,103 @@ export function EvolutionDashboardPanel() {
   const running = job?.status === "running" || job?.status === "queued";
 
   return (
-    <Panel title="Evolution Dashboard" titleZh="演化面板" icon={<FlaskConical className="size-4 text-primary" />}>
+    <Panel
+      title="Evolution Dashboard"
+      titleZh="演化面板"
+      icon={<FlaskConical className="size-4 text-primary" />}
+    >
       <div className="grid h-full min-h-0 grid-cols-2 divide-x divide-border">
-        {/* 左：launch 表单 + 当前 job */}
-        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pr-3">
-          <SectionLabel en="ENVIRONMENTAL SELECTION" zh="环境选择实验" />
-
-          <label className="flex flex-col gap-1">
-            <SectionLabel en="NAME" zh="名称" />
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border border-border bg-transparent px-1 py-0.5 font-mono text-xs"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1">
-            <SectionLabel en="SEEDS" zh="种子" />
-            <input
-              value={seedsText}
-              onChange={(e) => setSeedsText(e.target.value)}
-              className="border border-border bg-transparent px-1 py-0.5 font-mono text-xs"
-            />
-            <span className="font-mono text-[10px] text-muted-foreground">
-              {seeds.length}/{MAX_SEEDS} 个：{seeds.join(", ") || "—"}
+        {/* 左：发起新实验（默认折叠）+ 本进程实验列表。该区字号统一放大到 12px。 */}
+        <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-3">
+          <button
+            type="button"
+            onClick={() => setShowForm((v) => !v)}
+            className="flex items-center justify-between border border-border px-2 py-1.5 text-left"
+          >
+            <span className="inline-flex items-baseline gap-1.5">
+              <span className="font-pixel text-[12px] leading-none">ENVIRONMENTAL SELECTION</span>
+              <span className="text-[12px] leading-none text-muted-foreground">环境选择实验</span>
             </span>
-          </label>
+            <span className="font-pixel text-[12px] leading-none text-muted-foreground">
+              {showForm ? "▾ 收起" : "▸ 发起新实验"}
+            </span>
+          </button>
 
-          <div className="flex items-end gap-2">
-            <label className="flex flex-col gap-1">
-              <SectionLabel en="ENV" zh="环境" />
-              <select
-                value={environment}
-                onChange={(e) => setEnvironment(e.target.value as Environment)}
-                className="border border-border bg-transparent px-1 py-0.5 font-mono text-xs"
-              >
-                {ENVIRONMENTS.map((env) => (
-                  <option key={env} value={env}>
-                    {env}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1">
-              <SectionLabel en="GENS" zh="代数" />
-              <input
-                type="number"
-                min={1}
-                value={generations}
-                onChange={(e) => setGenerations(Number(e.target.value))}
-                className="w-20 border border-border bg-transparent px-1 py-0.5 font-mono text-xs"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => void handleLaunch()}
-              disabled={busy || running || !seedsValid}
-              className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
-            >
-              LAUNCH
-            </button>
-            {running && (
-              <button
-                type="button"
-                onClick={() => void handleCancel()}
-                className="inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none"
-              >
-                <X className="size-3" />
-                CANCEL
-              </button>
-            )}
-          </div>
+          {showForm && (
+            <>
+              <label className="flex flex-col gap-1">
+                <span className="text-[12px] text-muted-foreground">名称 NAME</span>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="border border-border bg-transparent px-1 py-1 font-mono text-sm"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1">
+                <span className="text-[12px] text-muted-foreground">种子 SEEDS</span>
+                <input
+                  value={seedsText}
+                  onChange={(e) => setSeedsText(e.target.value)}
+                  className="border border-border bg-transparent px-1 py-1 font-mono text-sm"
+                />
+                <span className="font-mono text-[12px] text-muted-foreground">
+                  {seeds.length}/{MAX_SEEDS} 个：{seeds.join(", ") || "—"}
+                </span>
+              </label>
+
+              <div className="flex items-end gap-2">
+                <label className="flex flex-col gap-1">
+                  <span className="text-[12px] text-muted-foreground">环境 ENV</span>
+                  <select
+                    value={environment}
+                    onChange={(e) => setEnvironment(e.target.value as Environment)}
+                    className="border border-border bg-transparent px-1 py-1 font-mono text-sm"
+                  >
+                    {ENVIRONMENTS.map((env) => (
+                      <option key={env} value={env}>
+                        {env}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-[12px] text-muted-foreground">代数 GENS</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={generations}
+                    onChange={(e) => setGenerations(Number(e.target.value))}
+                    className="w-20 border border-border bg-transparent px-1 py-1 font-mono text-sm"
+                  />
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void handleLaunch()}
+                  disabled={busy || running || !seedsValid}
+                  className="border border-border px-2 py-1.5 font-pixel text-[12px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+                >
+                  LAUNCH · 启动
+                </button>
+                {running && (
+                  <button
+                    type="button"
+                    onClick={() => void handleCancel()}
+                    className="inline-flex items-center gap-1 border border-border px-2 py-1.5 font-pixel text-[12px] leading-none"
+                  >
+                    <X className="size-3" />
+                    CANCEL
+                  </button>
+                )}
+              </div>
+            </>
+          )}
 
           {job && (
             <div className="space-y-1 border border-border p-2">
-              <div className="flex items-center justify-between font-mono text-[10px]">
+              <div className="flex items-center justify-between font-mono text-[12px]">
                 <span className="truncate">{job.job_id}</span>
                 <span className={statusColor(job.status)}>{job.status}</span>
               </div>
@@ -294,104 +318,102 @@ export function EvolutionDashboardPanel() {
                   style={{ width: `${Math.round(Math.max(0, Math.min(1, job.progress)) * 100)}%` }}
                 />
               </div>
-              <div className="font-mono text-[10px] text-muted-foreground">
+              <div className="font-mono text-[12px] text-muted-foreground">
                 {(job.progress * 100).toFixed(0)}%
                 {typeof job.detail?.error === "string" ? ` · ${job.detail.error}` : ""}
               </div>
             </div>
           )}
 
-          <p className="text-xs text-muted-foreground">
-            {error
-              ? `⚠ ${error}`
-              : "每个种子产出一个 run；后台执行，进度自动更新。"}
-          </p>
-        </div>
+          {error && <p className="text-[12px] text-brand-danger-red">⚠ {error}</p>}
 
-        {/* 右：历史实验列表 + 详情 */}
-        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
-          <div className="flex items-center justify-between">
-            <SectionLabel en="SELECTION JOBS" zh="实验任务" />
-            <button
-              type="button"
-              onClick={() => {
-                void refreshList();
-                void refreshRuns();
-              }}
-              className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
-            >
-              <RefreshCw className="size-3" />
-              REFRESH
-            </button>
-          </div>
-
-          <ul className="flex flex-col gap-1">
-            {items.map((item) => (
-              <li key={item.experiment_id}>
-                <button
-                  type="button"
-                  onClick={() =>
-                    void getSelection(item.experiment_id).then(setDetail).catch((e) => setError(String(e)))
-                  }
-                  className={`flex w-full items-center justify-between border border-border px-2 py-1 text-left font-mono text-[10px] ${
-                    detail?.experiment_id === item.experiment_id ? "bg-brand-fish-navy text-brand-bone" : ""
-                  }`}
-                >
-                  <span className="truncate">{item.name}</span>
-                  <span className="truncate text-muted-foreground">
-                    {item.experiment_id} · s{item.seeds.length}
-                  </span>
-                  <span className={statusColor(item.status)}>{item.status}</span>
-                </button>
-              </li>
-            ))}
-            {items.length === 0 && (
-              <li className="font-mono text-[10px] text-muted-foreground">
-                本进程尚未发起实验（内存表，重启即空）；历史 run 见下方 DISK RUNS。
-              </li>
-            )}
-          </ul>
-
-          {/* §8 指标（磁盘 run；与内存实验表无关，重启后仍在） */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <SectionLabel en="DISK RUNS" zh="历史运行" />
-              <span className="font-mono text-[10px] text-muted-foreground">
-                {runId ?? "未选择 run"}
+          <div className="space-y-1">
+            <span className="inline-flex items-baseline gap-1.5">
+              <span className="font-pixel text-[12px] leading-none">SELECTION JOBS</span>
+              <span className="text-[12px] leading-none text-muted-foreground">
+                本进程实验（重启即空）
               </span>
-            </div>
-            <ul className="flex max-h-24 flex-col gap-1 overflow-y-auto">
-              {runs.map((run) => (
-                <li key={run.run_id}>
+            </span>
+            <ul className="flex flex-col gap-1">
+              {items.map((item) => (
+                <li key={item.experiment_id}>
                   <button
                     type="button"
-                    onClick={() => setRunId(run.run_id)}
-                    className={`flex w-full items-center justify-between border border-border px-2 py-0.5 text-left font-mono text-[10px] ${
-                      runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
+                    onClick={() =>
+                      void getSelection(item.experiment_id)
+                        .then(setDetail)
+                        .catch((e) => setError(String(e)))
+                    }
+                    className={`flex w-full items-center justify-between border border-border px-2 py-1 text-left font-mono text-[12px] ${
+                      detail?.experiment_id === item.experiment_id
+                        ? "bg-brand-fish-navy text-brand-bone"
+                        : ""
                     }`}
                   >
-                    <span className="truncate">{run.run_id}</span>
+                    <span className="truncate">{item.name}</span>
                     <span className="truncate text-muted-foreground">
-                      s{run.seed ?? "—"} · {run.generations ?? 0} 代
+                      {item.experiment_id} · s{item.seeds.length}
                     </span>
-                    <span className="truncate text-muted-foreground">{run.status}</span>
+                    <span className={statusColor(item.status)}>{item.status}</span>
                   </button>
                 </li>
               ))}
-              {runs.length === 0 && (
-                <li className="font-mono text-[10px] text-muted-foreground">
-                  暂无历史 run
+              {items.length === 0 && (
+                <li className="font-mono text-[12px] text-muted-foreground">
+                  本进程尚未发起实验；右侧历史运行不受影响。
                 </li>
               )}
             </ul>
-            {evolution ? (
-              <EvolutionMetrics evolution={evolution} />
-            ) : (
-              <div className="border border-border p-2 font-mono text-[10px] text-muted-foreground">
-                选择上方任一 run 查看逐代指标。
-              </div>
+          </div>
+        </div>
+
+        {/* 右：历史运行（逐代指标）—— 演示先看证据 */}
+        <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
+          <div className="flex items-center justify-between gap-2">
+            <SectionLabel en="DISK RUNS" zh="历史运行" />
+            <span className="flex items-center gap-2">
+              <span className="font-mono text-[10px] text-muted-foreground">
+                {runId ?? "未选择 run"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  void refreshList();
+                  void refreshRuns();
+                }}
+                className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
+              >
+                <RefreshCw className="size-3" />
+                REFRESH · 刷新
+              </button>
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-1">
+            {runs.map((run) => (
+              <button
+                key={run.run_id}
+                type="button"
+                onClick={() => setRunId(run.run_id)}
+                className={`border border-border px-2 py-0.5 font-mono text-[10px] leading-none ${
+                  runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
+                }`}
+              >
+                {run.run_id} · s{run.seed ?? "—"} · {run.generations ?? 0} 代
+              </button>
+            ))}
+            {runs.length === 0 && (
+              <span className="font-mono text-[10px] text-muted-foreground">暂无历史 run</span>
             )}
           </div>
+
+          {evolution ? (
+            <EvolutionMetrics evolution={evolution} />
+          ) : (
+            <div className="border border-border p-2 font-mono text-[10px] text-muted-foreground">
+              选择上方任一 run 查看逐代指标。
+            </div>
+          )}
 
           {detail && (
             <div className="border border-border p-2">

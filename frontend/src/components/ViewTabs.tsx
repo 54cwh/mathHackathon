@@ -41,6 +41,7 @@ export function ViewTabs() {
             type="button"
             role="tab"
             aria-selected={active}
+            title={view.zh}
             onClick={() => setActiveView(view.id)}
             className={cn(
               "px-3 py-1.5 font-pixel text-[10px] leading-none",
@@ -49,7 +50,7 @@ export function ViewTabs() {
                 : "bg-card text-muted-foreground hover:bg-brand-slate-shadow hover:text-brand-bone",
             )}
           >
-            {view.label} · {view.zh}
+            {view.label}
           </button>
         );
       })}

@@ -13,12 +13,16 @@ import type { DevelopmentTraceSample } from "@/api/types";
  * `BrainForgeVisual` 的**真实几何**，两边必须同一个游标，否则图与曲线不同步。
  */
 
-const STAGE_LABEL: Record<DevelopmentTraceSample["stage"], string> = {
-  grn: "GRN 表达迭代",
-  proliferate: "前体细胞增殖",
-  fate: "细胞分化落定",
-  connectome: "连接组成形",
-};
+/** 阶段轨各位置的显示名（与 `PIPELINE_STAGES` 同序；`activeIndex` 即下标）。 */
+const STAGE_DISPLAY: readonly string[] = [
+  "motif 与输入",
+  "motif 亲和度 q(S)",
+  "GRN 表达迭代",
+  "前体细胞增殖",
+  "细胞分化落定",
+  "连接组成形",
+  "DanioNet 激活",
+];
 
 export interface DevelopmentPipelineProps {
   trace: DevelopmentTraceSample[] | null;
@@ -57,7 +61,7 @@ function stageRail(activeIndex: number, danionetLive: boolean) {
               role="listitem"
               data-live={danionetLive ? "true" : undefined}
               title={danionetLive ? "该个体正在推送实时神经活动" : "等待实时神经活动"}
-              className={`border border-border px-1.5 py-0.5 font-pixel text-[9px] leading-none ${
+              className={`border border-border px-1.5 py-0.5 font-pixel text-[10px] leading-none ${
                 danionetLive ? "bg-brand-grass-green text-brand-ink" : "text-muted-foreground"
               }`}
             >
@@ -71,7 +75,7 @@ function stageRail(activeIndex: number, danionetLive: boolean) {
             key={label}
             role="listitem"
             aria-current={state === "active" ? "step" : undefined}
-            className={`border border-border px-1.5 py-0.5 font-pixel text-[9px] leading-none ${
+            className={`border border-border px-1.5 py-0.5 font-pixel text-[10px] leading-none ${
               state === "active"
                 ? "bg-brand-fish-navy text-brand-bone"
                 : state === "done"
@@ -128,7 +132,7 @@ export function DevelopmentPipeline({
       <div className="space-y-2 border border-border p-2">
         <div><SectionLabel en="DEVELOPMENT PIPELINE" zh="发育管线" /></div>
         {stageRail(0, false)}
-        <p className="font-mono text-[10px] text-muted-foreground">
+        <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
           尚无发育轨迹。在左侧 DNA2Brain Lab 点 DEVELOP 开始。
         </p>
       </div>
@@ -171,8 +175,8 @@ export function DevelopmentPipeline({
           {cursor + 1}/{trace.length}
         </span>
         <span className="truncate font-mono text-[10px]">
-          {current ? STAGE_LABEL[current.stage] : ""}
-          {current?.stage === "grn" ? ` · step ${current.step}` : ""}
+          {current ? STAGE_DISPLAY[activeIndex] : ""}
+          {current?.stage === "grn" && activeIndex === 2 ? ` · step ${current.step}` : ""}
         </span>
       </div>
 
@@ -237,7 +241,7 @@ export function DevelopmentPipeline({
         <span>{current ? `max|g| ${current.max_abs.toFixed(3)}` : ""}</span>
       </div>
 
-      <p className="font-mono text-[10px] text-muted-foreground">
+      <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
         真实发育过程：GRN 表达迭代 {trace.filter((s) => s.stage === "grn").length - 1} 步 →
         前体细胞增殖 → 细胞分化 → 连接组成形。均为模型真实中间状态。
       </p>

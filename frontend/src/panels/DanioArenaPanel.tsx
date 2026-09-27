@@ -336,7 +336,7 @@ export function DanioArenaPanel() {
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
               <SectionLabel en="FISH CARD" zh="个体卡片" />
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
                 {card ? shortId(card.fish_id) : "—"}
               </span>
             </div>
@@ -442,7 +442,7 @@ export function DanioArenaPanel() {
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
             <SectionLabel en="EVOLVE" zh="演化" />
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
               GENERATION {generation}
             </span>
           </div>

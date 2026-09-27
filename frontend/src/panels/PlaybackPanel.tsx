@@ -183,7 +183,7 @@ export function PlaybackPanel() {
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
               <SectionLabel en="CONTROLLED FISH" zh="被控鱼" />
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
                 {controlledId ?? "—"}
               </span>
             </div>
@@ -201,7 +201,7 @@ export function PlaybackPanel() {
                 </button>
               ))}
               {alive.length === 0 && (
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
                   {sessionId ? "等待会话场景…" : "无会话：Experiment 视图的 Arena 尚未连上后端"}
                 </span>
               )}

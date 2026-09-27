@@ -263,10 +263,10 @@ export function DNA2BrainPanel() {
         {/* min-h-40 + flex-[3]：面板矮时视觉区不被下方内容挤成 0 高（实测过 0 高黑块）。 */}
         <div className="min-h-32 flex-[3] overflow-hidden">
           <div className="flex items-baseline justify-between">
-            <span className="font-pixel text-[9px] leading-none text-muted-foreground">
+            <span className="font-pixel text-[10px] leading-none text-muted-foreground">
               HELIX (SCHEMATIC)
             </span>
-            <span className="font-mono text-[9px] text-muted-foreground">
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
               显示 {activeRow?.label ?? "—"} · 非互补配对
             </span>
           </div>
@@ -285,7 +285,7 @@ export function DNA2BrainPanel() {
             const view = rowWindow(row);
             return (
               <div key={row.label} className="flex items-center gap-1">
-                <span className="w-[52px] shrink-0 font-pixel text-[9px] leading-none text-muted-foreground">
+                <span className="w-[52px] shrink-0 font-pixel text-[10px] leading-none text-muted-foreground">
                   {row.label}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -299,7 +299,7 @@ export function DNA2BrainPanel() {
               </div>
             );
           })}
-          <p className="font-mono text-[9px] leading-tight text-muted-foreground">
+          <p className="font-mono text-[10px] leading-tight text-muted-foreground">
             四条单倍体：P0/P1 × 母源 MAT / 父源 PAT，共 512 个位点。
             <span className="text-brand-amber"> 同源位点之间不是碱基配对</span>
             （每条链各自独立随机，不存在 A–T / C–G 互补）。
@@ -348,7 +348,7 @@ export function DNA2BrainPanel() {
                 </option>
               ))}
             </select>
-            <span className="font-mono text-[10px] text-muted-foreground">/ {MAX_POSITION}</span>
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">/ {MAX_POSITION}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -393,7 +393,7 @@ export function DNA2BrainPanel() {
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
             <SectionLabel en="PHENOTYPE" zh="表型" />
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
               seed {DEV_SEED} · {development ? (development.phenotype.viable ? "viable" : "non-viable") : "—"}
             </span>
           </div>

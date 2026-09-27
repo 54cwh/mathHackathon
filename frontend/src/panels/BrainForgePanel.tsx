@@ -194,10 +194,10 @@ export function BrainForgePanel() {
         {/* §4 发育管线（真实逐阶段轨迹；数据来自 DNA 实验室的 with_trace 发育）。
             shrink-0 = 按内容高，避免与下方 ACTIVATION 之间出现空档。 */}
         <div className="min-h-0 shrink-0">
-          <div className="flex items-center justify-between">
-            <SectionLabel en="CONNECTOME LAYER" zh="连接组图层" />
-            <span className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-between gap-1">
+            <SectionLabel en="CONNECTOME LAYER" zh="连接组图层" className="shrink-0" />
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
                 edges {currentSample?.edges ? currentSample.edges.length : "—"}
               </span>
               <button
@@ -253,7 +253,7 @@ export function BrainForgePanel() {
         <div className="shrink-0 space-y-2 overflow-y-auto border border-border p-2">
           <div className="flex items-center justify-between">
             <SectionLabel en="ACTIVATION" zh="神经活动" />
-            <span className="font-mono text-[10px] text-muted-foreground">
+            <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
               {activation ? `step ${activation.step} · fish ${fishIds.length}` : ""}
             </span>
           </div>

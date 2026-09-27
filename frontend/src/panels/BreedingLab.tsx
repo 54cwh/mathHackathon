@@ -49,7 +49,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
     <section className="border border-border p-2">
       <div className="mb-1 flex items-center justify-between">
         <SectionLabel en="MENDEL / BREEDING" zh="孟德尔 / 育种" />
-        <span className="font-mono text-[10px] text-muted-foreground">
+        <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
           {slotA ? shortId(slotA.genome_id) : "A —"} × {slotB ? shortId(slotB.genome_id) : "B —"}
         </span>
       </div>
@@ -100,7 +100,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
 
       {result && (
         <div className="mt-2 space-y-1">
-          <div className="font-mono text-[10px] text-muted-foreground">
+          <div className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             mu {String(result.meiosis_trace.mu ?? "—")} · crossover{" "}
             {String(result.meiosis_trace.crossover_probability ?? "—")} · offspring{" "}
             {result.offspring.length}

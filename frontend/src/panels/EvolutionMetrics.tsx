@@ -112,8 +112,8 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       {/* p(A) / p(B) + 等位频率表 */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
-          <SectionLabel en="P(A) / P(B)" zh="表型比例" />
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <SectionLabel en="P(A) / P(B)" zh="期望表型比例（基因型读出）" />
+          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             {fmt(last.p_A, 2)} / {fmt(last.p_B, 2)}
           </span>
         </div>
@@ -157,7 +157,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
           <SectionLabel en="FITNESS" zh="适应度" />
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             mean {fmt(last.fitness_mean)} ± {fmt(last.fitness_std)}
           </span>
         </div>
@@ -220,7 +220,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
           }}
         />
         {typeof last.mean_neuron !== "number" && (
-          <p className="font-mono text-[10px] text-muted-foreground">
+          <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             该 run 未记录神经元数 / 连接数 / τ 均值（早期版本），形态与 τ 曲线为空。
           </p>
         )}
@@ -230,7 +230,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
           <SectionLabel en="VIABILITY" zh="可育性" />
-          <span className="font-mono text-[10px] text-muted-foreground">
+          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             {typeof last.n_viable === "number" && typeof last.n_individuals === "number" && last.n_individuals > 0
               ? `${((last.n_viable / last.n_individuals) * 100).toFixed(0)}%`
               : "—"}
