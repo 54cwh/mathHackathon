@@ -40,6 +40,8 @@ EvoGenesis 是一个可离线运行的计算实验平台。它定义一套可编
 
 ### 数据流
 
+![EvoGenesis 数据流总览：configs → SeedManager → genome → development → connectome → Arena，Arena 之后分三条同源分支，红框 ΔW 为不遗传的遗传边界](paper/latex/figs/fig_pipeline.png)
+
 ```text
 configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → T → F → P_{t+1}
 ```
