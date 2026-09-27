@@ -326,9 +326,13 @@ def architecture(e_a: np.float32, e_b: np.float32, theta_N: float, theta_H: floa
 
     消费者为 **penetrance 报告**（`experiment`），**不进入 development**（`RGCD §1`）。
     """
+    # (0, 1)：`E` 为连续读出时阈值须落在值域内部；原 (0, 0.5) 只适用于离散
+    # `E∈{0,0.5,1}` 的完全显性约定（`genome §3`，2026-09-27 按独立校准集中位重定）。
     for name, theta in (("theta_N", theta_N), ("theta_H", theta_H)):
-        if not 0.0 < theta < 0.5:
-            raise ValueError(f"{name} 须落在 (0, 0.5)（genome §3 完全显性必要条件），实际 {theta}")
+        if not 0.0 < theta < 1.0:
+            raise ValueError(
+                f"{name} 须落在 (0, 1)（genome §3 阈值表型；连续 E 按校准集中位定值），实际 {theta}"
+            )
     return Architecture(high_N=bool(e_a > theta_N), high_H=bool(e_b > theta_H))
 
 

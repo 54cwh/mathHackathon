@@ -8,8 +8,11 @@ genome:
   motif_subset_A: 0
   motif_subset_B: 1
 phenotype:
-  theta_N: 0.25
-  theta_H: 0.25
+  # 阈值表型的架构阈值（`genome §3`）。2026-09-27 重定：E 已是**连续读出**（实测 0.56–0.81），
+  # 原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使全体判「高」、p(A)=p(B)≡1；改取
+  # **独立校准集**（seed=20260926, n=200）每轴中位：E_A=0.667、E_B=0.694。
+  theta_N: 0.67
+  theta_H: 0.69
 grn:
   dim: 8
   development_steps: 12

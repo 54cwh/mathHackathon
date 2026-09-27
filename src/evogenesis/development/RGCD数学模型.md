@@ -1,7 +1,7 @@
 # RGCD 数学模型规范
 
 > **管辖范围**：RGCD 全部算法与发育产物 `(A,Z,τ,W⁰,M)`、cell type 产出、viability 判据。（层级与归属见 `AGENTS.md`「文档层级与优先级」。）
-> 状态：**v1.8 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H=0.25\) 已定稿（`genome §3`；`docs/参数总表.json` confirmed）。
+> 状态：**v1.8 已定稿（冻结 2026-09-26）**。范围外：G2 left/right 标记（`DanioNet §5`）、G3 动作合成（`DanioNet §4`）；\(\theta_N,\theta_H=0.67/0.69\)（`genome §3` 2026-09-27 按独立校准集重定）。
 
 ## 1. 输入输出
 
@@ -479,5 +479,5 @@ x_{\text{Energy}}=\frac{E(T)-E_{\max}}{T}.
 
 （无遗留：
 - G2 left/right 标记归 `connectome/DanioNet设计规范.md` §5、G3 动作合成 \(y_\omega,y_v\) 归其 §4；§7 developmental viability 只**引用**该标记，属**范围外**，待 DanioNet 冻结时闭合。
-- \(\theta_N,\theta_H=0.25\)（genome §3，约定值，非标定量）；本文件 §7 只引用其规则。
+- \(\theta_N,\theta_H=0.67/0.69\)（genome §3；2026-09-27 按独立校准集中位重定，非拟合量）；本文件 §7 只引用其规则。
 - bp 口径（已定）：haploid \(=2\times128=256\) bp，motif 窗口逐染色体、不跨界，见 §2。）

@@ -128,8 +128,8 @@ def test_loads_frozen_default_model():
     cfg = load_config(DEFAULT_MODEL, environ={})
     assert cfg.genome.chromosome_pairs == 2
     assert cfg.genome.bp_per_haplotype_chromosome == 128
-    assert cfg.phenotype.theta_N == 0.25
-    assert cfg.phenotype.theta_H == 0.25
+    assert cfg.phenotype.theta_N == 0.67
+    assert cfg.phenotype.theta_H == 0.69
     assert cfg.network.sensory_dim == 12
     assert cfg.learning.lr == 0.001
     assert cfg.learning.optimizer == "adam"
@@ -199,5 +199,5 @@ def test_missing_file_rejected(tmp_path):
 def test_snapshot_roundtrip():
     cfg = load_config(DEFAULT_MODEL, environ={})
     snapshot = config_snapshot(cfg)
-    assert snapshot["phenotype"]["theta_N"] == 0.25
+    assert snapshot["phenotype"]["theta_N"] == 0.67
     assert load_config(DEFAULT_MODEL, environ={}).model_dump() == snapshot

@@ -43,15 +43,20 @@ class GenomeConfig(_Section):
 
 
 class PhenotypeConfig(_Section):
-    theta_N: float = 0.25
-    theta_H: float = 0.25
+    #: 阈值表型的架构阈值（`genome §3`）。默认与 `configs/default_model.yaml` 一致：
+    #: 连续读出 E 下按**独立校准集**每轴中位重定（2026-09-27），见该文件注释。
+    theta_N: float = 0.67
+    theta_H: float = 0.69
 
     @model_validator(mode="after")
     def _check_theta_range(self) -> PhenotypeConfig:
+        # (0, 1)：`E` 为连续读出时阈值须落在值域内部；原 (0, 0.5) 只适用于离散
+        # `E∈{0,0.5,1}` 的完全显性约定（`genome §3`）。
         for name, value in (("theta_N", self.theta_N), ("theta_H", self.theta_H)):
-            if not 0.0 < value < 0.5:
+            if not 0.0 < value < 1.0:
                 raise ValueError(
-                    f"{name} 须落在 (0, 0.5)（genome §3 完全显性必要条件），实际 {value}"
+                    f"{name} 须落在 (0, 1)（genome §3 阈值表型；连续 E 按独立校准集中位定值），"
+                    f"实际 {value}"
                 )
         return self
 

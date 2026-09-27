@@ -328,8 +328,13 @@ def dashboard_aggregates(
 ) -> dict:
     """Evolution Dashboard 聚合（`交互与可视化.md` §8；`代循环编排.md` §5）。
 
-    `p_A` = `P(high_N)`、`p_B` = `P(high_H)`（`genome §3` 阈值表型）；`phenotype_freq` 为四类
-    架构档频率；连接组均值为 `evaluation.phenotypes` 上的活跃神经元 / 非零边 / `tau` 均值。
+    **这里算的是"期望表型"（基因型读出）**：`architecture(E_A, E_B, θ_N, θ_H)`，其中
+    ``E_A/E_B`` 由基因组与 motif 亲和直接读出（`genome §3`，**不进入发育**）。之所以不用观测档
+    （`N=|M|`、`H=CV_τ`）：实测观测档在演化中几乎不变（选的是行为适应度），当比例曲线是直线；
+    观测档与外显率的差距属 `experiment/penetrance.py`（"基因型→表型"研究点），不在本面板。
+
+    `p_A` = `P(high_N)`、`p_B` = `P(high_H)`；连接组均值为 `evaluation.phenotypes` 上的
+    活跃神经元 / 非零边 / `tau` 均值。
     """
     classes = [
         architecture(
