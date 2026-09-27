@@ -2,7 +2,7 @@
 
 覆盖：Mendel 装置构造（q 值）、`CV_τ`、Wilson CI、两种校准口径、**分离度诊断**、**分层平衡
 抽样**、端到端 payload 与 schema。端到端用小样本，真实规模见 `configs/penetrance.yaml`
-（草案待确认）。
+（2026-09-27 起已签署，见 `configs/penetrance.yaml`）。
 """
 
 from __future__ import annotations
@@ -189,6 +189,10 @@ def _small_config() -> P.PenetranceConfig:
     base = P.load_penetrance_config()
     return dataclasses.replace(
         base,
+        threshold_status="unset",  # 单元测试与发货签署解耦：本 helper 恒为未签署态
+        theta_N_obs=None,
+        theta_H_obs=None,
+        separation_auc_floor=None,
         calibration_master_seeds=(1103,),
         calibration_per_class=PER_CLASS,
         calibration_max_offspring=None,
@@ -367,10 +371,17 @@ def test_config_parses_active_axes_and_floor():
     assert explicit.separation_auc_floor == pytest.approx(0.7)
 
 
-def test_shipped_penetrance_config_declares_single_axis_n():
+def test_shipped_penetrance_config_declares_the_signed_contract():
+    """发货配置是**已签署**的单轴契约（2026-09-27）：生效轴只有 N。
+
+    守护点：θ_N^obs（居中刻度）与效应量下限一旦签署即冻结；H 轴退役 ⇒ θ_H^obs 有意留空。
+    """
     cfg = P.load_penetrance_config()
     assert cfg.active_axes == ("N",)
-    assert cfg.separation_auc_floor is None
+    assert cfg.threshold_status == "confirmed"
+    assert cfg.theta_N_obs == pytest.approx(-0.0312)
+    assert cfg.theta_H_obs is None  # H 退役 ⇒ 不签
+    assert cfg.separation_auc_floor == pytest.approx(0.70)
 
 
 def test_report_two_axis_mode_is_unchanged():

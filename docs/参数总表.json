@@ -1,2420 +1,2418 @@
-{
-  "meta": {
-    "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.26",
-    "date": "2026-09-27",
-    "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
-    "audit_source": "已并入本文件",
-    "research": [
-      "research/reference/param-basis-engineering.md",
-      "research/reference/param-basis-biology.md",
-      "research/reference/zebrafish-escape-capture.md"
-    ],
-    "legend_grade": {
-      "A": "结构/定义：由模型结构必然推出",
-      "B": "外部目标：有可验证目标或科学定律支撑",
-      "C": "派生：由 A/B 的算术关系推出",
-      "D": "无依据：仅选定值，需补来源或标注未验证"
-    },
-    "legend_status": {
-      "confirmed": "有依据，锁定",
-      "derived": "由 A/B 派生，不单独讨论",
-      "in_range": "有区间依据但无来源恰用该值，保留",
-      "no_basis": "找不到依据，标设计选择",
-      "missing": "参数总表原缺、实现必须补"
-    },
-    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。 2026-09-27：登记 baseline 结构常量（H 14/4/12、ρ=0.15，group=baseline）与 reference n_ours=190；并更正其 provenance 为 index 12（原记 index 6 实测为 162）。 2026-09-27：登记 H3 探针参数（probe.*，arena §14，设计选择 D、默认关闭、草案待确认）。 2026-09-27：登记 Experiment E（robustness_fractions / robustness_n_danio）。 Experiment E 主指标改为行为发散、n_danio 定为 48（2026-09-27 实测）。 Experiment E 口径已定稿（2026-09-27 签署）。 2026-09-27：H3 探针参数（probe.*）与基因组实验室 §2.3 自选语义经用户认可升 `已定稿`。 2026-09-26：§7 发育门禁修复后 DanioNet 支撑边数 N_ours 由 190 移至 154（同 seed 同 index 实测），baseline 宽度按 §8 同一反解流程重解为 H 11/3/10（连接数 154/141/154），同步 baseline_*_hidden 与 n_ours_support_edges。 2026-09-26：登记 §5 分裂读数两个增益（development.division_drive_gain / division_locus_gain）与既有但漏登的 development.domain_identity_spread_scale、connectome.rho_w0_target；theta_N_obs 由「不可辨识」改为「可辨识但待签署（通道开启后）」，翻默认进 changes_pending。 2026-09-27：登记 penetrance_realisations_k（N 轴 K 次重抽测量协议 + 实测 K 曲线）。",
-    "workflow": [
-      "表 A/B/C 锁定不动",
-      "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
-      "missing_required 必须先补进文档与 config 才能实现 RGCD",
-      "sensitivity_plan 中的参数须报敏感性"
-    ],
-    "owns": "参数取值与依据/状态的单一来源：**取值以 configs/*.yaml 为准**，本表记录依据、状态与敏感性。",
-    "legend_status_note": "2026-09-26 移除：该档从未被任何条目使用，且不在允许词表内（审计 A12）；如需「建议改值」请用 changes_pending。"
-  },
-  "parameters": [
-    {
-      "name": "chromosome_pairs",
-      "value": 2,
-      "unit": null,
-      "group": "genome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "Mendel Mode 的 9:3:3:1 要求 A/B 位于两对独立染色体",
-      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md:28",
-      "config": "configs/default_model.yaml → genome.chromosome_pairs",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "alphabet",
-      "value": [
-        "A",
-        "C",
-        "G",
-        "T"
-      ],
-      "unit": null,
-      "group": "genome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "DNA 四碱基字表，Hamming affinity 与 SNP 替换算子在其上定义",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §2",
-      "config": "configs/default_model.yaml → genome.alphabet",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "bp_per_haplotype_chromosome",
-      "value": 128,
-      "unit": "bp",
-      "group": "genome",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "紧凑人工基因组常见 50–10^4 bp（Avida 50；Banzhaf ARN 1000–10000）；无来源恰用 128；依据：与 Avida 同量级、处于 Banzhaf ARN 最短端；真实生物学不为其数量背书",
-      "source": "research/reference/design-basis-genome.md",
-      "config": "configs/default_model.yaml → genome.bp_per_haplotype_chromosome",
-      "sensitivity": null,
-      "suggest": "保留 128，改述为「区间内设计选择」"
-    },
-    {
-      "name": "haploid_bp",
-      "value": 256,
-      "unit": "bp",
-      "group": "genome",
-      "grade": "C",
-      "status": "derived",
-      "basis": "2 × 128",
-      "source": null,
-      "config": null,
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "diploid_bp",
-      "value": 512,
-      "unit": "bp",
-      "group": "genome",
-      "grade": "C",
-      "status": "derived",
-      "basis": "2 × 256",
-      "source": null,
-      "config": null,
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "motif_count",
-      "value": 8,
-      "unit": null,
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "无来源；生物 motif 目录为数百–上千量级（Lambert et al. 2018），不可据此外推；依据：数字生物基因组 motif 规模参照(10^1–10^5)；真实 motif 为 10^3 量级，本项目 8 属 A-life 尺度",
-      "source": "research/reference/design-basis-genome.md",
-      "config": "configs/default_model.yaml → genome.motif_count",
-      "sensitivity": [
-        4,
-        8,
-        16
-      ],
-      "suggest": "标「设计选择（未验证）」"
-    },
-    {
-      "name": "motif_subset_A",
-      "value": 0,
-      "unit": null,
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "A 位点对应的 motif 子集（MVP 单元素）；位点标签可交换，指定索引不影响统计；E_A 只在该位点染色体对上计算（genome §3，C2）",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": "configs/default_model.yaml → genome.motif_subset_A",
-      "sensitivity": null,
-      "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
-    },
-    {
-      "name": "motif_subset_B",
-      "value": 1,
-      "unit": null,
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "B 位点对应的 motif 子集（MVP 单元素）；E_B 只在该位点染色体对上计算（genome §3，C2）",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": "configs/default_model.yaml → genome.motif_subset_B",
-      "sensitivity": null,
-      "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
-    },
-    {
-      "name": "theta_N",
-      "value": 0.67,
-      "unit": "affinity",
-      "group": "genome",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "high_N ⟺ E_A>θ_N（genome §3）。原：MVP 下 E∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量、取区间中点。**2026-09-27 重定**（并发 lane 提交 `8a5cf81`，本次仅补同步参数表）：E 已是**连续读出**（实测值域 0.56–0.81），原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使**全体判 high**、p(A)=p(B)≡1（Evolution 面板退化）。按本条的既有约定「若 E 改为连续读出须重定」，在**独立校准集**（seed=20260926, n=200，非演示种子）取每轴中位。故阈值合法区间由 (0,0.5) 放宽为 (0,1)（原「完全显性必要条件 (0,0.5)」只在离散 E 口径下成立）。项目自定义演示装置，非生物学结论。实测中位 E_A=0.667 ⇒ θ=0.67。",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3（2026-09-27 重定，见提交 8a5cf81）",
-      "config": "configs/default_model.yaml → phenotype.theta_N",
-      "sensitivity": null,
-      "suggest": "约束 θ∈(0,1)（连续 E 口径）。已按独立校准集**中位**重定 ⇒ 是**校准量**、非拟合量；若 E 的读出方式再变须重定。"
-    },
-    {
-      "name": "theta_H",
-      "value": 0.69,
-      "unit": "affinity",
-      "group": "genome",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "high_H ⟺ E_B>θ_H（genome §3）。原：MVP 下 E∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量、取区间中点。**2026-09-27 重定**（并发 lane 提交 `8a5cf81`，本次仅补同步参数表）：E 已是**连续读出**（实测值域 0.56–0.81），原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使**全体判 high**、p(A)=p(B)≡1（Evolution 面板退化）。按本条的既有约定「若 E 改为连续读出须重定」，在**独立校准集**（seed=20260926, n=200，非演示种子）取每轴中位。故阈值合法区间由 (0,0.5) 放宽为 (0,1)（原「完全显性必要条件 (0,0.5)」只在离散 E 口径下成立）。项目自定义演示装置，非生物学结论。实测中位 E_B=0.694 ⇒ θ=0.69。",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3（2026-09-27 重定，见提交 8a5cf81）",
-      "config": "configs/default_model.yaml → phenotype.theta_H",
-      "sensitivity": null,
-      "suggest": "约束 θ∈(0,1)（连续 E 口径）。已按独立校准集**中位**重定 ⇒ 是**校准量**、非拟合量；若 E 的读出方式再变须重定。"
-    },
-    {
-      "name": "theta_N_obs",
-      "value": null,
-      "unit": "neuron_count",
-      "group": "genome",
-      "grade": "D",
-      "status": "missing",
-      "basis": "penetrance 观测档阈值，作用于**逐 seed 居中**的发育产物 N=|M|（genome §3；居中口径见 `experiment §3.9`）：基线 = 该 master seed **分层集**内全部行读数之中位数（分层等量抽样 ⇒ 与基因型无关），故 θ_N^obs 是**居中偏差**刻度（可正可负，**不是**绝对神经元数）。须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调。**2026-09-27 居中化**：§5 通道已开（`development.division_locus_gain` = 1.0）+ 读数 K=16 ⇒ N 轴 `separable=true`；居中使 θ 可**跨 seed 迁移**（不居中时 founder 背景的 seed 级平移 ~8 神经元 ≫ 基因型效应 ~1：池化 AUC 0.6258 → 居中 0.8695）。出货配置实跑（官方校准 seeds、n=3200、K=16）：AUC **0.8433**、p=4.3e-248、min-misclass **0.2366**（pen 0.763），θ_N^obs = **−0.0312**（min-misclass 与 median-midpoint 同值）；报告集（n=4800）AUC **0.8678** / min-misclass 0.2112 / 逐类 pen 0.708–0.871（A_B_ 0.7075 / A_bb 0.8708 / aaB_ 0.8042 / aabb 0.7650）。`value` 仍为 null ⇒ 阈值由「不可辨识」转为「**可辨识、待人工签署**」。",
-      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": "configs/penetrance.yaml → theta_N_obs",
-      "sensitivity": null,
-      "suggest": "数值须**由人签署**（`configs/penetrance.yaml` 头部「禁止 AI 填空」；`placeholder` 亦然）。当前生效轴 `[N]` 可分离（H 轴 `separable=false`、已按裁决退役，不阻塞签署）⇒ `confirmable=true`。签署取**当前居中刻度**的成对值（`theta_N_obs_min_misclass` / `theta_N_obs_median_midpoint`；本 run 二者同值 −0.0312）。⚠️ **勿混用 2026-09-27 居中化之前的原始刻度数值**（如 36.469 / 36.062）：那是绝对神经元数，与当前 θ 量纲不同，混用会使报告与校准不自洽。"
-    },
-    {
-      "name": "theta_H_obs",
-      "value": null,
-      "unit": "cv_tau",
-      "group": "genome",
-      "grade": "D",
-      "status": "missing",
-      "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs。实测（2026-09-26 官方校准集）：separation_H.separable=false —— AUC=0.4993、p=0.959 ⇒ 零区分力、阈值不可辨识。用户已裁决 **H 轴退役**（penetrance 降级为单轴、只留 N），实现待做 ⇒ 届时随 H 轴一并退役。 **2026-09-27 居中化只作用于 N 轴读数**（`centered_n`）；`H = CV_τ` 未居中、仍按原口径二分。H 轴在出货配置下 `separable=false`（AUC 0.4862 / p=0.175），故它不参与签署门禁。",
-      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
-      "config": "configs/penetrance.yaml → theta_H_obs",
-      "sensitivity": null,
-      "suggest": "校准器已实现并**已跑**（同 theta_N_obs）。**实测 separation_H.separable=false（见 basis）⇒ 不得置 `confirmed`**；数值须由人签署。另：用户已裁决 **H 轴退役（penetrance 降级为单轴、只留 N）**，实现待做 ⇒ 本项届时随 H 轴一并退役"
-    },
-    {
-      "name": "penetrance_calibration_per_class",
-      "value": 400,
-      "unit": "per_class",
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "penetrance 独立校准集**分层平衡**抽样规模（每类；实验设计选择，无文献取值）",
-      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
-      "config": "configs/penetrance.yaml → calibration.per_class",
-      "sensitivity": null,
-      "suggest": "草案待确认：分层平衡使每轴 high/low 均衡；规模决定 θ 估计稳定性"
-    },
-    {
-      "name": "penetrance_report_per_class",
-      "value": 400,
-      "unit": "per_class",
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "penetrance 报告集**分层平衡**抽样规模（每类；保证最小类 aabb 的 Wilson CI 可控）",
-      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
-      "config": "configs/penetrance.yaml → report.per_class",
-      "sensitivity": null,
-      "suggest": "草案待确认：pen 以基因为条件，分层平衡对 pen(g) 无偏且 CI 更窄"
-    },
-    {
-      "name": "penetrance_demo_offspring",
-      "value": 160,
-      "unit": "offspring",
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "9:3:3:1 计数演示的**未分层**样本规模（genome §3 的 160 例口径）",
-      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3；src/evogenesis/experiment/实验与评价体系.md §3.9",
-      "config": "configs/penetrance.yaml → report.demo_offspring",
-      "sensitivity": null,
-      "suggest": "160 例为演示、非统计验证（genome §3）"
-    },
-    {
-      "name": "mutation_rate",
-      "value": 0.001,
-      "unit": "per_base_per_gamete",
-      "group": "genome",
-      "grade": "B",
-      "status": "confirmed",
-      "basis": "目标：256 bp 配子期望 0.256 个新 SNP；依据：计算抽象参数：与 Avida 惯例(per-site≈0.0075)同量级，比脊椎动物真实 germline 率(~5.97e-9/site/代)高约1e5倍",
-      "source": "research/reference/design-basis-evolution.md",
-      "config": "configs/evolution.yaml → mutation_rate_per_base_per_gamete",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "grn_dim",
-      "value": 8,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "人工 GRN 节点常见 2–20+（Mehra & Hintze 2023 N=20；Banzhaf ARN 2–19）",
-      "source": "research/reference/param-basis-engineering.md:56-64",
-      "config": "configs/default_model.yaml → grn.dim",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "development_steps",
-      "value": 12,
-      "unit": "steps",
-      "group": "development",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "NCA 形态发生 10–20 步支持 12；但 GRN 收敛研究用 100–1000 步，故此处偏小",
-      "source": "research/reference/param-basis-engineering.md:66-74",
-      "config": "configs/default_model.yaml → grn.development_steps",
-      "sensitivity": [
-        12,
-        50,
-        100
-      ],
-      "suggest": "标注「预算截断」，补收敛对比"
-    },
-    {
-      "name": "grn_rho",
-      "value": 0.35,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "leak/EMA 常见 0.1–1.0（实例 0.2），0.35 同量级",
-      "source": "research/reference/param-basis-engineering.md:76-82",
-      "config": "configs/default_model.yaml → grn.rho",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "initial_precursors",
-      "value": 24,
-      "unit": "cells",
-      "group": "development",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "≈ ES-HyperNEAT 5×5 substrate = 25 节点；但经典发育编码从 1 个细胞起步——口径待定",
-      "source": "research/reference/param-basis-engineering.md:84-90",
-      "config": "configs/default_model.yaml → development.initial_precursors",
-      "sensitivity": null,
-      "suggest": "必须写清是「substrate 节点数」还是「发育起始细胞数」"
-    },
-    {
-      "name": "developmental_domains",
-      "value": [
-        "sensory",
-        "prey",
-        "threat",
-        "integrator_memory",
-        "inhibitory",
-        "motor"
-      ],
-      "unit": null,
-      "group": "development",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "六类神经元谱系名称列表（顺序即 domain 索引，与 development.domains 一致）",
-      "source": "src/evogenesis/development/RGCD数学模型.md §3",
-      "config": "configs/default_model.yaml → development.domains",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "developmental_domain_count",
-      "value": 6,
-      "unit": null,
-      "group": "development",
-      "grade": "C",
-      "status": "derived",
-      "basis": "= len(developmental_domains)",
-      "source": null,
-      "config": null,
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "precursors_per_domain",
-      "value": 4,
-      "unit": null,
-      "group": "development",
-      "grade": "C",
-      "status": "derived",
-      "basis": "24 / 6（24 本身见 initial_precursors）",
-      "source": null,
-      "config": "configs/default_model.yaml → development.precursors_per_domain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "max_divisions",
-      "value": 1,
-      "unit": null,
-      "group": "development",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "每个 precursor 最多分裂一次",
-      "source": "src/evogenesis/development/RGCD数学模型.md:93",
-      "config": "configs/default_model.yaml → development.max_divisions_per_precursor",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "max_neurons",
-      "value": 48,
-      "unit": null,
-      "group": "development",
-      "grade": "C",
-      "status": "derived",
-      "basis": "24 × (1 + 1)",
-      "source": "src/evogenesis/development/RGCD数学模型.md:108",
-      "config": "configs/default_model.yaml → development.max_neurons",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "target_density",
-      "value": 0.15,
-      "unit": "fraction",
-      "group": "connectome",
-      "grade": "B",
-      "status": "confirmed",
-      "basis": "文档给定密度区间 [0.10, 0.20] 的中点",
-      "source": "src/evogenesis/development/RGCD数学模型.md:170",
-      "config": "configs/default_model.yaml → connectome.target_density",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "self_loops",
-      "value": false,
-      "unit": null,
-      "group": "connectome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "不允许 self-loop",
-      "source": "src/evogenesis/development/RGCD数学模型.md:170",
-      "config": "configs/default_model.yaml → connectome.allow_self_loops",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "tau_min",
-      "value": 1.0,
-      "unit": null,
-      "group": "connectome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "τ = 1 + 9σ(·) ⇒ 下界 1；依据：t∈[1,10] 步在 20Hz 下等效 50–500ms 网络级整合时间常数；非单神经元膜时间常数(皮层~20ms)",
-      "source": "research/reference/design-basis-neuro.md",
-      "config": "configs/default_model.yaml → connectome.tau_min",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "tau_max",
-      "value": 10.0,
-      "unit": null,
-      "group": "connectome",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "τ = 1 + 9σ(·) ⇒ 上界 10；依据：t∈[1,10] 步在 20Hz 下等效 50–500ms 网络级整合时间常数；非单神经元膜时间常数(皮层~20ms)",
-      "source": "research/reference/design-basis-neuro.md",
-      "config": "configs/default_model.yaml → connectome.tau_max",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "distance_lambda",
-      "value": 2.0,
-      "unit": null,
-      "group": "connectome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "空间布线代价系数 -λ·d 有依据(P∝e^{-λd})；在归一化发育单位方域上取值，与 zᵀCz∈[-2,2] 配平（E[d]≈0.521→λd≈1.04）",
-      "source": "[bib#125] research/reference/rgcd-wiring-and-placement.md",
-      "config": "configs/default_model.yaml → connectome.distance_lambda",
-      "sensitivity": null,
-      "suggest": "设计选择；量纲随坐标归一（单位方域），不照搬 mm 口径文献值"
-    },
-    {
-      "name": "sensory_dim",
-      "value": 12,
-      "unit": null,
-      "group": "network",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "12 维输入被逐项列明",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §2",
-      "config": "configs/default_model.yaml → network.sensory_dim",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "action_dim",
-      "value": 2,
-      "unit": null,
-      "group": "network",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "连续动作 (ω, v) 两维",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §4",
-      "config": "configs/default_model.yaml → network.action_dim",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "activation",
-      "value": "tanh",
-      "unit": null,
-      "group": "network",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "默认 φ=tanh（DanioNet §3 神经动力学定稿）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
-      "config": "configs/default_model.yaml → network.activation",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "world_width",
-      "value": 100,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "同类连续多智能体环境均为正方形（POSGGym、PettingZoo MPE）；100×60（5:3）疑似 Canvas 显示比例；依据：连续二维多智能体环境无统一尺寸(MPE 约2单位、POSGGym 10×10)",
-      "source": "research/reference/design-basis-connectome.md",
-      "config": "configs/default_arena.yaml → world.width",
-      "sensitivity": null,
-      "suggest": "明确说明 5:3 比例的来源与量纲约定（world unit）"
-    },
-    {
-      "name": "world_height",
-      "value": 60,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "同 world_width；依据：连续二维多智能体环境无统一尺寸(MPE 约2单位、POSGGym 10×10)",
-      "source": "research/reference/design-basis-connectome.md",
-      "config": "configs/default_arena.yaml → world.height",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "sim_hz",
-      "value": 20,
-      "unit": "Hz",
-      "group": "arena",
-      "grade": "B",
-      "status": "confirmed",
-      "basis": "dt=0.05 s 有多个权威实现依据（Gymnasium HalfCheetah dt=5×0.01；robosuite control_freq=20）",
-      "source": "research/reference/param-basis-engineering.md:100-106",
-      "config": "configs/default_arena.yaml → world.hz",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "episode_seconds",
-      "value": 30,
-      "unit": "s",
-      "group": "arena",
-      "grade": "D",
-      "status": "derived",
-      "basis": "常见 20–50 s（MuJoCo 50 s、robosuite 25 s）。**派生只读**：`episode_seconds = episode_steps / hz`（arena 文档 §18.2.1；`arena/config.py::DERIVED_READONLY_KEYS`），不是独立旋钮 —— 2026-09-26 按审计 A5 更正 status。",
-      "source": "research/reference/param-basis-engineering.md:108-114",
-      "config": "configs/default_arena.yaml → world.episode_seconds",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "episode_steps",
-      "value": 600,
-      "unit": "steps",
-      "group": "arena",
-      "grade": "C",
-      "status": "derived",
-      "basis": "20 × 30（20/30 见 sim_hz / episode_seconds）",
-      "source": null,
-      "config": "configs/default_arena.yaml → world.episode_steps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "live_fish",
-      "value": 12,
-      "unit": "count",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "无同类惯例，且取决于世界尺寸与计算预算",
-      "source": null,
-      "config": "configs/default_arena.yaml → population.n_fish",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "live_prey",
-      "value": 24,
-      "unit": "count",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "无同类惯例；prey 是否重生/数量守恒未定义",
-      "source": null,
-      "config": "configs/default_arena.yaml → population.n_prey",
-      "sensitivity": null,
-      "suggest": "先补 ecology 规则（重生/守恒）"
-    },
-    {
-      "name": "live_predators",
-      "value": 3,
-      "unit": "count",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "无同类惯例",
-      "source": null,
-      "config": "configs/default_arena.yaml → population.n_predators",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "live_obstacles",
-      "value": 6,
-      "unit": "count",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "无同类惯例",
-      "source": null,
-      "config": "configs/default_arena.yaml → population.n_obstacles",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "capture_size_ratio",
-      "value": 1.25,
-      "unit": "ratio",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "未找到斑马鱼直接的「最大可吞猎物/捕食者体长」上限；替代物种 20–27% SL 度量的是猎物体高，不可倒数为 κ。原 basis 的「1.25（允许猎物大于自身）」**已更正**：§8 判据为 size_hunter ≥ κ·size_target，等价 prey_size ≤ predator_size/κ，猎物必须更小。1.25 保持为设计选择；耦合约束 predator_size ≥ κ·max_size。 2026-09-26 认领表 A3 签署「接受并登记」；判据含边界，前向锥见 capture_cone_degrees。",
-      "source": "research/reference/zebrafish-escape-capture.md",
-      "config": "configs/default_arena.yaml → growth.capture_size_ratio",
-      "sensitivity": [
-        1.0,
-        1.25,
-        1.5,
-        2.0
-      ],
-      "suggest": "保持 1.25（设计选择）；扫描时必须与 predator_size 联动"
-    },
-    {
-      "name": "sensing_radius",
-      "value": 18.0,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "方案 B（2026-09-26 裁决）：wu 为抽象仿真长度单位，不与 BL 建立固定换算；18 wu 是项目尺度，不赋予真实视觉距离含义。原 basis 的「若单位≈体长，18 远大于观测值」不再作为改动依据。尺度声明见 arena/Danio_Arena设计与实现说明.md §2。",
-      "source": "research/reference/param-basis-biology.md",
-      "config": "configs/default_arena.yaml → sensing.radius",
-      "sensitivity": [
-        12.0,
-        18.0,
-        24.0
-      ],
-      "suggest": "方案 B：不建立 BL 换算；保持 18 wu 作为项目尺度"
-    },
-    {
-      "name": "capture_radius",
-      "value": 4.61,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "C",
-      "status": "derived",
-      "basis": "由幼虫实测打击/探测距离比 0.16–0.41 取几何中心 √(0.16×0.41)=0.256，×sensing_radius 18 = 4.61 wu（可接受域 2.88–7.38）。斑马鱼成鱼以 BL 计的打击距离未检索到，故不按 BL 直接取值。 前向锥（capture_cone_degrees，总锥角 120°）已于 2026-09-26 实现；「半径和」口径未采纳（见 arena 文档 §8 已知局限）。",
-      "source": "research/reference/zebrafish-escape-capture.md",
-      "config": "configs/default_arena.yaml → growth.capture_radius",
-      "sensitivity": [
-        2.88,
-        4.61,
-        7.38
-      ],
-      "suggest": "已落地（方案 B）；扫描时与 sensing_radius 同比例"
-    },
-    {
-      "name": "predator_size",
-      "value": 3.125,
-      "unit": "size",
-      "group": "arena",
-      "grade": "C",
-      "status": "derived",
-      "basis": "耦合约束 predator_size ≥ κ·max_size = 1.25×2.5 = 3.125（§8）。低于此值则被 min(max_size,·) 钳住的最大体型个体永久不可捕食（吸收态）。**已进 `configs/default_arena.yaml` 的 `actors.predator_size`**（2026-09-26 补入 `actors:` 段；本条此前记为「未进 configs」已过期，2026-09-26 按审计 A1 更正）。",
-      "source": "arena/Danio_Arena设计与实现说明.md §8（内部耦合约束）",
-      "config": "configs/default_arena.yaml → actors.predator_size",
-      "sensitivity": [
-        2.5,
-        3.125,
-        3.75,
-        5.0
-      ],
-      "suggest": "扫描 κ 时联动：predator_size = κ×max_size"
-    },
-    {
-      "name": "sensing_fov_degrees",
-      "value": 220.0,
-      "unit": "deg",
-      "group": "arena",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "幼虫单眼 163°、总视野（推断）≈306°；220° 落在其间，成鱼未知",
-      "source": "research/reference/param-basis-biology.md:15-28",
-      "config": "configs/default_arena.yaml → sensing.fov_degrees",
-      "sensitivity": null,
-      "suggest": "标注口径（单眼/总视野）"
-    },
-    {
-      "name": "body_length_mm",
-      "value": 30.0,
-      "unit": "mm",
-      "group": "arena",
-      "grade": "B",
-      "status": "in_range",
-      "basis": "成鱼标准体长 SL 25–35 mm（取 30，与 Palstra 2010 自洽）；幼虫 4.2 mm；已按方案 B 退役（wu 不与 BL 固定换算），仅作生物学参考",
-      "source": "research/reference/param-basis-biology.md:121-134",
-      "config": null,
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_turn_rate",
-      "value": 5.0,
-      "unit": "rad/s",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "斑马鱼 C 形逃避 6,000–21,200 deg/s 是体弯曲角速度，非航向 yaw 率，不可直接套用",
-      "source": "research/reference/param-basis-biology.md:74-84",
-      "config": "configs/default_arena.yaml → actors.predator_turn_rate",
-      "sensitivity": null,
-      "suggest": "航向率需另取依据"
-    },
-    {
-      "name": "population_size",
-      "value": 48,
-      "unit": "count",
-      "group": "evolution",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "NEAT 150；De Jong 50；GA 经验 50–200 — 48 接近 De Jong 下沿，偏小",
-      "source": "research/reference/param-basis-engineering.md:116-122",
-      "config": "configs/evolution.yaml → population_size",
-      "sensitivity": [
-        24,
-        48,
-        96
-      ],
-      "suggest": "保留但须说明并报敏感性"
-    },
-    {
-      "name": "generations",
-      "value": 20,
-      "unit": "generations",
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "E–F 环境选择的代循环上限（区间 10–20）。属**设计选择**（无文献实测依据）：预算允许（代循环每代评估 1 个 Arena episode；按 ExpertPolicy 吞吐 12 鱼×600 步≈2 s，20 代 × 4 条件 × 3 seed ≈ 数十分钟），且种群 48 / seed 3 漂变强，需要足够代数让选择压与漂变分离。**强制 pilot 门**：正式跑满前先跑 10 代，用同环境 seed 间 spread 作噪声带判断区分力，落入带内不得当结论。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §3.6",
-      "config": "configs/experiment.yaml → generations",
-      "sensitivity": [
-        10,
-        20
-      ],
-      "suggest": "已接线：experiment/config.py + scripts/run_evolution.py；pilot 无区分力时须延长代数或如实报无效应"
-    },
-    {
-      "name": "crossover_probability",
-      "value": 0.5,
-      "unit": "per_chromosome",
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "每对染色体交叉概率 0.5（每配子≥1次交叉=1-0.5²=0.75）；属计算抽象，不代表真实重组率；GA 单点交叉率惯例 0.6–0.9 针对优化问题，不适用",
-      "source": "research/reference/design-basis-evolution.md",
-      "config": "configs/evolution.yaml → crossover_probability_per_chromosome",
-      "sensitivity": null,
-      "suggest": "保留 0.5（设计选择，非可调超参）"
-    },
-    {
-      "name": "mendel_display_n",
-      "value": 160,
-      "unit": "offspring",
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "用于展示 9:3:3:1（期望 90/30/30/10）；160 为展示规模、非假设检验（χ² df=3 临界 7.8147；功效见 genome §3）",
-      "source": null,
-      "config": "configs/evolution.yaml → mendel_display_offspring",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "fitness_weights",
-      "value": {
-        "survival": 0.35,
-        "prey_capture": 0.25,
-        "escape_success": 0.2,
-        "energy_efficiency": 0.2
-      },
-      "unit": "weights",
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "人为权重；归一化口径已定（代内 min-max），权重可解释为对标准化分量的偏好；须做敏感度分析",
-      "source": "research/reference/design-basis-evolution.md",
-      "config": "configs/evolution.yaml → fitness_weights",
-      "sensitivity": null,
-      "suggest": "设计选择；须报权重敏感性"
-    },
-    {
-      "name": "formal_seeds",
-      "value": 3,
-      "unit": "count",
-      "group": "experiment",
-      "grade": "B",
-      "status": "confirmed",
-      "basis": "实验设计的最低重复数（要求给出方差）",
-      "source": "configs/experiment_seeds.yaml",
-      "config": "configs/experiment_seeds.yaml → minimum_formal_replicates",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "bc_updates",
-      "value": 20,
-      "unit": "mini_batch_updates",
-      "group": "learning",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "Stage 2 BC 预算 K=20；K=20 短程 regime 无直接文献，属设计选择（见 learning §3 短程敏感性）",
-      "source": "src/evogenesis/learning/行为克隆学习.md §3",
-      "config": "configs/default_model.yaml → learning.mini_batch_updates",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "motif_length",
-      "value": 6,
-      "unit": "bp",
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "真实 TF motif 6–12 bp 区间下沿，取 A-life 尺度；依据审计 R5（Stormo 2000；Lambert 2018）",
-      "source": "docs/设计依据审计.md R5",
-      "config": "configs/default_model.yaml → genome.motif_length",
-      "sensitivity": [
-        4,
-        6,
-        8
-      ],
-      "suggest": "设计选择（未验证）"
-    },
-    {
-      "name": "motif_topk",
-      "value": 3,
-      "unit": null,
-      "group": "genome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "TopKMean 的 K；无来源，取小值抑制单窗口噪声",
-      "source": "src/evogenesis/development/RGCD数学模型.md §2",
-      "config": "configs/default_model.yaml → genome.motif_topk",
-      "sensitivity": [
-        1,
-        3,
-        5
-      ],
-      "suggest": "设计选择（未验证）"
-    },
-    {
-      "name": "grn_weight_init",
-      "value": "xavier",
-      "unit": null,
-      "group": "grn",
-      "grade": "B",
-      "status": "confirmed",
-      "basis": "Glorot & Bengio 2010 Xavier 初始化",
-      "source": "[bib#126] research/reference/rgcd-wiring-and-placement.md",
-      "config": "configs/default_model.yaml → grn.weight_init",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "grn_spectral_radius",
-      "value": 0.9,
-      "unit": null,
-      "group": "grn",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "“谱半径<1⇒ESP”为经验条件（Yildiz 2012 有反例），按稳定性启发式使用",
-      "source": "[bib#127] research/reference/rgcd-wiring-and-placement.md",
-      "config": "configs/default_model.yaml → grn.spectral_radius",
-      "sensitivity": [
-        0.8,
-        0.9,
-        0.95
-      ],
-      "suggest": "设计选择（经验启发式）"
-    },
-    {
-      "name": "placement",
-      "value": "domain_blocked",
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "随机放置足以复现特异功能连接（Hill 2012）；domain-blocked 为工程选择，给 -λd 非平凡结构",
-      "source": "[bib#123] research/reference/rgcd-wiring-and-placement.md",
-      "config": "configs/default_model.yaml → development.placement",
-      "sensitivity": null,
-      "suggest": "设计选择"
-    },
-    {
-      "name": "position_space",
-      "value": "unit_square",
-      "unit": null,
-      "group": "development",
-      "grade": "A",
-      "status": "confirmed",
-      "basis": "归一化发育单位方域 [0,1]²；λ 量纲绑定此口径",
-      "source": "src/evogenesis/development/RGCD数学模型.md §3",
-      "config": "configs/default_model.yaml → development.position_space",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "split_noise",
-      "value": 0.05,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "分裂位置扰动 ε_p 的标准差（单位方域）",
-      "source": "src/evogenesis/development/RGCD数学模型.md §5",
-      "config": "configs/default_model.yaml → development.split_noise",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "gene_noise",
-      "value": 0.1,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "分裂基因表达式扰动 ε_g 的标准差",
-      "source": "src/evogenesis/development/RGCD数学模型.md §5",
-      "config": "configs/default_model.yaml → development.gene_noise",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "regulatory_gamma",
-      "value": 1.0,
-      "unit": null,
-      "group": "connectome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "R 项为弱偏置（表达相似度单独预测连线 AUC≈0.64）；γ 无文献值",
-      "source": "[bib#111][bib#121] research/reference/rgcd-wiring-and-placement.md",
-      "config": "configs/default_model.yaml → connectome.regulatory_gamma",
-      "sensitivity": [
-        0.5,
-        1.0,
-        2.0
-      ],
-      "suggest": "设计选择；须报 γ=0 消融"
-    },
-    {
-      "name": "c_domain_bonus",
-      "value": 1.5,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "cell-identity one-hot 域偏置增量，保证六谱系 developmental competence",
-      "source": "src/evogenesis/development/RGCD数学模型.md §6",
-      "config": "configs/default_model.yaml → development.c_domain_bonus",
-      "sensitivity": null,
-      "suggest": "设计选择"
-    },
-    {
-      "name": "domain_identity_spread_scale",
-      "value": 1.0,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "§10 `U` 跨域散布重定尺度 κ：1.0 = 解析安全界 c_domain_bonus/√dim ⇒ §7 missing_fate 严格不可达。实测 κ≤0.8 判据空转、κ≥1.2 断崖成每-seed 赢者通吃 ⇒ 无可用工作点，该判据属设计约定、不贡献区分力。",
-      "source": "src/evogenesis/development/RGCD数学模型.md §10 / §7",
-      "config": "configs/default_model.yaml → development.domain_identity_spread_scale",
-      "sensitivity": null,
-      "suggest": "设计选择（保持 1.0）"
-    },
-    {
-      "name": "division_drive_gain",
-      "value": 1.0,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "§5 分裂读数 α：作用在**逐个体中心化**的 GRN 驱动 (u−ū_i) 上再经 sigmoid。默认 1.0 = 原式逐位一致。**线性区一阶惰性**：逐个体中心化使 Σ_i u_c,i = 0，故线性区该通道对 Σp 的一阶贡献恒为 0；仅在 α·σu ≳ 0.3 的非线性区起作用，而该区已饱和 ⇒ 实测 α∈[0.5,16] 对秩统计量无影响。",
-      "source": "src/evogenesis/development/RGCD数学模型.md §5",
-      "config": "configs/default_model.yaml → development.division_drive_gain",
-      "sensitivity": null,
-      "suggest": "设计选择（保持 1.0，不承担区分力）"
-    },
-    {
-      "name": "division_locus_gain",
-      "value": 1.0,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "§5 分裂读数 β：作用在**基因组通道**（A 位点 motif 亲和 q 的均值 − 全 motif 均值；索引单一来源 `genome.motif_subset_A`）。默认 0.0 = 原式逐位一致（通道关闭）。**β 是单位规范（gauge）而非校准值**：读数经秩统计量（AUC / 外显率阈分类）读取，二者对 β>0 的任何单调尺度不变 ⇒ 不可标定（实测 α∈[0.5,16]×β∈[0.05,2] 全平面同值）。\n**2026-09-27 裁决已落地（用户授权）：value=1.0。** 判据为**配对 2×4 网格**（同一批基因组；官方校准 seeds、n=3200、每类 800、K 只改读数协议）：β=0.0 时 K=1/16/64 **全不可分**（AUC 0.4775 / 0.4445 / 0.4212，且随 K **变差**）；β=1.0 时**可分离**（AUC 0.6138 / 0.7861 / 0.8342）。出货配置独立实跑（另一 seed 命名空间）：AUC **0.7991**、p=1.0e-188、min-misclass **0.2847**（pen 0.715）。⇒ β 开的是信号，K 只放大；**K 单独救不了**。\n**2026-09-27 居中化（补记）**：上列配对网格的 AUC 均在**原始读数**刻度上测得（当时尚无居中）；居中只作用于报告层的 N 读数，不改 β 的作用机制。居中后出货配置 AUC **0.8433**（校准集 n=3200）/**0.8678**（报告集 n=4800），θ_N^obs = −0.0312。",
-      "source": "src/evogenesis/development/RGCD数学模型.md §5",
-      "config": "configs/default_model.yaml → development.division_locus_gain",
-      "sensitivity": null,
-      "suggest": "已由 0.0 翻 1.0（2026-09-27，用户授权）。处置：**4 处已冻结锚同批重冻结**（`tests/test_dump_connectome_matrix.py` 论文锚 N 中位 36.5→37.0、支撑边 195→192.5、密度 0.149 不变；`tests/test_fig_connectome.py` 代表个体 index 4→0；`src/evogenesis/development/config.py` 的 `division_locus_gain` 默认值 0.0→1.0，并在 `tests/test_development_config.py::FIELD_SOURCES` 补录两个 `division_*_gain` 以堵住漂移；§8 参照实例 `N_ours` 由 index 12（161）重选为 index 2（151），基线阶梯不变）；论文 02-method / 06-limitations / 04-baselines / 报告-骨架 / 图表-数据对照表 数字同批更新。Exp C/D/E/F 与 `artifacts/demo` checkpoint 属**已欠**的 Θ_D 那波（β 增量≈0），由重跑回填。⚠️ §7 判据仍**无效应下限**（AUC 0.786 属中等效应）⇒ 建议补下限或据实降级表述。"
-    },
-    {
-      "name": "init_b_std",
-      "value": 0.1,
-      "unit": null,
-      "group": "grn",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "GRN 偏置 b 的初始化标准差（B,P 取 (1/√8)）",
-      "source": "src/evogenesis/development/RGCD数学模型.md §4/§13",
-      "config": "configs/default_model.yaml → grn.init_b_std",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "w_bar_initial",
-      "value": 0.5,
-      "unit": null,
-      "group": "connectome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "|w^(0)| 稳态权重均值；b_w=softplus^{-1}(0.5)",
-      "source": "src/evogenesis/development/RGCD数学模型.md §10",
-      "config": "configs/default_model.yaml → connectome.w_bar_initial",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "zero_input_steps",
-      "value": 50,
-      "unit": "steps",
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "dynamical viability zero-input 运行步数",
-      "source": "src/evogenesis/development/RGCD数学模型.md §7",
-      "config": "configs/default_model.yaml → development.zero_input_steps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "saturation_ratio_max",
-      "value": 0.9,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "尾段平均饱和比例上限（工程判据；|h|<1 由凸组合解析保证）",
-      "source": "src/evogenesis/development/RGCD数学模型.md §7",
-      "config": "configs/default_model.yaml → development.saturation_ratio_max",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "saturation_eps",
-      "value": 0.001,
-      "unit": null,
-      "group": "development",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "饱和判据 |h_i|>1-ε 的 ε",
-      "source": "src/evogenesis/development/RGCD数学模型.md §7",
-      "config": "configs/default_model.yaml → development.saturation_eps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "input_weight_scope",
-      "value": "per_cell_type",
-      "unit": null,
-      "group": "network",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "U_i 按 cell type 取固定先验（U=U_{type}），不学习；保 RGCD 契约冻结、感官增益经 cell type 挂钩基因型",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
-      "config": "configs/default_model.yaml → network.input_weight_scope",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "input_weight_std",
-      "value": 0.289,
-      "unit": null,
-      "group": "network",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "U 初始化标准差 ≈1/√12（sensory_dim=12）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
-      "config": "configs/default_model.yaml → network.input_weight_std",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "hunger_gain_std",
-      "value": 0.1,
-      "unit": null,
-      "group": "network",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "hunger 调制 m 初始化标准差",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
-      "config": "configs/default_model.yaml → network.hunger_gain_std",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "neuron_bias_std",
-      "value": 0.1,
-      "unit": null,
-      "group": "network",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "神经元偏置 b 初始化标准差",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
-      "config": "configs/default_model.yaml → network.neuron_bias_std",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "motor_pool_split",
-      "value": "median_x",
-      "unit": null,
-      "group": "network",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "motor 池按发育 x 中位数二分 left/right；保证两池非空（满足 RGCD §7 viability）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §5",
-      "config": "configs/default_model.yaml → network.motor_pool_split",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "action_pooling",
-      "value": "mean",
-      "unit": null,
-      "group": "network",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "y_ω=mean_{M_L}h−mean_{M_R}h、y_v=mean_{M}h；均值对池大小不变、零新参数",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §4",
-      "config": "configs/default_model.yaml → network.action_pooling",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "ablation_random_density",
-      "value": 0.15,
-      "unit": null,
-      "group": "connectome",
-      "grade": "C",
-      "status": "derived",
-      "basis": "w/o GRN 消融的随机 A 密度，取 target_density；只隔离 GRN 发育变量",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §9",
-      "config": "configs/default_model.yaml → connectome.ablation_random_density",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "rho_w0_target",
-      "value": 0.9,
-      "unit": null,
-      "group": "connectome",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "§7(iv) 失配修复：W⁰ 谱半径重定目标，仿 §4 对 W_g 的 0.9 约定。原实现 ρ(W⁰)≈1 使 89.8% 个体因 ρ≥1 被 §7 拒；重定后 §7 转为对 §5/§6 的稳定性约束。",
-      "source": "src/evogenesis/connectome/Danio_Arena设计与实现说明.md；src/evogenesis/development/RGCD数学模型.md §7",
-      "config": "configs/default_model.yaml → connectome.rho_w0_target",
-      "sensitivity": null,
-      "suggest": "设计选择"
-    },
-    {
-      "name": "tournament_size",
-      "value": 2,
-      "unit": null,
-      "group": "evolution",
-      "grade": "B",
-      "status": "confirmed",
-      "basis": "binary tournament k=2：Blickle & Thiele 1996 证明在期望适应度分布上等价于最大线性排名；tournament 对适应度的平移/线性变换不变（Eiben & Smith 2015 §5.2.4）；替代比例/softmax 选择（其压力与尺度不可分离）",
-      "source": "[bib#136][bib#137]（`research/notes/bibliography.md`）",
-      "config": "configs/evolution.yaml → tournament_size",
-      "sensitivity": [
-        2,
-        3
-      ],
-      "suggest": "k=2 有等价性证明；k=3 为经验选择"
-    },
-    {
-      "name": "fitness_normalization",
-      "value": "within_generation_minmax",
-      "unit": null,
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "S/P/E/Q 四项代内 min-max（viable 个体）到 [0,1]，max=min 置 0；F 为代内相对分数，跨代/跨环境比较须用原始指标",
-      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md §6",
-      "config": "configs/evolution.yaml → fitness_normalization",
-      "sensitivity": null,
-      "suggest": "设计选择；min-max 在种群收敛期会放大噪声，报告须声明"
-    },
-    {
-      "name": "bc_optimizer",
-      "value": "adam",
-      "unit": null,
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "主流 BC/IL 实现（robomimic / imitation / SB3）默认 Adam [bib#34][bib#210]",
-      "source": "research/reference/bc-hyperparameters.json",
-      "config": "configs/default_model.yaml → learning.optimizer",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "bc_lr",
-      "value": 0.001,
-      "unit": "learning rate",
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "小型 MLP BC 常用 1e-3；K=20 短程 regime 无直接文献，属设计选择，须报 {1e-3,3e-4} 敏感性 [bib#34][bib#210]",
-      "source": "research/reference/bc-hyperparameters.json",
-      "config": "configs/default_model.yaml → learning.lr",
-      "sensitivity": [
-        0.0003,
-        0.001
-      ],
-      "suggest": null
-    },
-    {
-      "name": "bc_batch_size",
-      "value": 64,
-      "unit": "samples/update",
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "主流 BC 默认 batch（imitation 32 / robomimic 100 / diffusion policy 64 / SB3 64）；K=20 budget 下无直接文献，须报 {32,64,128} 敏感性 [bib#34][bib#210][bib#211]",
-      "source": "research/reference/bc-hyperparameters.json",
-      "config": "configs/default_model.yaml → learning.batch_size",
-      "sensitivity": [
-        32,
-        64,
-        128
-      ],
-      "suggest": null
-    },
-    {
-      "name": "bc_trajectories",
-      "value": 200,
-      "unit": "episodes",
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "robomimic 每任务 200 条演示 [bib#34]；低维动作任务无直接文献，最小验证可取 10–50，须报 {10,50,200} 敏感性",
-      "source": "research/reference/bc-hyperparameters.json",
-      "config": "configs/default_model.yaml → learning.trajectories",
-      "sensitivity": [
-        10,
-        50,
-        200
-      ],
-      "suggest": null
-    },
-    {
-      "name": "bc_loss_weight_fallback_omega",
-      "value": 0.4,
-      "unit": "dimensionless weight",
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "§3 的 σ 归一化规则在未取到训练统计量时的预注册回退值：取下限比例 0.05 时 λ_ω:λ_v = 1/R_ω²:1/R_v² = 1:4（R_ω=2/R_v=1），缩放至和为 2 得 0.4/1.6，故可推导、非独立选定",
-      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
-      "config": "configs/default_model.yaml → learning.loss_weight_fallback_omega",
-      "sensitivity": null,
-      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
-    },
-    {
-      "name": "bc_loss_weight_fallback_v",
-      "value": 1.6,
-      "unit": "dimensionless weight",
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "§3 的 σ 归一化规则在未取到训练统计量时的预注册回退值：取下限比例 0.05 时 λ_ω:λ_v = 1/R_ω²:1/R_v² = 1:4（R_ω=2/R_v=1），缩放至和为 2 得 0.4/1.6，故可推导、非独立选定",
-      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
-      "config": "configs/default_model.yaml → learning.loss_weight_fallback_v",
-      "sensitivity": null,
-      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
-    },
-    {
-      "name": "bc_loss_weight_normalization",
-      "value": "per_dim_variance",
-      "unit": null,
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "§3 定稿：λ_i=1/max(σ_i,0.05·R_i)² 的目标尺度归一化；等价于对各维目标 z-score 后等权，λ 无量纲",
-      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
-      "config": "configs/default_model.yaml → learning.loss_weight_normalization",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "bc_loss_variance_floor_ratio",
-      "value": 0.05,
-      "unit": "ratio of R_i",
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "§3 的下限 0.05·R_i（防 σ→0 除零）；R_ω=2/R_v=1",
-      "source": "src/evogenesis/learning/行为克隆学习.md §3",
-      "config": "configs/default_model.yaml → learning.loss_variance_floor_ratio",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "bc_method",
-      "value": "behavior_cloning",
-      "unit": null,
-      "group": "learning",
-      "grade": "C",
-      "status": "confirmed",
-      "basis": "Stage 2 采用行为克隆（PPO/SAC 仅 P2）",
-      "source": "src/evogenesis/learning/行为克隆学习.md §1",
-      "config": "configs/default_model.yaml → learning.method",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "bc_optional_rl",
-      "value": false,
-      "unit": null,
-      "group": "learning",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "RL（PPO/SAC）仅作 P2，默认关闭",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §7",
-      "config": "configs/default_model.yaml → learning.optional_rl",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "world_boundary",
-      "value": "reflect",
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "设计选择（认领表 A6）：正式实验用**镜面反射**，避免静默 clamp 的隐性能耗使跨 seed 能量/survival 不可比；反射确定性、不消耗随机数。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §2.1",
-      "config": "configs/default_arena.yaml → world.boundary",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "capture_cone_degrees",
-      "value": 120.0,
-      "unit": "deg",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "前向锥**总**锥角（半锥 60°），设计选择。依据：开源机制对照报告 T2「建议至少加目标位于捕食者前向锥」；锥角属设计选择、非实测。",
-      "source": "research/reference/open-source-fish-games-机制对照.md",
-      "config": "configs/default_arena.yaml → growth.capture_cone_degrees",
-      "sensitivity": [
-        60,
-        120,
-        180
-      ],
-      "suggest": null
-    },
-    {
-      "name": "prey_area_gain",
-      "value": 0.2,
-      "unit": "ratio",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "面积守恒生长的 g：size ← min(size_max, sqrt(size^2 + g*prey_size^2))。报告区间 0.1–0.35（[bib#215] 取 0.35），本仓库取 0.2 为**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "research/reference/open-source-fish-games-机制对照.md",
-      "config": "configs/default_arena.yaml → growth.prey_area_gain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "capture_success_prob",
-      "value": 1.0,
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "鱼的捕食成功率（arena §8 a）：1.0=确定性捕获（尺寸门通过即吃到，不消费随机数）；<1 时按概率判定，扑击失败记 capture_attempt(result='missed')。属**设计选择/设计选择（D）**；predator 吃鱼仍为确定性 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §8",
-      "config": "configs/default_arena.yaml → growth.capture_success_prob",
-      "sensitivity": null,
-      "suggest": "正式实验前做 play-test 标定；<1 会改变指标方差与 composite 口径（§2.3 条件式）"
-    },
-    {
-      "name": "collision_penalty",
-      "value": 0.001,
-      "unit": "energy_per_world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "碰撞软惩罚系数 c_pen（认领表 A7）：按穿透深度每步扣能量，与「硬不穿透」配合。无锚点，**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §18.7 A7",
-      "config": "configs/default_arena.yaml → energy.collision_penalty",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "prey_regrowth_steps",
-      "value": 25,
-      "unit": "step",
-      "group": "arena",
-      "grade": "C",
-      "status": "no_basis",
-      "basis": "由 episode_steps / n_prey = 600/24 派生，使再生速率与消耗速率同量级（dossier T3 §3.1 资源核算：24 prey/12 fish 使 prey_capture 后半段饱和、fitness 漂移）。无生物学锚点，属设计选择。 **设计选择（D）**（`arena/config.py` 注释 `# placeholder`、arena 文档 §16 列为设计选择（D）），按 `status=no_basis` 处理，****（2026-09-26 按审计 A8 更正 status） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "research/reference/zebrafish-escape-capture.md",
-      "config": "configs/default_arena.yaml → population.prey_regrowth_steps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "escape_hold_steps",
-      "value": 20,
-      "unit": "step",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "逃脱判定的存活窗口 T_hold（dossier T1 默认 20 步 = 1 s @20 Hz）。无斑马鱼实测依据，**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
-      "source": "research/reference/zebrafish-escape-capture.md",
-      "config": "configs/default_arena.yaml → actors.escape_hold_steps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_max_chase_steps",
-      "value": 80,
-      "unit": "step",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "限时追击上限（认领表 A8）。@20 Hz 对应开源对照报告 3–5 s @60 fps 的 60–100 步，取中位 80；**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
-      "source": "research/reference/open-source-fish-games-机制对照.md",
-      "config": "configs/default_arena.yaml → actors.predator_max_chase_steps",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "e_max",
-      "value": 1.0,
-      "unit": "energy",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → energy.e_max",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "base_cost_per_step",
-      "value": 0.0008,
-      "unit": "energy_per_step",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → energy.base_cost_per_step",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "movement_cost_scale",
-      "value": 0.0015,
-      "unit": "energy_per_speed2",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → energy.movement_cost_scale",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "food_reward",
-      "value": 0.12,
-      "unit": "energy",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → energy.food_reward",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "initial_size",
-      "value": 1.0,
-      "unit": "size",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → growth.initial_size",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "max_size",
-      "value": 2.5,
-      "unit": "size",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → growth.max_size",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "turn_inertia_scale",
-      "value": 0.35,
-      "unit": "ratio",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → growth.turn_inertia_scale",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "prey_speed",
-      "value": 0.35,
-      "unit": "world_unit_per_s",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.prey_speed",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "prey_size_min",
-      "value": 0.3,
-      "unit": "size",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.prey_size_min",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "prey_size_max",
-      "value": 0.6,
-      "unit": "size",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.prey_size_max",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_cruise_speed",
-      "value": 0.4,
-      "unit": "world_unit_per_s",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.predator_cruise_speed",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_chase_speed",
-      "value": 0.65,
-      "unit": "world_unit_per_s",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.predator_chase_speed",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_detection_radius",
-      "value": 15.0,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.predator_detection_radius",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_release_radius",
-      "value": 22.0,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.predator_release_radius",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "obstacle_radius_min",
-      "value": 1.5,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.obstacle_radius_min",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "obstacle_radius_max",
-      "value": 3.5,
-      "unit": "world_unit",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.obstacle_radius_max",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "wander_turn_std",
-      "value": 0.8,
-      "unit": "rad_per_s",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
-      "config": "configs/default_arena.yaml → actors.wander_turn_std",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "env_food_rich",
-      "value": "n_prey=48, n_predators=3, prey_regrowth_steps=13",
-      "unit": null,
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "E-F 环境对照之一「Food Rich」（猎物可得性 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成（A14 拆分随机流后重跑，run id `exp_env_*`；基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）**：三组在 12 鱼 / n=3 下**无稳健区分力**（最大 |d|=1.79）；绝对捕获量 food_rich 21.3→27.3、resource_scarce 21.3→10.7，故 E-F 记录项须含绝对量，且正式 E-F 须先过 §3.6 pilot 功效门。旧表（predator_rich escape d=+2.89 等）产生于随机流耦合时期，**已作废**。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
-      "config": "configs/experiment_environments.yaml → environments.food_rich",
-      "sensitivity": [
-        24,
-        48,
-        96
-      ],
-      "suggest": "若作「资源轴」主对照，须先加大幅度或改用绝对量主指标"
-    },
-    {
-      "name": "env_predator_rich",
-      "value": "n_prey=24, n_predators=6, prey_regrowth_steps=25",
-      "unit": null,
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "E-F 环境对照之二「Predator Rich」（捕食压力 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成（A14 拆分随机流后重跑，run id `exp_env_*`；基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）**：三组在 12 鱼 / n=3 下**无稳健区分力**（最大 |d|=1.79）；绝对捕获量 food_rich 21.3→27.3、resource_scarce 21.3→10.7，故 E-F 记录项须含绝对量，且正式 E-F 须先过 §3.6 pilot 功效门。旧表（predator_rich escape d=+2.89 等）产生于随机流耦合时期，**已作废**。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
-      "config": "configs/experiment_environments.yaml → environments.predator_rich",
-      "sensitivity": [
-        3,
-        6,
-        12
-      ],
-      "suggest": "三组在 12 鱼/n=3 下无稳健区分力（最大 |d|=1.79），须先过 experiment §3.6 pilot 功效门"
-    },
-    {
-      "name": "env_resource_scarce",
-      "value": "n_prey=12, n_predators=3, prey_regrowth_steps=50",
-      "unit": null,
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "E-F 环境对照之三「Resource Scarce」（猎物可得性 ↓）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成（A14 拆分随机流后重跑，run id `exp_env_*`；基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）**：三组在 12 鱼 / n=3 下**无稳健区分力**（最大 |d|=1.79）；绝对捕获量 food_rich 21.3→27.3、resource_scarce 21.3→10.7，故 E-F 记录项须含绝对量，且正式 E-F 须先过 §3.6 pilot 功效门。旧表（predator_rich escape d=+2.89 等）产生于随机流耦合时期，**已作废**。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
-      "config": "configs/experiment_environments.yaml → environments.resource_scarce",
-      "sensitivity": [
-        6,
-        12,
-        24
-      ],
-      "suggest": "同 food_rich：比值指标区分力弱，须看绝对量"
-    },
-    {
-      "name": "predator_size_ref",
-      "value": 2.5,
-      "unit": "—",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "12 维第 7 维 predator_relative_size 的归一参考：min(size_pred/size_fish/size_ref,1)。属设计选择（arena §4.1），无生物学锚点。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §4.1",
-      "config": "configs/default_arena.yaml → sensing.predator_size_ref",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "looming_norm",
-      "value": 3.5,
-      "unit": "s^-1",
-      "group": "arena",
-      "grade": "D",
-      "status": "in_range",
-      "basis": "looming_rate 归一尺度 R_loom：clip(((θ_after-θ_before)/(θ_after·Δt))/R_loom, 0, 1)，θ=2·arctan((size/2)/r)（取可见天敌 max）。报告区间 R_loom∈[2,5] s^-1（research/reference/looming-and-growth.md；arena 设计意见 §2 A1），本仓库取中位 3.5 为**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
-      "source": "research/reference/looming-and-growth.md; research/notes/arena-设计意见-给李辰钊.md §2 A1",
-      "config": "configs/default_arena.yaml → sensing.looming_norm",
-      "sensitivity": null,
-      "suggest": "按 play-test 在 [2,5] 内标定后转 confirmed"
-    },
-    {
-      "name": "expert_prey_weight",
-      "value": 1.0,
-      "unit": "—",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.prey_weight",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "expert_threat_weight",
-      "value": 1.8,
-      "unit": "—",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.threat_weight",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "expert_obstacle_weight",
-      "value": 1.2,
-      "unit": "—",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.obstacle_weight",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "expert_hunger_gain",
-      "value": 0.8,
-      "unit": "—",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.hunger_gain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "expert_speed_base",
-      "value": 0.45,
-      "unit": "归一速度",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.speed_base",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "expert_speed_hunger_gain",
-      "value": 0.35,
-      "unit": "归一速度",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.speed_hunger_gain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "expert_speed_threat_gain",
-      "value": 0.3,
-      "unit": "归一速度",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
-      "config": "configs/default_arena.yaml → expert.speed_threat_gain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "prey_turn_clip",
-      "value": 3.0,
-      "unit": "rad/s",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "PreyPolicy 游走转向裁剪（§10）。属设计选择（防过大转向）。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §9/§10",
-      "config": "configs/default_arena.yaml → actors.prey_turn_clip",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "prey_obstacle_avoid_gain",
-      "value": 2.0,
-      "unit": "rad/step",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "env 猎物避障转向增益（§10）。属设计选择。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §9/§10",
-      "config": "configs/default_arena.yaml → actors.prey_obstacle_avoid_gain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "predator_obstacle_avoid_gain",
-      "value": 0.5,
-      "unit": "rad/step",
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "env 捕食者避障转向增益（§9）。属设计选择。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §9/§10",
-      "config": "configs/default_arena.yaml → actors.predator_obstacle_avoid_gain",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "formal_seed_list",
-      "value": [
-        1103,
-        2207,
-        3301
-      ],
-      "unit": "—",
-      "group": "seed",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "正式实验的 3 个随机种子（`formal_seeds=3`）；Demo 与正式隔离。由 `experiment/config.py::load_formal_seeds` 读取，scripts 不再硬编码。",
-      "source": "configs/experiment_seeds.yaml",
-      "config": "configs/experiment_seeds.yaml → seeds",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "demo_master_seed",
-      "value": 250927,
-      "unit": "—",
-      "group": "seed",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "现场 Demo 固定主种子，与正式实验种子隔离（`core §3`）。",
-      "source": "configs/demo_seed.yaml",
-      "config": "configs/demo_seed.yaml → master_seed",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "generation_buttons",
-      "value": [
-        1,
-        5,
-        10,
-        20
-      ],
-      "unit": "—",
-      "group": "evolution",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "UI 可控的演化代按钮（现场「Evolve 1/5/10/20」）。非行为算法参数；读取方为前端/演示层（api 实现层待重写），当前无 src 消费。",
-      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md §10",
-      "config": "configs/evolution.yaml → generation_buttons",
-      "sensitivity": null,
-      "suggest": "随 api/frontend 重写接线为单代循环的 `generations` 覆盖"
-    },
-    {
-      "name": "n_agents",
-      "value": 12,
-      "unit": "count",
-      "group": "experiment",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "Experiment C 每 seed 每模型评估的个体数。旧值 1 经对照实验证否：单 agent 下 ExpertPolicy 仅得 encounters=1，而未训练随机 MLP 得 0 —— 四个「训练过的」模型与随机网络不可区分。改为种群规模（= arena 默认 n_fish=12）后专家得 encounters=283（人均 23.6），恢复判别力。2026-09-26 用户签署。",
-      "source": "research/notes/契约决策记录.md",
-      "config": "configs/experiment.yaml → n_agents",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "n_episodes",
-      "value": 3,
-      "unit": "count",
-      "group": "experiment",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "Experiment C 每 seed 的评估 episode 数。评估子种子走独立命名空间 arena_eval_spawn=15 / arena_eval_dynamics=16（t = 评估 episode 序号，全模型共享），与采集侧 arena_spawn/arena_dynamics 解耦 —— 后者与 collect.episode_seed 逐字等价，复用会使评估局落在训练数据的环境实例上。2026-09-26 用户签署。",
-      "source": "research/notes/契约决策记录.md",
-      "config": "configs/experiment.yaml → n_episodes",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "n_danio",
-      "value": 400,
-      "unit": "count",
-      "group": "experiment",
-      "grade": "D",
-      "status": "confirmed",
-      "basis": "DanioNet 凑 n_agents 个 viable 个体的候选池大小。探针实测（seed 1103）RGCD 发育 viable 率 8–10%（n=48→5 个=10.4%；n=192→16 个=8.3%），单个体发育 ~15 ms，故加大候选近乎免费；按最保守 p=0.083 估计 P(viable>=12) ≈ 1。选取规则 viable_pairs 保序取前 n_agents 个（最低 index），与 n_danio 取值无关。2026-09-26 用户签署。",
-      "source": "research/notes/契约决策记录.md",
-      "config": "configs/experiment.yaml → n_danio",
-      "sensitivity": null,
-      "suggest": null
-    },
-    {
-      "name": "baseline_mlp_hidden",
-      "value": 11,
-      "unit": "neurons",
-      "group": "baseline",
-      "grade": "C",
-      "status": "derived",
-      "basis": "MLP 单隐层宽度；由 §8 尺寸反解（连接数 14H 最接近 N_ours=154）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "结构常量：保留在 connectome/baselines.py（不 config 化，避免公平性基线被无意改动）"
-    },
-    {
-      "name": "baseline_gru_hidden",
-      "value": 3,
-      "unit": "neurons",
-      "group": "baseline",
-      "grade": "C",
-      "status": "derived",
-      "basis": "GRU 隐层宽度；由 §8 尺寸反解（3H²+38H 最接近 154）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "结构常量（connectome/baselines.py）"
-    },
-    {
-      "name": "baseline_fixed_sparse_rnn_hidden",
-      "value": 10,
-      "unit": "neurons",
-      "group": "baseline",
-      "grade": "C",
-      "status": "derived",
-      "basis": "Fixed Sparse RNN 隐层宽度；由 §8 尺寸反解（|mask|+14H ≈154）",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "结构常量（connectome/baselines.py）"
-    },
-    {
-      "name": "baseline_sparse_density",
-      "value": 0.15,
-      "unit": null,
-      "group": "baseline",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "Fixed Sparse RNN 递归支撑的 Bernoulli 密度（§8）；与 RGCD §8 消融 w/o GRN 同密度；无外部依据，属设计选择(D)",
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "结构常量（connectome/baselines.py::SPARSE_DENSITY）；支撑 mask 由 baseline_support 命名空间冻结"
-    },
-    {
-      "name": "probe_enabled",
-      "value": false,
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
-      "config": "configs/default_arena.yaml → probe.enabled",
-      "sensitivity": null,
-      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
-    },
-    {
-      "name": "probe_delay_steps",
-      "value": 40,
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
-      "config": "configs/default_arena.yaml → probe.delay_steps",
-      "sensitivity": null,
-      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
-    },
-    {
-      "name": "probe_return_radius",
-      "value": 3.0,
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
-      "config": "configs/default_arena.yaml → probe.return_radius",
-      "sensitivity": null,
-      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
-    },
-    {
-      "name": "probe_window_steps",
-      "value": 60,
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
-      "config": "configs/default_arena.yaml → probe.window_steps",
-      "sensitivity": null,
-      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
-    },
-    {
-      "name": "probe_shuffle_history",
-      "value": false,
-      "unit": null,
-      "group": "arena",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
-      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
-      "config": "configs/default_arena.yaml → probe.shuffle_history",
-      "sensitivity": null,
-      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
-    },
-    {
-      "name": "robustness_fractions",
-      "value": [
-        0.0,
-        0.05,
-        0.1,
-        0.2
-      ],
-      "unit": null,
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "Experiment E 删边比例（`experiment §3.5`）；0.05/0.10/0.20 为定稿取值，0.0 为对照基线（用于算退化 Δ）",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §3.5",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "已签署（2026-09-27，experiment §3.5 已定稿）"
-    },
-    {
-      "name": "robustness_n_danio",
-      "value": 48,
-      "unit": "individuals",
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "Experiment E 每 seed 候选个体数（取**首个 viable** 作底物）。实测：首个 viable 的 index 与 n_danio=12 一致（7/4/8），48 基本消除空底物，且与 §3.6 演化规模一致",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §3.5",
-      "config": null,
-      "sensitivity": null,
-      "suggest": "已签署（2026-09-27，experiment §3.5 已定稿）"
-    },
-    {
-      "name": "penetrance_realisations_k",
-      "value": 16,
-      "unit": "次",
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次取**已观测均值** N̄_K，以压低**抽样**噪声而保留个体发育变异（外显率保持不完全）。实测（配对网格；官方校准 seeds、n=3200）：β=1.0 时 K=1 AUC 0.6138 / misclass 0.425；K=16 AUC 0.7861 / misclass 0.288（出货配置实跑 0.7991 / 0.2847）；K=64 AUC 0.8342 / misclass 0.265（**16→64 已饱和**）。β=0.0 时 K 越大**越差**（AUC 0.4775→0.4212）⇒ **K 只在 β=1.0 下有意义**。K→∞ 即期望读数 E[N]，退化为 pen≡1 ⇒ 不用。 **2026-09-27 居中化（补记）**：上列 AUC 均在原始读数刻度测得；居中后出货配置校准集 AUC **0.8433**、min-misclass **0.2366**（报告集 0.8678 / 0.2112）⇒ K=16 的取值在居中口径下更宽裕，「K 只在 β=1.0 下有意义」的结论不变。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
-      "config": "configs/penetrance.yaml → realisations_k",
-      "sensitivity": null,
-      "suggest": "已设 16（2026-09-27）。取 16 而非 64：曲线 16→64 已饱和（misclass 0.288→0.265），且**不完全外显率正是 penetrance 的生物学含义**（Cooper et al.）；须与 β=1.0 同批启用。"
-    },
-    {
-      "name": "penetrance_active_axes",
-      "value": [
-        "N"
-      ],
-      "unit": null,
-      "group": "experiment",
-      "grade": "D",
-      "status": "no_basis",
-      "basis": "`confirmed` 门禁只判定这些轴。2026-09-27 用户裁决：H 轴退役 ⇒ 单轴 N。非生效轴仍照常测量并写进 separation_H（作为退役理由的证据），但不阻塞 θ 签署。合法轴 = SEPARATION_AXES = (\"N\", \"H\")；空 / 未知 / 重复即报错。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
-      "config": "configs/penetrance.yaml → active_axes",
-      "sensitivity": null,
-      "suggest": "H 轴退役是**设计裁决**（实测 H 轴两臂均不可分：β=1.0 时 AUC 0.4912 / p=0.389，β=0.0 时 0.4993；最小错分 0.488–0.496 ≈ 随机），故 no_basis = 设计选择。若日后 H 轴换读数后恢复区分力，把 \"H\" 加回本列表即可复检。 **该键同时决定报告读数**：单轴时 `pen(g)` 是「观测 N 档 == 期望 N 档」的一致率，逐类分箱 `observed_bins` 只含 `N`，两轴的 `observed_2x2`/`observed_architecture_counts` 与 4 类反推 `demo_9331.observed_counts` 置 `None`；`active_axes: [N, H]` 可回到历史两轴口径。另：报告**只要求生效轴的 θ^obs**（H 退役后不必再签「展示用 θ_H^obs」）。"
-    },
-    {
-      "name": "penetrance_separation_auc_floor",
-      "value": null,
-      "unit": "AUC",
-      "group": "experiment",
-      "grade": "D",
-      "status": "missing",
-      "basis": "可选的**效应量下限**：启用后门禁叠加第三条 (AUC >= floor)。存在理由：p<α 只说明显著、不说明效应大（大 n 下 AUC=0.51 也通过前两条）。默认 null = 不启用（口径与历史逐位一致）。实测（出货配置、官方校准 seeds、n=3200、K=16）：N 轴 AUC **0.770–0.799**（三个独立 seed 命名空间 0.7701 / 0.7861 / 0.7991）⇒ floor 取 0.65 通过、取 0.85 不通过；AUC 随命名空间有抽样波动，故报区间。 **2026-09-27 居中化（补记）**：上列区间取自**原始读数**刻度；居中后出货配置校准集 N 轴 AUC **0.8433**（报告集 0.8678）⇒ floor 取 0.65 **通过**、取 0.85 **不通过**（0.8433 < 0.85）的结论不变。",
-      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py::axis_separation",
-      "config": "configs/penetrance.yaml → separation_auc_floor",
-      "sensitivity": null,
-      "suggest": "**数值须由人签署**（同 θ^obs；`AGENTS.md` 禁止 AI 填空）。签署时与 θ^obs / threshold_status 一并决定。现成判据参考：N 轴实测 AUC 0.770–0.799 ⇒ 取 0.65 通过、取 0.85 不通过；建议同时把该 floor 写进 §7 判据文本。 **2026-09-27 居中化（补记）**：参考 AUC 改为**居中读数**刻度 —— 校准集 0.8433 / 报告集 0.8678 ⇒ 取 0.65 通过、取 0.85 不通过（0.8433 < 0.85）。"
-    }
-  ],
-  "missing_required": {
-    "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。 2026-09-26：`body_length_mm` 按方案 B（wu 不与 BL 固定换算）退役，不再作为世界换算基准。",
-    "items": [
-      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 数值（genome §3）：**2026-09-27 居中化后** —— §5 通道已开（`development.division_locus_gain` = 1.0，用户授权）+ 读数 K=16 + N 读数逐 seed 居中，N 轴 `separable=true`（出货配置校准集 AUC **0.8433**、p=4.3e-248、min-misclass **0.2366** = pen 0.763、n=3200；报告集 AUC 0.8678、min-misclass 0.2112、逐类 pen 0.708–0.871）⇒ **阈值由「不可辨识」转为「可辨识、待人工签署」**，数值仍 `null`（居中刻度：本轮 min-misclass ≡ median-midpoint = −0.0312）。H 轴 `separable=false`（AUC 0.4862）⇒ 已按裁决退役、单轴 N。另有 `separation_auc_floor` 待签署。"
-    ]
-  },
-  "citation_risks": [
-    "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 motif_count（见 research/notes/bibliography.md 引用规则）",
-    "initial_precursors=24 的口径未写清（substrate 节点数 vs 发育起始细胞数）",
-    "『步数→秒』换算是推断，各来源 dt 不同",
-    "BC 损失权重 λ_i=1/σ_i²（目标尺度归一化）属实现级惯例（robomimic/ACT/diffusion policy 逐维标准化 + 等权 MSE），无单篇论文证明其最优；正文按实现惯例表述",
-    "selection_beta 在适应度归一化未定前无意义（建议改排名/锦标赛，见 design-basis-evolution.md）",
-    "arena 距离参数曾记「与生物量级冲突」：根因是 wu↔BL 换算未定义，已由方案 B 关闭——不再声称 wu↔BL，只按无量纲比率校准（见 arena/Danio_Arena设计与实现说明.md §2 尺度声明 / §8）",
-    {
-      "topic": "Arena 前向锥 / 面积生长 / prey 再生的取值锚点",
-      "risk": "capture_cone_degrees、prey_area_gain、prey_regrowth_steps、escape_hold_steps、predator_max_chase_steps、collision_penalty 的锚点来自**开源游戏项目**（[bib#215]–[bib#220]，非同行评审），或为纯设计选择；论文中不得表述为生物学或文献实测值，须标注「设计选择/游戏化抽象」。",
-      "status": "open"
-    }
-  ],
-  "reference_magnitudes": [
-    {
-      "name": "swim_speed_cruise",
-      "value": "4.2 BL/s (mean), peak 6.5",
-      "source": "[bib#227] Fuiman & Webb 1988",
-      "use": "对标 arena 游速"
-    },
-    {
-      "name": "swim_speed_Uopt",
-      "value": "13 BL/s",
-      "source": "Palstra 2010",
-      "use": "对标 arena 游速"
-    },
-    {
-      "name": "swim_speed_Ucrit",
-      "value": "13–18 BL/s",
-      "source": "Palstra 2010 [bib#45] / Plaut 2000 [bib#228]",
-      "use": "对标 arena 游速"
-    },
-    {
-      "name": "larval_burst_speed",
-      "value": "50–66 BL/s",
-      "source": "Fuiman 1986（未登记，待核）",
-      "use": "幼虫爆发"
-    },
-    {
-      "name": "turn_rate_cbend",
-      "value": "6,000–21,200 deg/s（体弯曲，非航向 yaw）",
-      "source": "[bib#229] Budick & O'Malley 2000",
-      "use": "不可直接用作航向率"
-    },
-    {
-      "name": "strike_distance_larval",
-      "value": "0.5–0.6 mm ≈ 0.12–0.14 BL",
-      "source": "[bib#230] Patterson 2013",
-      "use": "捕获判定距离"
-    },
-    {
-      "name": "looming_threshold_adult",
-      "value": "10.3°–15.8°, latency 740–780 ms",
-      "source": "McKee & McHenry 2020（未登记，待核）",
-      "use": "looming 阈值"
-    },
-    {
-      "name": "looming_threshold_larval",
-      "value": "21.7°/35 ms 或 ≈72°/81 ms",
-      "source": "Temizer 2015 / Dunn 2016",
-      "use": "looming 阈值（生物学参考；本仓库 looming 通道为角扩张率，阈值不直接映射）"
-    },
-    {
-      "name": "n_ours_support_edges",
-      "value": 151,
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8；实测 seed 250927 / initial_population index 2（2026-09-27 §5 通道 β 翻 1.0 后由原 index 12 重选；161 落在 GRU 阶梯可覆盖区间外）",
-      "use": "Experiment C 参数量公平性基准（|log10 N_base − log10 N_ours| ≤ 1，按连接数比较）"
-    }
-  ],
-  "changes_pending": [],
-  "changes_pending_resolved": [
-    {
-      "param": "world",
-      "from": "100×60",
-      "to": "保留",
-      "resolution": "2026-09-26 按 arena §2 定稿关闭：保留 100×60（`world_width` / `world_height` status=no_basis，设计选择）；原「或正方形」不再考虑。"
-    },
-    {
-      "param": "division_locus_gain",
-      "from": 0.0,
-      "to": 1.0,
-      "resolution": "2026-09-27 按用户授权落地。判据 = 配对 2×4 网格（同一批基因组；官方校准 seeds、n=3200）：β=0.0 全 K 不可分（AUC 0.4775 / 0.4445 / 0.4212），β=1.0 可分离（AUC 0.6138 / 0.7861 / 0.8342，K=1/16/64）。同批落地：`configs/penetrance.yaml::realisations_k` 1→16；**4 处**冻结锚（含 §8 参照实例，含 `development/config.py` 的 `DEFAULT_CONFIG` 默认值）与 5 处论文数字重冻结；Exp C/D/E/F + demo checkpoint 并入已欠的 Θ_D 那波（β 增量≈0）。"
-    }
-  ],
-  "sensitivity_plan": [
-    {
-      "param": "motif_count",
-      "values": [
-        4,
-        8,
-        16
-      ]
-    },
-    {
-      "param": "development_steps",
-      "values": [
-        12,
-        50,
-        100
-      ]
-    },
-    {
-      "param": "population_size",
-      "values": [
-        24,
-        48,
-        96
-      ]
-    },
-    {
-      "param": "capture_radius / sensing_radius",
-      "values": [
-        0.16,
-        0.256,
-        0.41
-      ]
-    },
-    {
-      "param": "capture_cone_degrees",
-      "values": [
-        60,
-        120,
-        180
-      ]
-    },
-    {
-      "param": "capture_size_ratio κ（与 predator_size 联动）",
-      "values": [
-        1.0,
-        1.25,
-        1.5,
-        2.0
-      ]
-    },
-    {
-      "param": "sensing_radius",
-      "values": [
-        12,
-        18,
-        24
-      ]
-    },
-    {
-      "param": "capture_size_ratio",
-      "values": [
-        1.0,
-        1.25,
-        1.5,
-        2.0
-      ]
-    },
-    {
-      "param": "capture_radius",
-      "values": [
-        2.88,
-        4.61,
-        7.38
-      ]
-    },
-    {
-      "param": "predator_size",
-      "values": [
-        2.5,
-        3.125,
-        3.75,
-        5.0
-      ]
-    },
-    {
-      "param": "generations",
-      "values": [
-        10,
-        20
-      ]
-    },
-    {
-      "param": "motif_length",
-      "values": [
-        4,
-        6,
-        8
-      ]
-    },
-    {
-      "param": "motif_topk",
-      "values": [
-        1,
-        3,
-        5
-      ]
-    },
-    {
-      "param": "grn_spectral_radius",
-      "values": [
-        0.8,
-        0.9,
-        0.95
-      ]
-    },
-    {
-      "param": "regulatory_gamma",
-      "values": [
-        0.5,
-        1.0,
-        2.0
-      ]
-    },
-    {
-      "param": "tournament_size",
-      "values": [
-        2,
-        3
-      ]
-    },
-    {
-      "param": "bc_lr",
-      "values": [
-        0.0003,
-        0.001
-      ]
-    },
-    {
-      "param": "bc_batch_size",
-      "values": [
-        32,
-        64,
-        128
-      ]
-    },
-    {
-      "param": "bc_trajectories",
-      "values": [
-        10,
-        50,
-        200
-      ]
-    },
-    {
-      "param": "env_food_rich",
-      "values": [
-        24,
-        48,
-        96
-      ]
-    },
-    {
-      "param": "env_predator_rich",
-      "values": [
-        3,
-        6,
-        12
-      ]
-    },
-    {
-      "param": "env_resource_scarce",
-      "values": [
-        6,
-        12,
-        24
-      ]
-    }
-  ]
-}
+{
+  "meta": {
+    "title": "EvoGenesis 参数总表（含依据审计）",
+    "version": "v0.26",
+    "date": "2026-09-27",
+    "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
+    "audit_source": "已并入本文件",
+    "research": [
+      "research/reference/param-basis-engineering.md",
+      "research/reference/param-basis-biology.md",
+      "research/reference/zebrafish-escape-capture.md"
+    ],
+    "legend_grade": {
+      "A": "结构/定义：由模型结构必然推出",
+      "B": "外部目标：有可验证目标或科学定律支撑",
+      "C": "派生：由 A/B 的算术关系推出",
+      "D": "无依据：仅选定值，需补来源或标注未验证"
+    },
+    "legend_status": {
+      "confirmed": "有依据，锁定",
+      "derived": "由 A/B 派生，不单独讨论",
+      "in_range": "有区间依据但无来源恰用该值，保留",
+      "no_basis": "找不到依据，标设计选择",
+      "missing": "参数总表原缺、实现必须补"
+    },
+    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。 2026-09-27：登记 baseline 结构常量（H 14/4/12、ρ=0.15，group=baseline）与 reference n_ours=190；并更正其 provenance 为 index 12（原记 index 6 实测为 162）。 2026-09-27：登记 H3 探针参数（probe.*，arena §14，设计选择 D、默认关闭、草案待确认）。 2026-09-27：登记 Experiment E（robustness_fractions / robustness_n_danio）。 Experiment E 主指标改为行为发散、n_danio 定为 48（2026-09-27 实测）。 Experiment E 口径已定稿（2026-09-27 签署）。 2026-09-27：H3 探针参数（probe.*）与基因组实验室 §2.3 自选语义经用户认可升 `已定稿`。 2026-09-26：§7 发育门禁修复后 DanioNet 支撑边数 N_ours 由 190 移至 154（同 seed 同 index 实测），baseline 宽度按 §8 同一反解流程重解为 H 11/3/10（连接数 154/141/154），同步 baseline_*_hidden 与 n_ours_support_edges。 2026-09-26：登记 §5 分裂读数两个增益（development.division_drive_gain / division_locus_gain）与既有但漏登的 development.domain_identity_spread_scale、connectome.rho_w0_target；theta_N_obs 由「不可辨识」改为「可辨识但待签署（通道开启后）」，翻默认进 changes_pending。 2026-09-27：登记 penetrance_realisations_k（N 轴 K 次重抽测量协议 + 实测 K 曲线）。",
+    "workflow": [
+      "表 A/B/C 锁定不动",
+      "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
+      "missing_required 必须先补进文档与 config 才能实现 RGCD",
+      "sensitivity_plan 中的参数须报敏感性"
+    ],
+    "owns": "参数取值与依据/状态的单一来源：**取值以 configs/*.yaml 为准**，本表记录依据、状态与敏感性。",
+    "legend_status_note": "2026-09-26 移除：该档从未被任何条目使用，且不在允许词表内（审计 A12）；如需「建议改值」请用 changes_pending。"
+  },
+  "parameters": [
+    {
+      "name": "chromosome_pairs",
+      "value": 2,
+      "unit": null,
+      "group": "genome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "Mendel Mode 的 9:3:3:1 要求 A/B 位于两对独立染色体",
+      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md:28",
+      "config": "configs/default_model.yaml → genome.chromosome_pairs",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "alphabet",
+      "value": [
+        "A",
+        "C",
+        "G",
+        "T"
+      ],
+      "unit": null,
+      "group": "genome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "DNA 四碱基字表，Hamming affinity 与 SNP 替换算子在其上定义",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §2",
+      "config": "configs/default_model.yaml → genome.alphabet",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bp_per_haplotype_chromosome",
+      "value": 128,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "紧凑人工基因组常见 50–10^4 bp（Avida 50；Banzhaf ARN 1000–10000）；无来源恰用 128；依据：与 Avida 同量级、处于 Banzhaf ARN 最短端；真实生物学不为其数量背书",
+      "source": "research/reference/design-basis-genome.md",
+      "config": "configs/default_model.yaml → genome.bp_per_haplotype_chromosome",
+      "sensitivity": null,
+      "suggest": "保留 128，改述为「区间内设计选择」"
+    },
+    {
+      "name": "haploid_bp",
+      "value": 256,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "C",
+      "status": "derived",
+      "basis": "2 × 128",
+      "source": null,
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "diploid_bp",
+      "value": 512,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "C",
+      "status": "derived",
+      "basis": "2 × 256",
+      "source": null,
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "motif_count",
+      "value": 8,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无来源；生物 motif 目录为数百–上千量级（Lambert et al. 2018），不可据此外推；依据：数字生物基因组 motif 规模参照(10^1–10^5)；真实 motif 为 10^3 量级，本项目 8 属 A-life 尺度",
+      "source": "research/reference/design-basis-genome.md",
+      "config": "configs/default_model.yaml → genome.motif_count",
+      "sensitivity": [
+        4,
+        8,
+        16
+      ],
+      "suggest": "标「设计选择（未验证）」"
+    },
+    {
+      "name": "motif_subset_A",
+      "value": 0,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "A 位点对应的 motif 子集（MVP 单元素）；位点标签可交换，指定索引不影响统计；E_A 只在该位点染色体对上计算（genome §3，C2）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/default_model.yaml → genome.motif_subset_A",
+      "sensitivity": null,
+      "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
+    },
+    {
+      "name": "motif_subset_B",
+      "value": 1,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "B 位点对应的 motif 子集（MVP 单元素）；E_B 只在该位点染色体对上计算（genome §3，C2）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/default_model.yaml → genome.motif_subset_B",
+      "sensitivity": null,
+      "suggest": "设计选择；K_A/K_B 须互斥且分别落在两染色体对"
+    },
+    {
+      "name": "theta_N",
+      "value": 0.67,
+      "unit": "affinity",
+      "group": "genome",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "high_N ⟺ E_A>θ_N（genome §3）。原：MVP 下 E∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量、取区间中点。**2026-09-27 重定**（并发 lane 提交 `8a5cf81`，本次仅补同步参数表）：E 已是**连续读出**（实测值域 0.56–0.81），原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使**全体判 high**、p(A)=p(B)≡1（Evolution 面板退化）。按本条的既有约定「若 E 改为连续读出须重定」，在**独立校准集**（seed=20260926, n=200，非演示种子）取每轴中位。故阈值合法区间由 (0,0.5) 放宽为 (0,1)（原「完全显性必要条件 (0,0.5)」只在离散 E 口径下成立）。项目自定义演示装置，非生物学结论。实测中位 E_A=0.667 ⇒ θ=0.67。",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3（2026-09-27 重定，见提交 8a5cf81）",
+      "config": "configs/default_model.yaml → phenotype.theta_N",
+      "sensitivity": null,
+      "suggest": "约束 θ∈(0,1)（连续 E 口径）。已按独立校准集**中位**重定 ⇒ 是**校准量**、非拟合量；若 E 的读出方式再变须重定。"
+    },
+    {
+      "name": "theta_H",
+      "value": 0.69,
+      "unit": "affinity",
+      "group": "genome",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "high_H ⟺ E_B>θ_H（genome §3）。原：MVP 下 E∈{0,0.5,1}，(0,0.5) 内取值对显性判定等价，故 θ 为约定量、取区间中点。**2026-09-27 重定**（并发 lane 提交 `8a5cf81`，本次仅补同步参数表）：E 已是**连续读出**（实测值域 0.56–0.81），原约定值 0.25（离散 E∈{0,0.5,1} 的区间中点）会使**全体判 high**、p(A)=p(B)≡1（Evolution 面板退化）。按本条的既有约定「若 E 改为连续读出须重定」，在**独立校准集**（seed=20260926, n=200，非演示种子）取每轴中位。故阈值合法区间由 (0,0.5) 放宽为 (0,1)（原「完全显性必要条件 (0,0.5)」只在离散 E 口径下成立）。项目自定义演示装置，非生物学结论。实测中位 E_B=0.694 ⇒ θ=0.69。",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3（2026-09-27 重定，见提交 8a5cf81）",
+      "config": "configs/default_model.yaml → phenotype.theta_H",
+      "sensitivity": null,
+      "suggest": "约束 θ∈(0,1)（连续 E 口径）。已按独立校准集**中位**重定 ⇒ 是**校准量**、非拟合量；若 E 的读出方式再变须重定。"
+    },
+    {
+      "name": "theta_N_obs",
+      "value": -0.0312,
+      "unit": "neuron_count",
+      "group": "genome",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "penetrance 观测档阈值，作用于**逐 seed 居中**的发育产物 N=|M|（genome §3；居中口径见 `experiment §3.9`）：基线 = 该 master seed **分层集**内全部行读数之中位数（分层等量抽样 ⇒ 与基因型无关），故 θ_N^obs 是**居中偏差**刻度（可正可负，**不是**绝对神经元数）。须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调。**2026-09-27 居中化**：§5 通道已开（`development.division_locus_gain` = 1.0）+ 读数 K=16 ⇒ N 轴 `separable=true`；居中使 θ 可**跨 seed 迁移**（不居中时 founder 背景的 seed 级平移 ~8 神经元 ≫ 基因型效应 ~1：池化 AUC 会因两 seed 跨 而退化；居中后（出货配置）0.8570）。出货配置实跑（官方校准 seeds、n=3200、K=16）：AUC **0.8570**、p=3.7e-268、min-misclass **0.2219**（pen 0.778），θ_N^obs = **−0.0312**（签署取 **median-midpoint**；min-misclass 为 −0.1562 且随 run 漂移，不取）；报告集（n=4800）AUC **0.8712** / min-misclass 0.2158 / 逐类 pen **0.6975 / 0.8892 / 0.7908 / 0.7592**。`value` = −0.0312、`status` = confirmed。**2026-09-27 已签署**：用户将择值授权给我（原话「你觉得哪个好就按照哪个」），由我按仓库判据择定并留档（`research/notes/契约决策记录.md` 2026-09-27 节）。",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/penetrance.yaml → theta_N_obs",
+      "sensitivity": null,
+      "suggest": "数值须**由人签署**（`configs/penetrance.yaml` 头部「禁止 AI 填空」；`placeholder` 亦然）。当前生效轴 `[N]` 可分离（H 轴 `separable=false`、已按裁决退役，不阻塞签署）⇒ `confirmable=true`。签署取**当前居中刻度**的**中位中点**（`theta_N_obs_median_midpoint`）：两跑（同 `--experiment-id pen-ship`）**逐位一致** −0.0312；`min_misclass` 为 −0.1562 且随 run 漂移，故不取。⚠️ **勿混用 2026-09-27 居中化之前的原始刻度数值**（如 36.469 / 36.062）：那是绝对神经元数，与当前 θ 量纲不同，混用会使报告与校准不自洽。"
+    },
+    {
+      "name": "theta_H_obs",
+      "value": null,
+      "unit": "cv_tau",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs。实测（2026-09-26 官方校准集）：separation_H.separable=false —— AUC=0.4993、p=0.959 ⇒ 零区分力、阈值不可辨识。用户已裁决 **H 轴退役**（penetrance 降级为单轴、只留 N），实现待做 ⇒ 届时随 H 轴一并退役。 **2026-09-27 居中化只作用于 N 轴读数**（`centered_n`）；`H = CV_τ` 未居中、仍按原口径二分。H 轴在出货配置下 `separable=false`（AUC 0.4862 / p=0.175），故它不参与签署门禁。**2026-09-27：签署有意留空**（H 轴退役；非未决）。",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
+      "config": "configs/penetrance.yaml → theta_H_obs",
+      "sensitivity": null,
+      "suggest": "校准器已实现并**已跑**（同 theta_N_obs）。**实测 separation_H.separable=false（见 basis）⇒ 不得置 `confirmed`**；数值须由人签署。另：用户已裁决 **H 轴退役（penetrance 降级为单轴、只留 N）**，实现待做 ⇒ 本项届时随 H 轴一并退役"
+    },
+    {
+      "name": "penetrance_calibration_per_class",
+      "value": 400,
+      "unit": "per_class",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 独立校准集**分层平衡**抽样规模（每类；实验设计选择，无文献取值）",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → calibration.per_class",
+      "sensitivity": null,
+      "suggest": "草案待确认：分层平衡使每轴 high/low 均衡；规模决定 θ 估计稳定性"
+    },
+    {
+      "name": "penetrance_report_per_class",
+      "value": 400,
+      "unit": "per_class",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "penetrance 报告集**分层平衡**抽样规模（每类；保证最小类 aabb 的 Wilson CI 可控）",
+      "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → report.per_class",
+      "sensitivity": null,
+      "suggest": "草案待确认：pen 以基因为条件，分层平衡对 pen(g) 无偏且 CI 更窄"
+    },
+    {
+      "name": "penetrance_demo_offspring",
+      "value": 160,
+      "unit": "offspring",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "9:3:3:1 计数演示的**未分层**样本规模（genome §3 的 160 例口径）",
+      "source": "src/evogenesis/genome/生物学与进化遗传学基础.md §3；src/evogenesis/experiment/实验与评价体系.md §3.9",
+      "config": "configs/penetrance.yaml → report.demo_offspring",
+      "sensitivity": null,
+      "suggest": "160 例为演示、非统计验证（genome §3）"
+    },
+    {
+      "name": "mutation_rate",
+      "value": 0.001,
+      "unit": "per_base_per_gamete",
+      "group": "genome",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "目标：256 bp 配子期望 0.256 个新 SNP；依据：计算抽象参数：与 Avida 惯例(per-site≈0.0075)同量级，比脊椎动物真实 germline 率(~5.97e-9/site/代)高约1e5倍",
+      "source": "research/reference/design-basis-evolution.md",
+      "config": "configs/evolution.yaml → mutation_rate_per_base_per_gamete",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "grn_dim",
+      "value": 8,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "人工 GRN 节点常见 2–20+（Mehra & Hintze 2023 N=20；Banzhaf ARN 2–19）",
+      "source": "research/reference/param-basis-engineering.md:56-64",
+      "config": "configs/default_model.yaml → grn.dim",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "development_steps",
+      "value": 12,
+      "unit": "steps",
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "NCA 形态发生 10–20 步支持 12；但 GRN 收敛研究用 100–1000 步，故此处偏小",
+      "source": "research/reference/param-basis-engineering.md:66-74",
+      "config": "configs/default_model.yaml → grn.development_steps",
+      "sensitivity": [
+        12,
+        50,
+        100
+      ],
+      "suggest": "标注「预算截断」，补收敛对比"
+    },
+    {
+      "name": "grn_rho",
+      "value": 0.35,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "leak/EMA 常见 0.1–1.0（实例 0.2），0.35 同量级",
+      "source": "research/reference/param-basis-engineering.md:76-82",
+      "config": "configs/default_model.yaml → grn.rho",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "initial_precursors",
+      "value": 24,
+      "unit": "cells",
+      "group": "development",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "≈ ES-HyperNEAT 5×5 substrate = 25 节点；但经典发育编码从 1 个细胞起步——口径待定",
+      "source": "research/reference/param-basis-engineering.md:84-90",
+      "config": "configs/default_model.yaml → development.initial_precursors",
+      "sensitivity": null,
+      "suggest": "必须写清是「substrate 节点数」还是「发育起始细胞数」"
+    },
+    {
+      "name": "developmental_domains",
+      "value": [
+        "sensory",
+        "prey",
+        "threat",
+        "integrator_memory",
+        "inhibitory",
+        "motor"
+      ],
+      "unit": null,
+      "group": "development",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "六类神经元谱系名称列表（顺序即 domain 索引，与 development.domains 一致）",
+      "source": "src/evogenesis/development/RGCD数学模型.md §3",
+      "config": "configs/default_model.yaml → development.domains",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "developmental_domain_count",
+      "value": 6,
+      "unit": null,
+      "group": "development",
+      "grade": "C",
+      "status": "derived",
+      "basis": "= len(developmental_domains)",
+      "source": null,
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "precursors_per_domain",
+      "value": 4,
+      "unit": null,
+      "group": "development",
+      "grade": "C",
+      "status": "derived",
+      "basis": "24 / 6（24 本身见 initial_precursors）",
+      "source": null,
+      "config": "configs/default_model.yaml → development.precursors_per_domain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "max_divisions",
+      "value": 1,
+      "unit": null,
+      "group": "development",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "每个 precursor 最多分裂一次",
+      "source": "src/evogenesis/development/RGCD数学模型.md:93",
+      "config": "configs/default_model.yaml → development.max_divisions_per_precursor",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "max_neurons",
+      "value": 48,
+      "unit": null,
+      "group": "development",
+      "grade": "C",
+      "status": "derived",
+      "basis": "24 × (1 + 1)",
+      "source": "src/evogenesis/development/RGCD数学模型.md:108",
+      "config": "configs/default_model.yaml → development.max_neurons",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "target_density",
+      "value": 0.15,
+      "unit": "fraction",
+      "group": "connectome",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "文档给定密度区间 [0.10, 0.20] 的中点",
+      "source": "src/evogenesis/development/RGCD数学模型.md:170",
+      "config": "configs/default_model.yaml → connectome.target_density",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "self_loops",
+      "value": false,
+      "unit": null,
+      "group": "connectome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "不允许 self-loop",
+      "source": "src/evogenesis/development/RGCD数学模型.md:170",
+      "config": "configs/default_model.yaml → connectome.allow_self_loops",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "tau_min",
+      "value": 1.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "τ = 1 + 9σ(·) ⇒ 下界 1；依据：t∈[1,10] 步在 20Hz 下等效 50–500ms 网络级整合时间常数；非单神经元膜时间常数(皮层~20ms)",
+      "source": "research/reference/design-basis-neuro.md",
+      "config": "configs/default_model.yaml → connectome.tau_min",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "tau_max",
+      "value": 10.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "τ = 1 + 9σ(·) ⇒ 上界 10；依据：t∈[1,10] 步在 20Hz 下等效 50–500ms 网络级整合时间常数；非单神经元膜时间常数(皮层~20ms)",
+      "source": "research/reference/design-basis-neuro.md",
+      "config": "configs/default_model.yaml → connectome.tau_max",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "distance_lambda",
+      "value": 2.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "空间布线代价系数 -λ·d 有依据(P∝e^{-λd})；在归一化发育单位方域上取值，与 zᵀCz∈[-2,2] 配平（E[d]≈0.521→λd≈1.04）",
+      "source": "[bib#125] research/reference/rgcd-wiring-and-placement.md",
+      "config": "configs/default_model.yaml → connectome.distance_lambda",
+      "sensitivity": null,
+      "suggest": "设计选择；量纲随坐标归一（单位方域），不照搬 mm 口径文献值"
+    },
+    {
+      "name": "sensory_dim",
+      "value": 12,
+      "unit": null,
+      "group": "network",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "12 维输入被逐项列明",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §2",
+      "config": "configs/default_model.yaml → network.sensory_dim",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "action_dim",
+      "value": 2,
+      "unit": null,
+      "group": "network",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "连续动作 (ω, v) 两维",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §4",
+      "config": "configs/default_model.yaml → network.action_dim",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "activation",
+      "value": "tanh",
+      "unit": null,
+      "group": "network",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "默认 φ=tanh（DanioNet §3 神经动力学定稿）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
+      "config": "configs/default_model.yaml → network.activation",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "world_width",
+      "value": 100,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "同类连续多智能体环境均为正方形（POSGGym、PettingZoo MPE）；100×60（5:3）疑似 Canvas 显示比例；依据：连续二维多智能体环境无统一尺寸(MPE 约2单位、POSGGym 10×10)",
+      "source": "research/reference/design-basis-connectome.md",
+      "config": "configs/default_arena.yaml → world.width",
+      "sensitivity": null,
+      "suggest": "明确说明 5:3 比例的来源与量纲约定（world unit）"
+    },
+    {
+      "name": "world_height",
+      "value": 60,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "同 world_width；依据：连续二维多智能体环境无统一尺寸(MPE 约2单位、POSGGym 10×10)",
+      "source": "research/reference/design-basis-connectome.md",
+      "config": "configs/default_arena.yaml → world.height",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "sim_hz",
+      "value": 20,
+      "unit": "Hz",
+      "group": "arena",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "dt=0.05 s 有多个权威实现依据（Gymnasium HalfCheetah dt=5×0.01；robosuite control_freq=20）",
+      "source": "research/reference/param-basis-engineering.md:100-106",
+      "config": "configs/default_arena.yaml → world.hz",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "episode_seconds",
+      "value": 30,
+      "unit": "s",
+      "group": "arena",
+      "grade": "D",
+      "status": "derived",
+      "basis": "常见 20–50 s（MuJoCo 50 s、robosuite 25 s）。**派生只读**：`episode_seconds = episode_steps / hz`（arena 文档 §18.2.1；`arena/config.py::DERIVED_READONLY_KEYS`），不是独立旋钮 —— 2026-09-26 按审计 A5 更正 status。",
+      "source": "research/reference/param-basis-engineering.md:108-114",
+      "config": "configs/default_arena.yaml → world.episode_seconds",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "episode_steps",
+      "value": 600,
+      "unit": "steps",
+      "group": "arena",
+      "grade": "C",
+      "status": "derived",
+      "basis": "20 × 30（20/30 见 sim_hz / episode_seconds）",
+      "source": null,
+      "config": "configs/default_arena.yaml → world.episode_steps",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "live_fish",
+      "value": 12,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无同类惯例，且取决于世界尺寸与计算预算",
+      "source": null,
+      "config": "configs/default_arena.yaml → population.n_fish",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "live_prey",
+      "value": 24,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无同类惯例；prey 是否重生/数量守恒未定义",
+      "source": null,
+      "config": "configs/default_arena.yaml → population.n_prey",
+      "sensitivity": null,
+      "suggest": "先补 ecology 规则（重生/守恒）"
+    },
+    {
+      "name": "live_predators",
+      "value": 3,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无同类惯例",
+      "source": null,
+      "config": "configs/default_arena.yaml → population.n_predators",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "live_obstacles",
+      "value": 6,
+      "unit": "count",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "无同类惯例",
+      "source": null,
+      "config": "configs/default_arena.yaml → population.n_obstacles",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "capture_size_ratio",
+      "value": 1.25,
+      "unit": "ratio",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "未找到斑马鱼直接的「最大可吞猎物/捕食者体长」上限；替代物种 20–27% SL 度量的是猎物体高，不可倒数为 κ。原 basis 的「1.25（允许猎物大于自身）」**已更正**：§8 判据为 size_hunter ≥ κ·size_target，等价 prey_size ≤ predator_size/κ，猎物必须更小。1.25 保持为设计选择；耦合约束 predator_size ≥ κ·max_size。 2026-09-26 认领表 A3 签署「接受并登记」；判据含边界，前向锥见 capture_cone_degrees。",
+      "source": "research/reference/zebrafish-escape-capture.md",
+      "config": "configs/default_arena.yaml → growth.capture_size_ratio",
+      "sensitivity": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ],
+      "suggest": "保持 1.25（设计选择）；扫描时必须与 predator_size 联动"
+    },
+    {
+      "name": "sensing_radius",
+      "value": 18.0,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "方案 B（2026-09-26 裁决）：wu 为抽象仿真长度单位，不与 BL 建立固定换算；18 wu 是项目尺度，不赋予真实视觉距离含义。原 basis 的「若单位≈体长，18 远大于观测值」不再作为改动依据。尺度声明见 arena/Danio_Arena设计与实现说明.md §2。",
+      "source": "research/reference/param-basis-biology.md",
+      "config": "configs/default_arena.yaml → sensing.radius",
+      "sensitivity": [
+        12.0,
+        18.0,
+        24.0
+      ],
+      "suggest": "方案 B：不建立 BL 换算；保持 18 wu 作为项目尺度"
+    },
+    {
+      "name": "capture_radius",
+      "value": 4.61,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "C",
+      "status": "derived",
+      "basis": "由幼虫实测打击/探测距离比 0.16–0.41 取几何中心 √(0.16×0.41)=0.256，×sensing_radius 18 = 4.61 wu（可接受域 2.88–7.38）。斑马鱼成鱼以 BL 计的打击距离未检索到，故不按 BL 直接取值。 前向锥（capture_cone_degrees，总锥角 120°）已于 2026-09-26 实现；「半径和」口径未采纳（见 arena 文档 §8 已知局限）。",
+      "source": "research/reference/zebrafish-escape-capture.md",
+      "config": "configs/default_arena.yaml → growth.capture_radius",
+      "sensitivity": [
+        2.88,
+        4.61,
+        7.38
+      ],
+      "suggest": "已落地（方案 B）；扫描时与 sensing_radius 同比例"
+    },
+    {
+      "name": "predator_size",
+      "value": 3.125,
+      "unit": "size",
+      "group": "arena",
+      "grade": "C",
+      "status": "derived",
+      "basis": "耦合约束 predator_size ≥ κ·max_size = 1.25×2.5 = 3.125（§8）。低于此值则被 min(max_size,·) 钳住的最大体型个体永久不可捕食（吸收态）。**已进 `configs/default_arena.yaml` 的 `actors.predator_size`**（2026-09-26 补入 `actors:` 段；本条此前记为「未进 configs」已过期，2026-09-26 按审计 A1 更正）。",
+      "source": "arena/Danio_Arena设计与实现说明.md §8（内部耦合约束）",
+      "config": "configs/default_arena.yaml → actors.predator_size",
+      "sensitivity": [
+        2.5,
+        3.125,
+        3.75,
+        5.0
+      ],
+      "suggest": "扫描 κ 时联动：predator_size = κ×max_size"
+    },
+    {
+      "name": "sensing_fov_degrees",
+      "value": 220.0,
+      "unit": "deg",
+      "group": "arena",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "幼虫单眼 163°、总视野（推断）≈306°；220° 落在其间，成鱼未知",
+      "source": "research/reference/param-basis-biology.md:15-28",
+      "config": "configs/default_arena.yaml → sensing.fov_degrees",
+      "sensitivity": null,
+      "suggest": "标注口径（单眼/总视野）"
+    },
+    {
+      "name": "body_length_mm",
+      "value": 30.0,
+      "unit": "mm",
+      "group": "arena",
+      "grade": "B",
+      "status": "in_range",
+      "basis": "成鱼标准体长 SL 25–35 mm（取 30，与 Palstra 2010 自洽）；幼虫 4.2 mm；已按方案 B 退役（wu 不与 BL 固定换算），仅作生物学参考",
+      "source": "research/reference/param-basis-biology.md:121-134",
+      "config": null,
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_turn_rate",
+      "value": 5.0,
+      "unit": "rad/s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "斑马鱼 C 形逃避 6,000–21,200 deg/s 是体弯曲角速度，非航向 yaw 率，不可直接套用",
+      "source": "research/reference/param-basis-biology.md:74-84",
+      "config": "configs/default_arena.yaml → actors.predator_turn_rate",
+      "sensitivity": null,
+      "suggest": "航向率需另取依据"
+    },
+    {
+      "name": "population_size",
+      "value": 48,
+      "unit": "count",
+      "group": "evolution",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "NEAT 150；De Jong 50；GA 经验 50–200 — 48 接近 De Jong 下沿，偏小",
+      "source": "research/reference/param-basis-engineering.md:116-122",
+      "config": "configs/evolution.yaml → population_size",
+      "sensitivity": [
+        24,
+        48,
+        96
+      ],
+      "suggest": "保留但须说明并报敏感性"
+    },
+    {
+      "name": "generations",
+      "value": 20,
+      "unit": "generations",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "E–F 环境选择的代循环上限（区间 10–20）。属**设计选择**（无文献实测依据）：预算允许（代循环每代评估 1 个 Arena episode；按 ExpertPolicy 吞吐 12 鱼×600 步≈2 s，20 代 × 4 条件 × 3 seed ≈ 数十分钟），且种群 48 / seed 3 漂变强，需要足够代数让选择压与漂变分离。**强制 pilot 门**：正式跑满前先跑 10 代，用同环境 seed 间 spread 作噪声带判断区分力，落入带内不得当结论。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.6",
+      "config": "configs/experiment.yaml → generations",
+      "sensitivity": [
+        10,
+        20
+      ],
+      "suggest": "已接线：experiment/config.py + scripts/run_evolution.py；pilot 无区分力时须延长代数或如实报无效应"
+    },
+    {
+      "name": "crossover_probability",
+      "value": 0.5,
+      "unit": "per_chromosome",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "每对染色体交叉概率 0.5（每配子≥1次交叉=1-0.5²=0.75）；属计算抽象，不代表真实重组率；GA 单点交叉率惯例 0.6–0.9 针对优化问题，不适用",
+      "source": "research/reference/design-basis-evolution.md",
+      "config": "configs/evolution.yaml → crossover_probability_per_chromosome",
+      "sensitivity": null,
+      "suggest": "保留 0.5（设计选择，非可调超参）"
+    },
+    {
+      "name": "mendel_display_n",
+      "value": 160,
+      "unit": "offspring",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "用于展示 9:3:3:1（期望 90/30/30/10）；160 为展示规模、非假设检验（χ² df=3 临界 7.8147；功效见 genome §3）",
+      "source": null,
+      "config": "configs/evolution.yaml → mendel_display_offspring",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "fitness_weights",
+      "value": {
+        "survival": 0.35,
+        "prey_capture": 0.25,
+        "escape_success": 0.2,
+        "energy_efficiency": 0.2
+      },
+      "unit": "weights",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "人为权重；归一化口径已定（代内 min-max），权重可解释为对标准化分量的偏好；须做敏感度分析",
+      "source": "research/reference/design-basis-evolution.md",
+      "config": "configs/evolution.yaml → fitness_weights",
+      "sensitivity": null,
+      "suggest": "设计选择；须报权重敏感性"
+    },
+    {
+      "name": "formal_seeds",
+      "value": 3,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "实验设计的最低重复数（要求给出方差）",
+      "source": "configs/experiment_seeds.yaml",
+      "config": "configs/experiment_seeds.yaml → minimum_formal_replicates",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_updates",
+      "value": 20,
+      "unit": "mini_batch_updates",
+      "group": "learning",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "Stage 2 BC 预算 K=20；K=20 短程 regime 无直接文献，属设计选择（见 learning §3 短程敏感性）",
+      "source": "src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.mini_batch_updates",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "motif_length",
+      "value": 6,
+      "unit": "bp",
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "真实 TF motif 6–12 bp 区间下沿，取 A-life 尺度；依据审计 R5（Stormo 2000；Lambert 2018）",
+      "source": "docs/设计依据审计.md R5",
+      "config": "configs/default_model.yaml → genome.motif_length",
+      "sensitivity": [
+        4,
+        6,
+        8
+      ],
+      "suggest": "设计选择（未验证）"
+    },
+    {
+      "name": "motif_topk",
+      "value": 3,
+      "unit": null,
+      "group": "genome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "TopKMean 的 K；无来源，取小值抑制单窗口噪声",
+      "source": "src/evogenesis/development/RGCD数学模型.md §2",
+      "config": "configs/default_model.yaml → genome.motif_topk",
+      "sensitivity": [
+        1,
+        3,
+        5
+      ],
+      "suggest": "设计选择（未验证）"
+    },
+    {
+      "name": "grn_weight_init",
+      "value": "xavier",
+      "unit": null,
+      "group": "grn",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "Glorot & Bengio 2010 Xavier 初始化",
+      "source": "[bib#126] research/reference/rgcd-wiring-and-placement.md",
+      "config": "configs/default_model.yaml → grn.weight_init",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "grn_spectral_radius",
+      "value": 0.9,
+      "unit": null,
+      "group": "grn",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "“谱半径<1⇒ESP”为经验条件（Yildiz 2012 有反例），按稳定性启发式使用",
+      "source": "[bib#127] research/reference/rgcd-wiring-and-placement.md",
+      "config": "configs/default_model.yaml → grn.spectral_radius",
+      "sensitivity": [
+        0.8,
+        0.9,
+        0.95
+      ],
+      "suggest": "设计选择（经验启发式）"
+    },
+    {
+      "name": "placement",
+      "value": "domain_blocked",
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "随机放置足以复现特异功能连接（Hill 2012）；domain-blocked 为工程选择，给 -λd 非平凡结构",
+      "source": "[bib#123] research/reference/rgcd-wiring-and-placement.md",
+      "config": "configs/default_model.yaml → development.placement",
+      "sensitivity": null,
+      "suggest": "设计选择"
+    },
+    {
+      "name": "position_space",
+      "value": "unit_square",
+      "unit": null,
+      "group": "development",
+      "grade": "A",
+      "status": "confirmed",
+      "basis": "归一化发育单位方域 [0,1]²；λ 量纲绑定此口径",
+      "source": "src/evogenesis/development/RGCD数学模型.md §3",
+      "config": "configs/default_model.yaml → development.position_space",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "split_noise",
+      "value": 0.05,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "分裂位置扰动 ε_p 的标准差（单位方域）",
+      "source": "src/evogenesis/development/RGCD数学模型.md §5",
+      "config": "configs/default_model.yaml → development.split_noise",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "gene_noise",
+      "value": 0.1,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "分裂基因表达式扰动 ε_g 的标准差",
+      "source": "src/evogenesis/development/RGCD数学模型.md §5",
+      "config": "configs/default_model.yaml → development.gene_noise",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "regulatory_gamma",
+      "value": 1.0,
+      "unit": null,
+      "group": "connectome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "R 项为弱偏置（表达相似度单独预测连线 AUC≈0.64）；γ 无文献值",
+      "source": "[bib#111][bib#121] research/reference/rgcd-wiring-and-placement.md",
+      "config": "configs/default_model.yaml → connectome.regulatory_gamma",
+      "sensitivity": [
+        0.5,
+        1.0,
+        2.0
+      ],
+      "suggest": "设计选择；须报 γ=0 消融"
+    },
+    {
+      "name": "c_domain_bonus",
+      "value": 1.5,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "cell-identity one-hot 域偏置增量，保证六谱系 developmental competence",
+      "source": "src/evogenesis/development/RGCD数学模型.md §6",
+      "config": "configs/default_model.yaml → development.c_domain_bonus",
+      "sensitivity": null,
+      "suggest": "设计选择"
+    },
+    {
+      "name": "domain_identity_spread_scale",
+      "value": 1.0,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "§10 `U` 跨域散布重定尺度 κ：1.0 = 解析安全界 c_domain_bonus/√dim ⇒ §7 missing_fate 严格不可达。实测 κ≤0.8 判据空转、κ≥1.2 断崖成每-seed 赢者通吃 ⇒ 无可用工作点，该判据属设计约定、不贡献区分力。",
+      "source": "src/evogenesis/development/RGCD数学模型.md §10 / §7",
+      "config": "configs/default_model.yaml → development.domain_identity_spread_scale",
+      "sensitivity": null,
+      "suggest": "设计选择（保持 1.0）"
+    },
+    {
+      "name": "division_drive_gain",
+      "value": 1.0,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "§5 分裂读数 α：作用在**逐个体中心化**的 GRN 驱动 (u−ū_i) 上再经 sigmoid。默认 1.0 = 原式逐位一致。**线性区一阶惰性**：逐个体中心化使 Σ_i u_c,i = 0，故线性区该通道对 Σp 的一阶贡献恒为 0；仅在 α·σu ≳ 0.3 的非线性区起作用，而该区已饱和 ⇒ 实测 α∈[0.5,16] 对秩统计量无影响。",
+      "source": "src/evogenesis/development/RGCD数学模型.md §5",
+      "config": "configs/default_model.yaml → development.division_drive_gain",
+      "sensitivity": null,
+      "suggest": "设计选择（保持 1.0，不承担区分力）"
+    },
+    {
+      "name": "division_locus_gain",
+      "value": 1.0,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "§5 分裂读数 β：作用在**基因组通道**（A 位点 motif 亲和 q 的均值 − 全 motif 均值；索引单一来源 `genome.motif_subset_A`）。默认 0.0 = 原式逐位一致（通道关闭）。**β 是单位规范（gauge）而非校准值**：读数经秩统计量（AUC / 外显率阈分类）读取，二者对 β>0 的任何单调尺度不变 ⇒ 不可标定（实测 α∈[0.5,16]×β∈[0.05,2] 全平面同值）。\n**2026-09-27 裁决已落地（用户授权）：value=1.0。** 判据为**配对 2×4 网格**（同一批基因组；官方校准 seeds、n=3200、每类 800、K 只改读数协议）：β=0.0 时 K=1/16/64 **全不可分**（AUC 0.4775 / 0.4445 / 0.4212，且随 K **变差**）；β=1.0 时**可分离**（AUC 0.6138 / 0.7861 / 0.8342）。出货配置独立实跑（另一 seed 命名空间）：AUC **0.7991**、p=1.0e-188、min-misclass **0.2847**（pen 0.715）。⇒ β 开的是信号，K 只放大；**K 单独救不了**。\n**2026-09-27 居中化（补记）**：上列配对网格的 AUC 均在**原始读数**刻度上测得（当时尚无居中）；居中只作用于报告层的 N 读数，不改 β 的作用机制。居中后出货配置 AUC **0.8433**（校准集 n=3200）/**0.8678**（报告集 n=4800），θ_N^obs = −0.0312。",
+      "source": "src/evogenesis/development/RGCD数学模型.md §5",
+      "config": "configs/default_model.yaml → development.division_locus_gain",
+      "sensitivity": null,
+      "suggest": "已由 0.0 翻 1.0（2026-09-27，用户授权）。处置：**4 处已冻结锚同批重冻结**（`tests/test_dump_connectome_matrix.py` 论文锚 N 中位 36.5→37.0、支撑边 195→192.5、密度 0.149 不变；`tests/test_fig_connectome.py` 代表个体 index 4→0；`src/evogenesis/development/config.py` 的 `division_locus_gain` 默认值 0.0→1.0，并在 `tests/test_development_config.py::FIELD_SOURCES` 补录两个 `division_*_gain` 以堵住漂移；§8 参照实例 `N_ours` 由 index 12（161）重选为 index 2（151），基线阶梯不变）；论文 02-method / 06-limitations / 04-baselines / 报告-骨架 / 图表-数据对照表 数字同批更新。Exp C/D/E/F 与 `artifacts/demo` checkpoint 属**已欠**的 Θ_D 那波（β 增量≈0），由重跑回填。⚠️ §7 判据仍**无效应下限**（AUC 0.786 属中等效应）⇒ 建议补下限或据实降级表述。"
+    },
+    {
+      "name": "init_b_std",
+      "value": 0.1,
+      "unit": null,
+      "group": "grn",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "GRN 偏置 b 的初始化标准差（B,P 取 (1/√8)）",
+      "source": "src/evogenesis/development/RGCD数学模型.md §4/§13",
+      "config": "configs/default_model.yaml → grn.init_b_std",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "w_bar_initial",
+      "value": 0.5,
+      "unit": null,
+      "group": "connectome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "|w^(0)| 稳态权重均值；b_w=softplus^{-1}(0.5)",
+      "source": "src/evogenesis/development/RGCD数学模型.md §10",
+      "config": "configs/default_model.yaml → connectome.w_bar_initial",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "zero_input_steps",
+      "value": 50,
+      "unit": "steps",
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "dynamical viability zero-input 运行步数",
+      "source": "src/evogenesis/development/RGCD数学模型.md §7",
+      "config": "configs/default_model.yaml → development.zero_input_steps",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "saturation_ratio_max",
+      "value": 0.9,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "尾段平均饱和比例上限（工程判据；|h|<1 由凸组合解析保证）",
+      "source": "src/evogenesis/development/RGCD数学模型.md §7",
+      "config": "configs/default_model.yaml → development.saturation_ratio_max",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "saturation_eps",
+      "value": 0.001,
+      "unit": null,
+      "group": "development",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "饱和判据 |h_i|>1-ε 的 ε",
+      "source": "src/evogenesis/development/RGCD数学模型.md §7",
+      "config": "configs/default_model.yaml → development.saturation_eps",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "input_weight_scope",
+      "value": "per_cell_type",
+      "unit": null,
+      "group": "network",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "U_i 按 cell type 取固定先验（U=U_{type}），不学习；保 RGCD 契约冻结、感官增益经 cell type 挂钩基因型",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
+      "config": "configs/default_model.yaml → network.input_weight_scope",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "input_weight_std",
+      "value": 0.289,
+      "unit": null,
+      "group": "network",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "U 初始化标准差 ≈1/√12（sensory_dim=12）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
+      "config": "configs/default_model.yaml → network.input_weight_std",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "hunger_gain_std",
+      "value": 0.1,
+      "unit": null,
+      "group": "network",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "hunger 调制 m 初始化标准差",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
+      "config": "configs/default_model.yaml → network.hunger_gain_std",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "neuron_bias_std",
+      "value": 0.1,
+      "unit": null,
+      "group": "network",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "神经元偏置 b 初始化标准差",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §3",
+      "config": "configs/default_model.yaml → network.neuron_bias_std",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "motor_pool_split",
+      "value": "median_x",
+      "unit": null,
+      "group": "network",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "motor 池按发育 x 中位数二分 left/right；保证两池非空（满足 RGCD §7 viability）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §5",
+      "config": "configs/default_model.yaml → network.motor_pool_split",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "action_pooling",
+      "value": "mean",
+      "unit": null,
+      "group": "network",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "y_ω=mean_{M_L}h−mean_{M_R}h、y_v=mean_{M}h；均值对池大小不变、零新参数",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §4",
+      "config": "configs/default_model.yaml → network.action_pooling",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "ablation_random_density",
+      "value": 0.15,
+      "unit": null,
+      "group": "connectome",
+      "grade": "C",
+      "status": "derived",
+      "basis": "w/o GRN 消融的随机 A 密度，取 target_density；只隔离 GRN 发育变量",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §9",
+      "config": "configs/default_model.yaml → connectome.ablation_random_density",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "rho_w0_target",
+      "value": 0.9,
+      "unit": null,
+      "group": "connectome",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "§7(iv) 失配修复：W⁰ 谱半径重定目标，仿 §4 对 W_g 的 0.9 约定。原实现 ρ(W⁰)≈1 使 89.8% 个体因 ρ≥1 被 §7 拒；重定后 §7 转为对 §5/§6 的稳定性约束。",
+      "source": "src/evogenesis/connectome/Danio_Arena设计与实现说明.md；src/evogenesis/development/RGCD数学模型.md §7",
+      "config": "configs/default_model.yaml → connectome.rho_w0_target",
+      "sensitivity": null,
+      "suggest": "设计选择"
+    },
+    {
+      "name": "tournament_size",
+      "value": 2,
+      "unit": null,
+      "group": "evolution",
+      "grade": "B",
+      "status": "confirmed",
+      "basis": "binary tournament k=2：Blickle & Thiele 1996 证明在期望适应度分布上等价于最大线性排名；tournament 对适应度的平移/线性变换不变（Eiben & Smith 2015 §5.2.4）；替代比例/softmax 选择（其压力与尺度不可分离）",
+      "source": "[bib#136][bib#137]（`research/notes/bibliography.md`）",
+      "config": "configs/evolution.yaml → tournament_size",
+      "sensitivity": [
+        2,
+        3
+      ],
+      "suggest": "k=2 有等价性证明；k=3 为经验选择"
+    },
+    {
+      "name": "fitness_normalization",
+      "value": "within_generation_minmax",
+      "unit": null,
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "S/P/E/Q 四项代内 min-max（viable 个体）到 [0,1]，max=min 置 0；F 为代内相对分数，跨代/跨环境比较须用原始指标",
+      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md §6",
+      "config": "configs/evolution.yaml → fitness_normalization",
+      "sensitivity": null,
+      "suggest": "设计选择；min-max 在种群收敛期会放大噪声，报告须声明"
+    },
+    {
+      "name": "bc_optimizer",
+      "value": "adam",
+      "unit": null,
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "主流 BC/IL 实现（robomimic / imitation / SB3）默认 Adam [bib#34][bib#210]",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.optimizer",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_lr",
+      "value": 0.001,
+      "unit": "learning rate",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "小型 MLP BC 常用 1e-3；K=20 短程 regime 无直接文献，属设计选择，须报 {1e-3,3e-4} 敏感性 [bib#34][bib#210]",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.lr",
+      "sensitivity": [
+        0.0003,
+        0.001
+      ],
+      "suggest": null
+    },
+    {
+      "name": "bc_batch_size",
+      "value": 64,
+      "unit": "samples/update",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "主流 BC 默认 batch（imitation 32 / robomimic 100 / diffusion policy 64 / SB3 64）；K=20 budget 下无直接文献，须报 {32,64,128} 敏感性 [bib#34][bib#210][bib#211]",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.batch_size",
+      "sensitivity": [
+        32,
+        64,
+        128
+      ],
+      "suggest": null
+    },
+    {
+      "name": "bc_trajectories",
+      "value": 200,
+      "unit": "episodes",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "robomimic 每任务 200 条演示 [bib#34]；低维动作任务无直接文献，最小验证可取 10–50，须报 {10,50,200} 敏感性",
+      "source": "research/reference/bc-hyperparameters.json",
+      "config": "configs/default_model.yaml → learning.trajectories",
+      "sensitivity": [
+        10,
+        50,
+        200
+      ],
+      "suggest": null
+    },
+    {
+      "name": "bc_loss_weight_fallback_omega",
+      "value": 0.4,
+      "unit": "dimensionless weight",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "§3 的 σ 归一化规则在未取到训练统计量时的预注册回退值：取下限比例 0.05 时 λ_ω:λ_v = 1/R_ω²:1/R_v² = 1:4（R_ω=2/R_v=1），缩放至和为 2 得 0.4/1.6，故可推导、非独立选定",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.loss_weight_fallback_omega",
+      "sensitivity": null,
+      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
+    },
+    {
+      "name": "bc_loss_weight_fallback_v",
+      "value": 1.6,
+      "unit": "dimensionless weight",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "§3 的 σ 归一化规则在未取到训练统计量时的预注册回退值：取下限比例 0.05 时 λ_ω:λ_v = 1/R_ω²:1/R_v² = 1:4（R_ω=2/R_v=1），缩放至和为 2 得 0.4/1.6，故可推导、非独立选定",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.loss_weight_fallback_v",
+      "sensitivity": null,
+      "suggest": "K=20 下禁用学习式权重（Kendall UW/GradNorm）；baseline/消融共用同组冻结权重"
+    },
+    {
+      "name": "bc_loss_weight_normalization",
+      "value": "per_dim_variance",
+      "unit": null,
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "§3 定稿：λ_i=1/max(σ_i,0.05·R_i)² 的目标尺度归一化；等价于对各维目标 z-score 后等权，λ 无量纲",
+      "source": "research/reference/bc-loss-weighting.md；src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.loss_weight_normalization",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_loss_variance_floor_ratio",
+      "value": 0.05,
+      "unit": "ratio of R_i",
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "§3 的下限 0.05·R_i（防 σ→0 除零）；R_ω=2/R_v=1",
+      "source": "src/evogenesis/learning/行为克隆学习.md §3",
+      "config": "configs/default_model.yaml → learning.loss_variance_floor_ratio",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_method",
+      "value": "behavior_cloning",
+      "unit": null,
+      "group": "learning",
+      "grade": "C",
+      "status": "confirmed",
+      "basis": "Stage 2 采用行为克隆（PPO/SAC 仅 P2）",
+      "source": "src/evogenesis/learning/行为克隆学习.md §1",
+      "config": "configs/default_model.yaml → learning.method",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "bc_optional_rl",
+      "value": false,
+      "unit": null,
+      "group": "learning",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "RL（PPO/SAC）仅作 P2，默认关闭",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §7",
+      "config": "configs/default_model.yaml → learning.optional_rl",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "world_boundary",
+      "value": "reflect",
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "设计选择（认领表 A6）：正式实验用**镜面反射**，避免静默 clamp 的隐性能耗使跨 seed 能量/survival 不可比；反射确定性、不消耗随机数。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §2.1",
+      "config": "configs/default_arena.yaml → world.boundary",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "capture_cone_degrees",
+      "value": 120.0,
+      "unit": "deg",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "前向锥**总**锥角（半锥 60°），设计选择。依据：开源机制对照报告 T2「建议至少加目标位于捕食者前向锥」；锥角属设计选择、非实测。",
+      "source": "research/reference/open-source-fish-games-机制对照.md",
+      "config": "configs/default_arena.yaml → growth.capture_cone_degrees",
+      "sensitivity": [
+        60,
+        120,
+        180
+      ],
+      "suggest": null
+    },
+    {
+      "name": "prey_area_gain",
+      "value": 0.2,
+      "unit": "ratio",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "面积守恒生长的 g：size ← min(size_max, sqrt(size^2 + g*prey_size^2))。报告区间 0.1–0.35（[bib#215] 取 0.35），本仓库取 0.2 为**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "research/reference/open-source-fish-games-机制对照.md",
+      "config": "configs/default_arena.yaml → growth.prey_area_gain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "capture_success_prob",
+      "value": 1.0,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "鱼的捕食成功率（arena §8 a）：1.0=确定性捕获（尺寸门通过即吃到，不消费随机数）；<1 时按概率判定，扑击失败记 capture_attempt(result='missed')。属**设计选择/设计选择（D）**；predator 吃鱼仍为确定性 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §8",
+      "config": "configs/default_arena.yaml → growth.capture_success_prob",
+      "sensitivity": null,
+      "suggest": "正式实验前做 play-test 标定；<1 会改变指标方差与 composite 口径（§2.3 条件式）"
+    },
+    {
+      "name": "collision_penalty",
+      "value": 0.001,
+      "unit": "energy_per_world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "碰撞软惩罚系数 c_pen（认领表 A7）：按穿透深度每步扣能量，与「硬不穿透」配合。无锚点，**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §18.7 A7",
+      "config": "configs/default_arena.yaml → energy.collision_penalty",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "prey_regrowth_steps",
+      "value": 25,
+      "unit": "step",
+      "group": "arena",
+      "grade": "C",
+      "status": "no_basis",
+      "basis": "由 episode_steps / n_prey = 600/24 派生，使再生速率与消耗速率同量级（dossier T3 §3.1 资源核算：24 prey/12 fish 使 prey_capture 后半段饱和、fitness 漂移）。无生物学锚点，属设计选择。 **设计选择（D）**（`arena/config.py` 注释 `# placeholder`、arena 文档 §16 列为设计选择（D）），按 `status=no_basis` 处理，****（2026-09-26 按审计 A8 更正 status） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "research/reference/zebrafish-escape-capture.md",
+      "config": "configs/default_arena.yaml → population.prey_regrowth_steps",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "escape_hold_steps",
+      "value": 20,
+      "unit": "step",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "逃脱判定的存活窗口 T_hold（dossier T1 默认 20 步 = 1 s @20 Hz）。无斑马鱼实测依据，**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
+      "source": "research/reference/zebrafish-escape-capture.md",
+      "config": "configs/default_arena.yaml → actors.escape_hold_steps",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_max_chase_steps",
+      "value": 80,
+      "unit": "step",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "限时追击上限（认领表 A8）。@20 Hz 对应开源对照报告 3–5 s @60 fps 的 60–100 步，取中位 80；**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
+      "source": "research/reference/open-source-fish-games-机制对照.md",
+      "config": "configs/default_arena.yaml → actors.predator_max_chase_steps",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "e_max",
+      "value": 1.0,
+      "unit": "energy",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → energy.e_max",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "base_cost_per_step",
+      "value": 0.0008,
+      "unit": "energy_per_step",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → energy.base_cost_per_step",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "movement_cost_scale",
+      "value": 0.0015,
+      "unit": "energy_per_speed2",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → energy.movement_cost_scale",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "food_reward",
+      "value": 0.12,
+      "unit": "energy",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → energy.food_reward",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "initial_size",
+      "value": 1.0,
+      "unit": "size",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → growth.initial_size",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "max_size",
+      "value": 2.5,
+      "unit": "size",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → growth.max_size",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "turn_inertia_scale",
+      "value": 0.35,
+      "unit": "ratio",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → growth.turn_inertia_scale",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "prey_speed",
+      "value": 0.35,
+      "unit": "world_unit_per_s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.prey_speed",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "prey_size_min",
+      "value": 0.3,
+      "unit": "size",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.prey_size_min",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "prey_size_max",
+      "value": 0.6,
+      "unit": "size",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.prey_size_max",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_cruise_speed",
+      "value": 0.4,
+      "unit": "world_unit_per_s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.predator_cruise_speed",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_chase_speed",
+      "value": 0.65,
+      "unit": "world_unit_per_s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.predator_chase_speed",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_detection_radius",
+      "value": 15.0,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.predator_detection_radius",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_release_radius",
+      "value": 22.0,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.predator_release_radius",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "obstacle_radius_min",
+      "value": 1.5,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.obstacle_radius_min",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "obstacle_radius_max",
+      "value": 3.5,
+      "unit": "world_unit",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.obstacle_radius_max",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "wander_turn_std",
+      "value": 0.8,
+      "unit": "rad_per_s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "认领表 A3/A5 签署「接受并登记为 play-test 旋钮」（2026-09-26）。取值由 configs/ 拥有设计选择（D） 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §16",
+      "config": "configs/default_arena.yaml → actors.wander_turn_std",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "env_food_rich",
+      "value": "n_prey=48, n_predators=3, prey_regrowth_steps=13",
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "E-F 环境对照之一「Food Rich」（猎物可得性 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成（A14 拆分随机流后重跑，run id `exp_env_*`；基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）**：三组在 12 鱼 / n=3 下**无稳健区分力**（最大 |d|=1.79）；绝对捕获量 food_rich 21.3→27.3、resource_scarce 21.3→10.7，故 E-F 记录项须含绝对量，且正式 E-F 须先过 §3.6 pilot 功效门。旧表（predator_rich escape d=+2.89 等）产生于随机流耦合时期，**已作废**。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
+      "config": "configs/experiment_environments.yaml → environments.food_rich",
+      "sensitivity": [
+        24,
+        48,
+        96
+      ],
+      "suggest": "若作「资源轴」主对照，须先加大幅度或改用绝对量主指标"
+    },
+    {
+      "name": "env_predator_rich",
+      "value": "n_prey=24, n_predators=6, prey_regrowth_steps=25",
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "E-F 环境对照之二「Predator Rich」（捕食压力 ↑）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成（A14 拆分随机流后重跑，run id `exp_env_*`；基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）**：三组在 12 鱼 / n=3 下**无稳健区分力**（最大 |d|=1.79）；绝对捕获量 food_rich 21.3→27.3、resource_scarce 21.3→10.7，故 E-F 记录项须含绝对量，且正式 E-F 须先过 §3.6 pilot 功效门。旧表（predator_rich escape d=+2.89 等）产生于随机流耦合时期，**已作废**。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
+      "config": "configs/experiment_environments.yaml → environments.predator_rich",
+      "sensitivity": [
+        3,
+        6,
+        12
+      ],
+      "suggest": "三组在 12 鱼/n=3 下无稳健区分力（最大 |d|=1.79），须先过 experiment §3.6 pilot 功效门"
+    },
+    {
+      "name": "env_resource_scarce",
+      "value": "n_prey=12, n_predators=3, prey_regrowth_steps=50",
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "E-F 环境对照之三「Resource Scarce」（猎物可得性 ↓）。属**设计选择**（无文献实测依据），2026-09-26 由本表 owner（`experiment/实验与评价体系.md` §4）按**单因子对照**定义：每个环境相对 `default_arena.yaml`（n_prey=24, n_predators=3）只改变一个驱动，使环境效应可归因。派生约定 `prey_regrowth_steps = ceil(600 / n_prey)`（向上取整；默认 600/24=25 与 default_arena.yaml 一致；**不用 round**，因 600/48=12.5 是平局、银行家舍入语义含混）。**前置检查已完成（A14 拆分随机流后重跑，run id `exp_env_*`；基线+三环境 × 3 seed × 600 步 × 12 鱼，ExpertPolicy）**：三组在 12 鱼 / n=3 下**无稳健区分力**（最大 |d|=1.79）；绝对捕获量 food_rich 21.3→27.3、resource_scarce 21.3→10.7，故 E-F 记录项须含绝对量，且正式 E-F 须先过 §3.6 pilot 功效门。旧表（predator_rich escape d=+2.89 等）产生于随机流耦合时期，**已作废**。详见 §4。状态：**已定稿（2026-09-26 用户裁定采用）**。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §4",
+      "config": "configs/experiment_environments.yaml → environments.resource_scarce",
+      "sensitivity": [
+        6,
+        12,
+        24
+      ],
+      "suggest": "同 food_rich：比值指标区分力弱，须看绝对量"
+    },
+    {
+      "name": "predator_size_ref",
+      "value": 2.5,
+      "unit": "—",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "12 维第 7 维 predator_relative_size 的归一参考：min(size_pred/size_fish/size_ref,1)。属设计选择（arena §4.1），无生物学锚点。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §4.1",
+      "config": "configs/default_arena.yaml → sensing.predator_size_ref",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "looming_norm",
+      "value": 3.5,
+      "unit": "s^-1",
+      "group": "arena",
+      "grade": "D",
+      "status": "in_range",
+      "basis": "looming_rate 归一尺度 R_loom：clip(((θ_after-θ_before)/(θ_after·Δt))/R_loom, 0, 1)，θ=2·arctan((size/2)/r)（取可见天敌 max）。报告区间 R_loom∈[2,5] s^-1（research/reference/looming-and-growth.md；arena 设计意见 §2 A1），本仓库取中位 3.5 为**设计选择（D）** 【2026-09-26 冻结为设计选择（D）；若日后依 play-test 改值，须解冻并重跑基线。】；未 play-test 标定（占位）",
+      "source": "research/reference/looming-and-growth.md; research/notes/arena-设计意见-给李辰钊.md §2 A1",
+      "config": "configs/default_arena.yaml → sensing.looming_norm",
+      "sensitivity": null,
+      "suggest": "按 play-test 在 [2,5] 内标定后转 confirmed"
+    },
+    {
+      "name": "expert_prey_weight",
+      "value": 1.0,
+      "unit": "—",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.prey_weight",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "expert_threat_weight",
+      "value": 1.8,
+      "unit": "—",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.threat_weight",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "expert_obstacle_weight",
+      "value": 1.2,
+      "unit": "—",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.obstacle_weight",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "expert_hunger_gain",
+      "value": 0.8,
+      "unit": "—",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.hunger_gain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "expert_speed_base",
+      "value": 0.45,
+      "unit": "归一速度",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.speed_base",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "expert_speed_hunger_gain",
+      "value": 0.35,
+      "unit": "归一速度",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.speed_hunger_gain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "expert_speed_threat_gain",
+      "value": 0.3,
+      "unit": "归一速度",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "ExpertPolicy 透明规则权重/速度式常数（§11，G4 落地）。属设计选择（透明教师策略），无生物学锚点 【2026-09-26 冻结为设计选择（D）。】",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §11（ExpertPolicy）",
+      "config": "configs/default_arena.yaml → expert.speed_threat_gain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "prey_turn_clip",
+      "value": 3.0,
+      "unit": "rad/s",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "PreyPolicy 游走转向裁剪（§10）。属设计选择（防过大转向）。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §9/§10",
+      "config": "configs/default_arena.yaml → actors.prey_turn_clip",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "prey_obstacle_avoid_gain",
+      "value": 2.0,
+      "unit": "rad/step",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "env 猎物避障转向增益（§10）。属设计选择。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §9/§10",
+      "config": "configs/default_arena.yaml → actors.prey_obstacle_avoid_gain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "predator_obstacle_avoid_gain",
+      "value": 0.5,
+      "unit": "rad/step",
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "env 捕食者避障转向增益（§9）。属设计选择。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §9/§10",
+      "config": "configs/default_arena.yaml → actors.predator_obstacle_avoid_gain",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "formal_seed_list",
+      "value": [
+        1103,
+        2207,
+        3301
+      ],
+      "unit": "—",
+      "group": "seed",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "正式实验的 3 个随机种子（`formal_seeds=3`）；Demo 与正式隔离。由 `experiment/config.py::load_formal_seeds` 读取，scripts 不再硬编码。",
+      "source": "configs/experiment_seeds.yaml",
+      "config": "configs/experiment_seeds.yaml → seeds",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "demo_master_seed",
+      "value": 250927,
+      "unit": "—",
+      "group": "seed",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "现场 Demo 固定主种子，与正式实验种子隔离（`core §3`）。",
+      "source": "configs/demo_seed.yaml",
+      "config": "configs/demo_seed.yaml → master_seed",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "generation_buttons",
+      "value": [
+        1,
+        5,
+        10,
+        20
+      ],
+      "unit": "—",
+      "group": "evolution",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "UI 可控的演化代按钮（现场「Evolve 1/5/10/20」）。非行为算法参数；读取方为前端/演示层（api 实现层待重写），当前无 src 消费。",
+      "source": "src/evogenesis/evolution/遗传繁殖与演化模型.md §10",
+      "config": "configs/evolution.yaml → generation_buttons",
+      "sensitivity": null,
+      "suggest": "随 api/frontend 重写接线为单代循环的 `generations` 覆盖"
+    },
+    {
+      "name": "n_agents",
+      "value": 12,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "Experiment C 每 seed 每模型评估的个体数。旧值 1 经对照实验证否：单 agent 下 ExpertPolicy 仅得 encounters=1，而未训练随机 MLP 得 0 —— 四个「训练过的」模型与随机网络不可区分。改为种群规模（= arena 默认 n_fish=12）后专家得 encounters=283（人均 23.6），恢复判别力。2026-09-26 用户签署。",
+      "source": "research/notes/契约决策记录.md",
+      "config": "configs/experiment.yaml → n_agents",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "n_episodes",
+      "value": 3,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "Experiment C 每 seed 的评估 episode 数。评估子种子走独立命名空间 arena_eval_spawn=15 / arena_eval_dynamics=16（t = 评估 episode 序号，全模型共享），与采集侧 arena_spawn/arena_dynamics 解耦 —— 后者与 collect.episode_seed 逐字等价，复用会使评估局落在训练数据的环境实例上。2026-09-26 用户签署。",
+      "source": "research/notes/契约决策记录.md",
+      "config": "configs/experiment.yaml → n_episodes",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "n_danio",
+      "value": 400,
+      "unit": "count",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "DanioNet 凑 n_agents 个 viable 个体的候选池大小。探针实测（seed 1103）RGCD 发育 viable 率 8–10%（n=48→5 个=10.4%；n=192→16 个=8.3%），单个体发育 ~15 ms，故加大候选近乎免费；按最保守 p=0.083 估计 P(viable>=12) ≈ 1。选取规则 viable_pairs 保序取前 n_agents 个（最低 index），与 n_danio 取值无关。2026-09-26 用户签署。",
+      "source": "research/notes/契约决策记录.md",
+      "config": "configs/experiment.yaml → n_danio",
+      "sensitivity": null,
+      "suggest": null
+    },
+    {
+      "name": "baseline_mlp_hidden",
+      "value": 11,
+      "unit": "neurons",
+      "group": "baseline",
+      "grade": "C",
+      "status": "derived",
+      "basis": "MLP 单隐层宽度；由 §8 尺寸反解（连接数 14H 最接近 N_ours=154）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量：保留在 connectome/baselines.py（不 config 化，避免公平性基线被无意改动）"
+    },
+    {
+      "name": "baseline_gru_hidden",
+      "value": 3,
+      "unit": "neurons",
+      "group": "baseline",
+      "grade": "C",
+      "status": "derived",
+      "basis": "GRU 隐层宽度；由 §8 尺寸反解（3H²+38H 最接近 154）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量（connectome/baselines.py）"
+    },
+    {
+      "name": "baseline_fixed_sparse_rnn_hidden",
+      "value": 10,
+      "unit": "neurons",
+      "group": "baseline",
+      "grade": "C",
+      "status": "derived",
+      "basis": "Fixed Sparse RNN 隐层宽度；由 §8 尺寸反解（|mask|+14H ≈154）",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量（connectome/baselines.py）"
+    },
+    {
+      "name": "baseline_sparse_density",
+      "value": 0.15,
+      "unit": null,
+      "group": "baseline",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "Fixed Sparse RNN 递归支撑的 Bernoulli 密度（§8）；与 RGCD §8 消融 w/o GRN 同密度；无外部依据，属设计选择(D)",
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "结构常量（connectome/baselines.py::SPARSE_DENSITY）；支撑 mask 由 baseline_support 命名空间冻结"
+    },
+    {
+      "name": "probe_enabled",
+      "value": false,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.enabled",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
+    },
+    {
+      "name": "probe_delay_steps",
+      "value": 40,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.delay_steps",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
+    },
+    {
+      "name": "probe_return_radius",
+      "value": 3.0,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.return_radius",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
+    },
+    {
+      "name": "probe_window_steps",
+      "value": 60,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.window_steps",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
+    },
+    {
+      "name": "probe_shuffle_history",
+      "value": false,
+      "unit": null,
+      "group": "arena",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "H3 历史依赖探针（`arena §14`）：猎物离开视野/被遮挡 D 步后判定鱼能否回归 last_seen 位置（r_H）。数值为本实现自行选定（属**设计选择 D**，无文献实测锚点），**已定稿（2026-09-27 用户认可）**；`probe.enabled` 默认 false，**不影响冻结基线**。",
+      "source": "src/evogenesis/arena/Danio_Arena设计与实现说明.md §14",
+      "config": "configs/default_arena.yaml → probe.shuffle_history",
+      "sensitivity": null,
+      "suggest": "H3 探针数值（D/r_H/W）已定稿；如需改值须同步 configs 与 arena §14。"
+    },
+    {
+      "name": "robustness_fractions",
+      "value": [
+        0.0,
+        0.05,
+        0.1,
+        0.2
+      ],
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "Experiment E 删边比例（`experiment §3.5`）；0.05/0.10/0.20 为定稿取值，0.0 为对照基线（用于算退化 Δ）",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.5",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "已签署（2026-09-27，experiment §3.5 已定稿）"
+    },
+    {
+      "name": "robustness_n_danio",
+      "value": 48,
+      "unit": "individuals",
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "Experiment E 每 seed 候选个体数（取**首个 viable** 作底物）。实测：首个 viable 的 index 与 n_danio=12 一致（7/4/8），48 基本消除空底物，且与 §3.6 演化规模一致",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.5",
+      "config": null,
+      "sensitivity": null,
+      "suggest": "已签署（2026-09-27，experiment §3.5 已定稿）"
+    },
+    {
+      "name": "penetrance_realisations_k",
+      "value": 16,
+      "unit": "次",
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次取**已观测均值** N̄_K，以压低**抽样**噪声而保留个体发育变异（外显率保持不完全）。实测（配对网格；官方校准 seeds、n=3200）：β=1.0 时 K=1 AUC 0.6138 / misclass 0.425；K=16 AUC 0.7861 / misclass 0.288（出货配置实跑 0.7991 / 0.2847）；K=64 AUC 0.8342 / misclass 0.265（**16→64 已饱和**）。β=0.0 时 K 越大**越差**（AUC 0.4775→0.4212）⇒ **K 只在 β=1.0 下有意义**。K→∞ 即期望读数 E[N]，退化为 pen≡1 ⇒ 不用。 **2026-09-27 居中化（补记）**：上列 AUC 均在原始读数刻度测得；居中后出货配置校准集 AUC **0.8433**、min-misclass **0.2366**（报告集 0.8678 / 0.2112）⇒ K=16 的取值在居中口径下更宽裕，「K 只在 β=1.0 下有意义」的结论不变。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
+      "config": "configs/penetrance.yaml → realisations_k",
+      "sensitivity": null,
+      "suggest": "已设 16（2026-09-27）。取 16 而非 64：曲线 16→64 已饱和（misclass 0.288→0.265），且**不完全外显率正是 penetrance 的生物学含义**（Cooper et al.）；须与 β=1.0 同批启用。"
+    },
+    {
+      "name": "penetrance_active_axes",
+      "value": [
+        "N"
+      ],
+      "unit": null,
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "`confirmed` 门禁只判定这些轴。2026-09-27 用户裁决：H 轴退役 ⇒ 单轴 N。非生效轴仍照常测量并写进 separation_H（作为退役理由的证据），但不阻塞 θ 签署。合法轴 = SEPARATION_AXES = (\"N\", \"H\")；空 / 未知 / 重复即报错。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
+      "config": "configs/penetrance.yaml → active_axes",
+      "sensitivity": null,
+      "suggest": "H 轴退役是**设计裁决**（实测 H 轴两臂均不可分：β=1.0 时 AUC 0.4912 / p=0.389，β=0.0 时 0.4993；最小错分 0.488–0.496 ≈ 随机），故 no_basis = 设计选择。若日后 H 轴换读数后恢复区分力，把 \"H\" 加回本列表即可复检。 **该键同时决定报告读数**：单轴时 `pen(g)` 是「观测 N 档 == 期望 N 档」的一致率，逐类分箱 `observed_bins` 只含 `N`，两轴的 `observed_2x2`/`observed_architecture_counts` 与 4 类反推 `demo_9331.observed_counts` 置 `None`；`active_axes: [N, H]` 可回到历史两轴口径。另：报告**只要求生效轴的 θ^obs**（H 退役后不必再签「展示用 θ_H^obs」）。"
+    },
+    {
+      "name": "penetrance_separation_auc_floor",
+      "value": 0.7,
+      "unit": "AUC",
+      "group": "experiment",
+      "grade": "D",
+      "status": "confirmed",
+      "basis": "可选的**效应量下限**：启用后门禁叠加第三条 (AUC >= floor)。存在理由：p<α 只说明显著、不说明效应大（大 n 下 AUC=0.51 也通过前两条）。默认 null = 不启用（口径与历史逐位一致）。实测（出货配置、官方校准 seeds、n=3200、K=16）：N 轴 AUC **0.770–0.799**（三个独立 seed 命名空间 0.7701 / 0.7861 / 0.7991）⇒ floor 取 0.65 通过、取 0.85 不通过；AUC 随命名空间有抽样波动，故报区间。 **2026-09-27 居中化（补记）**：上列区间取自**原始读数**刻度；居中后出货配置校准集 N 轴 AUC **0.8570**（报告集 0.8712）⇒ floor 取 0.65 **通过**、取 0.85 **不通过**。**2026-09-27 签署为 0.70**（判据：0.5=机遇 / 0.7=可接受 / 0.8=良好）。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py::axis_separation",
+      "config": "configs/penetrance.yaml → separation_auc_floor",
+      "sensitivity": null,
+      "suggest": "**数值须由人签署**（同 θ^obs；`AGENTS.md` 禁止 AI 填空）。签署时与 θ^obs / threshold_status 一并决定。现成判据参考：N 轴实测 AUC 0.770–0.799 ⇒ 取 0.65 通过、取 0.85 不通过；建议同时把该 floor 写进 §7 判据文本。 **2026-09-27 居中化（补记）**：参考 AUC 改为**居中读数**刻度 —— 校准集 0.8570 / 报告集 0.8712 ⇒ floor **已签署为 0.70**（通过）。"
+    }
+  ],
+  "missing_required": {
+    "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。 2026-09-26：`body_length_mm` 按方案 B（wu 不与 BL 固定换算）退役，不再作为世界换算基准。 **2026-09-27：θ_N^obs 已签署（−0.0312，居中偏差刻度）、`separation_auc_floor` 已签署（0.70）、θ_H^obs 随 H 轴退役有意留空 ⇒ 本清单清空。**",
+    "items": []
+  },
+  "citation_risks": [
+    "NDNA(Sudarshan 2026, Zenodo preprint)已重定位为『相关工作』：其基因组为学习得到、不含 ACGT/motif，不用于支撑 bp 与 motif_count（见 research/notes/bibliography.md 引用规则）",
+    "initial_precursors=24 的口径未写清（substrate 节点数 vs 发育起始细胞数）",
+    "『步数→秒』换算是推断，各来源 dt 不同",
+    "BC 损失权重 λ_i=1/σ_i²（目标尺度归一化）属实现级惯例（robomimic/ACT/diffusion policy 逐维标准化 + 等权 MSE），无单篇论文证明其最优；正文按实现惯例表述",
+    "selection_beta 在适应度归一化未定前无意义（建议改排名/锦标赛，见 design-basis-evolution.md）",
+    "arena 距离参数曾记「与生物量级冲突」：根因是 wu↔BL 换算未定义，已由方案 B 关闭——不再声称 wu↔BL，只按无量纲比率校准（见 arena/Danio_Arena设计与实现说明.md §2 尺度声明 / §8）",
+    {
+      "topic": "Arena 前向锥 / 面积生长 / prey 再生的取值锚点",
+      "risk": "capture_cone_degrees、prey_area_gain、prey_regrowth_steps、escape_hold_steps、predator_max_chase_steps、collision_penalty 的锚点来自**开源游戏项目**（[bib#215]–[bib#220]，非同行评审），或为纯设计选择；论文中不得表述为生物学或文献实测值，须标注「设计选择/游戏化抽象」。",
+      "status": "open"
+    }
+  ],
+  "reference_magnitudes": [
+    {
+      "name": "swim_speed_cruise",
+      "value": "4.2 BL/s (mean), peak 6.5",
+      "source": "[bib#227] Fuiman & Webb 1988",
+      "use": "对标 arena 游速"
+    },
+    {
+      "name": "swim_speed_Uopt",
+      "value": "13 BL/s",
+      "source": "Palstra 2010",
+      "use": "对标 arena 游速"
+    },
+    {
+      "name": "swim_speed_Ucrit",
+      "value": "13–18 BL/s",
+      "source": "Palstra 2010 [bib#45] / Plaut 2000 [bib#228]",
+      "use": "对标 arena 游速"
+    },
+    {
+      "name": "larval_burst_speed",
+      "value": "50–66 BL/s",
+      "source": "Fuiman 1986（未登记，待核）",
+      "use": "幼虫爆发"
+    },
+    {
+      "name": "turn_rate_cbend",
+      "value": "6,000–21,200 deg/s（体弯曲，非航向 yaw）",
+      "source": "[bib#229] Budick & O'Malley 2000",
+      "use": "不可直接用作航向率"
+    },
+    {
+      "name": "strike_distance_larval",
+      "value": "0.5–0.6 mm ≈ 0.12–0.14 BL",
+      "source": "[bib#230] Patterson 2013",
+      "use": "捕获判定距离"
+    },
+    {
+      "name": "looming_threshold_adult",
+      "value": "10.3°–15.8°, latency 740–780 ms",
+      "source": "McKee & McHenry 2020（未登记，待核）",
+      "use": "looming 阈值"
+    },
+    {
+      "name": "looming_threshold_larval",
+      "value": "21.7°/35 ms 或 ≈72°/81 ms",
+      "source": "Temizer 2015 / Dunn 2016",
+      "use": "looming 阈值（生物学参考；本仓库 looming 通道为角扩张率，阈值不直接映射）"
+    },
+    {
+      "name": "n_ours_support_edges",
+      "value": 151,
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8；实测 seed 250927 / initial_population index 2（2026-09-27 §5 通道 β 翻 1.0 后由原 index 12 重选；161 落在 GRU 阶梯可覆盖区间外）",
+      "use": "Experiment C 参数量公平性基准（|log10 N_base − log10 N_ours| ≤ 1，按连接数比较）"
+    }
+  ],
+  "changes_pending": [],
+  "changes_pending_resolved": [
+    {
+      "param": "world",
+      "from": "100×60",
+      "to": "保留",
+      "resolution": "2026-09-26 按 arena §2 定稿关闭：保留 100×60（`world_width` / `world_height` status=no_basis，设计选择）；原「或正方形」不再考虑。"
+    },
+    {
+      "param": "division_locus_gain",
+      "from": 0.0,
+      "to": 1.0,
+      "resolution": "2026-09-27 按用户授权落地。判据 = 配对 2×4 网格（同一批基因组；官方校准 seeds、n=3200）：β=0.0 全 K 不可分（AUC 0.4775 / 0.4445 / 0.4212），β=1.0 可分离（AUC 0.6138 / 0.7861 / 0.8342，K=1/16/64）。同批落地：`configs/penetrance.yaml::realisations_k` 1→16；**4 处**冻结锚（含 §8 参照实例，含 `development/config.py` 的 `DEFAULT_CONFIG` 默认值）与 5 处论文数字重冻结；Exp C/D/E/F + demo checkpoint 并入已欠的 Θ_D 那波（β 增量≈0）。"
+    }
+  ],
+  "sensitivity_plan": [
+    {
+      "param": "motif_count",
+      "values": [
+        4,
+        8,
+        16
+      ]
+    },
+    {
+      "param": "development_steps",
+      "values": [
+        12,
+        50,
+        100
+      ]
+    },
+    {
+      "param": "population_size",
+      "values": [
+        24,
+        48,
+        96
+      ]
+    },
+    {
+      "param": "capture_radius / sensing_radius",
+      "values": [
+        0.16,
+        0.256,
+        0.41
+      ]
+    },
+    {
+      "param": "capture_cone_degrees",
+      "values": [
+        60,
+        120,
+        180
+      ]
+    },
+    {
+      "param": "capture_size_ratio κ（与 predator_size 联动）",
+      "values": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ]
+    },
+    {
+      "param": "sensing_radius",
+      "values": [
+        12,
+        18,
+        24
+      ]
+    },
+    {
+      "param": "capture_size_ratio",
+      "values": [
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ]
+    },
+    {
+      "param": "capture_radius",
+      "values": [
+        2.88,
+        4.61,
+        7.38
+      ]
+    },
+    {
+      "param": "predator_size",
+      "values": [
+        2.5,
+        3.125,
+        3.75,
+        5.0
+      ]
+    },
+    {
+      "param": "generations",
+      "values": [
+        10,
+        20
+      ]
+    },
+    {
+      "param": "motif_length",
+      "values": [
+        4,
+        6,
+        8
+      ]
+    },
+    {
+      "param": "motif_topk",
+      "values": [
+        1,
+        3,
+        5
+      ]
+    },
+    {
+      "param": "grn_spectral_radius",
+      "values": [
+        0.8,
+        0.9,
+        0.95
+      ]
+    },
+    {
+      "param": "regulatory_gamma",
+      "values": [
+        0.5,
+        1.0,
+        2.0
+      ]
+    },
+    {
+      "param": "tournament_size",
+      "values": [
+        2,
+        3
+      ]
+    },
+    {
+      "param": "bc_lr",
+      "values": [
+        0.0003,
+        0.001
+      ]
+    },
+    {
+      "param": "bc_batch_size",
+      "values": [
+        32,
+        64,
+        128
+      ]
+    },
+    {
+      "param": "bc_trajectories",
+      "values": [
+        10,
+        50,
+        200
+      ]
+    },
+    {
+      "param": "env_food_rich",
+      "values": [
+        24,
+        48,
+        96
+      ]
+    },
+    {
+      "param": "env_predator_rich",
+      "values": [
+        3,
+        6,
+        12
+      ]
+    },
+    {
+      "param": "env_resource_scarce",
+      "values": [
+        6,
+        12,
+        24
+      ]
+    }
+  ]
+}

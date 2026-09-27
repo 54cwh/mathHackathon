@@ -14,8 +14,10 @@
 校准规则二选一并列报：**错分最小点**（参数总表 basis「最大化与期望档分类一致性」）与
 **两类类内中位数中点**（``research/reference/delta-B-and-penetrance.md`` §2.2）。
 
-状态：``θ^obs`` 数值与校准集规模仍属 **草案待确认**（本模块不含默认数值，只读
-``configs/penetrance.yaml``；冻结前不得作为结论引用）。随机数一律经 ``core.seed.SeedManager``
+状态：``θ^obs`` 数值由 ``configs/penetrance.yaml::threshold_status`` 声明
+（2026-09-27 起 ``confirmed``）；本模块不含默认数值，只读 ``configs/penetrance.yaml``，
+未签署的取值不得作为结论引用。
+随机数一律经 ``core.seed.SeedManager``
 派生（禁自建随机源）；产物不含时间戳，``digest`` 给内容 sha256。
 """
 
@@ -887,7 +889,7 @@ def run_calibration(
         "kind": "penetrance_calibration",
         "experiment_id": experiment_id,
         "generated_by": "experiment/penetrance.py::run_calibration",
-        "status": "草案待确认",
+        "status": penetrance_config.threshold_status,
         "sampling": "stratified_balanced",
         "theta_N": theta_N,
         "theta_H": theta_H,
@@ -1033,7 +1035,7 @@ def run_report(
         "kind": "penetrance_report",
         "experiment_id": experiment_id,
         "generated_by": "experiment/penetrance.py::run_report",
-        "status": "草案待确认",
+        "status": penetrance_config.threshold_status,
         "sampling": "stratified_balanced",
         "theta_N": theta_N,
         "theta_H": theta_H,
