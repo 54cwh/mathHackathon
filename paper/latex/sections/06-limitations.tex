@@ -251,6 +251,15 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   这条限定同时界定了适用范围：$\mathrm{pen}$ 是\emph{群体内}对比量。
   观测阈值 $\theta_N^{\mathrm{obs}}$ 的数值仍待\textbf{人工签署}，
   故 \S\ref{sec:results} 的该表是草案。
+  \item \textbf{评估预算限定了本平台能测到的效应下限。}
+  单次 Arena episode 的排序可靠性仅 $\rho_1 = 0.069$，且复合分有 $81.8\%$ 的观测顶在
+  \texttt{survival} 上界 $\Rightarrow$ \textbf{未经 $K$ 次平均的逐代 fitness 曲线不具备区分能力}，
+  不能用它论证「进化有效 / 无效」；达到 $\rho\ge0.5$ 需 $K\approx14$（即评估预算 $\times14$，
+  \S\ref{sec:results}）。Exp C 中期（2 seed）同样由\emph{块方差}而非模型质量主导
+  （\texttt{encounters} 块间差 $-13.5\sim+41.1$，而模型差 $+7.25$、$p=0.361$）——
+  故本 run 的基线对照\textbf{不作显著性主张}；要谈效应，须先抬 \texttt{n\_episodes}（近免费）、
+  再谈种子数与规模。这条同时解释了「为何本 run 的结果章以机制可辨识性为主、
+  而不以基准排名为主」。
 \end{enumerate}
 
 \paragraph{这些限制如何影响结论的读法}

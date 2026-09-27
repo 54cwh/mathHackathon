@@ -1,11 +1,48 @@
 \section{基线与消融}\label{sec:baselines}
 
 \subsection{基线（同参数量级）}
-\todo{\textbf{待补数字}：三个对照基线（MLP / GRU / Fixed Sparse RNN）\textbf{已实现}——
-  \texttt{src/evogenesis/connectome/baselines.py}（\texttt{MLPPolicy} / \texttt{GRUPolicy} /
-  \texttt{FixedSparseRNNPolicy} + \texttt{build\_baselines}），守护测试
-  \texttt{tests/test\_baselines.py}，初始化命名空间 \texttt{baseline\_init} 已在
-  \texttt{core} \S{}3 注册。但\textbf{尚无正式落盘结果}；编排 \texttt{experiment/baseline\_run.py} 与 CLI \texttt{scripts/run\_baselines.py} 已接（Experiment C）。基线连接数按 $N_{\text{ours}}$ 反解为 $154$ / $141$ / $154$（2026-09-26 §8 重解，见 \texttt{connectome/DanioNet设计规范.md} \S8）。}
+三个对照基线（MLP / GRU / Fixed Sparse RNN）\textbf{已实现}
+（\texttt{src/evogenesis/connectome/baselines.py} + 守护测试 \texttt{tests/test\_baselines.py}；
+初始化命名空间 \texttt{baseline\_init} 已在 \texttt{core} \S{}3 注册），
+编排 \texttt{experiment/baseline\_run.py} 与 CLI \texttt{scripts/run\_baselines.py} 已接（Experiment C）。
+连接数按 $N_{\text{ours}} = E_A = 151$（支撑边数，\texttt{seed 250927} / \texttt{index 2}）
+反解为 $154$ / $141$ / $154$（判据 $\left|\Delta\log_{10}\right|\le1$，
+\texttt{connectome/DanioNet设计规范.md} \S8）。
+
+\paragraph{Exp C 中期结果（2 seed；第三个 seed 按限时停止）。}
+12 agent $\times$ 3 episode $\times$ 2 seed（1103 / 2207），产物
+\texttt{results/tables/expC\_baselines.json}（24 个标量指标全部 $n=2$，过 schema）。
+块内置换检验（块 $=(\text{seed},\text{episode})$ 共 6 个；同块内四模型共享同一出生布局
+与猎物游走，故块内置换模型标签在强零假设下精确；20000 次重抽样）给出
+\textbf{没有任何指标达到显著}：
+
+\begin{table}[t]
+  \centering
+  \caption{Exp C 中期（2 seed）：DanioNet 相对其余三基线的差（块内置换检验，20000 次重抽样）。
+  块方差远超模型效应 —— \texttt{encounters} 的块间差在 $-13.5\sim+41.1$（54 点跨度）；
+  2 seed 的 $\mathrm{std}$ 只有 1 个自由度，故本表\textbf{不作任何显著性主张}。}
+  \label{tab:expc}
+  \small
+  \begin{tabular}{@{}lrrr@{}}
+    \toprule
+    指标 & DanioNet & DanioNet $-$ 三基线 & $p$ \\
+    \midrule
+    \texttt{encounters} & $29.04$ & $+7.25$ & $0.361$ \\
+    \texttt{captures} & $0.431$ & $-0.181$ & $0.076$ \\
+    \texttt{capture\_rate} & $0.00072$ & $-0.00030$ & $0.076$ \\
+    \texttt{composite\_fitness} & $0.367$ & $-0.0127$ & $0.313$ \\
+    \texttt{survival\_steps} & $538.2$ & $-7.69$ & $0.515$ \\
+    \texttt{energy\_final} & $0.384$ & $-0.0057$ & $0.802$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\emph{读法}：DanioNet 唯一为正的分量是 \texttt{encounters}（$+7.25$），但它同时在
+\texttt{captures}/\texttt{capture\_rate} 上为\textbf{负}（遇得多、转化少），且都不显著。
+真正的发现是\textbf{瓶颈在评估预算而非模型质量}：块间方差完全淹没模型效应。
+Arena 每局约 $2$\,s，而一次训练 $8.8$\,min $\Rightarrow$ \texttt{n\_episodes} 是近乎免费的轴、
+\texttt{n\_agents} 是昂贵的轴；要把模型效应从块方差里拉出来，\textbf{应先抬 \texttt{n\_episodes}}。
+（第三个 seed 未跑完即按限时停止；补跑后 \texttt{scripts/rebuild\_baselines\_table.py} 一行重建即可升到 $n=3$。）
 \todo{判据：trainable parameter count 同一数量级（按连接数，$|\Delta\log_{10}|\le 1$）。}
 \todo{实测可训练连接数中位 192.5（$\Theta$ 张量 $48\times48=2304$，有效支撑内 195；个体间 105--289）。}
 
