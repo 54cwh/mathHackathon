@@ -74,13 +74,7 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 
 **技术栈**：Vite + React 18 + TypeScript、Tailwind CSS、zustand（状态）、ECharts（指标图）、Cytoscape.js（连接组图）、原生 Canvas 2D（Arena 逐帧渲染）、原生 WebSocket 与 fetch（传输）。字体与素材本地自托管，满足离线要求；锁定版本见 `frontend/README.md`。
 
-**演示流程**：顶栏是一条五段「导演线」，与自由标签页并存：
-
-```text
-seed → genome → develop → arena → evolve
-```
-
-每段对应一个面板，也可用 `AUTO DEMO` 自动推进。面板包括 DNA2Brain Lab（DNA 编辑与 motif）、Brain Forge（连接组与神经元激活）、Danio Arena（实时会话与逐代推进）、Evolution Dashboard（演化指标）、Development Pipeline 与 Playback。
+**面板**：DNA2Brain Lab（DNA 编辑与 motif）、Brain Forge（连接组与神经元激活）、Danio Arena（实时会话与逐代推进）、Evolution Dashboard（演化指标）、Development Pipeline 与 Playback。
 
 **数据通道**：REST（会话、基因组实验室、运行记录、环境选择实验）加 WebSocket 实时推送；前端类型对齐 `schemas/`，不自行定义后端契约。
 
