@@ -46,14 +46,18 @@ function stageRail(activeIndex: number) {
   return (
     <div role="list" aria-label="development stages" className="flex flex-wrap items-center gap-1">
       {PIPELINE_STAGES.map((label, index) => {
-        const active = index === activeIndex;
+        const state = index === activeIndex ? "active" : index < activeIndex ? "done" : "pending";
         return (
           <span
             key={label}
             role="listitem"
-            aria-current={active ? "step" : undefined}
+            aria-current={state === "active" ? "step" : undefined}
             className={`border border-border px-1.5 py-0.5 font-pixel text-[9px] leading-none ${
-              active ? "bg-brand-fish-navy text-brand-bone" : "text-muted-foreground"
+              state === "active"
+                ? "bg-brand-fish-navy text-brand-bone"
+                : state === "done"
+                  ? "text-foreground"
+                  : "text-muted-foreground"
             }`}
           >
             {label}
