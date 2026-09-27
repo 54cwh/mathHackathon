@@ -46,7 +46,7 @@ export function BrainForgePanel() {
   /** 真实连接图层（用户 2026-09-27 裁决允许"可溯源真图"；默认开，可关）。 */
   const [showEdges, setShowEdges] = useState(true);
   /** `connectome` 阶段的两幕：`"p"` 概率场 / `"a"` 采样邻接（`交互与可视化.md` §4）。 */
-  const [connFrame, setConnFrame] = useState<"p" | "a">("p");
+  const [connFrame, setConnFrame] = useState<"p" | "a">("a");
   const cursorRef = useRef(0);
   const playingRef = useRef(false);
 
@@ -130,6 +130,30 @@ export function BrainForgePanel() {
   }, [development]);
   // 配对前提：读数用**该鱼自己的** cell_type/positions。`connSample` 来自 Lab 的发育（= activeGenomeId），
   // 故只有"显示的鱼 == activeGenomeId"时才成立；否则不出读数（避免拿错个体的发育产物）。
+  // 表达强度的**全局参考**（整条轨迹固定）：GRN 迭代的"逐渐点亮"才可见（按帧归一化会看不出来）。
+  const exprScale = useMemo(() => {
+    const samples = development?.trace;
+    if (!samples) return null;
+    let max = 0;
+    for (const sample of samples) for (const value of sample.expr ?? []) max = Math.max(max, value);
+    return max > 0 ? max : null;
+  }, [development]);
+
+  // 增殖阶段：标出本轮新生子代（前 `nParents` 个是父代；模型 §5 只有一轮分裂）。
+  const nParents = useMemo(() => {
+    const samples = development?.trace;
+    if (!samples || !currentSample || currentSample.stage !== "proliferate") return null;
+    const index = samples.indexOf(currentSample);
+    return index > 0 ? samples[index - 1].n_neurons : null;
+  }, [development, currentSample]);
+
+  // 连接组阶段的两幕（p 概率场 / A 采样邻接）自动交替，避免只看到一幕、也避免与分化阶段"看起来一样"。
+  useEffect(() => {
+    if (currentSample?.stage !== "connectome") return;
+    const timer = window.setInterval(() => setConnFrame((f) => (f === "p" ? "a" : "p")), 1200);
+    return () => window.clearInterval(timer);
+  }, [currentSample]);
+
   const readouts = useMemo(() => {
     if (!isFocal) return null;
     return activationReadouts(
@@ -156,6 +180,8 @@ export function BrainForgePanel() {
                     cellType: currentSample.cell_type,
                     edges: currentSample.edges,
                     expr: currentSample.expr,
+                    exprScale,
+                    nParents,
                     probs: currentSample.probs,
                     connFrame,
                   }

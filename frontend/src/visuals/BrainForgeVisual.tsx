@@ -356,6 +356,16 @@ export interface DevelopmentGeometry {
   edges: [number, number][] | null;
   /** 逐神经元表达强度（`RGCD §4`）；GRN 阶段用它驱动节点明暗，让"表达上升"可见。 */
   expr?: number[] | null;
+  /**
+   * `expr` 的**全局参考最大值**（整条轨迹固定）。必须用固定参考，否则"按当前帧自身归一化"会让
+   * 每帧都同样亮 —— GRN 迭代看上去毫无变化（实测踩过）。
+   */
+  exprScale?: number | null;
+  /**
+   * 增殖阶段：前 `nParents` 个是父代、其余是本轮**新生**子代（模型 §5 冻结"每前体至多分裂一次"
+   * ⇒ 只有一轮）。子代用亮色描边标出，让"神经元瞬时增加"这件事可读。
+   */
+  nParents?: number | null;
   /** 连接概率场 `p_ij`（`RGCD §8`）；`connectome` 阶段画「两幕」的第一幕用。 */
   probs?: number[][] | null;
   /** `connectome` 阶段画哪一幕：`"p"` 概率场 / `"a"` 采样邻接（默认 `"a"`）。 */
@@ -439,17 +449,19 @@ function drawDevelopmentGeometry(
   // fate 未定的阶段（grn / proliferate）用 `expr` 驱动**明暗**：表达越强越亮 —— 于是 GRN 的
   // 12 步迭代不再是一张静止图（节点尺寸仍是冻结的 11×11，只动明暗）。
   const expr = geometry.expr ?? null;
-  const maxExpr = expr && expr.length > 0 ? Math.max(...expr) : 0;
+  const scale = geometry.exprScale ?? (expr && expr.length > 0 ? Math.max(...expr) : 0);
+  const nParents = geometry.nParents ?? null;
   const NODE_HALF = 5; // 边长 = 2*half + 1 = 11
   geometry.positions.forEach((_position, index) => {
     const [nx, ny] = px(index);
     const fate = geometry.cellType?.[index];
     const color = typeof fate === "number" ? FATE_COLORS[fate % FATE_COLORS.length] : fallback;
     const alpha =
-      typeof fate !== "number" && expr && maxExpr > 0
-        ? 0.25 + 0.75 * Math.min(1, (expr[index] ?? 0) / maxExpr)
+      typeof fate !== "number" && expr && scale > 0
+        ? 0.25 + 0.75 * Math.min(1, (expr[index] ?? 0) / scale)
         : 1;
-    ctx.fillStyle = BRAIN.clusterBase;
+    const isNewDaughter = nParents !== null && index >= nParents;
+    ctx.fillStyle = isNewDaughter ? BRAND.grassGreen : BRAIN.clusterBase;
     ctx.fillRect(nx - NODE_HALF - 1, ny - NODE_HALF - 1, NODE_HALF * 2 + 3, NODE_HALF * 2 + 3);
     ctx.globalAlpha = alpha;
     ctx.fillStyle = color;
