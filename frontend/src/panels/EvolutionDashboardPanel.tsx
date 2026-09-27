@@ -370,9 +370,12 @@ export function EvolutionDashboardPanel() {
         {/* 右：历史运行（逐代指标）—— 演示先看证据 */}
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
           <div className="flex items-center justify-between gap-2">
-            <SectionLabel en="DISK RUNS" zh="历史运行" />
+            <span className="inline-flex items-baseline gap-1.5">
+              <span className="font-pixel text-[12px] leading-none">DISK RUNS</span>
+              <span className="text-[12px] leading-none text-muted-foreground">历史运行</span>
+            </span>
             <span className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-muted-foreground">
+              <span className="truncate font-mono text-[12px] text-muted-foreground">
                 {runId ?? "未选择 run"}
               </span>
               <button
@@ -381,7 +384,7 @@ export function EvolutionDashboardPanel() {
                   void refreshList();
                   void refreshRuns();
                 }}
-                className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
+                className="inline-flex shrink-0 items-center gap-1 border border-border px-2 py-1 font-pixel text-[12px] leading-none"
               >
                 <RefreshCw className="size-3" />
                 REFRESH · 刷新
@@ -389,28 +392,34 @@ export function EvolutionDashboardPanel() {
             </span>
           </div>
 
-          <div className="flex flex-wrap gap-1">
+          {/* 历史 run 很多 ⇒ 竖向**列表**（可滚动），每行给 id / 种子 / 代数 / 状态。 */}
+          <ul className="flex max-h-56 flex-col gap-1 overflow-y-auto">
             {runs.map((run) => (
-              <button
-                key={run.run_id}
-                type="button"
-                onClick={() => setRunId(run.run_id)}
-                className={`border border-border px-2 py-0.5 font-mono text-[10px] leading-none ${
-                  runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
-                }`}
-              >
-                {run.run_id} · s{run.seed ?? "—"} · {run.generations ?? 0} 代
-              </button>
+              <li key={run.run_id}>
+                <button
+                  type="button"
+                  onClick={() => setRunId(run.run_id)}
+                  className={`flex w-full items-center justify-between gap-2 border border-border px-2 py-1 text-left font-mono text-[12px] ${
+                    runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
+                  }`}
+                >
+                  <span className="truncate">{run.run_id}</span>
+                  <span className="shrink-0 text-muted-foreground">
+                    seed {run.seed ?? "—"} · {run.generations ?? 0} 代
+                  </span>
+                  <span className="shrink-0 text-muted-foreground">{run.status}</span>
+                </button>
+              </li>
             ))}
             {runs.length === 0 && (
-              <span className="font-mono text-[10px] text-muted-foreground">暂无历史 run</span>
+              <li className="font-mono text-[12px] text-muted-foreground">暂无历史 run</li>
             )}
-          </div>
+          </ul>
 
           {evolution ? (
             <EvolutionMetrics evolution={evolution} />
           ) : (
-            <div className="border border-border p-2 font-mono text-[10px] text-muted-foreground">
+            <div className="border border-border p-2 font-mono text-[12px] text-muted-foreground">
               选择上方任一 run 查看逐代指标。
             </div>
           )}
