@@ -55,9 +55,10 @@ development:
   # H 轴恒不可分（最小错分 0.488–0.496）⇒ 停用，单轴 N。
   # **出货配置实测（独立 seed 命名空间，`pen-beta1-k16`）**：N 轴 AUC 0.7991、p=1.0e-188、
   # min-misclass 0.2847（pen 0.715）、θ_N^obs 36.469 / 36.062 落区间内部，n=3200。
-  # **代价**：β 改 N ⇒ 须重冻结 **3 处**锚（`tests/test_dump_connectome_matrix.py` 论文锚、
+  # **代价**：β 改 N ⇒ 须重冻结 **4 处**锚（`tests/test_dump_connectome_matrix.py` 论文锚、
   # `tests/test_fig_connectome.py` 代表个体、`src/evogenesis/development/config.py` 的
-  # `DEFAULT_CONFIG` 来源 `division_locus_gain` 默认值）+ 论文 5 处数字；Exp C/D/E/F 与
+  # `DEFAULT_CONFIG` 来源 `division_locus_gain` 默认值、§8 参照实例 `N_ours`
+  # 由 index 12(161) 重选为 index 2(151)）+ 论文 5 处数字；Exp C/D/E/F 与
   # demo checkpoint 属**已欠**的 Θ_D 那波（β 增量≈0），由重跑回填。
   # 依据：`research/notes/契约决策记录.md` 2026-09-27 条目（含配对网格与 K 曲线）。
   division_drive_gain: 1.0

@@ -995,7 +995,7 @@
       "source": "src/evogenesis/development/RGCD数学模型.md §5",
       "config": "configs/default_model.yaml → development.division_locus_gain",
       "sensitivity": null,
-      "suggest": "已由 0.0 翻 1.0（2026-09-27，用户授权）。处置：**3 处已冻结锚同批重冻结**（`tests/test_dump_connectome_matrix.py` 论文锚 N 中位 36.5→37.0、支撑边 195→192.5、密度 0.149 不变；`tests/test_fig_connectome.py` 代表个体 index 4→0；`src/evogenesis/development/config.py` 的 `division_locus_gain` 默认值 0.0→1.0，并在 `tests/test_development_config.py::FIELD_SOURCES` 补录两个 `division_*_gain` 以堵住漂移）；论文 02-method / 06-limitations / 04-baselines / 报告-骨架 / 图表-数据对照表 数字同批更新。Exp C/D/E/F 与 `artifacts/demo` checkpoint 属**已欠**的 Θ_D 那波（β 增量≈0），由重跑回填。⚠️ §7 判据仍**无效应下限**（AUC 0.786 属中等效应）⇒ 建议补下限或据实降级表述。"
+      "suggest": "已由 0.0 翻 1.0（2026-09-27，用户授权）。处置：**4 处已冻结锚同批重冻结**（`tests/test_dump_connectome_matrix.py` 论文锚 N 中位 36.5→37.0、支撑边 195→192.5、密度 0.149 不变；`tests/test_fig_connectome.py` 代表个体 index 4→0；`src/evogenesis/development/config.py` 的 `division_locus_gain` 默认值 0.0→1.0，并在 `tests/test_development_config.py::FIELD_SOURCES` 补录两个 `division_*_gain` 以堵住漂移；§8 参照实例 `N_ours` 由 index 12（161）重选为 index 2（151），基线阶梯不变）；论文 02-method / 06-limitations / 04-baselines / 报告-骨架 / 图表-数据对照表 数字同批更新。Exp C/D/E/F 与 `artifacts/demo` checkpoint 属**已欠**的 Θ_D 那波（β 增量≈0），由重跑回填。⚠️ §7 判据仍**无效应下限**（AUC 0.786 属中等效应）⇒ 建议补下限或据实降级表述。"
     },
     {
       "name": "init_b_std",
@@ -2191,8 +2191,8 @@
     },
     {
       "name": "n_ours_support_edges",
-      "value": 154,
-      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8；实测 seed 250927 / initial_population index 12",
+      "value": 151,
+      "source": "src/evogenesis/connectome/DanioNet设计规范.md §8；实测 seed 250927 / initial_population index 2（2026-09-27 §5 通道 β 翻 1.0 后由原 index 12 重选；161 落在 GRU 阶梯可覆盖区间外）",
       "use": "Experiment C 参数量公平性基准（|log10 N_base − log10 N_ours| ≤ 1，按连接数比较）"
     }
   ],
@@ -2208,7 +2208,7 @@
       "param": "division_locus_gain",
       "from": 0.0,
       "to": 1.0,
-      "resolution": "2026-09-27 按用户授权落地。判据 = 配对 2×4 网格（同一批基因组；官方校准 seeds、n=3200）：β=0.0 全 K 不可分（AUC 0.4775 / 0.4445 / 0.4212），β=1.0 可分离（AUC 0.6138 / 0.7861 / 0.8342，K=1/16/64）。同批落地：`configs/penetrance.yaml::realisations_k` 1→16；**3 处**冻结锚（含 `development/config.py` 的 `DEFAULT_CONFIG` 默认值）与 5 处论文数字重冻结；Exp C/D/E/F + demo checkpoint 并入已欠的 Θ_D 那波（β 增量≈0）。"
+      "resolution": "2026-09-27 按用户授权落地。判据 = 配对 2×4 网格（同一批基因组；官方校准 seeds、n=3200）：β=0.0 全 K 不可分（AUC 0.4775 / 0.4445 / 0.4212），β=1.0 可分离（AUC 0.6138 / 0.7861 / 0.8342，K=1/16/64）。同批落地：`configs/penetrance.yaml::realisations_k` 1→16；**4 处**冻结锚（含 §8 参照实例，含 `development/config.py` 的 `DEFAULT_CONFIG` 默认值）与 5 处论文数字重冻结；Exp C/D/E/F + demo checkpoint 并入已欠的 Θ_D 那波（β 增量≈0）。"
     }
   ],
   "sensitivity_plan": [

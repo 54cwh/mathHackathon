@@ -139,9 +139,9 @@ DNA\rightarrow Development\rightarrow W^{(0)}
 - GRU
 - Fixed Sparse RNN
 
-**公平性判据（定稿）**：`|log10(N_base) − log10(N_ours)| ≤ 1`，统一按**连接（权重）数**比较（不计 bias），不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。对照基准取本规范实例 `N_ours = E_A = 154`（支撑边数，`seed 250927` / `initial_population` 的 `index 12`；2026-09-27 更正：原记 `index 6` 实测为 162，无 viable 个体，190 出现在 `index 12`；2026-09-26 更新：§7 发育门禁修复后同一 index 实测由 190 移至 **154**，下表基线宽度按同一反解流程重解）。
+**公平性判据（定稿）**：`|log10(N_base) − log10(N_ours)| ≤ 1`，统一按**连接（权重）数**比较（不计 bias），不得用 HyperNEAT 的 CPPN 规模冒充 substrate 参数量。对照基准取本规范实例 `N_ours = E_A = 151`（支撑边数，`seed 250927` / `initial_population` 的 `index 2`；2026-09-27 更正：原记 `index 6` 实测为 162，无 viable 个体，190 出现在 `index 12`；**2026-09-27 更新：§5 通道 β 翻 1.0 后原 `index 12` 实测移至 161，而 161 落在 GRU 离散解 {141, 200} 的 `≤0.05` 可覆盖区间之外，故按「与历史参照量 154 最接近、且 MLP/GRU 阶梯均 `|Δlog10| ≤ 0.05`」重选为 `index 2`（实测 151）—— 阶梯无需重解**（14 个体全扫描表见 `research/notes/契约决策记录.md` 2026-09-27 条目）；历史：`index 6` 实测 162、无 viable 个体，`index 12` 由 190 移至 154（2026-09-26 §7 修复）。）
 
-**尺寸反解（定稿；按「连接数最接近 154 且满足判据」求解）**：
+**尺寸反解（定稿；按「连接数最接近 151 且满足判据」求解）**：
 
 | baseline | 连接数公式（权重） | 解 | 连接数 | `|log10 差|` |
 |---|---|---|---|

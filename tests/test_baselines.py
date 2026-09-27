@@ -20,11 +20,11 @@ MASTER_SEED = 250927
 SENSORY_DIM = 12
 HIDDEN = {"mlp": 11, "gru": 3, "fixed_sparse_rnn": 10}
 #: §8 公平性基准 N_ours 的 provenance：seed 250927 / index 12（参数总表 reference_magnitudes）
-N_OURS_INDEX = 12
+N_OURS_INDEX = 2
 
 
 def _reference_support_edges() -> int:
-    """§8 `N_ours = E_A`：seed 250927 / index 12 的支撑边数（实测 154）。
+    """§8 `N_ours = E_A`：seed 250927 / index 2 的支撑边数（实测 151）。
 
     从 DanioNet 管线**实测**而非硬编码：支撑口径（`RGCD §8`）一旦变动，会在
     `test_n_ours_reference_is_reproducible` 失败，提醒同步 `connectome §8` 与参数总表。
@@ -66,8 +66,11 @@ def test_connection_count_within_one_order_of_magnitude(baseline):
 
 
 def test_n_ours_reference_is_reproducible():
-    """§8 / 参数总表 `reference_magnitudes`：`N_ours` 实测为 154（seed 250927 / index 12；2026-09-26 §7 修复后由 190 移至 154）。"""
-    assert _reference_support_edges() == 154
+    """§8 / 参数总表 `reference_magnitudes`：`N_ours` 实测为 151（seed 250927 / index 2）。
+    2026-09-27：§5 通道 β 翻 1.0 后原 index 12 实测移至 161，而 161 落在 GRU 离散解 {141, 200}
+    的 <=0.05 可覆盖区间之外，故按「与历史参照量 154 最接近且 MLP/GRU 阶梯均可覆盖」重选
+    index 2（实测 151）—— 阶梯无需重解。"""
+    assert _reference_support_edges() == 151
 
 
 def test_hidden_width_matches_spec(baseline):
