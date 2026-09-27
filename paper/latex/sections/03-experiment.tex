@@ -76,8 +76,9 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
   \caption{Arena 的关键设定。\textbf{状态}列区分已定稿（可被正式实验依赖）
   与标定占位（数值待 play-test 标定，引用其后果时须声明）。}
   \label{tab:arena-config}
-  \small
-  \begin{tabular}{@{}llll@{}}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}llll@{}}
     \toprule
     设定 & 值 & 出处 & 状态 \\
     \midrule
@@ -98,7 +99,7 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
     逃脱存活窗口 & 20 步（$=1$ s） & Arena \S15 & 标定占位 \\
     限时追击 & 80 步 & Arena \S15 & 标定占位 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \textbf{感知是受限的。}个体不拥有全图信息，只有左 / 右两条视觉通道、
@@ -125,8 +126,9 @@ $n_{\text{predators}}=3$）\textbf{只改变一个驱动}。
   （值冲突以 \texttt{configs/} 为准），依据与状态落 \texttt{docs/参数总表.json}。
   取值属\textbf{设计选择}，无文献实测依据。}
   \label{tab:env-groups}
-  \small
-  \begin{tabular}{@{}llcccc@{}}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}llcccc@{}}
     \toprule
     环境 & \texttt{environment\_id} & $n_{\text{prey}}$ & $n_{\text{predators}}$
       & \texttt{prey\_regrowth\_steps} & 隔离的驱动 \\
@@ -136,7 +138,7 @@ $n_{\text{predators}}=3$）\textbf{只改变一个驱动}。
     Predator Rich & \texttt{predator\_rich} & 24 & \textbf{6} & 25 & 捕食压力 $\uparrow$ \\
     Resource Scarce & \texttt{resource\_scarce} & \textbf{12} & 3 & \textbf{50} & 猎物可得性 $\downarrow$ \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \textbf{派生约定：\texttt{prey\_regrowth\_steps} $=\lceil 600/n_{\text{prey}}\rceil$。}
@@ -161,8 +163,9 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
   \texttt{ExpertPolicy} 驱动）。括号内为相对基线的效应量 $d$。
   最后两行为\textbf{绝对量}。它们才是资源轴的真实信号（见正文）。}
   \label{tab:env-power}
-  \small
-  \begin{tabular}{@{}lcccc@{}}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lcccc@{}}
     \toprule
     指标 & 基线 & \texttt{food\_rich} & \texttt{predator\_rich} & \texttt{resource\_scarce} \\
     \midrule
@@ -179,7 +182,7 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
     绝对量：捕获 / episode & 55 & \textbf{100} & 55 & \textbf{38} \\
     绝对量：遭遇 / episode & 722 & \textbf{2325} & 379 & 323 \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 检查给出三条结论，\textbf{三条都必须写进报告}：
@@ -367,8 +370,9 @@ H1 走 \textbf{within-ensemble} 比较（同一 ensemble 内部的结构变异�
   \centering
   \caption{假设、实验、检验口径。第三列的措辞与 \S\ref{sec:rq} 一致。}
   \label{tab:analysis-plan}
-  \small
-  \begin{tabular}{@{}p{0.06\linewidth}p{0.30\linewidth}p{0.18\linewidth}p{0.38\linewidth}@{}}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}p{0.06\linewidth}p{0.30\linewidth}p{0.18\linewidth}p{0.38\linewidth}@{}}
     \toprule
     假设 & 内容 & 对应实验 & 检验口径（不依赖 $3$-vs-$3$ 置换者标 \checkmark） \\
     \midrule
@@ -389,7 +393,7 @@ H1 走 \textbf{within-ensemble} 比较（同一 ensemble 内部的结构变异�
       reaction norm / AMMI 检验基因型$\times$环境的秩反转
       \citep{bib24_via1985,bib25_malosetti2013} \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \textbf{Experiment F 的记录项与强制 pilot 门。}F 记录：按位点的等位基因频率

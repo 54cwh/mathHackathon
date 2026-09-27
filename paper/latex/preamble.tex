@@ -25,5 +25,11 @@
 }
 \linespread{1.25}
 
+% 断行兜底：中英混排的长串（路径、指标名）不可断，靠拉伸量吸收余量，避免溢出边界
+\setlength{\emergencystretch}{3em}
+\sloppy
+\tolerance=3000
+\hbadness=10000
+
 % 统一占位标记：未写的内容必须显式可见，禁止用编造内容填充
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}

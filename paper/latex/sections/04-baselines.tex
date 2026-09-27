@@ -1,13 +1,13 @@
 \section{基线与消融}\label{sec:baselines}
 
-\subsection{基线（同参数量级）}
+{\footnotesize \subsection{基线（同参数量级）}
 三个对照基线（MLP / GRU / Fixed Sparse RNN）\textbf{已实现}
 （\texttt{src/evogenesis/connectome/baselines.py} 与守护测试 \texttt{tests/test\_baselines.py}；
 初始化命名空间 \texttt{baseline\_init} 已在 \texttt{core} \S{}3 注册），
 编排 \texttt{experiment/baseline\_run.py} 与CLI \texttt{scripts/run\_baselines.py} 已接（Experiment C）。
 连接数按 $N_{\text{ours}} = E_A = 151$（支撑边数，\texttt{seed 250927} / \texttt{index 2}）
 反解为 $154$ / $141$ / $154$（判据 $\left|\Delta\log_{10}\right|\le1$，
-\texttt{connectome/DanioNet设计规范.md} \S8）。
+\texttt{connectome/DanioNet设计规范.md} \S8）。}
 
 \paragraph{Exp C中期结果（2 seed；第三个seed按限时停止）。}
 12 agent $\times$ 3 episode $\times$ 2 seed（1103 / 2207），每 (seed, model) 产生 $36$ 条记录、
@@ -29,8 +29,9 @@ DanioNet相对其余三基线的差与块内置换检验列于表~\ref{tab:expc}
   \texttt{energy\_efficiency} 是\textbf{非正速率}（$\sim10^{-3}$/step），
   不可与 $0$--$1$ 的比值同轴读。}
   \label{tab:expc-models}
-  \small
-  \begin{tabular}{@{}lcccc@{}}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lcccc@{}}
     \toprule
     指标 & MLP & GRU & Fixed Sparse RNN & DanioNet \\
     \midrule
@@ -41,7 +42,7 @@ DanioNet相对其余三基线的差与块内置换检验列于表~\ref{tab:expc}
     \texttt{energy\_efficiency} ($\times10^{-3}$) & $-1.149\pm0.012$ & $-1.121\pm0.050$ & $\mathbf{-1.114}\pm0.031$ & $-1.159\pm0.111$ \\
     \texttt{composite\_fitness} & $\mathbf{0.3890}\pm0.0065$ & $0.3710\pm0.0120$ & $0.3780\pm0.0194$ & $0.3666\pm0.0085$ \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \begin{table}[H]
@@ -51,8 +52,9 @@ DanioNet相对其余三基线的差与块内置换检验列于表~\ref{tab:expc}
   $p$ 为蒙特卡洛估计，同量级差异属抽样噪声）。
   $\Delta$ 为DanioNet减去其余三基线的均值；\emph{更高的块}为 $6$ 块中DanioNet领先的块数。}
   \label{tab:expc}
-  \small
-  \begin{tabular}{@{}lccc@{}}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lccc@{}}
     \toprule
     指标 & $\Delta$（DanioNet $-$ 三基线） & 更高的块 & $p$ \\
     \midrule
@@ -67,7 +69,7 @@ DanioNet相对其余三基线的差与块内置换检验列于表~\ref{tab:expc}
     \texttt{captures}（原始计数） & $-0.181$ & $2/6$ & $0.076$ \\
     \texttt{survival\_steps}（原始计数） & $-7.69$ & $3/6$ & $0.515$ \\
     \bottomrule
-  \end{tabular}
+  \end{tabular}}
 \end{table}
 
 \emph{读法}：\textbf{没有任何指标达到显著}，十个受检指标的最小 $p$ 为 $0.076$，

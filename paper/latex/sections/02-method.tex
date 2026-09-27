@@ -17,13 +17,13 @@
 \textbf{选择}：区别于人工指定架构与在权重空间直接搜索，网络结构交由一条\textbf{受控生成管线}
 生成。管线为
 
-\begin{equation}\label{method:eq-pipeline}
+{\footnotesize \begin{equation}\begin{split}\label{method:eq-pipeline}
 \texttt{configs} \;\text{ 经 SeedManager 得 }\; G
 \;\text{ 经 } D_\Theta \text{ 得 }\; (A,Z,\tau,W^{(0)},M)
-\;\text{ 再由 DanioNet 得 }\; \mathcal{T}
+\;\;\text{ 再由 DanioNet 得 }\; \mathcal{T}
 \;\text{ 经 }\mathcal{F}\text{ 评 }\; F
 \;\text{ 经 }\mathcal{R}\text{ 产生 }\; \mathcal{P}_{t+1} ,
-\end{equation}
+\end{split}\end{equation}}
 
 其中 $G$ 为人工二倍体基因组，$D_\Theta$ 为发育算子，$\mathcal T$ 为行为轨迹，
 $F$ 为适应度，$\mathcal P_{t+1}$ 为下一代种群（与 \S\ref{sec:intro} 式~\eqref{eq:pipeline} 同义，
