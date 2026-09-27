@@ -150,29 +150,36 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
         </table>
       </div>
 
-      {/* 表型汇总表（含 Δ） */}
+      {/* 表型汇总表（含 Δ）。注意：**尚未突变时 before = after，Δ 恒为 0** —— 显式说明，
+          否则会被误读成"Δ 没算"。 */}
       <div className="border border-border p-2">
         <div className="mb-1"><SectionLabel en="PHENOTYPE DELTA" zh="表型变化" /></div>
-        <table className="w-full font-mono text-[11px]">
-          <thead>
-            <tr className="text-muted-foreground">
-              <th className="text-left font-normal">metric</th>
-              <th className="text-right font-normal">before</th>
-              <th className="text-right font-normal">after</th>
-              <th className="text-right font-normal">Δ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map(([metric, beforeValue, afterValue, change]) => (
-              <tr key={metric}>
-                <td>{metric}</td>
-                <td className="text-right">{beforeValue}</td>
-                <td className="text-right">{afterValue}</td>
-                <td className="text-right text-brand-amber">{change}</td>
+        {mutations.length === 0 ? (
+          <p className="font-mono text-[11px] text-muted-foreground">
+            尚未突变：before = after，Δ 恒为 0。点 MUTATE 后再点 DEVELOP 才有差异。
+          </p>
+        ) : (
+          <table className="w-full font-mono text-[11px]">
+            <thead>
+              <tr className="text-muted-foreground">
+                <th className="text-left font-normal">metric</th>
+                <th className="text-right font-normal">before</th>
+                <th className="text-right font-normal">after</th>
+                <th className="text-right font-normal">Δ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rows.map(([metric, beforeValue, afterValue, change]) => (
+                <tr key={metric}>
+                  <td>{metric}</td>
+                  <td className="text-right">{beforeValue}</td>
+                  <td className="text-right">{afterValue}</td>
+                  <td className="text-right text-brand-amber">{change}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <p className="border border-brand-danger-red p-2 font-mono text-[11px] text-brand-danger-red">
