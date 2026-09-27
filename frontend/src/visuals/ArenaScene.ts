@@ -16,11 +16,13 @@ import {
   PREDATOR,
   PREY_SRC,
   dirOf,
+  drawBackdrop,
   drawSprite,
   familyFor,
   fishSrc,
   frameOf,
   predatorSrc,
+  propSrc,
   spriteSide,
 } from "@/visuals/arenaSprites";
 
@@ -32,11 +34,16 @@ export interface ArenaScene {
   obstacles: ObstacleState[];
 }
 
-/** 画布底色（调用方也可只清屏不铺底，但两处视觉必须一致，故在此统一）。 */
+/**
+ * 画布底色（调用方也可只清屏不铺底，但两处视觉必须一致，故在此统一）。
+ * 素材就绪时平铺海洋底，未就绪回落纯色 —— 两处不会出现不同底色。
+ */
 export function fillBackdrop(ctx: CanvasRenderingContext2D): void {
   ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
-  ctx.fillStyle = ARENA.canvas;
-  ctx.fillRect(0, 0, CANVAS.w, CANVAS.h);
+  if (!drawBackdrop(ctx, CANVAS.w, CANVAS.h)) {
+    ctx.fillStyle = ARENA.canvas;
+    ctx.fillRect(0, 0, CANVAS.w, CANVAS.h);
+  }
 }
 
 /** 命中半径：按**屏幕**尺度折算（24 CSS px），否则缩小显示时人点不中。 */
@@ -70,12 +77,20 @@ export function drawArenaScene(
   fillBackdrop(ctx);
 
   for (const o of scene.obstacles) {
-    ctx.beginPath();
-    ctx.arc(sx(o.x), sy(o.y), sr(o.radius), 0, Math.PI * 2);
-    ctx.fillStyle = ARENA.obstacleDark;
-    ctx.fill();
-    ctx.strokeStyle = ARENA.obstacleLight;
-    ctx.stroke();
+    const cx = sx(o.x);
+    const cy = sy(o.y);
+    // 外观大于碰撞体：碰撞直径在画布上只有 19–45px，128px 的素材按这个尺寸画会被
+    // 缩到 3–7 倍以下、糊成噪点；放大到 48–96px 后降采样倍数与鱼同量级。
+    // 视觉体积与命中体分离是俯视游戏的常规做法。
+    const dia = Math.min(96, Math.max(48, Math.round(sr(o.radius) * 3)));
+    if (!drawSprite(ctx, propSrc(o.x, o.y), cx, cy, dia)) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, sr(o.radius), 0, Math.PI * 2);
+      ctx.fillStyle = ARENA.obstacleDark;
+      ctx.fill();
+      ctx.strokeStyle = ARENA.obstacleLight;
+      ctx.stroke();
+    }
   }
 
   for (const p of Object.values(scene.prey)) {

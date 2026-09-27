@@ -44,6 +44,55 @@ export const PREDATOR: SpriteFamily = { prefix: "predator", bodyPx: 192, canvasP
 /** 猎物：单张、无朝向、无帧。 */
 export const PREY_SRC = `${ROOT}/prey.png`;
 
+/** 背景：低对比、可平铺的海洋底（A8）。 */
+export const BACKDROP_SRC = `${ROOT}/bg_ocean.png`;
+
+/**
+ * 障碍物外观：3 海草 + 3 石头（A5 / A6）。
+ * **契约里 `ObstacleState` 只有 `x / y / radius`，没有种类字段**，故外观按障碍物的
+ * 整数化位置取模分配 —— 同一障碍物在一局内恒定（它不动），不会逐帧跳图。
+ * 这是**纯视觉选择**；arena 契约若将来给出种类字段，替换 `propSrc` 即可。
+ */
+const PROP_SRCS = [
+  `${ROOT}/prop_weed_1.png`,
+  `${ROOT}/prop_rock_1.png`,
+  `${ROOT}/prop_weed_2.png`,
+  `${ROOT}/prop_rock_2.png`,
+  `${ROOT}/prop_weed_3.png`,
+  `${ROOT}/prop_rock_3.png`,
+];
+
+/** 位置 → 障碍物外观。先取整再混合，避免亚单位抖动改变结果。 */
+export function propSrc(x: number, y: number): string {
+  const k = Math.round(x) * 31 + Math.round(y) * 17;
+  return PROP_SRCS[((k % 6) + 6) % 6];
+}
+
+let backdropPattern: CanvasPattern | null = null;
+let backdropFor: HTMLImageElement | null = null;
+
+/**
+ * 铺底：素材就绪时平铺海洋底，否则返回 `false` 让调用方回落纯色。
+ * `CanvasPattern` 按图片缓存，避免每帧重建。
+ */
+export function drawBackdrop(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+): boolean {
+  const s = slot(BACKDROP_SRC);
+  if (!s.ready || s.img.naturalWidth === 0) return false;
+  if (backdropPattern === null || backdropFor !== s.img) {
+    backdropPattern = ctx.createPattern(s.img, "repeat");
+    backdropFor = s.img;
+  }
+  if (!backdropPattern) return false;
+  ctx.fillStyle = backdropPattern;
+  ctx.fillRect(0, 0, w, h);
+  return true;
+}
+
+
 /**
  * 幼鱼 / 成鱼的分界。**这是视觉常量，不是玩法参数** ——
  * 取值 = `configs/default_arena.yaml` 里鱼体区间 [initial_size 1.0, max_size 2.5] 的中点。
@@ -138,6 +187,8 @@ export function preloadArenaSprites(): void {
     }
   }
   slot(PREY_SRC);
+  slot(BACKDROP_SRC);
+  for (const prop of PROP_SRCS) slot(prop);
 }
 
 if (typeof Image !== "undefined") preloadArenaSprites();
