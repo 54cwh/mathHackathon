@@ -4,7 +4,14 @@ import { Fish } from "lucide-react";
 import { Panel } from "@/components/Panel";
 import { SPEED_BASE_STEPS_PER_TICK, useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
-import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
+import {
+  drawArenaScene,
+  extrapolateFish,
+  fishHitRadius,
+  hitTestFish,
+  type ArenaScene,
+} from "@/visuals/ArenaScene";
+import { WORLD } from "@/design/geometry";
 import { subscribe } from "@/api/ws";
 import { stepSessionEvolution } from "@/api/selections";
 import { createGenome, develop } from "@/api/lab";
@@ -94,6 +101,12 @@ export function DanioArenaPanel() {
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
   /** 低频场景层（猎物/捕食者/障碍 + step）。 */
   const sceneRef = useRef<ArenaScene | null>(null);
+  /** 最近一帧**权威**鱼层 + 到达时刻（供显示层外推；不改仿真）。 */
+  const fishBaseRef = useRef<{ ts: number; fish: Record<string, FishState> } | null>(null);
+  /** 画布最近一帧实际画出的（外推后）鱼层——点选命中用它，所见即所点。 */
+  const drawnFishRef = useRef<Record<string, FishState> | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  selectedRef.current = selectedFishId;
 
   // ---- session lifecycle: one live session per mount / reset ---------------
   //  失败要**自愈**：后端未起 / 端口上还是旧进程时，会话创建会失败；若只建一次，
@@ -154,6 +167,7 @@ export function DanioArenaPanel() {
     return subscribe(sessionId, {
       fishState: (payload) => {
         wsFishRef.current = payload.fish;
+        fishBaseRef.current = { ts: performance.now(), fish: payload.fish };
       },
     });
   }, [sessionId]);
@@ -198,6 +212,7 @@ export function DanioArenaPanel() {
             fish: wsFishRef.current ?? base.fish,
           };
           sceneRef.current = composed;
+          fishBaseRef.current = { ts: performance.now(), fish: composed.fish };
           setScene(composed);
         }
 
@@ -332,17 +347,32 @@ export function DanioArenaPanel() {
     void stepRef.current();
   }, [intent]);
 
-  // ---- render -------------------------------------------------------------
+  // ---- render：rAF + 显示层外推 ---------------------------------------------
+  //  服务端帧 ≈30 Hz、屏幕 60 Hz：在两帧之间按 (heading, speed) 外推，画面连续不"跳"。
+  //  位置仍以服务端权威帧为基准；仅当 Experiment 视图可见时跑 rAF（避免隐藏时白烧 CPU）。
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-    if (!scene) {
-      ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
-      return;
-    }
-    drawArenaScene(ctx, scene, selectedFishId);
-  }, [scene, selectedFishId]);
+    if (activeView !== "experiment") return;
+    let raf = 0;
+    const frame = () => {
+      raf = window.requestAnimationFrame(frame);
+      const canvas = canvasRef.current;
+      const ctx = canvas?.getContext("2d");
+      const base = sceneRef.current;
+      if (!canvas || !ctx) return;
+      if (!base) {
+        ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+        return;
+      }
+      const authoritative = fishBaseRef.current;
+      const fish = authoritative
+        ? extrapolateFish(authoritative.fish, Math.min(0.25, (performance.now() - authoritative.ts) / 1000), WORLD)
+        : base.fish;
+      drawnFishRef.current = fish;
+      drawArenaScene(ctx, { ...base, fish }, selectedRef.current);
+    };
+    raf = window.requestAnimationFrame(frame);
+    return () => window.cancelAnimationFrame(raf);
+  }, [activeView]);
 
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
   const shortSessionId = sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : null;
@@ -367,7 +397,8 @@ export function DanioArenaPanel() {
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
     const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
-    const hit = hitTestFish(scene, mx, my, fishHitRadius(rect.width));
+    const displayed = drawnFishRef.current ?? scene.fish;
+    const hit = hitTestFish({ ...scene, fish: displayed }, mx, my, fishHitRadius(rect.width));
     selectFish(hit);
   }
 

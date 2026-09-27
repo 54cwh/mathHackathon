@@ -26,6 +26,32 @@ import {
   spriteSide,
 } from "@/visuals/arenaSprites";
 
+/**
+ * 显示层**外推**：按每条鱼的 `(heading, speed)` 把它从最近一帧服务端状态往前推 `dt` 秒。
+ *
+ * 用途：服务端帧率（≈30 Hz）低于屏幕刷新率时，直接按帧重绘会有"跳跃"感；这里在**两帧之间**
+ * 补位置，让画面在 60 fps 下连续。**只改显示**：输入是权威 `x/y/heading/speed`，不产生新状态、
+ * 不参与仿真与命中（命中另用最新权威帧）。
+ */
+export function extrapolateFish(
+  fish: Record<string, FishState>,
+  dt: number,
+  world: { w: number; h: number },
+): Record<string, FishState> {
+  if (dt <= 0) return fish;
+  const out: Record<string, FishState> = {};
+  for (const [id, f] of Object.entries(fish)) {
+    if (!f.alive || !(f.speed > 0)) {
+      out[id] = f;
+      continue;
+    }
+    const x = Math.min(world.w, Math.max(0, f.x + Math.cos(f.heading) * f.speed * dt));
+    const y = Math.min(world.h, Math.max(0, f.y + Math.sin(f.heading) * f.speed * dt));
+    out[id] = { ...f, x, y };
+  }
+  return out;
+}
+
 export interface ArenaScene {
   step: number;
   fish: Record<string, FishState>;
