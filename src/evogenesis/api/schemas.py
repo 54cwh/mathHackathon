@@ -214,12 +214,19 @@ class Leaderboard(BaseModel):
 
 # --- environmental selection (Experiment F; `API接口.md` §2.2) ---------------
 class EnvironmentalSelectionLaunch(BaseModel):
-    """环境选择实验（Experiment F）启动请求：展开为 N 个 `ExperimentRun`。"""
+    """环境选择实验（Experiment F）启动请求：展开为 N 个 `ExperimentRun`。
+
+    `population_size` / `steps` 为**演示用**可选覆盖（缺省 None ⇒ 用
+    `configs/evolution.yaml::population_size`(48) 与 arena 的 `episode_steps`(600)）：现场演示时
+    调小（如 12 / 150）可让一轮在几秒内跑完；正式实验不传。
+    """
 
     name: str
     seeds: list[int]
     environment: Environment = "food_rich"
     generations: int = 10
+    population_size: int | None = None
+    steps: int | None = None
 
 
 class EnvironmentalSelectionSummary(BaseModel):

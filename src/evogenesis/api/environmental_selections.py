@@ -74,7 +74,11 @@ class _Selection:
     seeds: list[int]
     environment: str
     generations: int
-    job_id: str
+    #: 演示用覆盖：`population_size` 覆盖 evolution 配置；`steps` 覆盖每代 episode 步数。
+    #: None ⇒ 用 configs 里的正式规模。
+    population_size: int | None = None
+    steps: int | None = None
+    job_id: str = ""
     status: JobStatusKind = "queued"
     runs: list[dict] = field(default_factory=list)
 
@@ -100,6 +104,10 @@ def _run_one(selection: _Selection, seed: int) -> dict:
     chain = load_model_chain_config(_DEFAULT_MODEL)
     arena_config = load_arena_config(_DEFAULT_ARENA, overrides=overrides)
     evolution_config = load_evolution_config(_DEFAULT_EVOLUTION)
+    if selection.population_size is not None:
+        evolution_config = evolution_config.model_copy(
+            update={"population_size": selection.population_size}
+        )
     run_dir = runlayout.create_run_dir(
         experiment_id=selection.experiment_id,
         seed=seed,
@@ -117,6 +125,7 @@ def _run_one(selection: _Selection, seed: int) -> dict:
         evolution_config=evolution_config,
         run_dir=run_dir,
         environment_id=selection.environment,
+        steps=selection.steps,
     )
     last = result.summaries[-1] if result.summaries else None
     metrics: dict[str, float] = {}
@@ -192,7 +201,13 @@ router = APIRouter(
 
 
 def launch(
-    *, name: str, seeds: list[int], environment: str, generations: int
+    *,
+    name: str,
+    seeds: list[int],
+    environment: str,
+    generations: int,
+    population_size: int | None = None,
+    steps: int | None = None,
 ) -> tuple[str, JobStatus]:
     """登记一次环境选择实验并起后台线程，返回 `(experiment_id, JobStatus)`。
 
@@ -207,6 +222,8 @@ def launch(
         seeds=list(seeds),
         environment=environment,
         generations=generations,
+        population_size=population_size,
+        steps=steps,
         job_id=job_id,
     )
     job = _Job(job_id=job_id)
@@ -223,6 +240,8 @@ def start_environmental_selection(launch_request: EnvironmentalSelectionLaunch) 
         seeds=launch_request.seeds,
         environment=launch_request.environment,
         generations=launch_request.generations,
+        population_size=launch_request.population_size,
+        steps=launch_request.steps,
     )
     return status
 

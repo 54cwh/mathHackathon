@@ -291,6 +291,10 @@ export interface BreedingResult {
 // --- environmental selection / Experiment F (`API接口.md` §2.2) ------------
 
 export interface EnvironmentalSelectionLaunch {
+  /** 演示用：覆盖种群规模（缺省用 `configs/evolution.yaml` 的 48）。 */
+  population_size?: number | null;
+  /** 演示用：覆盖每代 episode 步数（缺省用 arena 的 `episode_steps`）。 */
+  steps?: number | null;
   name: string;
   seeds: number[];
   environment: Environment;

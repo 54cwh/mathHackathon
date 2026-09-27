@@ -189,6 +189,9 @@ export function EvolutionDashboardPanel() {
           seeds,
           environment,
           generations: Math.max(1, Math.trunc(generations)),
+          // 演示规模：4 鱼 + 短 episode，让一轮在十几秒内跑完（正式实验不传这两个字段）。
+          population_size: 4,
+          steps: 100,
         }),
       );
     } catch (e) {
@@ -243,7 +246,8 @@ export function EvolutionDashboardPanel() {
                 />
                 <span className="font-mono text-sm text-muted-foreground">
                   {seeds.length}/{MAX_SEEDS} 个：{seeds.join(", ") || "—"} · 预计约{" "}
-                  {Math.max(1, seeds.length) * Math.max(1, generations) * 40} s
+                  {Math.max(1, seeds.length) * Math.max(1, generations) * 20} s（演示规模 4 鱼 × 100 步；
+                  Arena 在跑会更慢，可先 Pause）
                 </span>
               </label>
 
