@@ -68,6 +68,16 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 - **跨语言契约。** `schemas/` 的 JSON Schema 由 Python 后端与 TS 前端共用，改契约双方同步。
 - **离线可运行。** CPU 可运行、GPU 可加速；现场不依赖外部模型 API、远程数据库或 CDN 资产。
 
+## 技术栈
+
+| 层 | 选型 |
+|---|---|
+| 后端 / 模型 | Python 3.12（uv）、PyTorch（CPU 可运行、GPU 加速）、FastAPI + Pydantic、NumPy / SciPy / pandas、NetworkX |
+| 前端 / 演示 | Vite + React + TypeScript、Tailwind CSS、Canvas 2D（Arena）、Cytoscape.js（脑图）、ECharts（图表）、zustand；原生 WebSocket / fetch |
+| 数据 / 配置 | YAML（`configs/`）、JSON Schema（`schemas/`）、structlog（JSONL）、MLflow（本地 file store）、pyarrow / NumPy `npz` |
+| 训练 / 演化 | Behavior Cloning；PPO / SAC 仅作扩展 |
+| 质量 / 复现 | pytest、ruff、统一 seed manager、uv、Makefile、Docker（复现用，现场优先本机） |
+
 ## 实验与消融
 
 实验协议（A–F 均为必做）由 `src/evogenesis/experiment/实验与评价体系.md` 拥有，指标定义与统计口径同在该文件。
@@ -181,6 +191,13 @@ make tree         # 查看目录结构
 ```
 
 提交前须通过 `make lint && make test`，并按 `AGENTS.md`「代码审查」完成人工清单。
+
+## 贡献
+
+- 直接在 `main` 上开发，推前 `git fetch origin && git pull --rebase origin main`。
+- 提交前 `make lint && make test` 通过；提交信息遵循 `<type>(<scope>): <summary>`。
+- 文档先行、单一来源：改代码须同步同目录模块文档；`schemas/` 与 `configs/` 的键名双方同步。
+- 协作与审查约定完整版见 `AGENTS.md`。
 
 ## 文档
 
