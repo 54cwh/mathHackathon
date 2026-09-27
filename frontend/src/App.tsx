@@ -6,7 +6,6 @@ import { BrainForgePanel } from "@/panels/BrainForgePanel";
 import { DanioArenaPanel } from "@/panels/DanioArenaPanel";
 import { EvolutionDashboardPanel } from "@/panels/EvolutionDashboardPanel";
 import { PlaybackPanel } from "@/panels/PlaybackPanel";
-import { ComparePanel } from "@/panels/ComparePanel";
 import { cn } from "@/lib/utils";
 import { useUiStore } from "@/store/ui";
 
@@ -42,9 +41,6 @@ function App() {
           <PlaybackPanel />
         </div>
 
-        <div className={cn("h-full min-h-0", activeView !== "compare" && "hidden")}>
-          <ComparePanel />
-        </div>
       </main>
       <BottomBar />
     </AppFrame>

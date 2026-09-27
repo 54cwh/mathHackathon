@@ -164,23 +164,6 @@ export interface Leaderboard {
   entries: LeaderboardEntry[];
 }
 
-// --- comparisons（`results/tables/` 只读；`API接口.md` §2.5）------------------------
-
-export type ComparisonKind = "ablation" | "robustness" | "environment_baseline" | "other";
-
-export interface ComparisonTableSummary {
-  id: string;
-  kind: ComparisonKind;
-  experiment_id: string;
-}
-
-/** 对比表全文；`payload` 原样透传（字段随 producer 版本变化，不建强类型）。 */
-export interface ComparisonTable {
-  id: string;
-  kind: ComparisonKind;
-  payload: Record<string, unknown>;
-}
-
 /** 会话内逐代演化的一步（`API接口.md` §2.3）。`summary` 为当代 `GenerationSummary`。 */
 export interface SessionEvolutionStep {
   summary: {

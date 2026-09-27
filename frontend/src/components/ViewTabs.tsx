@@ -21,7 +21,6 @@ const VIEWS: ReadonlyArray<{ id: ViewId; label: string }> = [
   { id: "evolution", label: "Evolution" },
   { id: "experiment", label: "Experiment" },
   { id: "playback", label: "Playback" },
-  { id: "compare", label: "Compare" },
 ];
 
 export function ViewTabs() {

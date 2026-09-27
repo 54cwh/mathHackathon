@@ -26,7 +26,6 @@ const LABELS: Record<JourneyStage, string> = {
   develop: "DEVELOP",
   arena: "ARENA",
   evolve: "EVOLVE",
-  compare: "COMPARE",
 };
 
 /** AUTO DEMO 每步间隔：给面板留出执行动作的时间。 */
@@ -39,13 +38,11 @@ const GATE_HINT: Record<JourneyStage, string> = {
   develop: "需要先有基因组（Lab）",
   arena: "需要先产出发育结果（DEVELOP）",
   evolve: "需要 Arena 已有会话与个体",
-  compare: "需要先推进一代（P4 落地）",
 };
 
 export function JourneyBar() {
   const journey = useUiStore((s) => s.journey);
   const requestIntent = useUiStore((s) => s.requestIntent);
-  const setActiveView = useUiStore((s) => s.setActiveView);
   const autoPlay = useUiStore((s) => s.autoPlay);
   const setAutoPlay = useUiStore((s) => s.setAutoPlay);
   const activeGenomeId = useUiStore((s) => s.activeGenomeId);
@@ -56,13 +53,11 @@ export function JourneyBar() {
 
   const index = JOURNEY_STAGES.indexOf(journey);
   const next = index < STAGE_COUNT - 1 ? JOURNEY_STAGES[index + 1] : null;
-  // COMPARE 段的内容在独立视图里：推进到该段即切过去（导演线管叙事，tabs 管自由探索）。
   const goTo = useCallback(
     (stage: JourneyStage) => {
       requestIntent(stage);
-      if (stage === "compare") setActiveView("compare");
     },
-    [requestIntent, setActiveView],
+    [requestIntent],
   );
   const nextReady =
     next !== null && isStageReady({ activeGenomeId, development, sessionId, individuals, generation }, next);

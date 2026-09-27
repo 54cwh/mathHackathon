@@ -14,10 +14,10 @@ export interface ArenaStats {
 }
 
 /** Bottom-bar view tabs (`交互与可视化.md` §1; `视觉规范审计.md` rule 8). */
-export type ViewId = "evolution" | "experiment" | "playback" | "compare";
+export type ViewId = "evolution" | "experiment" | "playback";
 
 /** 演示流程段（`交互与可视化.md` §1 导演线；`通用层接口.md` §7）。 */
-export type JourneyStage = "seed" | "genome" | "develop" | "arena" | "evolve" | "compare";
+export type JourneyStage = "seed" | "genome" | "develop" | "arena" | "evolve";
 
 /** 导演线的固定顺序：唯一的推进依据（不在面板里另写一份）。 */
 export const JOURNEY_STAGES: readonly JourneyStage[] = [
@@ -26,7 +26,6 @@ export const JOURNEY_STAGES: readonly JourneyStage[] = [
   "develop",
   "arena",
   "evolve",
-  "compare",
 ];
 
 /** 导演线段数。 */
@@ -57,8 +56,6 @@ export function isStageReady(state: JourneyGateState, stage: JourneyStage): bool
       return state.development?.result != null;
     case "evolve":
       return state.sessionId !== null && state.individuals.length > 0;
-    case "compare":
-      return state.generation > 0;
   }
 }
 
