@@ -36,7 +36,7 @@
       "required": ["theta_N_obs", "theta_H_obs", "status"],
       "properties": {
         "theta_N_obs": { "type": "number" },
-        "theta_H_obs": { "type": "number" },
+        "theta_H_obs": { "type": ["number", "null"] },
         "status": { "enum": ["confirmed", "placeholder"] }
       }
     },
@@ -102,7 +102,7 @@
           "properties": {
             "offspring_per_seed": { "type": "integer", "minimum": 0 },
             "pooled_expected_counts": { "$ref": "#/$defs/counts" },
-            "observed_counts": { "$ref": "#/$defs/counts" }
+            "observed_counts": { "anyOf": [ { "$ref": "#/$defs/counts" }, { "type": "null" } ] }
           }
         }
       }
@@ -169,20 +169,25 @@
     "classStat": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["n", "hits", "penetrance", "wilson_low", "wilson_high", "observed_2x2"],
+      "required": ["n", "hits", "penetrance", "wilson_low", "wilson_high", "observed_bins", "observed_2x2"],
       "properties": {
         "n": { "type": "integer", "minimum": 0 },
         "hits": { "type": "integer", "minimum": 0 },
         "penetrance": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "wilson_low": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "wilson_high": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
-        "observed_2x2": { "$ref": "#/$defs/confusion" }
+        "observed_bins": {
+          "type": "object",
+          "propertyNames": { "enum": ["N", "H"] },
+          "additionalProperties": { "$ref": "#/$defs/axisBins" }
+        },
+        "observed_2x2": { "anyOf": [ { "$ref": "#/$defs/confusion" }, { "type": "null" } ] }
       }
     },
     "stats": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["per_class", "observed_architecture_counts"],
+      "required": ["readout", "per_class", "observed_architecture_counts"],
       "properties": {
         "per_class": {
           "type": "object",
@@ -195,7 +200,8 @@
             "aabb": { "$ref": "#/$defs/classStat" }
           }
         },
-        "observed_architecture_counts": { "$ref": "#/$defs/confusion" }
+        "readout": { "enum": ["N", "two_axis"] },
+        "observed_architecture_counts": { "anyOf": [ { "$ref": "#/$defs/confusion" }, { "type": "null" } ] }
       }
     },
     "seedAgg": {
@@ -206,6 +212,15 @@
         "n_seeds": { "type": "integer", "minimum": 0 },
         "mean": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "std": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "axisBins": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["high", "low"],
+      "properties": {
+        "high": { "type": "integer", "minimum": 0 },
+        "low": { "type": "integer", "minimum": 0 }
       }
     },
     "axisSummary": {
@@ -223,9 +238,10 @@
     "continuous": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["n_neurons", "cv_tau"],
+      "required": ["n_neurons", "n_neurons_centered", "cv_tau"],
       "properties": {
         "n_neurons": { "$ref": "#/$defs/axisSummary" },
+        "n_neurons_centered": { "$ref": "#/$defs/axisSummary" },
         "cv_tau": { "$ref": "#/$defs/axisSummary" }
       }
     }

@@ -1,7 +1,7 @@
 {
   "meta": {
     "title": "EvoGenesis 参数总表（含依据审计）",
-    "version": "v0.24",
+    "version": "v0.26",
     "date": "2026-09-27",
     "supersedes": "docs/参数总表.md 与 docs/参数依据审计.md（均已并入本文件）",
     "audit_source": "已并入本文件",
@@ -180,11 +180,11 @@
       "group": "genome",
       "grade": "D",
       "status": "missing",
-      "basis": "penetrance 观测档阈值，作用于发育产物 N=|M|（genome §3）；须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调。**2026-09-27 进展**：§5 通道已开（`development.division_locus_gain` = 1.0）+ 读数 K=16，N 轴 `separable=true`（**出货配置实跑**：AUC 0.7991、p=1.0e-188、min-misclass 0.2847 = pen 0.715，n=3200）⇒ **阈值由「不可辨识」转为「可辨识、待人工签署」**；`value` 仍为 null。校准产出 θ_N^obs = **36.469**（min-misclass）/ **36.062**（median-midpoint），落区间内部；产物 `results/tables/pen-beta1-k16_penetrance_calibration.json`。",
+      "basis": "penetrance 观测档阈值，作用于**逐 seed 居中**的发育产物 N=|M|（genome §3；居中口径见 `experiment §3.9`）：基线 = 该 master seed **分层集**内全部行读数之中位数（分层等量抽样 ⇒ 与基因型无关），故 θ_N^obs 是**居中偏差**刻度（可正可负，**不是**绝对神经元数）。须在独立校准集上按最大化与基因型期望档的分类一致性估计，报告样本不得调。**2026-09-27 居中化**：§5 通道已开（`development.division_locus_gain` = 1.0）+ 读数 K=16 ⇒ N 轴 `separable=true`；居中使 θ 可**跨 seed 迁移**（不居中时 founder 背景的 seed 级平移 ~8 神经元 ≫ 基因型效应 ~1：池化 AUC 0.6258 → 居中 0.8695）。出货配置实跑（官方校准 seeds、n=3200、K=16）：AUC **0.8433**、p=4.3e-248、min-misclass **0.2366**（pen 0.763），θ_N^obs = **−0.0312**（min-misclass 与 median-midpoint 同值）；报告集（n=4800）AUC **0.8678** / min-misclass 0.2112 / 逐类 pen 0.708–0.871（A_B_ 0.7075 / A_bb 0.8708 / aaB_ 0.8042 / aabb 0.7650）。`value` 仍为 null ⇒ 阈值由「不可辨识」转为「**可辨识、待人工签署**」。",
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
       "config": "configs/penetrance.yaml → theta_N_obs",
       "sensitivity": null,
-      "suggest": "数值须**由人签署**（`configs/penetrance.yaml` 头部「禁止 AI 填空」；`placeholder` 亦然）。当前通道已开、两轴中 N 轴可分离但 H 轴不可分离：签署时须同时决定 `threshold_status`，并注意判据「两轴都 separable」在本 run 不成立。 ⚠️ 签署须**取同一产物内的成对值**（`theta_N_obs_min_misclass` 与 `theta_N_obs_median_midpoint` 同出一跑）；跨命名空间的数值（如 36.22/36.09、36.34/36.47、36.469/36.062）**不可混用**，否则报告与校准不自洽。"
+      "suggest": "数值须**由人签署**（`configs/penetrance.yaml` 头部「禁止 AI 填空」；`placeholder` 亦然）。当前生效轴 `[N]` 可分离（H 轴 `separable=false`、已按裁决退役，不阻塞签署）⇒ `confirmable=true`。签署取**当前居中刻度**的成对值（`theta_N_obs_min_misclass` / `theta_N_obs_median_midpoint`；本 run 二者同值 −0.0312）。⚠️ **勿混用 2026-09-27 居中化之前的原始刻度数值**（如 36.469 / 36.062）：那是绝对神经元数，与当前 θ 量纲不同，混用会使报告与校准不自洽。"
     },
     {
       "name": "theta_H_obs",
@@ -193,7 +193,7 @@
       "group": "genome",
       "grade": "D",
       "status": "missing",
-      "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs。实测（2026-09-26 官方校准集）：separation_H.separable=false —— AUC=0.4993、p=0.959 ⇒ 零区分力、阈值不可辨识。用户已裁决 **H 轴退役**（penetrance 降级为单轴、只留 N），实现待做 ⇒ 届时随 H 轴一并退役。",
+      "basis": "penetrance 观测档阈值，作用于 τ 异质性 H=CV_τ（genome §3）；校准规则同 theta_N_obs。实测（2026-09-26 官方校准集）：separation_H.separable=false —— AUC=0.4993、p=0.959 ⇒ 零区分力、阈值不可辨识。用户已裁决 **H 轴退役**（penetrance 降级为单轴、只留 N），实现待做 ⇒ 届时随 H 轴一并退役。 **2026-09-27 居中化只作用于 N 轴读数**（`centered_n`）；`H = CV_τ` 未居中、仍按原口径二分。H 轴在出货配置下 `separable=false`（AUC 0.4862 / p=0.175），故它不参与签署门禁。",
       "source": "research/reference/delta-B-and-penetrance.md；src/evogenesis/genome/生物学与进化遗传学基础.md §3",
       "config": "configs/penetrance.yaml → theta_H_obs",
       "sensitivity": null,
@@ -991,7 +991,7 @@
       "group": "development",
       "grade": "D",
       "status": "no_basis",
-      "basis": "§5 分裂读数 β：作用在**基因组通道**（A 位点 motif 亲和 q 的均值 − 全 motif 均值；索引单一来源 `genome.motif_subset_A`）。默认 0.0 = 原式逐位一致（通道关闭）。**β 是单位规范（gauge）而非校准值**：读数经秩统计量（AUC / 外显率阈分类）读取，二者对 β>0 的任何单调尺度不变 ⇒ 不可标定（实测 α∈[0.5,16]×β∈[0.05,2] 全平面同值）。\n**2026-09-27 裁决已落地（用户授权）：value=1.0。** 判据为**配对 2×4 网格**（同一批基因组；官方校准 seeds、n=3200、每类 800、K 只改读数协议）：β=0.0 时 K=1/16/64 **全不可分**（AUC 0.4775 / 0.4445 / 0.4212，且随 K **变差**）；β=1.0 时**可分离**（AUC 0.6138 / 0.7861 / 0.8342）。出货配置独立实跑（另一 seed 命名空间）：AUC **0.7991**、p=1.0e-188、min-misclass **0.2847**（pen 0.715）。⇒ β 开的是信号，K 只放大；**K 单独救不了**。",
+      "basis": "§5 分裂读数 β：作用在**基因组通道**（A 位点 motif 亲和 q 的均值 − 全 motif 均值；索引单一来源 `genome.motif_subset_A`）。默认 0.0 = 原式逐位一致（通道关闭）。**β 是单位规范（gauge）而非校准值**：读数经秩统计量（AUC / 外显率阈分类）读取，二者对 β>0 的任何单调尺度不变 ⇒ 不可标定（实测 α∈[0.5,16]×β∈[0.05,2] 全平面同值）。\n**2026-09-27 裁决已落地（用户授权）：value=1.0。** 判据为**配对 2×4 网格**（同一批基因组；官方校准 seeds、n=3200、每类 800、K 只改读数协议）：β=0.0 时 K=1/16/64 **全不可分**（AUC 0.4775 / 0.4445 / 0.4212，且随 K **变差**）；β=1.0 时**可分离**（AUC 0.6138 / 0.7861 / 0.8342）。出货配置独立实跑（另一 seed 命名空间）：AUC **0.7991**、p=1.0e-188、min-misclass **0.2847**（pen 0.715）。⇒ β 开的是信号，K 只放大；**K 单独救不了**。\n**2026-09-27 居中化（补记）**：上列配对网格的 AUC 均在**原始读数**刻度上测得（当时尚无居中）；居中只作用于报告层的 N 读数，不改 β 的作用机制。居中后出货配置 AUC **0.8433**（校准集 n=3200）/**0.8678**（报告集 n=4800），θ_N^obs = −0.0312。",
       "source": "src/evogenesis/development/RGCD数学模型.md §5",
       "config": "configs/default_model.yaml → development.division_locus_gain",
       "sensitivity": null,
@@ -2114,7 +2114,7 @@
       "group": "experiment",
       "grade": "D",
       "status": "no_basis",
-      "basis": "N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次取**已观测均值** N̄_K，以压低**抽样**噪声而保留个体发育变异（外显率保持不完全）。实测（配对网格；官方校准 seeds、n=3200）：β=1.0 时 K=1 AUC 0.6138 / misclass 0.425；K=16 AUC 0.7861 / misclass 0.288（出货配置实跑 0.7991 / 0.2847）；K=64 AUC 0.8342 / misclass 0.265（**16→64 已饱和**）。β=0.0 时 K 越大**越差**（AUC 0.4775→0.4212）⇒ **K 只在 β=1.0 下有意义**。K→∞ 即期望读数 E[N]，退化为 pen≡1 ⇒ 不用。",
+      "basis": "N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次取**已观测均值** N̄_K，以压低**抽样**噪声而保留个体发育变异（外显率保持不完全）。实测（配对网格；官方校准 seeds、n=3200）：β=1.0 时 K=1 AUC 0.6138 / misclass 0.425；K=16 AUC 0.7861 / misclass 0.288（出货配置实跑 0.7991 / 0.2847）；K=64 AUC 0.8342 / misclass 0.265（**16→64 已饱和**）。β=0.0 时 K 越大**越差**（AUC 0.4775→0.4212）⇒ **K 只在 β=1.0 下有意义**。K→∞ 即期望读数 E[N]，退化为 pen≡1 ⇒ 不用。 **2026-09-27 居中化（补记）**：上列 AUC 均在原始读数刻度测得；居中后出货配置校准集 AUC **0.8433**、min-misclass **0.2366**（报告集 0.8678 / 0.2112）⇒ K=16 的取值在居中口径下更宽裕，「K 只在 β=1.0 下有意义」的结论不变。",
       "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
       "config": "configs/penetrance.yaml → realisations_k",
       "sensitivity": null,
@@ -2133,7 +2133,7 @@
       "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
       "config": "configs/penetrance.yaml → active_axes",
       "sensitivity": null,
-      "suggest": "H 轴退役是**设计裁决**（实测 H 轴两臂均不可分：β=1.0 时 AUC 0.4912 / p=0.389，β=0.0 时 0.4993；最小错分 0.488–0.496 ≈ 随机），故 no_basis = 设计选择。若日后 H 轴换读数后恢复区分力，把 \"H\" 加回本列表即可复检。"
+      "suggest": "H 轴退役是**设计裁决**（实测 H 轴两臂均不可分：β=1.0 时 AUC 0.4912 / p=0.389，β=0.0 时 0.4993；最小错分 0.488–0.496 ≈ 随机），故 no_basis = 设计选择。若日后 H 轴换读数后恢复区分力，把 \"H\" 加回本列表即可复检。 **该键同时决定报告读数**：单轴时 `pen(g)` 是「观测 N 档 == 期望 N 档」的一致率，逐类分箱 `observed_bins` 只含 `N`，两轴的 `observed_2x2`/`observed_architecture_counts` 与 4 类反推 `demo_9331.observed_counts` 置 `None`；`active_axes: [N, H]` 可回到历史两轴口径。另：报告**只要求生效轴的 θ^obs**（H 退役后不必再签「展示用 θ_H^obs」）。"
     },
     {
       "name": "penetrance_separation_auc_floor",
@@ -2142,7 +2142,7 @@
       "group": "experiment",
       "grade": "D",
       "status": "missing",
-      "basis": "可选的**效应量下限**：启用后门禁叠加第三条 (AUC >= floor)。存在理由：p<α 只说明显著、不说明效应大（大 n 下 AUC=0.51 也通过前两条）。默认 null = 不启用（口径与历史逐位一致）。实测（出货配置、官方校准 seeds、n=3200、K=16）：N 轴 AUC **0.770–0.799**（三个独立 seed 命名空间 0.7701 / 0.7861 / 0.7991）⇒ floor 取 0.65 通过、取 0.85 不通过；AUC 随命名空间有抽样波动，故报区间。",
+      "basis": "可选的**效应量下限**：启用后门禁叠加第三条 (AUC >= floor)。存在理由：p<α 只说明显著、不说明效应大（大 n 下 AUC=0.51 也通过前两条）。默认 null = 不启用（口径与历史逐位一致）。实测（出货配置、官方校准 seeds、n=3200、K=16）：N 轴 AUC **0.770–0.799**（三个独立 seed 命名空间 0.7701 / 0.7861 / 0.7991）⇒ floor 取 0.65 通过、取 0.85 不通过；AUC 随命名空间有抽样波动，故报区间。 **2026-09-27 居中化（补记）**：上列区间取自**原始读数**刻度；居中后出货配置校准集 N 轴 AUC **0.8433**（报告集 0.8678）⇒ floor 取 0.65 **通过**、取 0.85 **不通过**（0.8433 < 0.85）的结论不变。",
       "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py::axis_separation",
       "config": "configs/penetrance.yaml → separation_auc_floor",
       "sensitivity": null,
@@ -2152,7 +2152,7 @@
   "missing_required": {
     "note": "原缺、实现 RGCD/DanioNet 必须补齐；RGCD §1–§8/§10/§11 各项已于 2026-09-26 定稿（见 RGCD数学模型.md §13）。以下为仍未定项。 2026-09-26：环境对照三组已由 `experiment/实验与评价体系.md` §4 定义（见参数 `env_food_rich` / `env_predator_rich` / `env_resource_scarce`，状态已定稿）并从本清单移出。 2026-09-26：`body_length_mm` 按方案 B（wu 不与 BL 固定换算）退役，不再作为世界换算基准。",
     "items": [
-      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 数值（genome §3）：**2026-09-27** —— §5 通道已开（`development.division_locus_gain` = 1.0，用户授权）+ 读数 K=16，N 轴 `separable=true`（AUC 0.7991、p=1.0e-188、min-misclass 0.2847 = pen 0.715、n=3200）⇒ **阈值由「不可辨识」转为「可辨识、待人工签署」**，数值仍 `null`。H 轴两臂（β=0.0 / 1.0）均 `separable=false`（misclass 0.488–0.496）⇒ 已按裁决停用，单轴 N。"
+      "penetrance 观测量阈值 θ_N^obs、θ_H^obs 数值（genome §3）：**2026-09-27 居中化后** —— §5 通道已开（`development.division_locus_gain` = 1.0，用户授权）+ 读数 K=16 + N 读数逐 seed 居中，N 轴 `separable=true`（出货配置校准集 AUC **0.8433**、p=4.3e-248、min-misclass **0.2366** = pen 0.763、n=3200；报告集 AUC 0.8678、min-misclass 0.2112、逐类 pen 0.708–0.871）⇒ **阈值由「不可辨识」转为「可辨识、待人工签署」**，数值仍 `null`（居中刻度：本轮 min-misclass ≡ median-midpoint = −0.0312）。H 轴 `separable=false`（AUC 0.4862）⇒ 已按裁决退役、单轴 N。另有 `separation_auc_floor` 待签署。"
     ]
   },
   "citation_risks": [

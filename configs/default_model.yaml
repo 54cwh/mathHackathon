@@ -53,8 +53,10 @@ development:
   # **为何 K=16 而非 64**：K→∞ 即期望读数 E[N]，退化为 pen≡1；而**不完全外显率
   # 恰是 penetrance 的生物学含义**（Cooper et al.），故取曲线中段而非端点。
   # H 轴恒不可分（最小错分 0.488–0.496）⇒ 停用，单轴 N。
-  # **出货配置实测（独立 seed 命名空间，`pen-beta1-k16`）**：N 轴 AUC 0.7991、p=1.0e-188、
-  # min-misclass 0.2847（pen 0.715）、θ_N^obs 36.469 / 36.062 落区间内部，n=3200。
+  # **出货配置实测（逐 seed 居中后，2026-09-27）**：校准集 N 轴 AUC 0.8433、p=4.3e-248、
+  # min-misclass 0.2366（pen 0.763）、θ_N^obs = −0.0312（居中偏差刻度），n=3200；
+  # 报告集 AUC 0.8678 / 最小错分 0.2112。（居中化**前**的原始刻度读数：AUC 0.7991、
+  # θ_N^obs 36.469 / 36.062 —— 量纲不同，不可混用。）
   # **代价**：β 改 N ⇒ 须重冻结 **4 处**锚（`tests/test_dump_connectome_matrix.py` 论文锚、
   # `tests/test_fig_connectome.py` 代表个体、`src/evogenesis/development/config.py` 的
   # `DEFAULT_CONFIG` 来源 `division_locus_gain` 默认值、§8 参照实例 `N_ours`

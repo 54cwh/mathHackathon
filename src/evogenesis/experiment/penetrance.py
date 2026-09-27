@@ -96,6 +96,8 @@ class PenetranceRow:
     genome_id: str
     fish_id: str
     expected_class: str
+    #: 该行所属发育批次的 master seed；N 轴判档按 seed 居中（见 ``seed_baselines``）
+    master_seed: int
     e_a: float
     e_b: float
     n_neurons: int
@@ -135,15 +137,14 @@ def observed_architecture(
         high_H=bool(cv_tau_value > theta_H_obs),
     )
 
+
 def _stable_seed(material: str) -> int:
     """由 material 稳定派生一个 64-bit 种子（blake2b；跨进程、跨机器可复现）。"""
     digest = hashlib.blake2b(material.encode("utf-8"), digest_size=8).digest()
     return int.from_bytes(digest, "little")
 
 
-def realised_neuron_count(
-    divide_prob: Sequence[float], realisations: int, material: str
-) -> float:
+def realised_neuron_count(divide_prob: Sequence[float], realisations: int, material: str) -> float:
     """Nbar_K：§5 分裂抽签独立重复 K 次后的**已观测均值**（experiment §3.9）。
 
     **这是测量协议、不是模型改动**：同基因型多测几次以压低**抽样**噪声，个体自身的发育
@@ -164,8 +165,36 @@ def realised_neuron_count(
 
 
 def _readout_n(row: PenetranceRow) -> float:
-    """N 轴读数：有 n_neurons_k（K>1）就用它，否则用单次实现 n_neurons。"""
+    """N 轴**原始**读数：有 n_neurons_k（K>1）就用它，否则用单次实现 n_neurons。
+
+    这是诊断量（``continuous.n_neurons``）；判档与分离度一律走 ``centered_n``。
+    """
     return float(row.n_neurons) if row.n_neurons_k is None else float(row.n_neurons_k)
+
+
+def seed_baselines(rows: Sequence[PenetranceRow]) -> dict[int, float]:
+    """逐 seed 的读数基线（该 seed 内全部行读数的中位数）。
+
+    期望档是**群体内**对比：不同 master seed 的 founder 背景不同，分裂驱动的群体均值随之
+    不同（2026-09-27 实测 3 个 seed 的读数中位差达 ~8 神经元，而基因型效应仅 ~1），直接
+    池化会让 seed 级偏移淹没基因型信号（AUC 0.626；逐 seed 居中后 0.870）。
+
+    报告/校准集按类分层等量抽样（``stratified_offspring``），故 seed 内中位数与基因型无关
+    —— 这既是它可作「群体中性基线」的前提，也是**跨样本复用**的依据：未分层样本
+    （9:3:3:1 演示集）自身的中位数会被多数类拉偏，其基线必须取自分层集（见 ``run_report``）。
+    """
+    groups: dict[int, list[float]] = {}
+    for row in rows:
+        groups.setdefault(row.master_seed, []).append(_readout_n(row))
+    return {seed: statistics.median(values) for seed, values in groups.items()}
+
+
+def centered_n(
+    rows: Sequence[PenetranceRow], baselines: Mapping[int, float] | None = None
+) -> list[float]:
+    """逐 seed 居中的 N 读数（基线默认由 ``rows`` 自身估计，要求该集按类等量）。"""
+    base = seed_baselines(rows) if baselines is None else baselines
+    return [_readout_n(row) - base[row.master_seed] for row in rows]
 
 
 def _confusion_key(arch: Architecture) -> str:
@@ -197,7 +226,10 @@ def wilson_interval(successes: int, n: int, *, z: float = WILSON_Z) -> tuple[flo
     denom = 1.0 + z * z / n
     centre = (p + z * z / (2.0 * n)) / denom
     half = z * math.sqrt(p * (1.0 - p) / n + z * z / (4.0 * n * n)) / denom
-    return (max(0.0, centre - half), min(1.0, centre + half))
+    low, high = max(0.0, centre - half), min(1.0, centre + half)
+    # 闭式在 p̂→0/1 边界有消去误差（实测 n=100,k=100 上界 = 1-1.1e-16 < p̂）；
+    # 按定义守住 p̂ ∈ [L, U]：内部点上为恒等变换，只修边界。
+    return (min(low, p), max(high, p))
 
 
 def min_misclassification_threshold(
@@ -240,7 +272,7 @@ def median_midpoint_threshold(values: Sequence[float], expected_high: Sequence[b
 def _axis_arrays(
     rows: Sequence[PenetranceRow],
 ) -> tuple[list[float], list[bool], list[float], list[bool]]:
-    n_values = [_readout_n(r) for r in rows]
+    n_values = centered_n(rows)
     h_values = [r.cv_tau for r in rows]
     high_n = [r.expected_class in EXPECTED_HIGH_N for r in rows]
     high_h = [r.expected_class in EXPECTED_HIGH_H for r in rows]
@@ -380,22 +412,58 @@ def calibrate(
     )
 
 
+#: 单轴观测档的档名（每轴两档）。
+_AXIS_BIN_KEYS = ("high", "low")
+
+
 def penetrance_stats(
-    rows: Sequence[PenetranceRow], theta_N_obs: float, theta_H_obs: float
+    rows: Sequence[PenetranceRow],
+    theta_N_obs: float,
+    theta_H_obs: float | None = None,
+    *,
+    active_axes: tuple[str, ...] = ("N", "H"),
+    baselines: Mapping[int, float] | None = None,
 ) -> dict[str, Any]:
-    """逐类 ``pen(g)`` + Wilson CI + 观测档 2×2 计数（genome §3 / delta-B §2.4）。"""
+    """逐类 ``pen(g)`` + Wilson CI + **生效轴**的观测分箱（genome §3 / delta-B §2.4）。
+
+    N 轴判档用**逐 seed 居中**读数（``centered_n``）；原始读数仅作诊断上报。
+
+    ``active_axes`` 决定读数口径：
+
+    * **单轴**（如 ``("N",)``）：外显率 = ``P(观测 N 档 == 期望 N 档 | 基因型类)``；
+      逐类分箱 ``observed_bins = {"N": {"high": k, "low": m}}``。
+      ``observed_2x2`` 与 ``observed_architecture_counts`` 置 ``None`` —— 两轴观测档
+      在 H 退役后是无意义的分区（4 格只是 N 边缘量的噪声切分），不得充当读数。
+    * **两轴**（``("N", "H")``，历史口径，逐位不变）：4 类架构标签一致 + 4 格观测分箱。
+    """
+    axes = _parse_active_axes(active_axes)
+    two_axis = "H" in axes
+    if two_axis and theta_H_obs is None:
+        raise ValueError("两轴读数需要 theta_H_obs（active_axes 含 'H'）")
+    values = centered_n(rows, baselines)
+    by_class: dict[str, list[tuple[PenetranceRow, float]]] = {label: [] for label in CLASS_ORDER}
+    for row, value in zip(rows, values, strict=True):
+        by_class[row.expected_class].append((row, value))
     per_class: dict[str, Any] = {}
-    totals = _empty_confusion()
+    totals = _empty_confusion() if two_axis else None
     for label in CLASS_ORDER:
-        subset = [r for r in rows if r.expected_class == label]
+        subset = by_class[label]
         n = len(subset)
-        confusion = _empty_confusion()
+        confusion = _empty_confusion() if two_axis else None
+        bins = {a: {k: 0 for k in _AXIS_BIN_KEYS} for a in axes}
         hits = 0
-        for row in subset:
-            arch = observed_architecture(_readout_n(row), row.cv_tau, theta_N_obs, theta_H_obs)
-            confusion[_confusion_key(arch)] += 1
-            totals[_confusion_key(arch)] += 1
-            hits += int(arch.class_label == label)
+        for row, value_n in subset:
+            if two_axis:
+                arch = observed_architecture(value_n, row.cv_tau, theta_N_obs, float(theta_H_obs))
+                confusion[_confusion_key(arch)] += 1
+                totals[_confusion_key(arch)] += 1
+                hits += int(arch.class_label == label)
+            else:
+                hits += int((value_n > theta_N_obs) == (label in EXPECTED_HIGH_N))
+            if "N" in bins:
+                bins["N"]["high" if value_n > theta_N_obs else "low"] += 1
+            if "H" in bins:
+                bins["H"]["high" if row.cv_tau > float(theta_H_obs) else "low"] += 1
         interval = wilson_interval(hits, n)
         per_class[label] = {
             "n": n,
@@ -403,9 +471,14 @@ def penetrance_stats(
             "penetrance": (hits / n) if n else None,
             "wilson_low": None if interval is None else interval[0],
             "wilson_high": None if interval is None else interval[1],
+            "observed_bins": bins,
             "observed_2x2": confusion,
         }
-    return {"per_class": per_class, "observed_architecture_counts": totals}
+    return {
+        "readout": "two_axis" if two_axis else "N",
+        "per_class": per_class,
+        "observed_architecture_counts": totals,
+    }
 
 
 def _axis_summary(values: Sequence[float]) -> dict[str, Any]:
@@ -420,14 +493,18 @@ def _axis_summary(values: Sequence[float]) -> dict[str, Any]:
     }
 
 
-def continuous_summary(rows: Sequence[PenetranceRow]) -> dict[str, Any]:
+def continuous_summary(
+    rows: Sequence[PenetranceRow], *, baselines: Mapping[int, float] | None = None
+) -> dict[str, Any]:
     """连续 ``N`` 与 ``CV_τ`` 的逐类分布（delta-B §2.4 #3：pen 是派生摘要，须与分布并列）。"""
+    values = centered_n(rows, baselines)
     out: dict[str, Any] = {}
     for label in CLASS_ORDER:
-        subset = [r for r in rows if r.expected_class == label]
+        pairs = [(r, v) for r, v in zip(rows, values, strict=True) if r.expected_class == label]
         out[label] = {
-            "n_neurons": _axis_summary([_readout_n(r) for r in subset]),
-            "cv_tau": _axis_summary([r.cv_tau for r in subset]),
+            "n_neurons": _axis_summary([_readout_n(r) for r, _ in pairs]),
+            "n_neurons_centered": _axis_summary([v for _, v in pairs]),
+            "cv_tau": _axis_summary([r.cv_tau for r, _ in pairs]),
         }
     return out
 
@@ -619,6 +696,7 @@ def rows_of(
                 expected_class=expected,
                 e_a=e_a,
                 e_b=e_b,
+                master_seed=master_seed,
                 n_neurons=int(phenotype.active_mask.sum().item()),
                 cv_tau=cv_tau(phenotype.tau, phenotype.active_mask),
                 viable=bool(phenotype.viable),
@@ -826,7 +904,10 @@ def run_calibration(
 
 
 def _separation_of_rows(
-    rows: Sequence[PenetranceRow], *, auc_floor: float | None = None
+    rows: Sequence[PenetranceRow],
+    *,
+    auc_floor: float | None = None,
+    baselines: Mapping[int, float] | None = None,
 ) -> dict[str, Any]:
     """两观测轴对期望档的分离度诊断（用于报告 payload）。
 
@@ -835,7 +916,7 @@ def _separation_of_rows(
     """
     return {
         "N": axis_separation(
-            [_readout_n(r) for r in rows],
+            centered_n(rows, baselines),
             [r.expected_class in EXPECTED_HIGH_N for r in rows],
             auc_floor=auc_floor,
         ),
@@ -861,10 +942,14 @@ def run_report(
     """
     theta_N_obs = penetrance_config.theta_N_obs
     theta_H_obs = penetrance_config.theta_H_obs
-    if theta_N_obs is None or theta_H_obs is None:
+    # 只要求**生效轴**的 θ^obs：H 退役后它不再是报告读数的输入（cv_tau 仍进 continuous）。
+    _thresholds: dict[str, float | None] = {"N": theta_N_obs, "H": theta_H_obs}
+    _missing = [a for a in penetrance_config.active_axes if _thresholds[a] is None]
+    if _missing:
         raise ValueError(
-            "报告模式要求 configs/penetrance.yaml 给出 theta_N_obs/theta_H_obs"
-            "（先跑校准）；观测轴不可分离时可显式设 threshold_status=placeholder 出演示表"
+            f"报告模式要求生效轴 {_missing} 的 θ^obs 非空"
+            "（configs/penetrance.yaml，先跑校准）；"
+            "不可分离时可显式设 threshold_status=placeholder 出演示表"
         )
     if penetrance_config.threshold_status not in {"confirmed", "placeholder"}:
         raise ValueError(
@@ -907,7 +992,12 @@ def run_report(
             device=device,
             realisations_k=penetrance_config.realisations_k,
         )
-        stats = penetrance_stats(rows, theta_N_obs, theta_H_obs)
+        stats = penetrance_stats(
+            rows,
+            theta_N_obs,
+            theta_H_obs,
+            active_axes=penetrance_config.active_axes,
+        )
         per_seed[str(seed)] = stats
         per_seed_stats.append(stats)
         all_rows.extend(rows)
@@ -932,7 +1022,13 @@ def run_report(
                     device=device,
                 )
             )
-    pooled_stats = penetrance_stats(all_rows, theta_N_obs, theta_H_obs)
+    baselines = seed_baselines(all_rows)
+    pooled_stats = penetrance_stats(
+        all_rows,
+        theta_N_obs,
+        theta_H_obs,
+        active_axes=penetrance_config.active_axes,
+    )
     payload: dict[str, Any] = {
         "kind": "penetrance_report",
         "experiment_id": experiment_id,
@@ -954,15 +1050,25 @@ def run_report(
             "per_seed": per_seed,
             "pooled": pooled_stats,
             "cross_seed": _aggregate_per_class(per_seed_stats),
-            "continuous": continuous_summary(all_rows),
+            "continuous": continuous_summary(all_rows, baselines=baselines),
             "separation": _separation_of_rows(
-                all_rows, auc_floor=penetrance_config.separation_auc_floor
+                all_rows,
+                auc_floor=penetrance_config.separation_auc_floor,
+                baselines=baselines,
             ),
             "demo_9331": {
                 "offspring_per_seed": penetrance_config.report_demo_offspring,
                 "pooled_expected_counts": _genotype_counts(demo_rows),
-                "observed_counts": _genotype_counts(
-                    demo_rows, observed=True, theta=(theta_N_obs, theta_H_obs)
+                # 4 类基因型须由**两轴**观测反推；单轴读数下不可识别 ⇒ 置 None（诚实 N/A）。
+                "observed_counts": (
+                    None
+                    if "H" not in penetrance_config.active_axes
+                    else _genotype_counts(
+                        demo_rows,
+                        observed=True,
+                        theta=(theta_N_obs, float(theta_H_obs)),
+                        baselines=baselines,
+                    )
                 ),
             },
         },
@@ -978,12 +1084,14 @@ def _genotype_counts(
     *,
     observed: bool = False,
     theta: tuple[float, float] | None = None,
+    baselines: Mapping[int, float] | None = None,
 ) -> dict[str, int]:
     counts = {label: 0 for label in CLASS_ORDER}
-    for row in rows:
+    values = centered_n(rows, baselines)
+    for row, value_n in zip(rows, values, strict=True):
         if observed:
             assert theta is not None
-            arch = observed_architecture(_readout_n(row), row.cv_tau, theta[0], theta[1])
+            arch = observed_architecture(value_n, row.cv_tau, theta[0], theta[1])
             label = arch.class_label
         else:
             label = row.expected_class

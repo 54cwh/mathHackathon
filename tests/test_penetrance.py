@@ -207,8 +207,10 @@ def test_calibration_payload_is_deterministic_and_reports_separation():
     cal = first["calibration"]
     assert cal["n_rows"] == len(P.CLASS_ORDER) * PER_CLASS
     assert first["sampled_per_class"] == {label: PER_CLASS for label in P.CLASS_ORDER}
+    # N 轴 θ 自 2026-09-27 起是**逐 seed 居中**刻度 ⇒ 可正可负；H 轴未居中仍须 > 0。
     for key in ("theta_N_obs_min_misclass", "theta_N_obs_median_midpoint"):
-        assert cal[key] > 0
+        assert abs(cal[key]) < 1e3
+    assert cal["theta_H_obs_min_misclass"] > 0
     for axis in ("separation_N", "separation_H"):
         assert set(cal[axis]) >= {
             "separable",
@@ -240,17 +242,20 @@ def test_report_payload_matches_schema():
     # 分层平衡：每类每 seed 恰 PER_CLASS，跨 2 seed
     assert sum(report["sampled_per_class"].values()) == len(P.CLASS_ORDER) * PER_CLASS * 2
     pooled = report["pooled"]
-    assert (
-        sum(pooled["observed_architecture_counts"].values()) == len(P.CLASS_ORDER) * PER_CLASS * 2
-    )
+    # 出货配置是**单轴**（H 已退役）⇒ 两轴的 4 格观测分箱与 4 类反推必须**缺席**
+    assert pooled["readout"] == "N"
+    assert pooled["observed_architecture_counts"] is None
     for label in P.CLASS_ORDER:
         stat = pooled["per_class"][label]
         assert stat["n"] == PER_CLASS * 2
         assert 0.0 <= stat["wilson_low"] <= stat["penetrance"] <= stat["wilson_high"] <= 1.0
-    # 未分层演示样本仅用于计数（与 pen 估计分开）
+        assert stat["observed_2x2"] is None
+        assert list(stat["observed_bins"]) == ["N"]  # 只有生效轴
+        assert sum(stat["observed_bins"]["N"].values()) == PER_CLASS * 2
+    # 未分层演示样本仅用于计数（与 pen 估计分开）；4 类反推需两轴 ⇒ 单轴下为 None
     demo = report["demo_9331"]
     assert sum(demo["pooled_expected_counts"].values()) == 32 * 2
-    assert sum(demo["observed_counts"].values()) == 32 * 2
+    assert demo["observed_counts"] is None
 
 
 # ---------------------------------------------------------------------------
@@ -278,8 +283,8 @@ def test_auc_floor_filters_a_significant_but_small_effect():
     values = [float(v) for v in range(1, 17)] + [float(v) for v in range(9, 25)]
     labels = [False] * 16 + [True] * 16
     bare = P.axis_separation(values, labels)
-    assert bare["separable"] is True           # 前两条仍过
-    assert 0.5 < bare["auc"] < 1.0             # 但效应远非完美
+    assert bare["separable"] is True  # 前两条仍过
+    assert 0.5 < bare["auc"] < 1.0  # 但效应远非完美
     auc = bare["auc"]
     assert P.axis_separation(values, labels, auc_floor=auc + 1e-6)["separable"] is False
     assert P.axis_separation(values, labels, auc_floor=auc)["separable"] is True
@@ -293,7 +298,7 @@ def test_auc_floor_filters_a_significant_but_small_effect():
 
 
 def test_active_axes_default_is_single_axis_n():
-    assert P.SEPARATION_AXES == ("N", "H")     # 两轴仍可声明
+    assert P.SEPARATION_AXES == ("N", "H")  # 两轴仍可声明
     assert P._parse_active_axes(None) == ("N",)
     assert P._parse_active_axes(["N", "H"]) == ("N", "H")
 
@@ -314,6 +319,7 @@ def _rows_n_separable_h_not() -> list[P.PenetranceRow]:
                     genome_id=f"g{i:02d}{k}",
                     fish_id=f"f{i:02d}{k}",
                     expected_class=label,
+                    master_seed=1103,
                     e_a=1.0 if label in P.EXPECTED_HIGH_N else 0.0,
                     e_b=1.0 if label in P.EXPECTED_HIGH_H else 0.0,
                     n_neurons=(40 if label in P.EXPECTED_HIGH_N else 20) + k,
@@ -333,13 +339,13 @@ def test_confirmable_ignores_retired_axis():
     rows = _rows_n_separable_h_not()
     only_n = P.calibrate(rows, active_axes=("N",))
     assert only_n.separation_N["separable"] is True
-    assert only_n.separation_H["separable"] is False     # H 仍被测量上报
-    assert only_n.confirmable is True                    # 但不阻塞
+    assert only_n.separation_H["separable"] is False  # H 仍被测量上报
+    assert only_n.confirmable is True  # 但不阻塞
     assert only_n.to_dict()["active_axes"] == ["N"]
     assert only_n.to_dict()["confirmable"] is True
 
     both = P.calibrate(rows, active_axes=("N", "H"))
-    assert both.confirmable is False                     # 旧行为可复现
+    assert both.confirmable is False  # 旧行为可复现
 
 
 def test_config_parses_active_axes_and_floor():
@@ -351,8 +357,8 @@ def test_config_parses_active_axes_and_floor():
         "report": {"master_seeds": [1103], "per_class": 4, "demo_offspring": 8},
     }
     default = P.PenetranceConfig.from_dict(base)
-    assert default.active_axes == ("N",)                 # 缺省即单轴 N
-    assert default.separation_auc_floor is None           # floor 缺省不启用
+    assert default.active_axes == ("N",)  # 缺省即单轴 N
+    assert default.separation_auc_floor is None  # floor 缺省不启用
 
     explicit = P.PenetranceConfig.from_dict(
         {**base, "active_axes": ["N", "H"], "separation_auc_floor": 0.7}
@@ -365,3 +371,130 @@ def test_shipped_penetrance_config_declares_single_axis_n():
     cfg = P.load_penetrance_config()
     assert cfg.active_axes == ("N",)
     assert cfg.separation_auc_floor is None
+
+
+def test_report_two_axis_mode_is_unchanged():
+    """显式声明两轴时报告回到历史口径（4 格观测分箱 + 4 类反推）。
+
+    这条保证「单轴化」是**参数化**：判据没有被改松，只是默认为单轴。
+    """
+    cfg = dataclasses.replace(_small_config(), active_axes=("N", "H"))
+    cal = P.run_calibration("pen-test", penetrance_config=cfg)["calibration"]
+    frozen = dataclasses.replace(
+        cfg,
+        theta_N_obs=cal["theta_N_obs_min_misclass"],
+        theta_H_obs=cal["theta_H_obs_min_misclass"],
+        threshold_status="placeholder",
+    )
+    payload = P.run_report("pen-test", penetrance_config=frozen)
+    schema = json.loads((ROOT / "schemas" / "penetrance.schema.json").read_text("utf-8"))
+    jsonschema.validate(payload, schema)
+
+    pooled = payload["report"]["pooled"]
+    total = len(P.CLASS_ORDER) * PER_CLASS * 2
+    assert pooled["readout"] == "two_axis"
+    assert sum(pooled["observed_architecture_counts"].values()) == total
+    for label in P.CLASS_ORDER:
+        stat = pooled["per_class"][label]
+        assert sum(stat["observed_2x2"].values()) == PER_CLASS * 2
+        assert sorted(stat["observed_bins"]) == ["H", "N"]
+    assert sum(payload["report"]["demo_9331"]["observed_counts"].values()) == 32 * 2
+    assert payload["report"]["continuous"]["A_B_"]["cv_tau"]["n"] == PER_CLASS * 2
+
+
+def test_report_single_axis_needs_no_theta_H_obs():
+    """H 退役后不再需要「展示用 θ_H^obs」—— 只要求**生效轴**的阈值；两轴模式仍要求两者。"""
+    cal = P.run_calibration("pen-test", penetrance_config=_small_config())["calibration"]
+    single = dataclasses.replace(
+        _small_config(),
+        theta_N_obs=cal["theta_N_obs_min_misclass"],
+        theta_H_obs=None,  # H 退役 ⇒ 不签
+        threshold_status="placeholder",
+    )
+    payload = P.run_report("pen-test", penetrance_config=single)
+    assert payload["observation_thresholds"]["theta_H_obs"] is None
+    assert payload["report"]["pooled"]["readout"] == "N"
+    # cv_tau 仍照常进连续摘要（退役 ≠ 不测量）
+    assert payload["report"]["continuous"]["aabb"]["cv_tau"]["n"] == PER_CLASS * 2
+
+    two = dataclasses.replace(single, active_axes=("N", "H"))
+    with pytest.raises(ValueError, match="生效轴"):
+        P.run_report("pen-test", penetrance_config=two)
+
+
+def test_penetrance_stats_single_axis_counts_n_agreement():
+    """单轴读数的定义：``hits`` = 观测 N 档与**期望 N 档**一致的个体数。"""
+    rows = _rows_n_separable_h_not()  # N 完全分离、H 恒值
+    # θ 是居中刻度：本样本 16 行的池化中位 31.5 ⇒ 高类 +8.5..+11.5、低类 -11.5..-8.5
+    stats = P.penetrance_stats(rows, theta_N_obs=0.0, theta_H_obs=None, active_axes=("N",))
+    assert stats["readout"] == "N"
+    assert stats["observed_architecture_counts"] is None
+    for label in P.CLASS_ORDER:
+        stat = stats["per_class"][label]
+        assert stat["n"] == 4
+        assert stat["hits"] == 4 and stat["penetrance"] == 1.0  # N 档与期望档逐个体一致
+        assert stat["observed_2x2"] is None
+        expected_high = label in P.EXPECTED_HIGH_N
+        assert stat["observed_bins"]["N"]["high" if expected_high else "low"] == 4
+
+
+def _row(seed: int, label: str, n_neurons: int, uid: str) -> P.PenetranceRow:
+    """玩具行：N 轴读数 + master_seed（其余字段与本组断言无关）。"""
+    return P.PenetranceRow(
+        genome_id=f"g{uid}",
+        fish_id=f"f{uid}",
+        expected_class=label,
+        master_seed=seed,
+        e_a=0.0,
+        e_b=0.0,
+        n_neurons=n_neurons,
+        cv_tau=0.01,
+        viable=True,
+    )
+
+
+def test_seed_offset_is_removed_by_centering():
+    """seed 级基线漂移必须被居中消掉 —— 2026-09-27 实测现场的最小复现。
+
+    四个 seed 依次错开（远大于类间效应）：不居中时池化 AUC≈0.59（seed 级偏移把组间
+    差异抵消掉一半）、门禁判**不可分离**；居中后 AUC≈0.83、p<0.05 ⇒ 可分离。
+    （每 seed 类数相等 ⇒ 组内/跨 seed 对数各半，原始 AUC 的下限即约 0.6。）
+    真实 3 seed 实测同向（0.626 → 0.870）。
+    """
+    rows: list[P.PenetranceRow] = []
+    for seed, offset in ((1103, 0), (2207, 15), (3301, 30), (4409, 45)):
+        for label in P.CLASS_ORDER:
+            for k in range(6):
+                base = 3 if label in P.EXPECTED_HIGH_N else 0
+                rows.append(_row(seed, label, offset + base + k, f"{seed}-{label}-{k}"))
+    labels = [r.expected_class in P.EXPECTED_HIGH_N for r in rows]
+    raw = P.axis_separation([float(r.n_neurons) for r in rows], labels)
+    centered = P.axis_separation(P.centered_n(rows), labels)
+    assert raw["auc"] < 0.65 and raw["separable"] is False
+    assert centered["auc"] > 0.8 and centered["separable"] is True
+    baselines = P.seed_baselines(rows)
+    assert baselines[4409] - baselines[1103] > 14  # 漂移是真的，不是舍入
+
+
+def test_seed_baseline_is_reusable_across_samples():
+    """未分层样本必须复用**分层集**的基线：自身中位会被多数类拉偏。
+
+    9:3:3:1 演示集不分层；若按自身中位居中，多数类会把基线抬到自己身上、人为压平读数。
+    故 ``run_report`` 把分层集估计的基线下传给演示集（``_genotype_counts(baselines=...)``）。
+    """
+    balanced = [
+        _row(1103, "A_B_", 1, "b1"),
+        _row(1103, "A_bb", 1, "b2"),
+        _row(1103, "aaB_", -1, "b3"),
+        _row(1103, "aabb", -1, "b4"),
+    ]
+    baselines = P.seed_baselines(balanced)
+    assert baselines[1103] == 0.0  # 分层 ⇒ 中位与基因型无关
+
+    skewed = [_row(1103, "A_B_", 1, f"s{i}") for i in range(18)]
+    skewed += [_row(1103, "aabb", -1, f"t{i}") for i in range(2)]
+
+    own = P.centered_n(skewed)
+    reused = P.centered_n(skewed, baselines)
+    assert max(own) == 0.0 and min(own) == -2.0  # 自身中位 = +1 ⇒ 多数类被压成 0
+    assert max(reused) == 1.0 and min(reused) == -1.0  # 分层基线 = 0 ⇒ 保留真实偏移
