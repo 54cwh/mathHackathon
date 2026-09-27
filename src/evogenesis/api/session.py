@@ -386,8 +386,14 @@ class Session:
             }
             for pid, p in self.arena.prey.items()
         }
+        # heading 供前端做八向选图：捕食者在 arena 里本来就会转向（`predator_turn_rate`）。
         pred_out = {
-            did: {"x": float(d.pos[0]), "y": float(d.pos[1]), "size": float(d.size)}
+            did: {
+                "x": float(d.pos[0]),
+                "y": float(d.pos[1]),
+                "size": float(d.size),
+                "heading": float(d.heading),
+            }
             for did, d in self.arena.predators.items()
         }
         obst_out = [

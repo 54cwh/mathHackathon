@@ -191,7 +191,7 @@ class Snapshot(BaseModel):
     step: int
     fish: dict[str, dict[str, Any]]  # transforms + energy
     prey: dict[str, dict[str, Any]]  # pos + size + alive
-    predators: dict[str, dict[str, Any]]  # pos + size
+    predators: dict[str, dict[str, Any]]  # pos + size + heading
     obstacles: list[dict[str, Any]]  # pos + radius
     events: list[dict[str, Any]]
 

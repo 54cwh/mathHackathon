@@ -169,7 +169,8 @@ def test_create_session_and_snapshot_full_field_set() -> None:
         next(iter(snap["fish"].values()))
     )
     assert {"x", "y", "size", "alive"} <= set(next(iter(snap["prey"].values())))
-    assert {"x", "y", "size"} <= set(next(iter(snap["predators"].values())))
+    # heading：前端据此选八向 sprite（`dirOf`）；缺了会静默退回固定朝向 s。
+    assert {"x", "y", "size", "heading"} <= set(next(iter(snap["predators"].values())))
     assert {"x", "y", "radius"} <= set(snap["obstacles"][0])
     assert snap["events"]  # 初始 39 条 arena.spawn
 
