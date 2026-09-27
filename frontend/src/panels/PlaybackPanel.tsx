@@ -24,7 +24,7 @@ import { getHealth } from "@/api/health";
  * 若会话处于暂停（底栏 Pause），后端 `advance` 短路 —— 本面板会给出提示而非默默不动。
  */
 
-const TICK_MS = 100; // 与 Arena 一致：10 Hz 驱动，20 Hz 仿真按 1 步/次推进
+const TICK_MS = 100; // 驱动间隔；**步速**与 Arena 共用 `store.simSpeed`（默认 20× ⇒ 20 步/tick = 200 步/s）
 const CARD_EVERY = 10; // 每 10 tick ≈ 1s 刷新一次鱼卡
 /** 巡航速度：不按上下键时的默认 `v`（避免"一松手就停"，也不必长按）。 */
 const CRUISE_SPEED = 0.5;
@@ -44,6 +44,8 @@ export function PlaybackPanel() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sessionId = useUiStore((s) => s.sessionId);
   const running = useUiStore((s) => s.running);
+  /** 步速与 Arena 共用（`通用层接口.md` §7）：默认 20×。 */
+  const simSpeed = useUiStore((s) => s.simSpeed);
   const activeView = useUiStore((s) => s.activeView);
   const stats = useUiStore((s) => s.stats);
   const [scene, setScene] = useState<ArenaScene | null>(null);
@@ -106,7 +108,7 @@ export function PlaybackPanel() {
         const target = controlledRef.current;
         const summary = await release(
           sessionId,
-          1,
+          Math.max(1, Math.round(simSpeed)), // 步速 ≥1：每 tick 多走几步；<1：靠拉长间隔
           true,
           target ? { fishId: target, omega, speed } : undefined,
         );
@@ -129,16 +131,18 @@ export function PlaybackPanel() {
         setError(String(e));
         return;
       }
-      if (!stop) timer = window.setTimeout(tick, TICK_MS);
+      if (!stop) {
+        timer = window.setTimeout(tick, simSpeed < 1 ? Math.round(TICK_MS / simSpeed) : TICK_MS);
+      }
     };
 
     tickRef.current = 0;
-    timer = window.setTimeout(tick, TICK_MS);
+    timer = window.setTimeout(tick, simSpeed < 1 ? Math.round(TICK_MS / simSpeed) : TICK_MS);
     return () => {
       stop = true;
       window.clearTimeout(timer);
     };
-  }, [active, running, sessionId]);
+  }, [active, running, sessionId, simSpeed]);
 
   // 绘制：被控鱼高亮（复用 Arena 的选中样式）
   useEffect(() => {
