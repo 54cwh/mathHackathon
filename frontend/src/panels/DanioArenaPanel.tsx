@@ -7,6 +7,7 @@ import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
 import { stepSessionEvolution } from "@/api/selections";
+import { createGenome, develop } from "@/api/lab";
 import type { SessionEvolutionStep } from "@/api/types";
 
 import {
@@ -39,6 +40,11 @@ import {
 const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
 /** 排行榜刷新节奏（每 20 tick ≈ 2s）。 */
 const LEADERBOARD_EVERY = 20;
+
+/** 演示：活鱼少于该值时自动补一条（新基因组 → 发育 → 入 Arena）。 */
+const REPLENISH_BELOW = 2;
+/** 补鱼冷却：避免连续补（每次都要发育 + 建网）。 */
+const REPLENISH_COOLDOWN_MS = 6000;
 /** 场景层（猎物/捕食者/障碍）刷新节奏：每 5 tick ≈ 0.5s。 */
 const SCENE_EVERY = 5;
 /** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
@@ -61,6 +67,8 @@ export function DanioArenaPanel() {
   const selectedFishId = useUiStore((s) => s.selectedFishId);
   const setSelectedFish = useUiStore((s) => s.setSelectedFish);
   const setStats = useUiStore((s) => s.setStats);
+  /** 全局统计（`setStats` 写入；补鱼逻辑据此判断活鱼数）。 */
+  const stats = useUiStore((s) => s.stats);
   const [scene, setScene] = useState<ArenaScene | null>(null);
   const [card, setCard] = useState<FishCard | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
@@ -225,6 +233,34 @@ export function DanioArenaPanel() {
       .then((individual) => addIndividual(individual))
       .catch((e) => setError(String(e)));
   }, [intent, sessionId, activeGenomeId, individuals, addIndividual]);
+
+  // 演示：场上活鱼过少时自动补一条 —— 新基因组 → 发育（只收 viable）→ `POST /individuals`
+  // 入 Arena（于是新鱼同样有 DNA 与自己的脑）。带冷却与并发保护，不刷屏。
+  const replenishingRef = useRef(false);
+  const lastReplenishRef = useRef(0);
+  useEffect(() => {
+    if (!sessionId || !stats) return;
+    if (stats.fishAlive >= REPLENISH_BELOW) return;
+    if (replenishingRef.current) return;
+    if (Date.now() - lastReplenishRef.current < REPLENISH_COOLDOWN_MS) return;
+    replenishingRef.current = true;
+    lastReplenishRef.current = Date.now();
+    void (async () => {
+      try {
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const fresh = await createGenome();
+          const dev = await develop({ genome_id: fresh.genome_id, seed: 0 });
+          if (!dev.phenotype.viable) continue; // 非 viable 换一个基因组
+          addIndividual(await spawnIndividual(sessionId, fresh.genome_id));
+          break;
+        }
+      } catch (e) {
+        setError(String(e));
+      } finally {
+        replenishingRef.current = false;
+      }
+    })();
+  }, [stats, sessionId, addIndividual]);
 
   // ---- 会话内逐代演化（`API接口.md` §2.3）：EVOLVE 段的「下一代」----------------
   //  同步长请求（约 2s）→ 用 `evolutionBusy` 给出"进行中"反馈，避免假死。

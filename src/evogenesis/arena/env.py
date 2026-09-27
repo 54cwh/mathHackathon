@@ -152,15 +152,22 @@ class DanioArena:
             )
             for i in range(self.cfg.population.n_prey)
         }
-        self.predators = {
-            f"predator_{i:02d}": Predator(
-                f"predator_{i:02d}",
-                self._free_spot(3.0),
+        # 捕食者：彼此至少相距一个**检测半径**（`env §2.2`）——否则三条会挤在一起、
+        # 检测圈互相重叠，画面与实际捕食行为都看不出"三只分别在不同位置巡逻"。
+        self.predators = {}
+        for i in range(self.cfg.population.n_predators):
+            pid = f"predator_{i:02d}"
+            pos = self._free_spot(
+                3.0,
+                avoid=[p.pos for p in self.predators.values()],
+                min_dist=self.cfg.actors.predator_detection_radius,
+            )
+            self.predators[pid] = Predator(
+                pid,
+                pos,
                 float(self._spawn_rng.uniform(0, 2 * np.pi)),
                 size=self.cfg.actors.predator_size,
             )
-            for i in range(self.cfg.population.n_predators)
-        }
         for eid in (*self.fish, *self.prey, *self.predators):
             self._emit("arena.spawn", {"entity_id": eid})
 
@@ -215,14 +222,29 @@ class DanioArena:
             pos = self._free_spot(r + 1.0)
             self.obstacles.append(Obstacle(f"obstacle_{i:02d}", pos, r))
 
-    def _free_spot(self, clearance: float) -> np.ndarray:
-        """Rejection-sample a position inside the world, outside obstacles."""
+    def _free_spot(
+        self,
+        clearance: float,
+        *,
+        avoid: Sequence[np.ndarray] = (),
+        min_dist: float = 0.0,
+    ) -> np.ndarray:
+        """Rejection-sample a position inside the world, outside obstacles.
+
+        `min_dist > 0` 时还要求与 `avoid` 中任意点距离 ≥ `min_dist`（`env §2.2 初始布局`）。
+        默认不启用该约束（保持既有对象的布局不变）。
+        """
         w = self.cfg.world.width
         h = self.cfg.world.height
         for _ in range(200):
             pos = np.array([self._spawn_rng.uniform(0, w), self._spawn_rng.uniform(0, h)])
-            if not any(o.contains(pos, clearance) for o in self.obstacles):
-                return pos
+            if any(o.contains(pos, clearance) for o in self.obstacles):
+                continue
+            if min_dist > 0.0 and any(
+                float(np.linalg.norm(pos - np.asarray(other))) < min_dist for other in avoid
+            ):
+                continue
+            return pos
         return np.array([w / 2, h / 2])
 
     def _emit(self, etype: str, payload: dict) -> Event:
