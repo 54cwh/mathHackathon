@@ -41,6 +41,8 @@ export interface SessionOptions {
   arenaConfigPath?: string;
   /** 初始种群代数；缺省用 Arena 配置的 `population.n_fish`。 */
   populationSize?: number;
+  /** 演示用：其中多少条走 ExpertPolicy（规则鱼，无基因组）。缺省 0 = 全基因组化。 */
+  expertFish?: number;
 }
 
 export function createSession(
@@ -52,6 +54,7 @@ export function createSession(
     master_seed: masterSeed,
     environment,
     population_size: options.populationSize ?? null,
+    expert_fish: options.expertFish ?? null,
   };
   if (options.arenaConfigPath) body.arena_config_path = options.arenaConfigPath;
   return req<SessionSummary>("/v1/sessions", { method: "POST", body: JSON.stringify(body) });

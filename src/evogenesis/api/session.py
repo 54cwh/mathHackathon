@@ -93,6 +93,8 @@ class Session:
         self.model_driven = bool(create.model_driven)
         self.net = None
         self._activation: dict[str, list[float]] = {}
+        #: 演示用专家鱼（无基因、无网）：`expert_fish` 指定；空 = 全基因组化。
+        self._expert_ids: tuple[str, ...] = ()
         # 逐鱼登记（`core §3.1`）：默认会话 = 初始基因组种群（下方 `else` 分支填充）；
         # model_driven 会话为空，后续经 `POST /individuals`（§1.11）追加。
         # 每条鱼的网优先于 `self.net`（model_driven 的全局网）。
@@ -136,11 +138,12 @@ class Session:
                 genome_ids=keep_genomes,
             )
         else:
-            # 默认会话（`API接口.md` §1.1，2026-09-27 定稿）：整种群基因组化。
-            # 每个 genome 经 `initial_population` 生成 → 发育 → 只保留 viable → 各建自己的
-            # DanioNet。发育口径与 Lab 的 DEVELOP / §1.11 追加个体**一致**：
-            # `seed=0` + `index=stable_index(genome_id)` + 参考 motif 目录（`lab.motifs`），
-            # 故 Arena 里这条鱼的行为 = 点开它在 Lab/Forge 看到的那次发育。
+            # 默认会话（`API接口.md` §1.1）：**混合种群** —— 前 `expert_fish` 条走
+            # `ExpertPolicy`（规则策略：追猎物/避威胁/避障，**无基因组、无自己的网**，鱼卡
+            # `genome_id="unknown"`）；其余为基因组个体（`initial_population` → 发育 → 只保留
+            # viable → 各建自己的 DanioNet）。发育口径与 Lab 的 DEVELOP / §1.11 追加个体**一致**
+            # （`seed=0` + `index=stable_index(genome_id)` + 参考 motif 目录），故基因组鱼的行为
+            # = 点开它在 Lab/Forge 看到的那次发育。
             chain = self.chain
             n = (
                 create.population_size
@@ -149,25 +152,32 @@ class Session:
             )
             if n < 1:
                 raise ValueError("population_size 必须 ≥ 1")
+            n_expert = 0 if create.expert_fish is None else create.expert_fish
+            if not 0 <= n_expert <= n:
+                raise ValueError(f"expert_fish 须在 [0, {n}]，实际 {n_expert}")
             population = initial_population(
                 master_seed=create.master_seed,
                 experiment_id=session_id,
-                n=n,
+                n=n - n_expert,
                 layout=chain.layout,
             )
             phenotypes = phenotypes_of(population, lab.motifs(chain.layout), master_seed=0)
             keep = [i for i, p in enumerate(phenotypes) if p.viable]
-            if not keep:
+            if n - n_expert > 0 and not keep:
                 raise ValueError("默认会话：该 seed 无 viable 个体（RGCD §7）")
-            cfg = replace(cfg, population=replace(cfg.population, n_fish=len(keep)))
-            # 鱼 ID 用 `genome_id`（不是 `initial_population` 另铸的 `fish_id`）：保持
+            # 专家鱼：无基因（`genome_id="unknown"`）、不登记 net ⇒ `advance` 用 ExpertPolicy 兜底。
+            self._expert_ids = tuple(f"expert_{i:02d}" for i in range(n_expert))
+            fish_ids = list(self._expert_ids) + [population[i].genome_id for i in keep]
+            genome_ids = ["unknown"] * n_expert + [population[i].genome_id for i in keep]
+            cfg = replace(cfg, population=replace(cfg.population, n_fish=len(fish_ids)))
+            # 基因组鱼的 ID 用 `genome_id`（不是 `initial_population` 另铸的 `fish_id`）：保持
             # §1.11 的不变量 `fish_id == genome_id`，否则同一 genome 会被重复追加。
             self.arena = DanioArena(
                 cfg,
                 spawn_seed=spawn_seed,
                 dynamics_seed=dynamics_seed,
-                fish_ids=[population[i].genome_id for i in keep],
-                genome_ids=[population[i].genome_id for i in keep],
+                fish_ids=fish_ids,
+                genome_ids=genome_ids,
             )
             for i in keep:
                 # 登记进 Lab store：`GET /v1/genomes/{id}` 能查到，点 Arena 的鱼即可回看 DNA。
@@ -495,10 +505,11 @@ class Session:
         keep = [(ind, ph) for ind, ph in zip(population, phenotypes, strict=True) if ph.viable]
         if not keep:
             return  # 团灭：保留旧 Arena，让 bottleneck 一代可见
-        ids = [ind.genome_id for ind, _ in keep]
+        # 专家鱼不参与演化，但每代重建 Arena 时保留（演示画面才有"会捕食的规则鱼"）。
+        ids = list(self._expert_ids) + [ind.genome_id for ind, _ in keep]
         cfg = replace(
             self._arena_config,
-            population=replace(self._arena_config.population, n_fish=len(keep)),
+            population=replace(self._arena_config.population, n_fish=len(ids)),
         )
         spawn_seed, dynamics_seed = arena_seeds_for(self.master_seed, _SESSION_ARENA_INDEX)
         self.arena = DanioArena(
@@ -506,7 +517,7 @@ class Session:
             spawn_seed=spawn_seed,
             dynamics_seed=dynamics_seed,
             fish_ids=ids,
-            genome_ids=ids,
+            genome_ids=["unknown"] * len(self._expert_ids) + ids[len(self._expert_ids) :],
         )
         self.arena.reset()  # `__init__` 不建鱼；reset 才按 `fish_ids` 布置本代种群
         self.individuals = {}

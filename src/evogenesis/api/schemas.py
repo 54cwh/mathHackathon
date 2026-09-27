@@ -36,6 +36,10 @@ class SessionCreate(BaseModel):
     #: 初始基因组种群大小（`API接口.md` §1.1）。缺省用 Arena 配置的 `population.n_fish`；
     #: 实际鱼数为其中 viable 的个数（全 non-viable 则 `422`）。演示用小种群（如 16）。
     population_size: int | None = None
+    #: **演示用**：其中多少条走 `ExpertPolicy`（规则策略，**无基因组、无自己的网**），
+    #: 其余为基因组个体（有 DNA + 自己的 DanioNet）。缺省 0 = 全基因组化；
+    #: 须满足 `0 <= expert_fish <= population_size`。
+    expert_fish: int | None = None
 
 
 class SessionSummary(BaseModel):

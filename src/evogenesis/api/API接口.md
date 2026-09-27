@@ -37,7 +37,12 @@
 
 - **请求体**：可选（`SessionCreate`，§7.2）。演示用小种群时传 `population_size`。
 
-- **初始种群（2026-09-27 定稿）**：创建即调 `initial_population(master_seed, session_id, n)` 生成
+- **混合种群（2026-09-27 定稿）**：可选 `expert_fish`（演示用）指定**前多少条走 `ExpertPolicy`**
+  （规则策略：追猎物/避威胁/避障；**无基因组、无自己的网**，鱼卡 `genome_id="unknown"`、`cell_counts` 空），
+  其余 `population_size - expert_fish` 条为基因组个体。缺省 `expert_fish=0` ⇒ 全基因组化。
+  实测（4 鱼 × 3600 步）：全基因驱动吃 20 次；全专家 76 次；2 基因 + 2 专家 70 次 —— 混合能兼顾
+  "画面活跃"与"每条基因鱼有自己的脑"。
+- **初始种群（`expert_fish` 之外的部分）**：创建即调 `initial_population(master_seed, session_id, n)` 生成
   `n` 个基因组（`n` = `population_size`，缺省 `arena_config.population.n_fish`），逐个发育
   （`phenotypes_of`，seed=0 + `index=stable_index(genome_id)`，与 Lab 的 `DEVELOP` 同口径）并
   **只保留 viable**；每条鱼由**自己的 DanioNet** 驱动，`fish_id == genome_id`。整 `n` 个都

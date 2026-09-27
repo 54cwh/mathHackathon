@@ -107,6 +107,8 @@ export interface SessionCreate {
   checkpoint_path: string | null;
   /** 初始基因组种群大小（`API接口.md` §1.1）；缺省用 Arena 配置。 */
   population_size?: number | null;
+  /** 演示用：前多少条走 ExpertPolicy（规则鱼，无基因组/无自己的网）。 */
+  expert_fish?: number | null;
 }
 
 /** 已追加进会话 Arena 的实验室个体（`API接口.md` §1.11）。 */

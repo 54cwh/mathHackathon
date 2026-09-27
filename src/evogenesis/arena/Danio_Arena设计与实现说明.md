@@ -45,6 +45,8 @@ Danio Arena 是 DanioNet 的行为测量环境，同时承担现场 Demo。目�
 - 采样：\(\mathbf x\sim U(0,W)\times U(0,H)\)，要求对全部障碍 `not contains(x, clearance)`；最多 200 次，失败回退世界中心 \((W/2,H/2)\)。
 - clearance：fish 2.0 / prey 1.0 / predator 3.0 / obstacle \(r+1.0\)。
 - 出生顺序：障碍 → 鱼 → 猎物 → 捕食者；障碍**先清空再逐个生成**，故同一局内障碍互不重叠、二次 reset 逐字段一致。
+- **`genome_ids` 允许重复 `"unknown"`（2026-09-27）**：无基因的鱼（`ExpertPolicy` 驱动）用它；
+  与本类 `fish_ids is None` 时的内部默认一致。**真实 genome_id 仍须互异**。
 - **捕食者彼此最小间距（2026-09-27 定稿）**：捕食者采样时还要求与**已放置的捕食者**距离
   \(\ge\) `actors.predator_detection_radius`（= 15），否则三条会挤在一处、检测圈重叠（实测修复前
   间距仅 9.8 / 10.3 / 19.6）。该约束**只对捕食者**启用；鱼 / 猎物仍只避障碍。

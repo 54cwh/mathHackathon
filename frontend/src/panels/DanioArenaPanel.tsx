@@ -107,8 +107,9 @@ export function DanioArenaPanel() {
       createSession(
         MASTER_SEED,
         "food_rich",
-        // 演示配置：4 鱼 / 30 猎物 / 1800 步（`configs/demo_arena.yaml`）；种群数由该配置的 n_fish 决定。
-        { arenaConfigPath: DEMO_ARENA_CONFIG },
+        // 演示配置（`configs/demo_arena.yaml`）+ **混合种群**：4 条 ExpertPolicy 规则鱼（会追猎物/
+        // 避威胁，画面活跃、鱼卡 genome 显示 unknown）+ 2 条基因组鱼（各有 DNA 与自己的网、点得动）。
+        { arenaConfigPath: DEMO_ARENA_CONFIG, populationSize: 6, expertFish: 4 },
       )
         .then((s) => {
           if (cancelled) {
@@ -436,7 +437,9 @@ export function DanioArenaPanel() {
                   ))}
                 </dl>
                 <div className="mt-1 truncate font-mono text-sm text-muted-foreground">
-                  genome {card.genome_id} · fitness {card.fitness === null ? "—" : card.fitness.toFixed(3)}
+                  {card.genome_id === "unknown"
+                    ? "EXPERT POLICY · 规则策略（无基因组）"
+                    : `genome ${card.genome_id} · fitness ${card.fitness === null ? "—" : card.fitness.toFixed(3)}`}
                 </div>
                 {Object.keys(card.cell_counts).length > 0 && (
                   <div className="mt-1 font-mono text-sm text-muted-foreground">

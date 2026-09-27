@@ -80,7 +80,10 @@ class DanioArena:
                     f"genome_ids 数量 {len(gids)} 与 population.n_fish "
                     f"{self.cfg.population.n_fish} 不一致"
                 )
-            if len(set(gids)) != len(gids):
+            # 允许重复的 `"unknown"`：无基因的鱼（ExpertPolicy / 默认种群）都用它，
+            # 与本类 `fish_ids is None` 时的内部默认一致；**真实 genome_id 仍须互异**。
+            known = [g for g in gids if g != "unknown"]
+            if len(set(known)) != len(known):
                 raise ValueError("genome_ids 必须互异（core §3.1 稳定 ID）")
             self._genome_ids = gids
         self._generation = int(generation)
