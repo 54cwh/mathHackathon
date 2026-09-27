@@ -7,7 +7,7 @@
 \texttt{mean $\pm$ std}（$n=3$ 为 seed 数，非 per-fish 样本数）），
 口径与 ExpertPolicy 读到的观测通道见下注。
 
-\begin{table}[t]
+\begin{table}[H]
   \centering
   \caption{ExpertPolicy 冻结基线：Arena 六项主指标（3 seed $\times$ 12 鱼 $\times$ 600 步）。}
   \label{tab:baseline}
@@ -38,7 +38,7 @@
 
 
 \subsection{基线主指标（图）}
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{fig_baseline_v3}
   \caption{ExpertPolicy 冻结基线（3 seed $\times$ 12 鱼 $\times$ 600 步，跨 seed 的 $\mathrm{mean}\pm\mathrm{std}$）。
@@ -47,7 +47,7 @@
   \label{fig:metrics}
 \end{figure}
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.95\linewidth]{fig_env_absolute}
   \caption{为何比值会掩盖猎物密度效应：猎物变多时\textbf{分子与分母同时上升}
@@ -79,7 +79,7 @@
 以压低\textbf{抽样}噪声而保留个体发育变异（故 $\mathrm{pen}$ 保持不完全）。
 校准集与报告集使用\textbf{不同 master seed 与不同命名空间}，报告集上\emph{不再调整}阈值。
 
-\begin{table}[t]
+\begin{table}[H]
   \centering
   \caption{penetrance 的可辨识性与逐类外显率。校准集 $n=3200$（2 seed $\times$ 4 类 $\times$ 400）；
   报告集 $n=4800$（3 seed $\times$ 4 类 $\times$ 400，独立样本、阈值冻结不再调）。
@@ -103,7 +103,7 @@
   \end{tabular}
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.98\linewidth]{fig_penetrance}
   \caption{penetrance 报告集（3 seed $\times$ 4 类 $\times$ 400，$n=1200$ 每类）。

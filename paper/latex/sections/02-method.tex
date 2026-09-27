@@ -68,7 +68,7 @@ $W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，$L$ 只更新连接权重的\emph{�
 进入 \texttt{artifacts/} 并入库。论文用图另行复制进 \texttt{paper/latex/figs/}，
 不指向 \texttt{results/}（该目录被忽略，他机编译会失败）。
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{fig_pipeline}
   \caption{整体数据流（F12）。骨架为 \texttt{configs}（含seed）、Seed Manager、genome（DNA与motif）、发育（GRN / RGCD）、连接组（DanioNet）、Arena
@@ -242,7 +242,7 @@ $\tanh(\cdot)$ 的凸组合，故由 $h^0=0$ 归纳即得，区别于工程阈�
 后两条是工程判据。发育阶段默认 $b_i=0$（无偏置近似），最终判定由DanioNet用其
 $b_{type_i}$ 复核。
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=0.96\linewidth]{fig_viability}
   \caption{发育viability通过率（F6）。四个面板：(A) 累计通过率与Wilson区间，
@@ -347,7 +347,7 @@ left池主导得 $\omega>0$；区别于离散标签，escape是高威胁状态�
         但其\textbf{编码公式的owner} 仍待认领。
 \end{description}
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
   \includegraphics[width=\linewidth]{fig_connectome}
   \caption{连接矩阵与结构统计（F7）。左：$48\times48$ 的 $W^0$（含padding）与其中真正活跃的
