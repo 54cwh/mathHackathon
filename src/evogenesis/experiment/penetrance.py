@@ -97,6 +97,9 @@ class PenetranceRow:
     n_neurons: int
     cv_tau: float
     viable: bool
+    #: realisations_k > 1 时的 N 轴读数：§5 分裂抽签独立重复 K 次后的**已观测均值**
+    #: Nbar_K（测量协议）。None（默认，K=1）= 用单次实现 n_neurons，逐位一致。
+    n_neurons_k: float | None = None
 
 
 def cv_tau(tau: torch.Tensor, active_mask: torch.Tensor) -> float:
@@ -127,6 +130,38 @@ def observed_architecture(
         high_N=bool(n_neurons > theta_N_obs),
         high_H=bool(cv_tau_value > theta_H_obs),
     )
+
+def _stable_seed(material: str) -> int:
+    """由 material 稳定派生一个 64-bit 种子（blake2b；跨进程、跨机器可复现）。"""
+    digest = hashlib.blake2b(material.encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "little")
+
+
+def realised_neuron_count(
+    divide_prob: Sequence[float], realisations: int, material: str
+) -> float:
+    """Nbar_K：§5 分裂抽签独立重复 K 次后的**已观测均值**（experiment §3.9）。
+
+    **这是测量协议、不是模型改动**：同基因型多测几次以压低**抽样**噪声，个体自身的发育
+    变异完整保留，故外显率保持**不完全**。K=1 即单次实现（现状口径）；K 趋于无穷 时趋于
+    N0+Σp 即 E[N]——但那是**期望**，会把外显率压成 0/1（实测 AUC=1.0000、pen=1.000、
+    逐类 100/100/0/0，**退化**），故**不采用**。
+
+    随机源：由 material（该个体的稳定标识）派生的**测量层** RNG，不属 core §3 的模型随机源。
+    """
+    p = np.asarray(divide_prob, dtype=np.float64)
+    if p.size == 0:
+        raise ValueError("realised_neuron_count 需要非空的逐前体分裂概率")
+    if realisations < 1:
+        raise ValueError(f"realisations 须 >= 1，实际 {realisations}")
+    rng = np.random.default_rng(_stable_seed(material))
+    draws = (rng.random((realisations, p.size)) < p).sum(axis=1)
+    return float(p.size) + float(draws.mean())
+
+
+def _readout_n(row: PenetranceRow) -> float:
+    """N 轴读数：有 n_neurons_k（K>1）就用它，否则用单次实现 n_neurons。"""
+    return float(row.n_neurons) if row.n_neurons_k is None else float(row.n_neurons_k)
 
 
 def _confusion_key(arch: Architecture) -> str:
@@ -201,7 +236,7 @@ def median_midpoint_threshold(values: Sequence[float], expected_high: Sequence[b
 def _axis_arrays(
     rows: Sequence[PenetranceRow],
 ) -> tuple[list[float], list[bool], list[float], list[bool]]:
-    n_values = [float(r.n_neurons) for r in rows]
+    n_values = [_readout_n(r) for r in rows]
     h_values = [r.cv_tau for r in rows]
     high_n = [r.expected_class in EXPECTED_HIGH_N for r in rows]
     high_h = [r.expected_class in EXPECTED_HIGH_H for r in rows]
@@ -314,7 +349,7 @@ def penetrance_stats(
         confusion = _empty_confusion()
         hits = 0
         for row in subset:
-            arch = observed_architecture(row.n_neurons, row.cv_tau, theta_N_obs, theta_H_obs)
+            arch = observed_architecture(_readout_n(row), row.cv_tau, theta_N_obs, theta_H_obs)
             confusion[_confusion_key(arch)] += 1
             totals[_confusion_key(arch)] += 1
             hits += int(arch.class_label == label)
@@ -348,7 +383,7 @@ def continuous_summary(rows: Sequence[PenetranceRow]) -> dict[str, Any]:
     for label in CLASS_ORDER:
         subset = [r for r in rows if r.expected_class == label]
         out[label] = {
-            "n_neurons": _axis_summary([float(r.n_neurons) for r in subset]),
+            "n_neurons": _axis_summary([_readout_n(r) for r in subset]),
             "cv_tau": _axis_summary([r.cv_tau for r in subset]),
         }
     return out
@@ -523,6 +558,7 @@ def rows_of(
     theta_N: float,
     theta_H: float,
     device: str = "cpu",
+    realisations_k: int = 1,
 ) -> list[PenetranceRow]:
     """发育一批个体并读出 ``(expected_class, N, CV_τ, viable)``。"""
     phenotypes: list[ConnectomePhenotype] = phenotypes_of(
@@ -543,6 +579,15 @@ def rows_of(
                 n_neurons=int(phenotype.active_mask.sum().item()),
                 cv_tau=cv_tau(phenotype.tau, phenotype.active_mask),
                 viable=bool(phenotype.viable),
+                n_neurons_k=(
+                    None
+                    if realisations_k <= 1 or not phenotype.divide_prob
+                    else realised_neuron_count(
+                        phenotype.divide_prob,
+                        realisations_k,
+                        f"{individual.genome_id}|{individual.fish_id}",
+                    )
+                ),
             )
         )
     return rows
@@ -572,6 +617,10 @@ class PenetranceConfig:
     report_per_class: int
     report_max_offspring: int | None
     report_demo_offspring: int
+    #: N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次取已观测均值 Nbar_K。
+    #: 1（默认）= 单次实现，口径与历史逐位一致。依据见 docs/参数总表.json 的
+    #: penetrance_realisations_k（含实测 K 曲线）。
+    realisations_k: int = 1
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> PenetranceConfig:
@@ -588,6 +637,7 @@ class PenetranceConfig:
             report_per_class=int(report.get("per_class", 0)),
             report_max_offspring=report.get("max_offspring"),
             report_demo_offspring=int(report.get("demo_offspring", 0)),
+            realisations_k=int(data.get("realisations_k", 1)),
         )
 
 
@@ -671,6 +721,7 @@ def run_calibration(
             theta_N=theta_N,
             theta_H=theta_H,
             device=device,
+            realisations_k=penetrance_config.realisations_k,
         )
         pooled.extend(rows)
         per_seed[str(seed)] = calibrate(rows).to_dict()
@@ -699,7 +750,7 @@ def _separation_of_rows(rows: Sequence[PenetranceRow]) -> dict[str, Any]:
     """两观测轴对期望档的分离度诊断（用于报告 payload）。"""
     return {
         "N": axis_separation(
-            [float(r.n_neurons) for r in rows],
+            [_readout_n(r) for r in rows],
             [r.expected_class in EXPECTED_HIGH_N for r in rows],
         ),
         "H": axis_separation(
@@ -767,6 +818,7 @@ def run_report(
             theta_N=theta_N,
             theta_H=theta_H,
             device=device,
+            realisations_k=penetrance_config.realisations_k,
         )
         stats = penetrance_stats(rows, theta_N_obs, theta_H_obs)
         per_seed[str(seed)] = stats
@@ -842,7 +894,7 @@ def _genotype_counts(
     for row in rows:
         if observed:
             assert theta is not None
-            label = observed_architecture(row.n_neurons, row.cv_tau, theta[0], theta[1]).class_label
+            label = observed_architecture(_readout_n(row), row.cv_tau, theta[0], theta[1]).class_label
         else:
             label = row.expected_class
         counts[label] += 1

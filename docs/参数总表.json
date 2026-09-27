@@ -23,7 +23,7 @@
       "no_basis": "找不到依据，标设计选择",
       "missing": "参数总表原缺、实现必须补"
     },
-    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。 2026-09-27：登记 baseline 结构常量（H 14/4/12、ρ=0.15，group=baseline）与 reference n_ours=190；并更正其 provenance 为 index 12（原记 index 6 实测为 162）。 2026-09-27：登记 H3 探针参数（probe.*，arena §14，设计选择 D、默认关闭、草案待确认）。 2026-09-27：登记 Experiment E（robustness_fractions / robustness_n_danio）。 Experiment E 主指标改为行为发散、n_danio 定为 48（2026-09-27 实测）。 Experiment E 口径已定稿（2026-09-27 签署）。 2026-09-27：H3 探针参数（probe.*）与基因组实验室 §2.3 自选语义经用户认可升 `已定稿`。 2026-09-26：§7 发育门禁修复后 DanioNet 支撑边数 N_ours 由 190 移至 154（同 seed 同 index 实测），baseline 宽度按 §8 同一反解流程重解为 H 11/3/10（连接数 154/141/154），同步 baseline_*_hidden 与 n_ours_support_edges。 2026-09-26：登记 §5 分裂读数两个增益（development.division_drive_gain / division_locus_gain）与既有但漏登的 development.domain_identity_spread_scale、connectome.rho_w0_target；theta_N_obs 由「不可辨识」改为「可辨识但待签署（通道开启后）」，翻默认进 changes_pending。",
+    "note": "所有数值应由 config 读取；本表给出值与依据的单一来源。 来源分工：configs/*.yaml 是运行期取值的唯一来源；本表是依据与状态的唯一来源。 2026-09-26：原 `changes_pending` 的 `world 100×60`（保留或正方形）已按 arena §2 定稿关闭，保留 100×60。 2026-09-27：登记 baseline 结构常量（H 14/4/12、ρ=0.15，group=baseline）与 reference n_ours=190；并更正其 provenance 为 index 12（原记 index 6 实测为 162）。 2026-09-27：登记 H3 探针参数（probe.*，arena §14，设计选择 D、默认关闭、草案待确认）。 2026-09-27：登记 Experiment E（robustness_fractions / robustness_n_danio）。 Experiment E 主指标改为行为发散、n_danio 定为 48（2026-09-27 实测）。 Experiment E 口径已定稿（2026-09-27 签署）。 2026-09-27：H3 探针参数（probe.*）与基因组实验室 §2.3 自选语义经用户认可升 `已定稿`。 2026-09-26：§7 发育门禁修复后 DanioNet 支撑边数 N_ours 由 190 移至 154（同 seed 同 index 实测），baseline 宽度按 §8 同一反解流程重解为 H 11/3/10（连接数 154/141/154），同步 baseline_*_hidden 与 n_ours_support_edges。 2026-09-26：登记 §5 分裂读数两个增益（development.division_drive_gain / division_locus_gain）与既有但漏登的 development.domain_identity_spread_scale、connectome.rho_w0_target；theta_N_obs 由「不可辨识」改为「可辨识但待签署（通道开启后）」，翻默认进 changes_pending。 2026-09-27：登记 penetrance_realisations_k（N 轴 K 次重抽测量协议 + 实测 K 曲线）。",
     "workflow": [
       "表 A/B/C 锁定不动",
       "D 组：有区间依据的保留，无依据的标设计选择，与依据不符的进入 changes_pending",
@@ -2106,6 +2106,19 @@
       "config": null,
       "sensitivity": null,
       "suggest": "已签署（2026-09-27，experiment §3.5 已定稿）"
+    },
+    {
+      "name": "penetrance_realisations_k",
+      "value": 1,
+      "unit": "次",
+      "group": "experiment",
+      "grade": "D",
+      "status": "no_basis",
+      "basis": "N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次取已观测均值 N̄_K，以压低**抽样**噪声而保留个体发育变异（外显率保持不完全）。1 = 单次实现（与历史逐位一致）。实测（官方校准集 n=3200，β=1.0）：K=1 AUC 0.653/pen 0.636；K=16 AUC 0.877/pen 0.801；K=64 0.959/0.889；K→∞（=E[N] 期望）AUC 1.0000/pen 1.000 **退化**（逐类 100/100/0/0）⇒ 不用。**注意：K 只在 β=1.0（通道开）时产生信号**（β=0 时 K 无效，实测 separable=false）。",
+      "source": "src/evogenesis/experiment/实验与评价体系.md §3.9；src/evogenesis/experiment/penetrance.py",
+      "config": "configs/penetrance.yaml → realisations_k",
+      "sensitivity": null,
+      "suggest": "签署 θ 时建议设 16：判据「最小的 K 使 AUC≥0.85」，K=8→0.818 不足、K=16→0.877 达标；须与 β=1.0 同批启用（见 changes_pending）。"
     }
   ],
   "missing_required": {

@@ -9,6 +9,12 @@
 # 校准/报告用不同命名空间（core §3），报告集不得调阈值。
 # threshold_status: unset（默认，报告拒绝）| placeholder（演示用占位值）| confirmed（separable=true 后才可）
 threshold_status: unset
+# N 轴读数的**测量协议**：每个体把 §5 分裂抽签独立重复 K 次、取**已观测均值** N̄_K。
+# 1 = 单次实现（默认，与历史口径逐位一致）；>1 压低**抽样**噪声而保留个体发育变异，
+# 故外显率保持**不完全**。实测（官方校准集 n=1600，β=1.0）：K=1 AUC 0.653/pen 0.636，
+# K=16 AUC 0.877/pen 0.801，K=64 AUC 0.959/pen 0.889；K→∞ 即 E[N]，退化为 pen≡1 ⇒ 不用。
+# 依据：`docs/参数总表.json` penetrance_realisations_k + `research/notes/契约决策记录.md` 2026-09-26。
+realisations_k: 1
 theta_N_obs: null  # 观测量阈值（作用于 N=|M|）；校准产出后人工签署写入
 theta_H_obs: null  # 观测量阈值（作用于 CV_τ）；同上
 calibration:

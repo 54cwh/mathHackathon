@@ -22,6 +22,9 @@ class DevelopmentState:
     positions: torch.Tensor
     domain_index: torch.Tensor
     active_mask: torch.Tensor
+    #: §5 分裂**前**的逐前体分裂概率 p_i（形状 (N0,)）。只读上报量：
+    #: 供 penetrance 的**测量协议**做 K 次重抽（experiment §3.9）。N0 = p.size。
+    divide_prob: torch.Tensor | None = None
 
 
 def block_origins(
@@ -169,5 +172,9 @@ def proliferate(
                 }
             )
     return DevelopmentState(
-        grn=grn, positions=positions, domain_index=domain_index, active_mask=active_mask
+        grn=grn,
+        positions=positions,
+        domain_index=domain_index,
+        active_mask=active_mask,
+        divide_prob=None if divide_prob is None else divide_prob.detach(),
     )

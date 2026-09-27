@@ -60,6 +60,9 @@ class ConnectomePhenotype:
     #: 键：`stage`(grn|proliferate|connectome) / `step` / `n_neurons` / `n_divisions` /
     #: `n_edges` / `mean_abs` / `max_abs`；早期阶段无的量记 `None`。
     trace: tuple[dict, ...] | None = None
+    #: §5 分裂前的逐前体分裂概率 (N0,)。只读上报量：penetrance 的测量协议据此做
+    #: K 次重抽（experiment §3.9）；不影响仿真、连接组与 Arena。
+    divide_prob: tuple[float, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -727,4 +730,9 @@ def develop(
         viability_reason=reason,
         z=z,
         trace=tuple(trace) if trace is not None else None,
+        divide_prob=(
+            tuple(float(x) for x in state.divide_prob)
+            if state.divide_prob is not None
+            else ()
+        ),
     )
