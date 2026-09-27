@@ -68,6 +68,26 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 - **跨语言契约。** `schemas/` 的 JSON Schema 由 Python 后端与 TS 前端共用，改契约双方同步。
 - **离线可运行。** CPU 可运行、GPU 可加速；现场不依赖外部模型 API、远程数据库或 CDN 资产。
 
+## 前端
+
+`frontend/` 是现场演示 UI，只做渲染与交互；物理、神经动力学与仿真由 Python 后端权威运行，前端不重算。
+
+**技术栈**：Vite + React 18 + TypeScript、Tailwind CSS、zustand（状态）、ECharts（指标图）、Cytoscape.js（连接组图）、原生 Canvas 2D（Arena 逐帧渲染）、原生 WebSocket 与 fetch（传输）。字体与素材本地自托管，满足离线要求；锁定版本见 `frontend/README.md`。
+
+**演示流程**：顶栏是一条五段「导演线」，与自由标签页并存：
+
+```text
+seed → genome → develop → arena → evolve
+```
+
+每段对应一个面板，也可用 `AUTO DEMO` 自动推进。面板包括 DNA2Brain Lab（DNA 编辑与 motif）、Brain Forge（连接组与神经元激活）、Danio Arena（实时会话与逐代推进）、Evolution Dashboard（演化指标）、Development Pipeline 与 Playback。
+
+**数据通道**：REST（会话、基因组实验室、运行记录、环境选择实验）加 WebSocket 实时推送；前端类型对齐 `schemas/`，不自行定义后端契约。
+
+**设计系统**：`src/design/` 是颜色、几何、字体的唯一定义处，面板只引用 token；`npm run lint:design` 作为强制闸门，检查颜色越界、圆角残留与 token 漂移。Arena 的热路径走 `requestAnimationFrame` + Canvas 2D，状态放 `useRef`，不经 React 每帧渲染。
+
+**文档**：`frontend/README.md`（技术栈、种子与实时行为、防坑约定）、`交互与可视化.md`（界面规格）、`通用层设计.md` / `通用层接口.md`（通用层接口与设计）、`演示讲稿.md` / `网页说明与讲解顺序.md`（路演）。
+
 ## 环境要求
 
 | 依赖 | 版本 | 用途 |
