@@ -176,7 +176,7 @@
   | `step` | int | 当前步 |
   | `fish` | object | key 为 `fish_id`，值见下 |
   | `prey` | object | key 为 `prey_id`，值 `{x, y, size, alive}` |
-  | `predators` | object | key 为 `predator_id`，值 `{x, y, size}` |
+  | `predators` | object | key 为 `predator_id`，值 `{x, y, size, heading}` |
   | `obstacles` | array | 元素 `{x, y, radius}` |
   | `events` | array | 最近 200 条事件 |
 
@@ -190,7 +190,7 @@
    "fish":{"fish_00":{"x":10.639,"y":37.117,"heading":6.589,
                       "speed":0.54,"energy":0.742,"size":1.008,"alive":true}},
    "prey":{"prey_00":{"x":22.301,"y":12.874,"size":1.0,"alive":true}},
-   "predators":{"predator_00":{"x":80.0,"y":30.0,"size":2.4}},
+   "predators":{"predator_00":{"x":80.0,"y":30.0,"size":2.4,"heading":1.5708}},
    "obstacles":[{"x":50.0,"y":30.0,"radius":4.0}],
    "events":[{"seq":1,"type":"arena.spawn","step":0,"payload":{"entity_id":"fish_00"}}]}
   ```

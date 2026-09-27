@@ -106,13 +106,14 @@ export function drawArenaScene(
   }
 
   for (const d of Object.values(scene.predators)) {
-    // 契约里 `PredatorState` 没有 heading，故固定用源资产朝向 s（头朝下）；
-    // 将来契约给出 heading 再改成 dirOf(d.heading)。
     const dia = Math.max(24, sr(d.size) * 6);
     const side = spriteSide(PREDATOR, dia);
     const cx = sx(d.x);
     const cy = sy(d.y);
-    if (drawSprite(ctx, predatorSrc("s", frameOf(scene.step)), cx, cy, side)) {
+    // 朝向取快照的 `heading`（捕食者在 arena 里本来就会转向）；旧后端不带此字段时
+    // 回落 π/2（= s，头朝下），与接线前的固定朝向一致，不会指向 NaN 索引。
+    const heading = Number.isFinite(d.heading) ? d.heading : Math.PI / 2;
+    if (drawSprite(ctx, predatorSrc(dirOf(heading), frameOf(scene.step)), cx, cy, side)) {
       // 威胁读数：捕食者位图只有深色四色，在 ink 画布上对比过低（旧版是亮红圆），
       // 故补一圈 1px 危险色边框。用四条 fillRect 而非 stroke，保持整数、无插值（rule 9(b)）。
       const bx = Math.round(cx - side / 2);

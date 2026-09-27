@@ -38,6 +38,8 @@ export interface PredatorState {
   x: number;
   y: number;
   size: number;
+  /** 朝向（弧度），与 `FishState.heading` 同一约定；前端据此选八个朝向的 sprite。 */
+  heading: number;
 }
 
 export interface ObstacleState {
