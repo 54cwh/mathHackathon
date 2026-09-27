@@ -333,7 +333,7 @@ export function EvolutionDashboardPanel() {
                         .then(setDetail)
                         .catch((e) => setError(String(e)))
                     }
-                    className={`flex w-full items-center justify-between border border-border px-2 py-1 text-left font-mono text-xs ${
+                    className={`flex w-full items-center justify-between border border-border px-2 py-1 text-left font-mono text-sm ${
                       detail?.experiment_id === item.experiment_id
                         ? "bg-brand-fish-navy text-brand-bone"
                         : ""
@@ -348,7 +348,7 @@ export function EvolutionDashboardPanel() {
                 </li>
               ))}
               {items.length === 0 && (
-                <li className="font-mono text-xs text-muted-foreground">
+                <li className="font-mono text-sm text-muted-foreground">
                   本进程尚未发起实验；右侧历史运行不受影响。
                 </li>
               )}
@@ -360,10 +360,10 @@ export function EvolutionDashboardPanel() {
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
           <div className="flex items-center justify-between gap-2">
             <span className="inline-flex items-baseline gap-1.5">
-              <span className="font-pixel text-xs leading-none">DISK RUNS</span>
+              <span className="font-pixel text-[14px] leading-none">DISK RUNS</span>
             </span>
             <span className="flex items-center gap-2">
-              <span className="truncate font-mono text-xs text-muted-foreground">
+              <span className="truncate font-mono text-sm text-muted-foreground">
                 {runId ?? "未选择 run"}
               </span>
               <button
@@ -372,7 +372,7 @@ export function EvolutionDashboardPanel() {
                   void refreshList();
                   void refreshRuns();
                 }}
-                className="inline-flex shrink-0 items-center gap-1 border border-border px-2 py-1 font-pixel text-xs leading-none"
+                className="inline-flex shrink-0 items-center gap-1 border border-border px-2 py-1 font-pixel text-sm leading-none"
               >
                 <RefreshCw className="size-3" />
                 REFRESH
@@ -387,7 +387,7 @@ export function EvolutionDashboardPanel() {
                 <button
                   type="button"
                   onClick={() => setRunId(run.run_id)}
-                  className={`flex w-full items-center justify-between gap-2 border border-border px-2 py-1 text-left font-mono text-xs ${
+                  className={`flex w-full items-center justify-between gap-2 border border-border px-2 py-1 text-left font-mono text-sm ${
                     runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
                   }`}
                 >
@@ -400,14 +400,14 @@ export function EvolutionDashboardPanel() {
               </li>
             ))}
             {runs.length === 0 && (
-              <li className="font-mono text-xs text-muted-foreground">暂无历史 run</li>
+              <li className="font-mono text-sm text-muted-foreground">暂无历史 run</li>
             )}
           </ul>
 
           {evolution ? (
             <EvolutionMetrics evolution={evolution} />
           ) : (
-            <div className="border border-border p-2 font-mono text-xs text-muted-foreground">
+            <div className="border border-border p-2 font-mono text-sm text-muted-foreground">
               选择上方任一 run 查看逐代指标。
             </div>
           )}
@@ -416,11 +416,11 @@ export function EvolutionDashboardPanel() {
             <div className="border border-border p-2">
               <div className="mb-1 flex items-center justify-between">
                 <SectionLabel en="RUN DETAIL" />
-                <span className="font-mono text-xs text-muted-foreground">
+                <span className="font-mono text-sm text-muted-foreground">
                   {detail.experiment_id}
                 </span>
               </div>
-              <table className="w-full font-mono text-xs">
+              <table className="w-full font-mono text-sm">
                 <thead>
                   <tr className="text-muted-foreground">
                     <th className="text-left font-normal">seed</th>
