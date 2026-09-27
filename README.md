@@ -60,14 +60,6 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 - **评价走闭环生态仿真。** Arena 是连续二维、感知受限的觅食—避敌环境，行为由感知—动作回路与环境耦合产生，适应度综合生存、捕食、逃脱与能量。
 - **种群按有限二倍体演化。** 随机配子、重组、SNP 突变与 fitness-based 选择构成代际更新，同一套机制支持孟德尔分离演示。
 
-### 工程约定
-
-- **文档先行、单一来源。** 每个模块的接口 / 目的 / 用法与其代码同目录，是该模块的审计基准；字段名与类型归 `schemas/`，参数取值归 `configs/`，文献归 `research/notes/bibliography.md`。
-- **运行期取值集中。** 所有数值以 `configs/*.yaml` 为准，报告记录实际版本；`docs/参数总表.json` 登记参数依据与状态。
-- **确定性复现。** 所有随机过程由统一 seed manager 派生，每个 run 固定 config / seed / git commit，逐个体原值落盘。
-- **跨语言契约。** `schemas/` 的 JSON Schema 由 Python 后端与 TS 前端共用，改契约双方同步。
-- **离线可运行。** CPU 可运行、GPU 可加速；现场不依赖外部模型 API、远程数据库或 CDN 资产。
-
 ## 技术栈
 
 | 层 | 选型 |
