@@ -44,12 +44,16 @@ growth:
   prey_area_gain: 0.2
   capture_success_prob: 1.0  # 鱼的捕食成功率（§8）；1.0=确定性
 actors:
-  prey_speed: 0.35
+  # 演示：鱼速只设**上限 0.50**（网输出 0.44-0.55 → 裁到 ≤0.50，保留差异），
+  # 食物降到 0.20 —— 鱼(0.44-0.50)明显比食物快，仍在捕食者追速 0.70 之下、可被捕捉。
+  fish_speed_scale: 1.0
+  fish_speed_cap: 0.50
+  prey_speed: 0.20
   prey_size_min: 0.30
   prey_size_max: 0.60
   predator_size: 3.125
   predator_cruise_speed: 0.40
-  predator_chase_speed: 0.65
+  predator_chase_speed: 0.70   # 演示：略提追速，保证鱼变快后捕食者仍抓得到
   predator_detection_radius: 15.0
   predator_release_radius: 22.0
   predator_turn_rate: 5.0

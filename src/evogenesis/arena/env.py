@@ -333,7 +333,10 @@ class DanioArena:
                 continue
             omega, v = actions.get(fid, (0.0, 0.0))
             omega = float(np.clip(omega, -1.0, 1.0))
-            v = float(np.clip(v, 0.0, 1.0))
+            # 演示可配：先缩放再裁剪（默认 1.0/1.0 ⇒ 与 `[0,1]` 既有口径逐位一致）。
+            v = float(
+                np.clip(v * self.cfg.actors.fish_speed_scale, 0.0, self.cfg.actors.fish_speed_cap)
+            )
             fish.motor_log.append((omega, v))
 
             fish.heading = fish.heading + self._omega_eff(fish, omega) * dt

@@ -92,6 +92,10 @@ class GrowthConfig:
 class ActorDefaults:
     """MVP calibration knobs -- Danio_Arena设计与实现说明.md: values from play-testing."""
 
+    #: 鱼的动作速度缩放/上限（`env §5`）：作用于网/专家输出的 `v`，再裁剪到 `[0, fish_speed_cap]`。
+    #: 默认 1.0/1.0 = 与既有口径完全一致；**演示配置**用它把鱼调快（猎物更快时鱼追不上）。
+    fish_speed_scale: float = 1.0
+    fish_speed_cap: float = 1.0
     prey_speed: float = 0.35
     prey_size_min: float = 0.30
     prey_size_max: float = 0.60

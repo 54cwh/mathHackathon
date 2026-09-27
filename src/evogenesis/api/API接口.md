@@ -82,6 +82,17 @@
 - **错误**：`404` —— 会话不存在。
 - **代码位置**：`session.py` → `reset_session`。
 
+### 1.3b POST `/v1/sessions/{session_id}/restart` — 重开一轮（保留种群与 `generation`）
+
+把 episode **重来一遍**：步数归零、按**当前**这批鱼重排布局，但 **`generation` 不变、当前种群（含
+§1.11 追加与逐代演化后的鱼）不丢**、各自的网保留。与 §1.3 `reset` 的区别：`reset` 回到**构造时**的
+初始种群且 `generation=0`；`restart` 只重开"这一轮"。
+
+- **成功响应** `200` → `SessionSummary`（`generation` 保持原值、`step` 归 0）。
+- **错误**：`404` —— 会话不存在。
+- **用途**：演示里一轮（`episode_steps`）跑完后**手动**接着看，不丢演化进度。
+- **代码位置**：`session.py` → `restart` → `Session.restart_episode`。
+
 ### 1.4 DELETE `/v1/sessions/{session_id}` — 结束会话
 
 从内存移除会话。

@@ -65,6 +65,11 @@ export function resetSession(sessionId: string): Promise<SessionSummary> {
   return req<SessionSummary>(`/v1/sessions/${sessionId}/reset`, { method: "POST" });
 }
 
+/** 重开 episode（步数归零、按当前种群重排），**保留 generation**（`API接口.md` §1.7b）。 */
+export function restartSession(sessionId: string): Promise<SessionSummary> {
+  return req<SessionSummary>(`/v1/sessions/${sessionId}/restart`, { method: "POST" });
+}
+
 export function deleteSession(sessionId: string): Promise<void> {
   return req<void>(`/v1/sessions/${sessionId}`, { method: "DELETE" });
 }

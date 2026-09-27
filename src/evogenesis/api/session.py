@@ -199,6 +199,31 @@ class Session:
             self.generation = 0
             self.running = True
 
+    def restart_episode(self) -> None:
+        """episode 重来：步数归零，但**保留当前种群与 `generation`**（`API接口.md` §1.7b）。
+
+        与 `reset_arena()`（= `POST /reset`）的区别：`reset` 回到**构造时**的初始种群、
+        `generation=0`；
+        `restart` 按**当前**这批鱼（含 §1.11 追加与逐代演化后的种群）重排布局 —— 演示里
+        "一轮跑完后接着看"用它，generation 与已演化的种群都不丢。
+        """
+        with self._lock:
+            ids = tuple(self.arena.fish)
+            gids = tuple(self.arena.fish[k].genome_id for k in ids)
+            cfg = replace(
+                self.arena.cfg,
+                population=replace(self.arena.cfg.population, n_fish=len(ids)),
+            )
+            self.arena.cfg = cfg
+            self._arena_config = cfg
+            self.arena._fish_ids = ids
+            self.arena._genome_ids = gids
+            self.arena.reset()
+            if self.net is not None:
+                self.net.reset()
+            self._activation = {k: [] for k in self.nets}
+            self.running = True
+
     @property
     def chain(self):
         """模型链配置（惰性、只加载一次）。"""
@@ -613,6 +638,17 @@ def get_session(session_id: str) -> SessionSummary:
 def reset_session(session_id: str) -> SessionSummary:
     s = _get_session(session_id)
     s.reset_arena()
+    return _manager.summary(s)
+
+
+@router.post("/sessions/{session_id}/restart", response_model=SessionSummary)
+def restart(session_id: str) -> SessionSummary:
+    """重开 episode（步数归零、按当前种群重排布局），**保留 `generation`**。
+
+    见 `API接口.md` §1.7b。
+    """
+    s = _get_session(session_id)
+    s.restart_episode()
     return _manager.summary(s)
 
 

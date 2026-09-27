@@ -19,7 +19,7 @@ import {
   getLeaderboard,
   getSnapshot,
   listIndividuals,
-  resetSession,
+  restartSession,
   release,
   spawnIndividual,
   type ArenaSnapshot,
@@ -92,8 +92,6 @@ export function DanioArenaPanel() {
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
   /** 低频场景层（猎物/捕食者/障碍 + step）。 */
   const sceneRef = useRef<ArenaScene | null>(null);
-  /** episode 结束标记（WS `arena.episode_end`）→ 下一 tick 自动重置会话。 */
-  const episodeEndedRef = useRef(false);
 
   // ---- session lifecycle: one live session per mount / reset ---------------
   //  失败要**自愈**：后端未起 / 端口上还是旧进程时，会话创建会失败；若只建一次，
@@ -155,12 +153,6 @@ export function DanioArenaPanel() {
       fishState: (payload) => {
         wsFishRef.current = payload.fish;
       },
-      // episode 跑完（到 `episode_steps`）后端停步 → 这里收到事件后自动重置会话，演示不中断。
-      events: (payload) => {
-        if (payload.events.some((e) => e.type === "arena.episode_end")) {
-          episodeEndedRef.current = true;
-        }
-      },
     });
   }, [sessionId]);
 
@@ -174,28 +166,6 @@ export function DanioArenaPanel() {
     let timer = 0;
 
     const tick = async () => {
-      // episode 跑完 → 自动重置（演示不中断）：步数归零、场景重取。
-      if (episodeEndedRef.current && sessionId) {
-        episodeEndedRef.current = false;
-        tickRef.current = 0;
-        sceneRef.current = null;
-        try {
-          const reset = await resetSession(sessionId);
-          setStats({
-            environment: reset.environment,
-            generation: reset.generation,
-            population: reset.population,
-            fishAlive: reset.fish_alive,
-            preyAlive: reset.prey_remaining,
-            seed: reset.master_seed,
-            step: 0,
-          });
-        } catch (e) {
-          setError(String(e));
-        }
-        if (!stop) timer = window.setTimeout(tick, POLL_MS);
-        return;
-      }
       try {
         // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
         const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
@@ -316,6 +286,32 @@ export function DanioArenaPanel() {
       setEvolutionBusy(false);
     }
   }, [sessionId, evolutionBusy, setEvolutionBusy, setGeneration, setIndividuals]);
+
+  /** 手动重开一轮（episode）：步数归零，**保留当前种群与 generation**（`API接口.md` §1.7b）。 */
+  const restartEpisode = useCallback(async () => {
+    if (!sessionId) return;
+    setError(null);
+    try {
+      const s = await restartSession(sessionId);
+      tickRef.current = 0;
+      sceneRef.current = null;
+      wsFishRef.current = null;
+      setScene(null);
+      setCard(null);
+      setBoard(null);
+      setStats({
+        environment: s.environment,
+        generation: s.generation,
+        population: s.population,
+        fishAlive: s.fish_alive,
+        preyAlive: s.prey_remaining,
+        seed: s.master_seed,
+        step: 0,
+      });
+    } catch (e) {
+      setError(String(e));
+    }
+  }, [sessionId, setStats]);
 
   // 导演线意图：进入 EVOLVE 段即推进一代（`交互与可视化.md` §1）。
   const stepRef = useRef(stepEvolution);
@@ -517,6 +513,17 @@ export function DanioArenaPanel() {
             }`}
           >
             {evolutionBusy ? "计算中…" : "NEXT GENERATION · 下一代"}
+          </button>
+          <button
+            type="button"
+            disabled={!sessionId}
+            onClick={() => void restartEpisode()}
+            title="重开一轮（episode 步数归零；保留当前种群与 generation）"
+            className={`mt-1 border border-border px-2 py-0.5 font-pixel text-[11px] leading-none ${
+              !sessionId ? "bg-muted text-muted-foreground" : "hover:bg-brand-slate-shadow hover:text-brand-bone"
+            }`}
+          >
+            RESTART · 重开一轮
           </button>
           {evoSummary && (
             <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-[11px]">
