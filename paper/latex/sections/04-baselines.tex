@@ -2,28 +2,28 @@
 
 \subsection{基线（同参数量级）}
 三个对照基线（MLP / GRU / Fixed Sparse RNN）\textbf{已实现}
-（\texttt{src/evogenesis/connectome/baselines.py} + 守护测试 \texttt{tests/test\_baselines.py}；
+（\texttt{src/evogenesis/connectome/baselines.py} 与守护测试 \texttt{tests/test\_baselines.py}；
 初始化命名空间 \texttt{baseline\_init} 已在 \texttt{core} \S{}3 注册），
-编排 \texttt{experiment/baseline\_run.py} 与 CLI \texttt{scripts/run\_baselines.py} 已接（Experiment C）。
+编排 \texttt{experiment/baseline\_run.py} 与CLI \texttt{scripts/run\_baselines.py} 已接（Experiment C）。
 连接数按 $N_{\text{ours}} = E_A = 151$（支撑边数，\texttt{seed 250927} / \texttt{index 2}）
 反解为 $154$ / $141$ / $154$（判据 $\left|\Delta\log_{10}\right|\le1$，
 \texttt{connectome/DanioNet设计规范.md} \S8）。
 
-\paragraph{Exp C 中期结果（2 seed；第三个 seed 按限时停止）。}
+\paragraph{Exp C中期结果（2 seed；第三个seed按限时停止）。}
 12 agent $\times$ 3 episode $\times$ 2 seed（1103 / 2207），每 (seed, model) 产生 $36$ 条记录、
 共 $288$ 条；产物 \texttt{results/tables/expC\_baselines.json}（$24$ 个标量指标全部 $n=2$，
 过 \texttt{schemas/baseline\_comparison.schema.json} 校验）。
-统计口径遵 \texttt{experiment} \S1.2 的两段式：先在 seed 内对 agent $\times$ episode 等权折叠，
-再沿 seed 轴报 $\text{mean}\pm\text{std}$，故表中 $n=2$ 是\textbf{seed 数}、\textbf{不是} $288$。
-三个 evaluation episode 对全部四模型共享同一出生布局与同一条猎物游走
+统计口径遵 \texttt{experiment} \S1.2 的两段式：先在seed内对agent $\times$ episode等权折叠，
+再沿seed轴报 $\text{mean}\pm\text{std}$，故表中 $n=2$ 是\textbf{seed数}、\textbf{不是} $288$。
+三个evaluation episode对全部四模型共享同一出生布局与同一条猎物游走
 （命名空间 \texttt{arena\_eval\_spawn} / \texttt{arena\_eval\_dynamics}，\texttt{core} \S4.2），
-故模型间比较可在\textbf{块内}配对。四模型各自的读数见表~\ref{tab:expc-models}，
-DanioNet 相对其余三基线的差与块内置换检验见表~\ref{tab:expc}。
+故模型间比较可在\textbf{块内}配对。四模型各自的读数见表~\ref{tab:expc-models}；
+DanioNet相对其余三基线的差与块内置换检验列于表~\ref{tab:expc}。
 
 \begin{table}[t]
   \centering
-  \caption{四模型在 Arena 主指标上的读数（$\text{mean}\pm\text{std}$ 沿 seed 轴，$n=2$；
-  每 seed 内先对 $12$ agent $\times$ $3$ episode 等权折叠成一条记录）。
+  \caption{四模型在Arena主指标上的读数（$\text{mean}\pm\text{std}$ 沿seed轴，$n=2$；
+  每seed内先对 $12$ agent $\times$ $3$ episode等权折叠成一条记录）。
   加粗为该指标上的最佳基线。\texttt{prey\_capture} 为\textbf{个体比值均值}口径
   （与汇总比值口径差约 $7$ 倍，见 \texttt{paper/图表-数据对照表.md} \S3.1）；
   \texttt{energy\_efficiency} 是\textbf{非正速率}（$\sim10^{-3}$/step），
@@ -49,7 +49,7 @@ DanioNet 相对其余三基线的差与块内置换检验见表~\ref{tab:expc}�
   \caption{块内置换检验（块 $=$ (seed, episode) 共 $6$ 个；同块内四模型共享同一出生布局与
   猎物游走，故\textbf{块内置换模型标签}在强零假设下精确；$2\times10^{4}$ 次重抽样，
   $p$ 为蒙特卡洛估计，同量级差异属抽样噪声）。
-  $\Delta$ 为 DanioNet 减去其余三基线的均值；更高的块为 $6$ 块中 DanioNet 领先的块数。}
+  $\Delta$ 为DanioNet减去其余三基线的均值；\emph{更高的块}为 $6$ 块中DanioNet领先的块数。}
   \label{tab:expc}
   \small
   \begin{tabular}{@{}lccc@{}}
@@ -70,23 +70,23 @@ DanioNet 相对其余三基线的差与块内置换检验见表~\ref{tab:expc}�
   \end{tabular}
 \end{table}
 
-\emph{读法}：\textbf{没有任何指标达到显著} ， 十个受检指标的最小 $p$ 为 $0.076$，
-$10$ 次比较的 Bonferroni 校正下 $>0.7$；且 $6$ 个块中 DanioNet 领先的块数一律不超过 $3/6$。
-DanioNet 唯一为正的分量是 \texttt{encounters}（$+7.25$），但它同时在
+\emph{读法}：\textbf{没有任何指标达到显著}，十个受检指标的最小 $p$ 为 $0.076$，
+$10$ 次比较的Bonferroni校正下 $>0.7$；且 $6$ 个块中DanioNet领先的块数一律不超过 $3/6$。
+DanioNet唯一为正的分量是 \texttt{encounters}（$+7.25$），但它同时在
 \texttt{captures}/\texttt{capture\_rate} 上为\textbf{负}（遇得多、转化少），且都不显著。
-更强的一点：表~\ref{tab:expc-models} 的六项主指标里 DanioNet \textbf{没有一项}高于最佳基线，
-其中\textbf{五项为四模型最低}（仅 \texttt{prey\_capture} 一项 GRU 更低）。
-真正的发现是\textbf{瓶颈在评估预算而非模型质量}：块间方差完全淹没模型效应 ，
+更强的一点：表~\ref{tab:expc-models} 的六项主指标里DanioNet \textbf{没有一项}高于最佳基线，
+其中\textbf{五项为四模型最低}（仅 \texttt{prey\_capture} 一项GRU更低）。
+真正的发现是\textbf{瓶颈在评估预算而非模型质量}：块间方差完全淹没模型效应，
 \texttt{encounters} 的逐块 $\Delta$ 为 $+20.0,\,+41.1,\,-5.4,\,+6.4,\,-13.5,\,-5.1$，
 跨度 $54.6$，比模型间任何差异大一个数量级。
-Arena 每局约 $2$\,s，而一次训练 $8.8$\,min（\texttt{train\_bc} 恒 $7.68\times10^{5}$ BPTT 步，
-与模型无关）$\Rightarrow$ \texttt{n\_episodes} 是近乎免费的轴、\texttt{n\_agents} 是昂贵的轴；
-要把模型效应从块方差里拉出来，\textbf{应先抬 \texttt{n\_episodes}}（例如 $3\to20$，块数 $6\to40$）。
+Arena每局约 $2$\,s，而一次训练 $8.8$\,min（\texttt{train\_bc} 恒 $7.68\times10^{5}$ BPTT步，
+与模型无关），故 \texttt{n\_episodes} 是近乎免费的轴、\texttt{n\_agents} 是昂贵的轴；
+要把模型效应从块方差里拉出来，\textbf{应先抬 \texttt{n\_episodes}}（例如由 $3$ 增至 $20$，块数由 $6$ 增至 $40$）。
 两点须照实声明：(i)~$n=2$ 的 $\mathrm{std}$ 只有 $1$ 个自由度，故以上是
-\textbf{未观测到差异}，不能读成无差异；
-(ii)~基线 $v=\tanh(\cdot)\in[-1,1]$ 与 DanioNet $v=\sigma(\cdot)\in[0,1]$ 的\textbf{动作区间口径不同}，
+\textbf{未观测到差异}，不能读成\textbf{无差异}；
+(ii)~基线 $v=\tanh(\cdot)\in[-1,1]$ 与DanioNet $v=\sigma(\cdot)\in[0,1]$ 的\textbf{动作区间口径不同}，
 本轮照实记录、\textbf{未修改基线读出}（\texttt{connectome/DanioNet设计规范.md} \S8）。
-（第三个 seed 未跑完即按限时停止；补跑后 \texttt{scripts/rebuild\_baselines\_table.py} 一行重建即可升到 $n=3$。）
+（第三个seed未跑完即按限时停止；补跑后 \texttt{scripts/rebuild\_baselines\_table.py} 一行重建即可升到 $n=3$。）
 \todo{判据：trainable parameter count 同一数量级（按连接数，$|\Delta\log_{10}|\le 1$）。}
 \todo{实测可训练连接数中位 192.5（$\Theta$ 张量 $48\times48=2304$，有效支撑内 195；个体间 105--289）。}
 

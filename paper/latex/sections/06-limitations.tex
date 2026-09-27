@@ -19,20 +19,20 @@
   \item \textbf{把可搜索的对象上移了一层。}
   神经演化的经典路线是在网络结构或权重空间上直接搜索 \citep{bib5_miikkulainen2025}；
   这里被搜索的是\emph{生成结构的基因组}。机制上的后果是两类结构变异来源同时变得可测量：
-  同源基因组 $+$ 不同随机种子与单碱基扰动，分别对应 RQ1 与 RQ2（\S\ref{sec:rq}）。
+  \emph{同源基因组与不同随机种子}、\emph{单碱基扰动}，分别对应 RQ1 与 RQ2（\S\ref{sec:rq}）。
   代价同样明确：支撑 $A$ 与 $\mathrm{sign}(W^{(0)})$ 在训练期冻结，故\textbf{当代无法改变结构}，
   结构变异只能经代际的基因组变异获得，这正是 (i)(ii) 组合的代价，也是本文要测量的东西之一。
 
-  \item \textbf{把后天不遗传从一句引言变成可测量的实验对象。}
+  \item \textbf{\emph{后天不遗传}由一句引言变为可测量的实验对象。}
   genomic bottleneck 的核心主张是遗传信息必须先于网络结构、后天学习不得遗传
   \citep{bib1_zador2019,bib3_shuvaev2024}；已有工作多在先天能力能否被紧凑基因组编码这一侧取证
   （以发育先验生成权重 \citep{bib2_barabasi2023}；用简单随机发育的生成模型重建小脑连接组 \citep{bib4_richter2025}）。
   本文把\emph{边界本身}做成对照的一端：结构冻结、只训 $\Theta$，于是
-  当代可塑性带来了多少与发育结构本身承担了多少在机制上被分开，可分别测量。
+  \emph{当代可塑性带来了多少}与\emph{发育结构本身承担了多少}在机制上被分开，可分别测量。
   可证伪性在于：若 $\Delta W$ 显著改善行为而结构完全不变，则当代可塑性足以承担任务；
   反之则说明负担主要在发育结构。
 
-  \item \textbf{把可用与多样放在同一条链上度量。}
+  \item \textbf{可用与多样在同一条链上度量。}
   这两者本来互相拉扯（过度多样则多数个体不可用；过度可用则结构趋同）。
   这里\emph{可用性}走闭环生态仿真（觅食、避敌、能量与生长的耦合），
   \emph{多样性}走 within-ensemble 图距离（以重连零模型为基线 \citep{bib20_hartle2020}）
@@ -48,9 +48,9 @@
 \end{enumerate}
 
 \textbf{必须说清这条价值目前被验证到了哪一层。}
-上列四点里，只有链路可运行与环境对照可区分两件事有落盘证据（\S\ref{sec:results}）。
-凡涉及\emph{学习效果}的主张，即当代 BC 能带来多少行为改善以及
-该改善经表现型 $\to$ 适应度是否会改变选择结果（注意 $\Delta W$ 本身不遗传，
+上列四点里，只有链路可运行、环境对照可区分两件事有落盘证据（\S\ref{sec:results}）。
+凡涉及\emph{学习效果}的主张，即\emph{当代 BC 能带来多少行为改善}以及
+\emph{该改善经表现型 $\to$ 适应度是否会改变选择结果}（注意 $\Delta W$ 本身不遗传，
 故只能经适应度间接影响基因型频率），目前\textbf{只是设计意图，尚未验证}：
 BC 训练契约与训练模块已就绪（\texttt{learning/行为克隆学习.md} 已定稿；
 该目标的经典出处是 \citep{bib209_pomerleau1991}），但\textbf{尚未接入流水线}。
@@ -79,7 +79,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   （\texttt{arena} \S8 项 a；见 \texttt{experiment} \S2.1），含义是满足几何条件即必定捕获；
   默认即历史行为，故改动它不改变既有产物。
   本 run 的实测后果是具体的：\textbf{36/36 个个体的
-  $\text{capture\_attempts}-\text{captures}$ 为 $0$}，即无一次进过口但吃不下的判定发生
+  $\text{capture\_attempts}-\text{captures}$ 为 $0$}，即无一次\emph{进过口但吃不下}的判定发生
   （\texttt{results/tables/exp\_arena\_expert\_ref\_v2/diagnostics.md}）。
   该事实\textbf{不影响}当前的 \texttt{prey\_capture}，其分母已改为尺寸门之前的 \texttt{encounters}，
   但它意味着\textbf{捕食技巧这一维度在本 run 中几乎未被检验}：
@@ -120,12 +120,12 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           \S\ref{sec:results} 的对应小节仍然阻塞。
     \item \textbf{评估驱动仍是 \texttt{ExpertPolicy}，不是 \texttt{DanioNet}。}
           \texttt{DanioNet} $\to$ \texttt{Arena} 的驱动链路已实现并有测试守护
-          （\texttt{pipeline/模型链装配.md} \S4已接；\texttt{tests/test\_pipeline.py}），
+          （\texttt{pipeline/模型链装配.md} \S4 已接；\texttt{tests/test\_pipeline.py}），
           但\textbf{尚未产出任何落盘结果}：现存全部落盘 run（\texttt{exp\_arena\_expert\_ref\_v2}
           与 \texttt{exp\_env\_*}）均由规则型 \texttt{ExpertPolicy} 驱动。
           这一点是实质性的而非工程性的，\texttt{learning/行为克隆学习.md} \S5 明写：
-          若评估阶段仍由 \texttt{ExpertPolicy} 驱动，则DNA 与学习都不影响行为、适应度失去意义。
-          换言之，\textbf{当前所有数值结果都不反映基因型差异}。
+          若评估阶段仍由 \texttt{ExpertPolicy} 驱动，则\emph{DNA 与学习都不影响行为、适应度失去意义}。
+          \textbf{当前所有数值结果都不反映基因型差异}。
     \item \textbf{多代正式结果尚未落盘。}
           代循环\textbf{已接线并冻结}（\texttt{experiment/evolution\_run.py}；
           \texttt{experiment/代循环编排.md} v1.0，2026-09-26；
@@ -137,7 +137,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           allele / phenotype frequency 已有\emph{产出机制}，
           但\textbf{尚无本文可复核的落盘}。
   \end{enumerate}
-  \textbf{合并后果}：本文的数值结论只支持两类主张，平台可运行与环境对照可区分。
+  \textbf{合并后果}：本文的数值结论只支持平台可运行与环境对照可区分两类主张。
   代循环\textbf{机制上已就绪}（见上条），学习侧未接通，
   且本文\textbf{未取得可复核的多代正式结果}，故本文\textbf{不主张演化有效或学习有效}。
   这是\emph{证据范围}的界限，不是机制缺失的断言；这一界限是有意写明的，不是可以省略的脚注。
@@ -152,7 +152,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \texttt{\_free\_spot} 的\textbf{拒绝采样次数}取决于本局障碍布局，
   故改障碍数量 / 半径范围 / clearance 会使 spawn 流整体平移，
   \textbf{同 seed 下的初始世界随之改变，历史基线不可直接对比}。
-  这条限制的性质是改布局参数就得重定基线，\textbf{不是}不能按模块重放。
+  这条限制的性质是\emph{改布局参数就得重定基线}，\textbf{不是}\emph{不能按模块重放}。
   \item \textbf{轨迹的基因型标识：链路已补上，但现存产物仍是占位。}
   现存的一份磁盘轨迹产物逐 step 记录的是
   \texttt{fish\_id="fish\_00"}、\texttt{genome\_id="unknown"}，
@@ -164,16 +164,16 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \texttt{tests/test\_collect\_trajectories.py} 断言落盘记录带真实标识，
   \texttt{pipeline/模型链装配.md} \S4 记 P0-9 已闭合；Arena 侧不传时保留旧默认（向后兼容）。
   \textbf{仍未验证的是}：补线之后没有重采轨迹、也没有跑通端到端 BC，
-  故按基因型分组可用尚未在真实产物上被证明。
+  故\emph{按基因型分组可用}尚未在真实产物上被证明。
 
   \item \textbf{统计能力弱，这是设计预算的结构性后果，不是本 run 的偶然。}
   正式独立随机种子只有 3 个：\texttt{configs/experiment\_seeds.yaml} 取
   $[1103,2207,3301]$、\texttt{minimum\_formal\_replicates: 3}。
-  $n=3$ 时3 对 3标签置换检验的双侧最小 $p\approx0.10$，
+  $n=3$ 时 3 对 3 标签置换检验的双侧最小 $p\approx0.10$，
   \textbf{不足以支持逐假设的置换检验}，该限制及其应对（H1 走 within-ensemble 口径、
   H2 走 Mantel 检验，二者均不依赖 3 对 3 置换；其余结论以效应量与跨种子波动并列报告）
   已在 \S\ref{sec:rq} 声明，此处只补其代价：
-  任何未达显著都不能读作无效应，而任何跨 seed 的显著性也无从主张。
+  任何\emph{未达显著}都不能读作\emph{无效应}，而任何跨 seed 的显著性也无从主张。
 
   \item \textbf{一处口径尚未裁决，它影响某些计数的解释。}
   \texttt{encounters} 是\textbf{事件}计数而非不同猎物数，故
@@ -187,7 +187,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   后果：在裁决之前，把本文的 \texttt{prey\_capture} 与其他文献的捕获率直接比较是不安全的。
 
   \item \textbf{指标自身的口径陷阱：引用均值时必须并列偏态尾与绝对量。}
-  三个都常被叫作捕获率的量数值相差很大：
+  三个都常被叫作捕获率的量，数值相差很大：
   个体比值均值 $0.5407$ 与汇总比值 $55/722=0.0762$ 相差约 $7.1\times$
   （\texttt{paper/报告-骨架.md} \S3.3 / \S5.1；\texttt{experiment} \S1.3 的约 7 倍）。
   根因是分母严重右偏：\texttt{encounters} 的中位数为 2、最大 225，
@@ -206,7 +206,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   它无偏、可跨环境直接比较，代价是与接触转化率这一更直觉的量不同轴（\texttt{experiment} \S2.1）。
 
   \item \textbf{环境三组的区分力并不均匀，只有一组可以直接取证。}
-  前置区分力检查（基线 $+$ 三环境 $\times$ 3 seed，\texttt{ExpertPolicy}）显示：
+  前置区分力检查（基线与三环境 $\times$ 3 seed，\texttt{ExpertPolicy}）显示：
   \texttt{predator\_rich} 可区分（\texttt{escape\_success} $d=+2.89$、
   \texttt{prey\_capture} $d=+1.92$、\texttt{composite\_fitness} $d=+1.86$）；
   而 \texttt{food\_rich} / \texttt{resource\_scarce} 的\textbf{比值指标几乎无区分力}
@@ -226,7 +226,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           （\texttt{experiment} \S2.1 与 \S2.3 末句）。即 \S\ref{sec:results} 中报告的显示分，
           与文档规定的主口径之间尚有一步实现距离。
     \item \textbf{效率三项尚未实现。} \texttt{latency} / \texttt{FLOPs} / \texttt{peak memory}
-          均标注尚未实现（\texttt{experiment} \S2.4实现状态行）；
+          均标注尚未实现（\texttt{experiment} \S2.4 实现状态行）；
           目前可由结构直接读出的只有 \texttt{parameter count} 与 \texttt{active edges}。
     \item \textbf{基线已有第一轮结果但功效不足；消融仍全部未实现。}
           MLP / GRU / Fixed Sparse RNN 三个基线\textbf{已实现，且已跑出第一轮结果}
@@ -235,7 +235,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           但该轮 $n=2$ 只有 $1$ 个自由度，且 episode 间方差\textbf{淹没}模型效应
           （逐块摆动跨度远大于模型间差异），故\textbf{不支持任何显著性主张}，
           即参照系已建立但\textbf{尚未被填满}，这是当前离赛题判据
-          原模型 $\to$ 修改后模型 $\to$ 实验结果对比\textbf{最近的一块}。
+          \emph{原模型 $\to$ 修改后模型 $\to$ 实验结果对比}\textbf{最近的一块}。
           消融一侧（\texttt{w/o GRN}、allele 聚合、homogeneous $\tau$、
           \texttt{w/o spatial wiring cost}）\textbf{仍全部未实现}
           （\texttt{paper/报告-骨架.md} \S4.2）；BC 有/无 Dale 约束的
@@ -272,7 +272,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
 \paragraph{这些限制如何影响结论的读法}
 上列限制界定的是结论的\emph{适用范围}，而不是否定结论本身。
 举一个具体的例子：36/36 个体的
-$\text{capture\_attempts}-\text{captures}$ 为 $0$是一条关于指标在确定性捕获下退化的确凿事实，
+$\text{capture\_attempts}-\text{captures}$ 为 $0$ 是一条关于指标在确定性捕获下退化的确凿事实，
 它使本 run 不报告捕食技巧这一决定有据可依，而不是一句含糊的免责声明
 （\S\ref{sec:results} 与 \texttt{.../diagnostics.md} 自动复现该诊断）。
 与此相对，凡本章与全文标注为待补而尚无证据的项目（学习前后对照、消融、
