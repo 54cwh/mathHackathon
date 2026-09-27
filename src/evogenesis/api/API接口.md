@@ -289,6 +289,10 @@
 | `/v1/jobs/{job_id}` | GET | `JobStatus` |
 | `/v1/jobs/{job_id}/cancel` | POST | `JobStatus`（协作式取消：在 seed 边界生效） |
 
+**`job.progress` 口径（2026-09-27）**：按 **arena 步**上报，并跨代、跨种子映射成**单调 0→1**
+（`on_seed_progress`：`(已跑种子数 + 本种子内步进度) / 种子总数`）——不再只在种子边界跳 0/1，
+故 1 种子 × 1 代的演示也能看到进度条平滑推进。
+
 **演示规模（2026-09-27 新增）**：`EnvironmentalSelectionLaunch` 可选传 `population_size` 与 `steps`，
 覆盖 `configs/evolution.yaml::population_size`(48) 与 arena 的 `episode_steps`(600)。前端**现场演示**用
 `population_size=4`、`steps=100`（一轮十几秒可跑完）；**正式实验不传**这两个字段 ⇒ 与既有口径逐位一致。

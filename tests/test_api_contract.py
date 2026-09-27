@@ -448,7 +448,7 @@ def test_experiment_launch_lifecycle(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(selections_mod, "_OUT_ROOT", tmp_path / "runs")
     monkeypatch.setattr(selections_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
 
-    def fake_run_one(expt, seed):
+    def fake_run_one(expt, seed, **_kwargs):
         return {"seed": seed, "run_dir": f"runs/{expt.experiment_id}-s{seed}", "generations_run": 0}
 
     monkeypatch.setattr(selections_mod, "_run_one", fake_run_one)
@@ -475,7 +475,7 @@ def test_experiment_cancel_at_seed_boundary(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(selections_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
     started = threading.Event()
 
-    def slow_run_one(expt, seed):
+    def slow_run_one(expt, seed, **_kwargs):
         started.set()
         time.sleep(0.5)
         return {"seed": seed, "run_dir": "x"}
@@ -561,7 +561,7 @@ def test_ws_job_progress_push(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(selections_mod, "_OUT_ROOT", tmp_path / "runs")
     monkeypatch.setattr(selections_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
     monkeypatch.setattr(
-        selections_mod, "_run_one", lambda expt, seed: {"seed": seed, "run_dir": "x"}
+        selections_mod, "_run_one", lambda expt, seed, **_kw: {"seed": seed, "run_dir": "x"}
     )
     with client.websocket_connect("/v1/ws") as ws:
         assert ws.receive_json()["type"] == "sys.hello"
@@ -635,7 +635,7 @@ def test_session_evolution_launches_job(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(selections_mod, "_OUT_ROOT", tmp_path / "runs")
     monkeypatch.setattr(selections_mod, "_TRACKING_ROOT", tmp_path / "mlruns")
     monkeypatch.setattr(
-        selections_mod, "_run_one", lambda sel, seed: {"seed": seed, "run_dir": "x"}
+        selections_mod, "_run_one", lambda sel, seed, **_kw: {"seed": seed, "run_dir": "x"}
     )
     sid = _create()["session_id"]
     resp = client.post(f"/v1/sessions/{sid}/evolutions?generations=0")

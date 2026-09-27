@@ -95,9 +95,10 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
   ];
 
   return (
-    <div className="space-y-2">
-      {/* 头部：代数 + 环境变更标记 */}
-      <div className="flex items-center justify-between border border-border p-2 font-mono text-[10px]">
+    /* 卡片网格：一行两张（`交互与可视化.md` §8）——原来每张图占满一整行，太"长"。 */
+    <div className="grid grid-cols-2 gap-2">
+      {/* 头部：代数 + 环境变更标记（整行） */}
+      <div className="col-span-2 flex items-center justify-between border border-border p-2 font-mono text-[10px]">
         <span>
           generation <span className="text-brand-bone">{last.generation}</span> / {generations.length}
         </span>
@@ -112,7 +113,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       {/* p(A) / p(B) + 等位频率表 */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
-          <SectionLabel en="P(A) / P(B)" zh="期望表型比例（基因型读出）" />
+          <SectionLabel en="P(A) / P(B)" zh="期望表型比例" />
           <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
             {fmt(last.p_A, 2)} / {fmt(last.p_B, 2)}
           </span>
@@ -153,7 +154,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
         </table>
       </section>
 
-      {/* fitness：均值折线 + 标准差 + 逐个体分布直方图 */}
+      {/* fitness：均值折线 */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
           <SectionLabel en="FITNESS" zh="适应度" />
@@ -169,9 +170,18 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
             if (ok) drawEventMarkers(ctx, w, h, generations.length, markedIndices);
           }}
         />
-        <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-          <span>distribution @ gen {generations[histIndex]?.generation ?? "—"}</span>
-          <span>{hist ? `${hist.values.length} 个体` : "未记录逐个体 fitness"}</span>
+      </section>
+
+      {/* fitness：逐个体分布直方图 */}
+      <section className="border border-border p-2">
+        <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+          <SectionLabel en="FITNESS · DIST" zh="适应度分布" />
+          <span className="whitespace-nowrap">
+            {hist ? `${hist.values.length} 个体` : "未记录逐个体 fitness"}
+          </span>
+        </div>
+        <div className="font-mono text-[10px] text-muted-foreground">
+          distribution @ gen {generations[histIndex]?.generation ?? "—"}
         </div>
         {hist && hist.values.length > 0 && (
           <MetricChart
@@ -195,12 +205,12 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
         )}
       </section>
 
-      {/* 形态与 tau */}
+      {/* 形态：neurons / edges */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
           <SectionLabel en="MORPHOLOGY" zh="形态" />
-          <span className="text-muted-foreground">
-            neurons {fmt(last.mean_neuron, 1)} · edges {fmt(last.mean_edge, 1)} · tau {fmt(last.mean_tau, 2)}
+          <span className="whitespace-nowrap text-muted-foreground">
+            neurons {fmt(last.mean_neuron, 1)} · edges {fmt(last.mean_edge, 1)}
           </span>
         </div>
         <MetricChart
@@ -211,6 +221,14 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
             if (ok) drawEventMarkers(ctx, w, h, generations.length, markedIndices);
           }}
         />
+      </section>
+
+      {/* 形态：τ */}
+      <section className="border border-border p-2">
+        <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+          <SectionLabel en="TAU" zh="时间常数 τ" />
+          <span className="whitespace-nowrap">mean {fmt(last.mean_tau, 2)}</span>
+        </div>
         <MetricChart
           height={LINE_HEIGHT}
           ariaLabel="mean tau over generations"
@@ -220,7 +238,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
           }}
         />
         {typeof last.mean_neuron !== "number" && (
-          <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+          <p className="font-mono text-[10px] text-muted-foreground">
             该 run 未记录神经元数 / 连接数 / τ 均值（早期版本），形态与 τ 曲线为空。
           </p>
         )}

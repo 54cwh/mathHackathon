@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import threading
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -96,7 +97,9 @@ def _emit(job: _Job) -> None:
     ws_hub.publish_job_progress(job.job_id, job.status, job.progress)
 
 
-def _run_one(selection: _Selection, seed: int) -> dict:
+def _run_one(
+    selection: _Selection, seed: int, *, on_seed_progress: Callable[[float], None] | None = None
+) -> dict:
     """跑单个 seed 的环境选择实验，返回该 `ExperimentRun` 的摘要。"""
     overrides = (
         None if selection.environment == "default" else load_environment(selection.environment)
@@ -126,6 +129,7 @@ def _run_one(selection: _Selection, seed: int) -> dict:
         run_dir=run_dir,
         environment_id=selection.environment,
         steps=selection.steps,
+        on_seed_progress=on_seed_progress,
     )
     last = result.summaries[-1] if result.summaries else None
     metrics: dict[str, float] = {}
@@ -171,7 +175,18 @@ def _worker(selection: _Selection, job: _Job) -> None:
                     selection.status = "cancelled"
                     _emit(job)
                     return
-            info = _run_one(selection, seed)
+            total_seeds = max(1, len(selection.seeds))
+            seed_index = selection.seeds.index(seed) + 1
+
+            def _seed_progress(
+                frac: float, index: int = seed_index, total: int = total_seeds
+            ) -> None:
+                """把"第 index 个种子内的 0→1 进度"映射成作业总进度并广播。"""
+                with job.lock:
+                    job.progress = ((index - 1) + max(0.0, min(1.0, frac))) / total
+                    _emit(job)
+
+            info = _run_one(selection, seed, on_seed_progress=_seed_progress)
             with job.lock:
                 selection.runs.append(info)
                 job.progress = index / total

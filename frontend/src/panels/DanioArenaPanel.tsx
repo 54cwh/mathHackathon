@@ -455,7 +455,7 @@ export function DanioArenaPanel() {
             <div className="mb-1">
               <SectionLabel en="LEADERBOARD" zh="排行榜" />
             </div>
-            <table className="w-full font-mono text-[11px]">
+            <table className="w-full font-mono text-sm">
               <thead>
                 <tr className="text-muted-foreground">
                   <th className="text-left font-normal">#</th>

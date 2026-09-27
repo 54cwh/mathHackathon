@@ -10,7 +10,7 @@ owner：`pipeline/模型链装配.md` §4。上游：`development`（发育/viab
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -117,6 +117,7 @@ def evaluate_population(
     steps: int | None = None,
     generation: int = 0,
     device: str = "cpu",
+    on_step: Callable[[int, int], None] | None = None,
 ) -> PopulationEvaluation:
     """评估一整代：全体发育（记 viability），仅 viable 进 DanioNet + Arena。
 
@@ -139,6 +140,7 @@ def evaluate_population(
         steps=steps,
         generation=generation,
         device=device,
+        on_step=on_step,
     )
     return PopulationEvaluation(tuple(phenotypes), episode, viable_indices)
 
@@ -154,6 +156,7 @@ def drive_arena_with_ids(
     steps: int | None = None,
     generation: int = 0,
     arena_seeds: tuple[int, int] | None = None,
+    on_step: Callable[[int, int], None] | None = None,
 ) -> ArenaEpisodeResult:
     """用**给定**的网络 + 稳定 ID 驱动 Arena 跑一局（不发育、不构造网络）。
 
@@ -202,7 +205,10 @@ def drive_arena_with_ids(
         with torch.no_grad():
             omega, v = net.step(observation)
         actions = {fish_id: (float(omega[slot]), float(v[slot])) for slot, fish_id in alive}
-        if arena.step(actions).done:
+        done = arena.step(actions).done
+        if on_step is not None:
+            on_step(int(arena.step_idx), int(total))  # 作业进度条的真进度（默认 None 行为不变）
+        if done:
             break
 
     return ArenaEpisodeResult(
@@ -223,6 +229,7 @@ def drive_arena_with_net(
     steps: int | None = None,
     generation: int = 0,
     arena_seeds: tuple[int, int] | None = None,
+    on_step: Callable[[int, int], None] | None = None,
 ) -> ArenaEpisodeResult:
     """用**给定的** `DanioNet` 驱动 Arena 跑一局（不重新发育/构造网络）。
 
@@ -240,6 +247,7 @@ def drive_arena_with_net(
         steps=steps,
         generation=generation,
         arena_seeds=arena_seeds,
+        on_step=on_step,
     )
 
 
@@ -252,6 +260,7 @@ def _drive_arena(
     steps: int | None,
     generation: int,
     device: str,
+    on_step: Callable[[int, int], None] | None = None,
 ) -> ArenaEpisodeResult:
     """用 DanioNet 驱动 Arena 跑一局（`pairs` 非空，全为 viable 个体）。"""
     phenotypes = [phenotype for _, phenotype in pairs]
@@ -265,6 +274,7 @@ def _drive_arena(
         arena_config=arena_config,
         steps=steps,
         generation=generation,
+        on_step=on_step,
     )
 
 

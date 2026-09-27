@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
 
@@ -515,7 +515,9 @@ def setup_evolution(
     return state
 
 
-def one_generation(state: EvolutionState) -> GenerationSummary:
+def one_generation(
+    state: EvolutionState, *, on_step: Callable[[int, int], None] | None = None
+) -> GenerationSummary:
     """推进**一代**（原地更新 `state`）：评估 → 折算 `F` → 落产物 → `advance_generation`。
 
     返回该代 `GenerationSummary`；`state.generation` 自增 1（= 已产出代数）。出现 bottleneck
@@ -535,6 +537,7 @@ def one_generation(state: EvolutionState) -> GenerationSummary:
             steps=state.steps,
             generation=episode_index,
             device=state.device,
+            on_step=on_step,
         )
         for episode_index in episode_indices
     )
@@ -630,6 +633,7 @@ def run_evolution(
     fitness_mode: str = "minmax",
     fitness_floor: float = 1e-3,
     episodes_per_generation: int = 1,
+    on_seed_progress: Callable[[float], None] | None = None,
 ) -> EvolutionRunResult:
     """跑 `generations` 代；`run_dir` 须已由 `runlayout.create_run_dir` 建好。
 
@@ -658,8 +662,15 @@ def run_evolution(
         episodes_per_generation=episodes_per_generation,
     )
     generations_run = 0
-    for _ in range(generations):
-        one_generation(state)
+    for generation_index in range(generations):
+
+        def _step_cb(done: int, total: int, g: int = generation_index) -> None:
+            """把"本代第几步"映射成**种子内单调**进度（跨代不回退），供作业进度条用。"""
+            if on_seed_progress is not None:
+                frac = (done / total) if total else 1.0
+                on_seed_progress((g + max(0.0, min(1.0, frac))) / generations)
+
+        one_generation(state, on_step=_step_cb if on_seed_progress is not None else None)
         generations_run += 1
         if state.bottleneck:
             break
