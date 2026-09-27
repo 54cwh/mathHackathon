@@ -2,7 +2,9 @@
 #
 # 与正式实验口径分离：**只用于会话/演示**，正式实验仍用 `configs/default_arena.yaml`。
 # 动因（实测）：默认 12–16 鱼 × 600 步（30 s）时**捕食事件为 0**（随机基因组策略瞄准差、
-# 且鱼速≈猎物速）；改为 4 鱼 + 30 猎物 + 1800 步（90 s）后，4 个 seed 实测捕食 5/1/1/7 次。
+# 且鱼速≈猎物速）；改为 4 鱼 + 30 猎物后，4 个 seed 实测捕食 5/1/1/7 次（1800 步）。
+# 2026-09-27 再加长到 3600 步（180 s）：配合前端 `SPEED 2×`（20 步/s = 实时）单轮约 3 分钟，
+# 路上有更多捕食/逃脱可看。
 # **未改动 §8 捕获几何**（`capture_radius` / `capture_cone_degrees` 等与默认一致）。
 #
 # 相对 `default_arena.yaml` 只差 4 个键：world.episode_steps/seconds、population.n_fish/n_prey。
@@ -11,8 +13,8 @@ world:
   width: 100.0
   height: 60.0
   hz: 20
-  episode_seconds: 90  # 派生只读键：须 = episode_steps / hz（§18.2.1）
-  episode_steps: 1800
+  episode_seconds: 180  # 派生只读键：须 = episode_steps / hz（§18.2.1）
+  episode_steps: 3600
   boundary: reflect
 population:
   n_fish: 4

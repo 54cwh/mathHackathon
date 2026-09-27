@@ -143,7 +143,7 @@ export const useUiStore = create<UiState>((set) => ({
   focusNonce: 0,
   intent: null,
   autoPlay: false,
-  simSpeed: 1,
+  simSpeed: 2,
   setSelectedFish: (selectedFishId) => set({ selectedFishId }),
   setRunning: (running) => set({ running }),
   setSessionId: (sessionId) => set({ sessionId }),

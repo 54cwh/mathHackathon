@@ -158,7 +158,8 @@ export function DanioArenaPanel() {
 
     const tick = async () => {
       try {
-        const summary = await release(sessionId, 1);
+        // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
+        const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
         tickRef.current += 1;
 
         // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）
@@ -200,10 +201,12 @@ export function DanioArenaPanel() {
         setRunning(false);
         return; // stop the loop; the user restarts with Release
       }
-      if (!stop) timer = window.setTimeout(tick, Math.round(POLL_MS / simSpeed));
+      if (!stop) {
+        timer = window.setTimeout(tick, simSpeed < 1 ? Math.round(POLL_MS / simSpeed) : POLL_MS);
+      }
     };
 
-    timer = window.setTimeout(tick, Math.round(POLL_MS / simSpeed));
+    timer = window.setTimeout(tick, simSpeed < 1 ? Math.round(POLL_MS / simSpeed) : POLL_MS);
     return () => {
       stop = true;
       window.clearTimeout(timer);
@@ -470,12 +473,12 @@ export function DanioArenaPanel() {
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <SectionLabel en="SPEED" zh="步速" />
-            {[1, 0.5, 0.25].map((factor) => (
+            {[0.25, 0.5, 1, 2, 4].map((factor) => (
               <button
                 key={factor}
                 type="button"
                 onClick={() => setSimSpeed(factor)}
-                title={`步速 ${factor}×（只改推进快慢，不改模型本身）`}
+                title={`步速 ${factor}×（1× = 10 步/s；只改推进快慢，不改模型本身）`}
                 className={`border border-border px-2 py-0.5 font-mono text-[11px] leading-none ${
                   simSpeed === factor ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}
