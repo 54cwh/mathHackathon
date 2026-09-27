@@ -197,14 +197,14 @@ export function BrainForgePanel() {
           <div className="flex flex-wrap items-center justify-between gap-1">
             <SectionLabel en="CONNECTOME LAYER" zh="连接组图层" className="shrink-0" />
             <span className="flex shrink-0 items-center gap-2">
-              <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+              <span className="whitespace-nowrap font-mono text-sm text-muted-foreground">
                 edges {currentSample?.edges ? currentSample.edges.length : "—"}
               </span>
               <button
                 type="button"
                 onClick={() => setShowEdges((v) => !v)}
                 disabled={!currentSample?.edges}
-                className={`border border-border px-2 py-0.5 font-pixel text-xs leading-none disabled:cursor-not-allowed disabled:text-muted-foreground ${
+                className={`border border-border px-2 py-0.5 font-pixel text-sm leading-none disabled:cursor-not-allowed disabled:text-muted-foreground ${
                   showEdges && currentSample?.edges ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}
               >
@@ -216,7 +216,7 @@ export function BrainForgePanel() {
                 onClick={() => setConnFrame((f) => (f === "p" ? "a" : "p"))}
                 disabled={!currentSample?.probs}
                 title="连接组两幕真值：p = 模型概率场 σ(ℓ)，A = 一次采样得到的邻接"
-                className={`border border-border px-2 py-0.5 font-pixel text-xs leading-none disabled:cursor-not-allowed disabled:text-muted-foreground ${
+                className={`border border-border px-2 py-0.5 font-pixel text-sm leading-none disabled:cursor-not-allowed disabled:text-muted-foreground ${
                   currentSample?.probs && connFrame === "p" ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}
               >
@@ -252,22 +252,25 @@ export function BrainForgePanel() {
 
         <div className="shrink-0 space-y-2 overflow-y-auto border border-border p-2">
           <div className="flex items-center justify-between">
-            <SectionLabel en="ACTIVATION" zh="神经活动" />
-            <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+            <span className="inline-flex items-baseline gap-1.5">
+              <span className="font-pixel text-sm leading-none">ACTIVATION</span>
+              <span className="text-sm leading-none text-muted-foreground">神经活动</span>
+            </span>
+            <span className="whitespace-nowrap font-mono text-sm text-muted-foreground">
               {activation ? `step ${activation.step} · fish ${fishIds.length}` : ""}
             </span>
           </div>
 
           {activation && vector && stats ? (
             <>
-              <dl className="grid grid-cols-3 gap-x-2 font-mono text-xs">
+              <dl className="grid grid-cols-3 gap-x-2 font-mono text-sm">
                 {[
                   ["neurons", stats.n],
                   ["mean", stats.mean],
                   ["peak", stats.peak],
                 ].map(([label, value]) => (
                   <div key={String(label)} className="flex flex-col">
-                    <dt className="text-xs text-muted-foreground">{String(label)}</dt>
+                    <dt className="text-sm text-muted-foreground">{String(label)}</dt>
                     <dd className="truncate">
                       {label === "neurons" ? String(value) : Number(value).toFixed(3)}
                     </dd>
@@ -276,7 +279,7 @@ export function BrainForgePanel() {
               </dl>
               {/* §7 五类语义读数（由 cell_type + positions 复算，缺失记「未定义」不补 0） */}
               {readouts && (
-                <dl className="grid grid-cols-2 gap-x-2 font-mono text-xs">
+                <dl className="grid grid-cols-2 gap-x-2 font-mono text-sm">
                   {READOUT_DOMAINS.map((name) => {
                     const value = readouts.perDomain[name];
                     return (
@@ -313,7 +316,7 @@ export function BrainForgePanel() {
                   />
                 ))}
               </div>
-              <div className="truncate font-mono text-xs text-muted-foreground">
+              <div className="truncate font-mono text-sm text-muted-foreground">
                 {shownId ?? "—"}
                 {isFocal ? "（当前个体）" : "（任取一条）"} · {stats.samples.length}/{stats.n} 维
               </div>
@@ -323,7 +326,7 @@ export function BrainForgePanel() {
           )}
         </div>
 
-        <p className="shrink-0 text-xs text-muted-foreground">
+        <p className="shrink-0 text-sm text-muted-foreground">
           神经活动来自当前会话中该个体自己的 DanioNet，随 Arena 推进实时更新。
         </p>
       </div>
