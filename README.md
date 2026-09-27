@@ -66,11 +66,11 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 
 | 层 | 选型 |
 |---|---|
-| 后端 / 模型 | Python 3.12（uv）、PyTorch、FastAPI + Pydantic、NumPy / SciPy / pandas、NetworkX |
+| 后端 / 模型 | Python、PyTorch、FastAPI + Pydantic、NumPy / SciPy / pandas、NetworkX |
 | 前端 / 演示 | Vite + React + TypeScript、Tailwind CSS、Canvas 2D（Arena）、Cytoscape.js（脑图）、ECharts（图表）、zustand；原生 WebSocket / fetch |
 | 数据 / 配置 | YAML（`configs/`）、JSON Schema（`schemas/`）、structlog（JSONL）、MLflow（本地 file store）、pyarrow / NumPy `npz` |
 | 训练 / 演化 | Behavior Cloning；PPO / SAC 仅作扩展 |
-| 质量 / 复现 | pytest、ruff、统一 seed manager、uv、Makefile、Docker（复现用，现场优先本机） |
+| 质量 / 复现 | pytest、ruff、统一 seed manager、Makefile、Docker（复现用，现场优先本机） |
 
 ## 实验与消融
 
@@ -119,7 +119,7 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 - **Evolution Dashboard**：呈现逐代演化指标与排行榜。
 - **Development Pipeline / Playback**：呈现从配置、种子到基因组与发育结果的流程，并支持回放。
 
-**运行**（前置 Node 22）：
+**运行**：
 
 ```bash
 make demo            # 一键：构建前端 + 启动 API，浏览器打开 http://127.0.0.1:8000
