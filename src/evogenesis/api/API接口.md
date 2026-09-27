@@ -346,6 +346,10 @@ genome / development / breeding 三条 + 两个 store 出入口，**实现已先
   `bottleneck` / `event` / `p_A` / `p_B` / `phenotype_freq` / `mean_neuron` / `mean_edge` / `mean_tau`。
 - **同步阻塞**（一代约 2s @16×100 步）；前端须给"进行中"反馈。子代全不 viable 时保留旧 Arena，
   该代 `summary.bottleneck=true`。
+- **前端触发（2026-09-27 定稿）**：Arena 面板在**回合结束时自动**调用本端点——判据取先到者：
+  `SessionSummary.fish_alive == 0`（所有鱼均已死）或 `§7.4` 的 `snapshot.events` 含 `arena.episode_end`
+  （跑满 `episode_steps`，存活者结局为"活到期"；`arena §15 A9`）；命中后停留 1.2 s 再换代并继续推进。
+  `Pause` 期间不自动换代；手动路径（EVOLVE 区按钮）保留为兜底。见 `frontend/交互与可视化.md` §1。
 
 **已定稿（2026-09-27 用户确认）**：**单点位置** `position ∈ [0, 512)` 线性覆盖二倍体，顺序 `pair0.maternal → pair0.paternal → pair1.maternal → pair1.paternal`（`MutationRequest` 无 haplotype 字段，位置须唯一编码）；与 `story-mutations` 的 `position` **同坐标**（`genome §3.1`）。
 

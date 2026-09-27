@@ -8,7 +8,6 @@ import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/v
 import { animFrame, createPoseBuffer, pushScene, sampleScene } from "@/visuals/arenaSmoothing";
 import { subscribe } from "@/api/ws";
 import { stepSessionEvolution } from "@/api/selections";
-import { createGenome, develop } from "@/api/lab";
 import type { SessionEvolutionStep } from "@/api/types";
 
 import {
@@ -43,10 +42,8 @@ const POLL_MS = 100; // 10 fps render; 每 tick 推 `simSpeed` 步
 /** 排行榜刷新节奏（每 20 tick ≈ 2s）。 */
 const LEADERBOARD_EVERY = 20;
 
-/** 演示：活鱼少于该值时自动补一条（新基因组 → 发育 → 入 Arena）。 */
-const REPLENISH_BELOW = 2;
-/** 补鱼冷却：避免连续补（每次都要发育 + 建网）。 */
-const REPLENISH_COOLDOWN_MS = 6000;
+/** 回合结束到自动换代之间的停留（ms）：让终帧与结局先被看见。 */
+const NEXT_GEN_DELAY_MS = 1200;
 /**
  * 渲染时延（ms，`交互与可视化.md` §7.1）：渲染时刻取 `now - RENDER_DELAY_MS`，使两侧都有权威
  * 样本 ⇒ 真插值（不外推、不越帧）。≈ 一个仿真 tick（`POLL_MS`）。
@@ -75,7 +72,6 @@ export function DanioArenaPanel() {
   const setSelectedFish = useUiStore((s) => s.setSelectedFish);
   const setStats = useUiStore((s) => s.setStats);
   /** 全局统计（`setStats` 写入；补鱼逻辑据此判断活鱼数）。 */
-  const stats = useUiStore((s) => s.stats);
   const [scene, setScene] = useState<ArenaScene | null>(null);
   const [card, setCard] = useState<FishCard | null>(null);
   const [board, setBoard] = useState<Leaderboard | null>(null);
@@ -100,6 +96,17 @@ export function DanioArenaPanel() {
   const sceneRef = useRef<ArenaScene | null>(null);
   /** 位姿缓冲（`visuals/arenaSmoothing.ts`）：rAF 逐帧插值用。 */
   const poseBufRef = useRef(createPoseBuffer());
+  /** 本轮已判定结束、正在等待/执行自动换代（防重入；`Pause` 时放弃本次）。 */
+  const advancingRef = useRef(false);
+  /** 自动换代延时句柄（`Pause`/卸载/视图切换时清掉）。 */
+  const advanceTimerRef = useRef(0);
+  /** 供延时回调读取最新 `running`：暂停时不得自动换代。 */
+  const runningRef = useRef(running);
+  runningRef.current = running;
+  /** 连续自动换代失败计数（≥2 停下等手动，避免对后端刷请求）。 */
+  const autoAdvanceFailsRef = useRef(0);
+  /** 长请求的间接引用：避免把 `stepEvolution` 放进驱动循环的依赖里、导致循环重启。 */
+  const stepEvolutionRef = useRef<() => Promise<boolean>>(async () => false);
 
 
   // ---- session lifecycle: one live session per mount / reset ---------------
@@ -189,6 +196,11 @@ export function DanioArenaPanel() {
     let timer = 0;
 
     const tick = async () => {
+      // 自动换代进行中：Arena 正在被重建，期间不推步，只保持循环等它结束。
+      if (advancingRef.current) {
+        if (!stop) timer = window.setTimeout(tick, POLL_MS);
+        return;
+      }
       try {
         // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
         const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
@@ -223,6 +235,30 @@ export function DanioArenaPanel() {
           step: base?.step ?? 0,
         });
 
+        // ---- 回合结束 → 自动进下一代（`交互与可视化.md` §1）----------------
+        //  判据取先到者：① 所有鱼均已死（`fish_alive == 0`，各自都有结局）；
+        //  ② `arena.episode_end`（跑满 `episode_steps`，存活者结局为"活到期"；`arena §15 A9`）。
+        const episodeOver =
+          summary.fish_alive === 0 ||
+          snap.events.some((e) => e.type === "arena.episode_end");
+        if (episodeOver && !advancingRef.current) {
+          advancingRef.current = true;
+          advanceTimerRef.current = window.setTimeout(() => {
+            if (!runningRef.current) {
+              advancingRef.current = false; // 用户暂停 → 放弃本次自动换代（可手动推进）
+              return;
+            }
+            void stepEvolutionRef.current().then((ok) => {
+              advancingRef.current = false;
+              if (ok) {
+                autoAdvanceFailsRef.current = 0;
+              } else if (++autoAdvanceFailsRef.current >= 2) {
+                setRunning(false); // 连续失败：停下，等手动 Release / NEXT GENERATION
+              }
+            });
+          }, NEXT_GEN_DELAY_MS);
+        }
+
         if (tickRef.current % LEADERBOARD_EVERY === 0) {
           setBoard(await getLeaderboard(sessionId));
         }
@@ -241,6 +277,8 @@ export function DanioArenaPanel() {
     return () => {
       stop = true;
       window.clearTimeout(timer);
+      window.clearTimeout(advanceTimerRef.current);
+      advancingRef.current = false; // 视图切换/暂停即放弃本次自动换代
     };
   }, [running, sessionId, activeView, simSpeed, setRunning, setStats]);
 
@@ -257,39 +295,11 @@ export function DanioArenaPanel() {
       .catch((e) => setError(String(e)));
   }, [intent, sessionId, activeGenomeId, individuals, addIndividual]);
 
-  // 演示：场上活鱼过少时自动补一条 —— 新基因组 → 发育（只收 viable）→ `POST /individuals`
-  // 入 Arena（于是新鱼同样有 DNA 与自己的脑）。带冷却与并发保护，不刷屏。
-  const replenishingRef = useRef(false);
-  const lastReplenishRef = useRef(0);
-  useEffect(() => {
-    if (!sessionId || !stats) return;
-    if (stats.fishAlive >= REPLENISH_BELOW) return;
-    if (replenishingRef.current) return;
-    if (Date.now() - lastReplenishRef.current < REPLENISH_COOLDOWN_MS) return;
-    replenishingRef.current = true;
-    lastReplenishRef.current = Date.now();
-    void (async () => {
-      try {
-        for (let attempt = 0; attempt < 3; attempt++) {
-          const fresh = await createGenome();
-          const dev = await develop({ genome_id: fresh.genome_id, seed: 0 });
-          if (!dev.phenotype.viable) continue; // 非 viable 换一个基因组
-          addIndividual(await spawnIndividual(sessionId, fresh.genome_id));
-          break;
-        }
-      } catch (e) {
-        setError(String(e));
-      } finally {
-        replenishingRef.current = false;
-      }
-    })();
-  }, [stats, sessionId, addIndividual]);
-
   // ---- 会话内逐代演化（`API接口.md` §2.3）：EVOLVE 段的「下一代」----------------
   //  同步长请求（约 2s）→ 用 `evolutionBusy` 给出"进行中"反馈，避免假死。
   const [evoSummary, setEvoSummary] = useState<SessionEvolutionStep["summary"] | null>(null);
-  const stepEvolution = useCallback(async () => {
-    if (!sessionId || evolutionBusy) return;
+  const stepEvolution = useCallback(async (): Promise<boolean> => {
+    if (!sessionId || evolutionBusy) return false;
     setEvolutionBusy(true);
     setError(null);
     try {
@@ -301,12 +311,16 @@ export function DanioArenaPanel() {
       setBoard(await getLeaderboard(sessionId));
       tickRef.current = 0;
       sceneRef.current = null;
+      poseBufRef.current = createPoseBuffer(); // 换代 = 换鱼：旧位姿样本作废
+      return true;
     } catch (e) {
       setError(String(e));
+      return false;
     } finally {
       setEvolutionBusy(false);
     }
   }, [sessionId, evolutionBusy, setEvolutionBusy, setGeneration, setIndividuals]);
+  stepEvolutionRef.current = stepEvolution;
 
   /** 手动重开一轮（episode）：步数归零，**保留当前种群与 generation**（`API接口.md` §1.7b）。 */
   const restartEpisode = useCallback(async () => {
