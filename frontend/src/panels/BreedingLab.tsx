@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useState } from "react";
 import { Dna } from "lucide-react";
 import { breed } from "@/api/lab";
@@ -47,7 +48,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
   return (
     <section className="border border-border p-2">
       <div className="mb-1 flex items-center justify-between">
-        <span className="font-pixel text-[10px] leading-none">MENDEL / BREEDING</span>
+        <SectionLabel en="MENDEL / BREEDING" zh="孟德尔 / 育种" />
         <span className="font-mono text-[10px] text-muted-foreground">
           {slotA ? shortId(slotA.genome_id) : "A —"} × {slotB ? shortId(slotB.genome_id) : "B —"}
         </span>

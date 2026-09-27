@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useUiStore } from "@/store/ui";
 import { Dna } from "lucide-react";
@@ -257,7 +258,7 @@ export function DNA2BrainPanel() {
   };
 
   return (
-    <Panel title="DNA2Brain Lab" icon={<Dna className="size-4 text-primary" />}>
+    <Panel title="DNA2Brain Lab" titleZh="基因 → 大脑" icon={<Dna className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* min-h-40 + flex-[3]：面板矮时视觉区不被下方内容挤成 0 高（实测过 0 高黑块）。 */}
         <div className="min-h-32 flex-[3] overflow-hidden">
@@ -299,16 +300,16 @@ export function DNA2BrainPanel() {
             );
           })}
           <p className="font-mono text-[9px] leading-tight text-muted-foreground">
-            4 条**同源**单倍体（P0/P1 × MAT/PAT），顺序即 POS 0..511；
-            <span className="text-brand-amber"> 同源位点之间不存在碱基互补配对</span>
-            （本模型为非互补随机序列）。
+            四条单倍体：P0/P1 × 母源 MAT / 父源 PAT，共 512 个位点。
+            <span className="text-brand-amber"> 同源位点之间不是碱基配对</span>
+            （每条链各自独立随机，不存在 A–T / C–G 互补）。
           </p>
         </div>
 
         {/* 编辑器：genome_id / 位置 / 碱基 / 两个动作 */}
         <div className="shrink-0 space-y-2 border border-border p-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-pixel text-[10px] leading-none">GENOME</span>
+            <SectionLabel en="GENOME" zh="基因组" />
             <span className="truncate font-mono text-xs text-muted-foreground">
               {genome ? shortId(genome.genome_id) : busy ? "…" : "—"}
             </span>
@@ -355,25 +356,28 @@ export function DNA2BrainPanel() {
               type="button"
               onClick={() => void handleMutate()}
               disabled={busy || !genome}
-              className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+              className="flex flex-col items-center border border-border px-2 py-1 leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
             >
-              MUTATE
+              <span className="font-pixel text-[10px]">MUTATE</span>
+              <span className="text-[10px] text-muted-foreground">突变</span>
             </button>
             <button
               type="button"
               onClick={() => void handleDevelop()}
               disabled={busy || !genome}
-              className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+              className="flex flex-col items-center border border-border px-2 py-1 leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
             >
-              DEVELOP
+              <span className="font-pixel text-[10px]">DEVELOP</span>
+              <span className="text-[10px] text-muted-foreground">发育</span>
             </button>
             <button
               type="button"
               onClick={() => void loadFresh()}
               disabled={busy}
-              className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+              className="flex flex-col items-center border border-border px-2 py-1 leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
             >
-              NEW
+              <span className="font-pixel text-[10px]">NEW</span>
+              <span className="text-[10px] text-muted-foreground">新基因组</span>
             </button>
           </div>
 
@@ -388,7 +392,7 @@ export function DNA2BrainPanel() {
         {/* 发育结果：真实数值（DOM 渲染，§15.1 A2 允许且应当显示真实 simulation state） */}
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
-            <span className="font-pixel text-[10px] leading-none">PHENOTYPE</span>
+            <SectionLabel en="PHENOTYPE" zh="表型" />
             <span className="font-mono text-[10px] text-muted-foreground">
               seed {DEV_SEED} · {development ? (development.phenotype.viable ? "viable" : "non-viable") : "—"}
             </span>
@@ -417,7 +421,7 @@ export function DNA2BrainPanel() {
           {/* §5 / §11 compare：基线 vs 改后 */}
           <section className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-pixel text-[10px] leading-none">BEFORE / AFTER</span>
+              <SectionLabel en="BEFORE / AFTER" zh="改前 / 改后" />
               <button
                 type="button"
                 onClick={() => {

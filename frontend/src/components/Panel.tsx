@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 
 interface PanelProps {
   title: string;
+  /** 中文副标题（与英文标题并排；英文走 `.font-pixel`，中文走默认字体）。 */
+  titleZh?: string;
   icon?: ReactNode;
   className?: string;
   children?: ReactNode;
@@ -18,12 +20,15 @@ interface PanelProps {
  * -webkit-font-smoothing: none，Tailwind 的 fontFamily 表达不了该属性）。
  * 文本口径：英文标签 -> font-pixel；数值 -> font-mono；中文正文 -> 默认 font-sans。
  */
-export function Panel({ title, icon, className, children }: PanelProps) {
+export function Panel({ title, titleZh, icon, className, children }: PanelProps) {
   return (
     <section className={cn("flex min-h-0 flex-col overflow-hidden bg-card", className)}>
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         {icon}
         <span className="font-pixel text-[10px] leading-none">{title}</span>
+        {titleZh && (
+          <span className="text-[10px] leading-none text-muted-foreground">{titleZh}</span>
+        )}
       </header>
       <div className="min-h-0 flex-1 p-3">{children}</div>
     </section>

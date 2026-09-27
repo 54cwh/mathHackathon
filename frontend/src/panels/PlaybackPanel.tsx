@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Gamepad2 } from "lucide-react";
 import { Panel } from "@/components/Panel";
@@ -165,7 +166,7 @@ export function PlaybackPanel() {
   const held = actionFor(keysRef.current);
 
   return (
-    <Panel title="Playback" icon={<Gamepad2 className="size-4 text-primary" />}>
+    <Panel title="Playback" titleZh="手动操控" icon={<Gamepad2 className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         <div className="w-full shrink-0" style={{ aspectRatio: arenaAspect() }}>
           <canvas
@@ -181,7 +182,7 @@ export function PlaybackPanel() {
           {/* 被控鱼：点画布上的鱼可切换；默认第一条存活的鱼 */}
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-pixel text-[10px] leading-none">CONTROLLED FISH</span>
+              <SectionLabel en="CONTROLLED FISH" zh="被控鱼" />
               <span className="font-mono text-[10px] text-muted-foreground">
                 {controlledId ?? "—"}
               </span>
@@ -210,7 +211,7 @@ export function PlaybackPanel() {
           {/* 键位 + 当前动作 + 实时读数 */}
           <div className="grid grid-cols-2 gap-2">
             <div className="border border-border p-2">
-              <div className="mb-1 font-pixel text-[10px] leading-none">KEYS</div>
+              <div className="mb-1"><SectionLabel en="KEYS" zh="按键" /></div>
               <div className="space-y-0.5 font-mono text-[10px] text-muted-foreground">
                 <div>← / A · → / D : turn (ω)</div>
                 <div>↑ / W · ↓ / S : speed (v)</div>
@@ -222,7 +223,7 @@ export function PlaybackPanel() {
               </div>
             </div>
             <div className="border border-border p-2">
-              <div className="mb-1 font-pixel text-[10px] leading-none">READOUT</div>
+              <div className="mb-1"><SectionLabel en="READOUT" zh="读数" /></div>
               {card ? (
                 <dl className="grid grid-cols-2 gap-x-2 font-mono text-xs">
                   {[

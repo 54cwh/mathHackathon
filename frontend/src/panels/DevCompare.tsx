@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { BRAND } from "@/design/palette";
 import { MetricChart } from "@/visuals/MetricChart";
 import { drawPairedBars } from "@/visuals/chartPrimitives";
@@ -76,7 +77,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
     <div className="space-y-2">
       {/* DNA difference：已应用的突变列表（真实坐标与碱基） */}
       <div className="border border-border p-2">
-        <div className="mb-1 font-pixel text-[10px] leading-none">DNA DIFFERENCE</div>
+        <div className="mb-1"><SectionLabel en="DNA DIFFERENCE" zh="碱基差异" /></div>
         {mutations.length === 0 ? (
           <p className="font-mono text-[10px] text-muted-foreground">
             尚无突变（MUTATE 后在此累计）
@@ -109,7 +110,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
 
       {/* cell composition：六类 fate 成对柱 + 表 */}
       <div className="border border-border p-2">
-        <div className="mb-1 font-pixel text-[10px] leading-none">CELL COMPOSITION</div>
+        <div className="mb-1"><SectionLabel en="CELL COMPOSITION" zh="细胞组成" /></div>
         <MetricChart
           height={40}
           ariaLabel="cell composition before and after"
@@ -151,7 +152,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
 
       {/* 表型汇总表（含 Δ） */}
       <div className="border border-border p-2">
-        <div className="mb-1 font-pixel text-[10px] leading-none">PHENOTYPE DELTA</div>
+        <div className="mb-1"><SectionLabel en="PHENOTYPE DELTA" zh="表型变化" /></div>
         <table className="w-full font-mono text-[10px]">
           <thead>
             <tr className="text-muted-foreground">
@@ -175,12 +176,12 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
       </div>
 
       <p className="border border-brand-danger-red p-2 font-mono text-[10px] text-brand-danger-red">
-        ⚠ Δ 含**发育噪声**：两次发育的差异里混有随机发育成分 —— 即使碱基序列完全相同，不同个体也会
-        得到略有差别的表型。故单碱基编辑的 Δ **不可直接读作突变效应**；要分离遗传效应，需多次抽样取均值。
+        ⚠ Δ 含发育噪声：两次发育的差异里混有随机发育成分 —— 即使碱基序列完全相同，不同个体也会
+        得到略有差别的表型。故单碱基编辑的 Δ 不可直接读作突变效应；要分离遗传效应，需多次抽样取均值。
       </p>
 
       <p className="font-mono text-[10px] text-muted-foreground">
-        未展示：边的增删**差集**、GRN 逐步表达、Arena 行为指标。
+        未展示：边的增删差集、GRN 逐步表达、Arena 行为指标。
       </p>
     </div>
   );

@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Brain } from "lucide-react";
 import { Panel } from "@/components/Panel";
@@ -164,7 +165,7 @@ export function BrainForgePanel() {
   }, [isFocal, vector, connSample]);
 
   return (
-    <Panel title="Brain Forge" icon={<Brain className="size-4 text-primary" />}>
+    <Panel title="Brain Forge" titleZh="脑发育" icon={<Brain className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* min-h-40：矮面板下视觉区不被读数块挤没（与 DNA 面板同因）。 */}
         <div className="min-h-32 flex-[2] overflow-hidden">
@@ -194,7 +195,7 @@ export function BrainForgePanel() {
             shrink-0 = 按内容高，避免与下方 ACTIVATION 之间出现空档。 */}
         <div className="min-h-0 shrink-0">
           <div className="flex items-center justify-between">
-            <span className="font-pixel text-[10px] leading-none">CONNECTOME LAYER</span>
+            <SectionLabel en="CONNECTOME LAYER" zh="连接组图层" />
             <span className="flex items-center gap-2">
               <span className="font-mono text-[10px] text-muted-foreground">
                 edges {currentSample?.edges ? currentSample.edges.length : "—"}
@@ -251,7 +252,7 @@ export function BrainForgePanel() {
 
         <div className="shrink-0 space-y-2 overflow-y-auto border border-border p-2">
           <div className="flex items-center justify-between">
-            <span className="font-pixel text-[10px] leading-none">ACTIVATION</span>
+            <SectionLabel en="ACTIVATION" zh="神经活动" />
             <span className="font-mono text-[10px] text-muted-foreground">
               {activation ? `step ${activation.step} · fish ${fishIds.length}` : ""}
             </span>

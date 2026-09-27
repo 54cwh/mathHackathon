@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useState } from "react";
 import { FlaskConical, RefreshCw, X } from "lucide-react";
 import { Panel } from "@/components/Panel";
@@ -209,14 +210,14 @@ export function EvolutionDashboardPanel() {
   const running = job?.status === "running" || job?.status === "queued";
 
   return (
-    <Panel title="Evolution Dashboard" icon={<FlaskConical className="size-4 text-primary" />}>
+    <Panel title="Evolution Dashboard" titleZh="演化面板" icon={<FlaskConical className="size-4 text-primary" />}>
       <div className="grid h-full min-h-0 grid-cols-2 divide-x divide-border">
         {/* 左：launch 表单 + 当前 job */}
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pr-3">
-          <span className="font-pixel text-[10px] leading-none">ENVIRONMENTAL SELECTION</span>
+          <SectionLabel en="ENVIRONMENTAL SELECTION" zh="环境选择实验" />
 
           <label className="flex flex-col gap-1">
-            <span className="font-pixel text-[10px] leading-none">NAME</span>
+            <SectionLabel en="NAME" zh="名称" />
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -225,7 +226,7 @@ export function EvolutionDashboardPanel() {
           </label>
 
           <label className="flex flex-col gap-1">
-            <span className="font-pixel text-[10px] leading-none">SEEDS</span>
+            <SectionLabel en="SEEDS" zh="种子" />
             <input
               value={seedsText}
               onChange={(e) => setSeedsText(e.target.value)}
@@ -238,7 +239,7 @@ export function EvolutionDashboardPanel() {
 
           <div className="flex items-end gap-2">
             <label className="flex flex-col gap-1">
-              <span className="font-pixel text-[10px] leading-none">ENV</span>
+              <SectionLabel en="ENV" zh="环境" />
               <select
                 value={environment}
                 onChange={(e) => setEnvironment(e.target.value as Environment)}
@@ -252,7 +253,7 @@ export function EvolutionDashboardPanel() {
               </select>
             </label>
             <label className="flex flex-col gap-1">
-              <span className="font-pixel text-[10px] leading-none">GENS</span>
+              <SectionLabel en="GENS" zh="代数" />
               <input
                 type="number"
                 min={1}
@@ -310,7 +311,7 @@ export function EvolutionDashboardPanel() {
         {/* 右：历史实验列表 + 详情 */}
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
           <div className="flex items-center justify-between">
-            <span className="font-pixel text-[10px] leading-none">SELECTION JOBS</span>
+            <SectionLabel en="SELECTION JOBS" zh="实验任务" />
             <button
               type="button"
               onClick={() => {
@@ -354,7 +355,7 @@ export function EvolutionDashboardPanel() {
           {/* §8 指标（磁盘 run；与内存实验表无关，重启后仍在） */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-pixel text-[10px] leading-none">DISK RUNS</span>
+              <SectionLabel en="DISK RUNS" zh="历史运行" />
               <span className="font-mono text-[10px] text-muted-foreground">
                 {runId ?? "未选择 run"}
               </span>
@@ -395,7 +396,7 @@ export function EvolutionDashboardPanel() {
           {detail && (
             <div className="border border-border p-2">
               <div className="mb-1 flex items-center justify-between">
-                <span className="font-pixel text-[10px] leading-none">RUN DETAIL</span>
+                <SectionLabel en="RUN DETAIL" zh="运行详情" />
                 <span className="font-mono text-[10px] text-muted-foreground">
                   {detail.experiment_id}
                 </span>

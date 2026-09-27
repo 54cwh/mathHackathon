@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useMemo, useState } from "react";
 import { BRAND } from "@/design/palette";
 import { MetricChart } from "@/visuals/MetricChart";
@@ -111,7 +112,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       {/* p(A) / p(B) + 等位频率表 */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
-          <span className="font-pixel text-[10px] leading-none">P(A) / P(B)</span>
+          <SectionLabel en="P(A) / P(B)" zh="表型比例" />
           <span className="font-mono text-[10px] text-muted-foreground">
             {fmt(last.p_A, 2)} / {fmt(last.p_B, 2)}
           </span>
@@ -155,7 +156,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       {/* fitness：均值折线 + 标准差 + 逐个体分布直方图 */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
-          <span className="font-pixel text-[10px] leading-none">FITNESS</span>
+          <SectionLabel en="FITNESS" zh="适应度" />
           <span className="font-mono text-[10px] text-muted-foreground">
             mean {fmt(last.fitness_mean)} ± {fmt(last.fitness_std)}
           </span>
@@ -197,7 +198,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       {/* 形态与 tau */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
-          <span className="font-pixel text-[10px] leading-none">MORPHOLOGY</span>
+          <SectionLabel en="MORPHOLOGY" zh="形态" />
           <span className="text-muted-foreground">
             neurons {fmt(last.mean_neuron, 1)} · edges {fmt(last.mean_edge, 1)} · tau {fmt(last.mean_tau, 2)}
           </span>
@@ -228,7 +229,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       {/* viability rate */}
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
-          <span className="font-pixel text-[10px] leading-none">VIABILITY</span>
+          <SectionLabel en="VIABILITY" zh="可育性" />
           <span className="font-mono text-[10px] text-muted-foreground">
             {typeof last.n_viable === "number" && typeof last.n_individuals === "number" && last.n_individuals > 0
               ? `${((last.n_viable / last.n_individuals) * 100).toFixed(0)}%`

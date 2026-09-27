@@ -40,7 +40,7 @@ export function BottomBar() {
         className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm"
       >
         {running ? <Pause className="size-4" /> : <Play className="size-4" />}
-        {running ? "Pause" : "Release"}
+        {running ? "Pause · 暂停" : "Release · 推进"}
       </button>
       <button
         type="button"
@@ -48,7 +48,7 @@ export function BottomBar() {
         className="inline-flex items-center gap-2 border border-border bg-card px-3 py-1.5 text-sm"
       >
         <RotateCcw className="size-4" />
-        Reset
+        Reset · 重置
       </button>
       <div className="ml-auto">
         <ViewTabs />

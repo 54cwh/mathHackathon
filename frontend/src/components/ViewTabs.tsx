@@ -17,10 +17,10 @@ import { useUiStore, type ViewId } from "@/store/ui";
  * 而静态检查剥注释，抓不到 —— 两边口径不一致，是真实发生过的泄漏。
  */
 
-const VIEWS: ReadonlyArray<{ id: ViewId; label: string }> = [
-  { id: "evolution", label: "Evolution" },
-  { id: "experiment", label: "Experiment" },
-  { id: "playback", label: "Playback" },
+const VIEWS: ReadonlyArray<{ id: ViewId; label: string; zh: string }> = [
+  { id: "evolution", label: "Evolution", zh: "演化" },
+  { id: "experiment", label: "Experiment", zh: "实验台" },
+  { id: "playback", label: "Playback", zh: "手动操控" },
 ];
 
 export function ViewTabs() {
@@ -49,7 +49,7 @@ export function ViewTabs() {
                 : "bg-card text-muted-foreground hover:bg-brand-slate-shadow hover:text-brand-bone",
             )}
           >
-            {view.label}
+            {view.label} · {view.zh}
           </button>
         );
       })}

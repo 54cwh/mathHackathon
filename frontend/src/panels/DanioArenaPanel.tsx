@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Fish } from "lucide-react";
 import { Panel } from "@/components/Panel";
@@ -311,7 +312,7 @@ export function DanioArenaPanel() {
       : boardTop;
 
   return (
-    <Panel title="Danio Arena" icon={<Fish className="size-4 text-primary" />}>
+    <Panel title="Danio Arena" titleZh="斑马鱼竞技场" icon={<Fish className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         {/* Explicit 5:3 contract (rule 3); the bitmap ratio must equal it, or
             the click hit-test below drifts. */}
@@ -338,7 +339,7 @@ export function DanioArenaPanel() {
           {/* Fish Card（§1.5）：点选后的真实读数 */}
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-pixel text-[10px] leading-none">FISH CARD</span>
+              <SectionLabel en="FISH CARD" zh="个体卡片" />
               <span className="font-mono text-[10px] text-muted-foreground">
                 {card ? shortId(card.fish_id) : "—"}
               </span>
@@ -389,7 +390,7 @@ export function DanioArenaPanel() {
           {/* 排行榜（§1.9）：按 (captures, survival_steps) 降序 */}
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
-              <span className="font-pixel text-[10px] leading-none">LEADERBOARD</span>
+              <SectionLabel en="LEADERBOARD" zh="排行榜" />
               <button
                 type="button"
                 onClick={() =>
@@ -400,7 +401,7 @@ export function DanioArenaPanel() {
                 }
                 className="border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
               >
-                REFRESH
+                REFRESH · 刷新
               </button>
             </div>
             <table className="w-full font-mono text-[10px]">
@@ -444,7 +445,7 @@ export function DanioArenaPanel() {
 
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
-            <span className="font-pixel text-[10px] leading-none">EVOLVE</span>
+            <SectionLabel en="EVOLVE" zh="演化" />
             <span className="font-mono text-[10px] text-muted-foreground">
               GENERATION {generation}
             </span>
@@ -460,7 +461,7 @@ export function DanioArenaPanel() {
                 : "hover:bg-brand-slate-shadow hover:text-brand-bone"
             }`}
           >
-            {evolutionBusy ? "RUNNING…" : "NEXT GENERATION"}
+            {evolutionBusy ? "计算中…" : "NEXT GENERATION · 下一代"}
           </button>
           {evoSummary && (
             <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-[10px]">
@@ -484,7 +485,7 @@ export function DanioArenaPanel() {
 
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
-            <span className="font-pixel text-[10px] leading-none">SPEED</span>
+            <SectionLabel en="SPEED" zh="步速" />
             {[1, 0.5, 0.25].map((factor) => (
               <button
                 key={factor}

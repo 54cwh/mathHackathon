@@ -70,9 +70,19 @@ export function TopBar() {
   );
 }
 
+/** 顶栏统计项的中文（悬停提示；顶栏空间有限，不铺开显示）。 */
+const STATUS_ZH: Record<string, string> = {
+  Env: "环境",
+  Generation: "世代",
+  Fish: "存活鱼 / 总数",
+  Prey: "剩余猎物",
+  Step: "仿真步",
+  Seed: "主种子",
+};
+
 function StatusItem({ label, value }: { label: string; value: string | number }) {
   return (
-    <span>
+    <span title={`${label}：${STATUS_ZH[label] ?? ""}`}>
       {label} <span className="font-mono text-foreground">{value}</span>
     </span>
   );

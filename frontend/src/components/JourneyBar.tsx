@@ -20,6 +20,15 @@ import {
  * 样式：英文段名走 `.font-pixel`；无圆角/无过渡/无投影（`视觉规范审计.md` 规则 4/§十一）。
  */
 
+/** 段名的中文（悬停提示；流程条本身只放英文以保持紧凑）。 */
+const STAGE_ZH: Record<JourneyStage, string> = {
+  seed: "种子",
+  genome: "基因组",
+  develop: "发育",
+  arena: "竞技场",
+  evolve: "演化",
+};
+
 const LABELS: Record<JourneyStage, string> = {
   seed: "SEED",
   genome: "GENOME",
@@ -91,6 +100,7 @@ export function JourneyBar() {
               key={stage}
               role="listitem"
               aria-current={state === "active" ? "step" : undefined}
+              title={STAGE_ZH[stage]}
               className={cn(
                 "px-2 py-1 font-pixel text-[10px] leading-none",
                 state === "active" && "bg-brand-fish-navy text-brand-bone",

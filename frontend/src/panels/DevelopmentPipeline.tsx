@@ -1,3 +1,4 @@
+import { SectionLabel } from "@/components/SectionLabel";
 import { useMemo } from "react";
 import { Pause, Play } from "lucide-react";
 import { BRAND } from "@/design/palette";
@@ -125,7 +126,7 @@ export function DevelopmentPipeline({
   if (!trace || trace.length === 0) {
     return (
       <div className="space-y-2 border border-border p-2">
-        <div className="font-pixel text-[10px] leading-none">DEVELOPMENT PIPELINE</div>
+        <div><SectionLabel en="DEVELOPMENT PIPELINE" zh="发育管线" /></div>
         {stageRail(0, false)}
         <p className="font-mono text-[10px] text-muted-foreground">
           尚无发育轨迹。在左侧 DNA2Brain Lab 点 DEVELOP 开始。
@@ -149,7 +150,7 @@ export function DevelopmentPipeline({
   return (
     <div className="space-y-2 border border-border p-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="font-pixel text-[10px] leading-none">DEVELOPMENT PIPELINE</span>
+        <SectionLabel en="DEVELOPMENT PIPELINE" zh="发育管线" />
         <span className="truncate font-mono text-[10px] text-muted-foreground">
           {genomeId ?? "—"}
         </span>
