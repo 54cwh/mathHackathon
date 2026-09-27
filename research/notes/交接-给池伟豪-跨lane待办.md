@@ -396,3 +396,35 @@ H 轴仍 `separable=false`（AUC 0.4993；已按用户裁决退役 ⇒ 单轴 N�
 （**同一 hunk 混编，无法按 hunk 拆分**）；而 `HEAD` 的 `model_chain.py:134` 仍在传 `collect_trace=`
 ⇒ 单独提交 `rgcd.py` 会让**提交后的树坏掉**。故按既有裁决留在工作区，等对方批次先落地再一次性提。
 
+
+---
+
+## 【已落地】§5 通道 β 翻 1.0 + 读数 K=16（2026-09-27，李辰钊 lane）
+
+**上面那段「若 β 翻 1.0……」已经不是假设了 —— 已批准并落地。** 请把 Exp C/D/E/F 与
+`artifacts/demo` checkpoint 的重跑**都按 β=1.0 跑**（它们本就欠着 Θ_D 那波，β 增量≈0）。
+
+**取值与判据**（配对 2×4 网格，同一批基因组；官方校准 seeds、n=3200）：
+
+| β | K=1 | K=16 | K=64 |
+|---|---|---|---|
+| 0.0 | ✗ AUC 0.4775 | ✗ 0.4445 | ✗ 0.4212 |
+| 1.0 | ✓ 0.6138 | ✓ **0.7861** | ✓ 0.8342 |
+
+出货配置独立复现（另一命名空间 `pen-beta1-k16`）：**AUC 0.7991、p=1.0e-188、
+min-misclass 0.2847（pen 0.715）、θ_N^obs 36.469 / 36.062**（区间内部）。
+
+**三条要点**：
+1. **K 单独无效** —— β=0 时 K 越大 AUC **越差**（0.4775→0.4212）。所以上文「B1 便宜得多」这条
+   **需要修正**：`E[N]` 那条路在 β=0 下同样不可辨识；真正开信号的是 **β**，K 只是其上的**免费**放大。
+   （`E[N]` 的退化为 pen≡1 仍然成立，故 K 不取极限、取 16。）
+2. **上文写的「3 处已冻结锚」是对的**（我一度误判为 2 处，被全量测试抓出并已更正）。第 3 处不是
+   `tests/test_development_config.py` 的断言，而是 `src/evogenesis/development/config.py` 里
+   `DEFAULT_CONFIG` 所依赖的 **dataclass 默认值** `division_locus_gain`（0.0 → 1.0）；
+   同时已把两个 `division_*_gain` 补录进该测试的 `FIELD_SOURCES`，堵住这次漂移得以溜过的洞。
+3. **`n_danio = 400` viable 数**：本次实测 `n_viable = 42/42`、`n_danionet_built = 42/42`（3 seed × 14 个体），
+   即发育门禁在 β=1.0 下仍无区分力 —— 与 `paper/报告-骨架.md` F6 的结论一致。
+
+**仍未决（不属本 lane）**：θ 数值签署（`theta_N_obs`/`theta_H_obs` 仍 `null`、`threshold_status` 仍 `unset`；
+校准产物已放 `results/tables/pen-beta1-k16_penetrance_calibration.json`，可直接据此签）；
+§7 判据**无效应下限**；H 轴单轴化实现。

@@ -43,18 +43,25 @@ development:
   # 二者对 β>0 的任何单调尺度**不变** ⇒ β 既不需要、也不可能被"标定"
   # （实测 α∈[0.5,16]×β∈[0.05,2] 全平面同值）。α 在逐个体中心化后于线性区
   # **一阶抵消**（Σ_i u_c,i = 0）⇒ 线性区 α 惰性、保持 1.0。
-  # 实测（β=1.0 全链，官方校准 seeds，n=1600）：N 轴 AUC 0.6284、p=3.4e-19、
-  # min-misclass 0.408（= pen 0.592），θ_N^obs 35.5 / 36.5 落**区间内部**；
-  # 对照 β=0 基线 AUC 0.4775、min-misclass 0.500（= 多数类基线）。H 轴仍不可分离
-  # （已按用户裁决停用，单轴 N）。
-  # **β 由 0.0 翻 1.0 待用户裁决**：它改动 3 处已冻结锚
-  # （`tests/test_dump_connectome_matrix.py` 的论文锚 N 中位 36.5 / 195 边 / 0.149 →
-  # 现 37.0、`tests/test_fig_connectome.py` 代表个体 index 4 → 0、
-  # `tests/test_development_config.py` 的 DEFAULT_CONFIG），并须重跑 Exp C/D/E/F +
-  # demo checkpoint；且 §7 判据无**效应下限**（AUC 0.628 虽 p 极小但仍属弱效应）。
-  # 依据：`research/notes/契约决策记录.md` 2026-09-26 条目（含权衡面与端到端实测）。
+  # **裁决（2026-09-27，用户授权）：β 翻 1.0，K 取 16。**
+  # 决定性证据 = **配对 2×4 网格**（同一批基因组；β 只动本键，K 只动
+  # `configs/penetrance.yaml::realisations_k`），官方校准 seeds、n=3200（800/类）：
+  #   β=0.0：K=1/16/64 **全不可分**，N 轴最小错分 **0.500 / 0.500 / 0.500**（= 多数类基线）
+  #   β=1.0：**可分离**，最小错分 **0.425 / 0.288**（K=1/16；pen 0.575 / 0.712）
+  # ⇒ 两条独立结论：① **K 单独救不了**（无信号可去噪）；② **β 一开 K=1 即可分**，
+  #    K 是其上的**免费**放大（只重抽 §5 分裂抽签，不动发育 / 感知 / Arena）。
+  # **为何 K=16 而非 64**：K→∞ 即期望读数 E[N]，退化为 pen≡1；而**不完全外显率
+  # 恰是 penetrance 的生物学含义**（Cooper et al.），故取曲线中段而非端点。
+  # H 轴恒不可分（最小错分 0.488–0.496）⇒ 停用，单轴 N。
+  # **出货配置实测（独立 seed 命名空间，`pen-beta1-k16`）**：N 轴 AUC 0.7991、p=1.0e-188、
+  # min-misclass 0.2847（pen 0.715）、θ_N^obs 36.469 / 36.062 落区间内部，n=3200。
+  # **代价**：β 改 N ⇒ 须重冻结 **3 处**锚（`tests/test_dump_connectome_matrix.py` 论文锚、
+  # `tests/test_fig_connectome.py` 代表个体、`src/evogenesis/development/config.py` 的
+  # `DEFAULT_CONFIG` 来源 `division_locus_gain` 默认值）+ 论文 5 处数字；Exp C/D/E/F 与
+  # demo checkpoint 属**已欠**的 Θ_D 那波（β 增量≈0），由重跑回填。
+  # 依据：`research/notes/契约决策记录.md` 2026-09-27 条目（含配对网格与 K 曲线）。
   division_drive_gain: 1.0
-  division_locus_gain: 0.0
+  division_locus_gain: 1.0
   zero_input_steps: 50
   saturation_ratio_max: 0.9
   saturation_eps: 0.001

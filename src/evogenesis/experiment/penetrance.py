@@ -894,7 +894,8 @@ def _genotype_counts(
     for row in rows:
         if observed:
             assert theta is not None
-            label = observed_architecture(_readout_n(row), row.cv_tau, theta[0], theta[1]).class_label
+            arch = observed_architecture(_readout_n(row), row.cv_tau, theta[0], theta[1])
+            label = arch.class_label
         else:
             label = row.expected_class
         counts[label] += 1

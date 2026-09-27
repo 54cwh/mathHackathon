@@ -28,6 +28,8 @@ FIELD_SOURCES = {
     "position_space": ("development", "position_space"),
     "split_noise": ("development", "split_noise"),
     "gene_noise": ("development", "gene_noise"),
+    "division_drive_gain": ("development", "division_drive_gain"),
+    "division_locus_gain": ("development", "division_locus_gain"),
     "c_domain_bonus": ("development", "c_domain_bonus"),
     "zero_input_steps": ("development", "zero_input_steps"),
     "saturation_ratio_max": ("development", "saturation_ratio_max"),

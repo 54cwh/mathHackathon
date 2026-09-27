@@ -74,7 +74,7 @@ class RGCDConfig:
     #: §5 的两个设计增益（α/β）与基因组通道的 motif 索引。
     #: 索引**单一来源**：`genome.motif_subset_A`（不在此另写一版）。
     division_drive_gain: float = 1.0
-    division_locus_gain: float = 0.0
+    division_locus_gain: float = 1.0
     division_locus_indices: tuple[int, ...] = (0,)
     zero_input_steps: int = 50
     saturation_ratio_max: float = 0.9

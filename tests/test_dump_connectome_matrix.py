@@ -16,8 +16,9 @@
    破了这条，落盘的矩阵会静默地不是种群里的那个个体。
 
 另有一条**论文数字锚**（``test_pooled_sizes_match_the_method_section_anchor``）：
-「N 中位 36.5（27--43）、支撑连接中位 195 条（105--289）、密度中位 0.149」就是本产物
-在 3 个正式 seed x 14 个体上的读数（2026-09-26 §7 修复后更新；旧读数 36 / 186 / 0.148）。
+「N 中位 37.0（27--43）、支撑连接中位 192.5 条（105--289）、密度中位 0.149」就是本产物
+在 3 个正式 seed x 14 个体上的读数
+（2026-09-27 §5 通道 β 0.0→1.0 后更新；旧读数 36.5 / 195 / 0.149）。
 口径漂了要在这里红灯，而不是等论文被审稿人抓。
 
 小样本跑（``n=14``，`develop` 单次约 10ms）。
@@ -237,19 +238,22 @@ def test_pooled_sizes_match_the_method_section_anchor(formal_payload):
     """论文 §「48-node 的含义」引用的数字必须能在本产物上重算出来。
 
     `paper/latex/sections/02-method.tex` 写的「3 个正式 seed x 14 个体共 42 个基因型上实测：
-    N 中位 36.5（27--43），支撑连接中位 195 条（105--289），密度中位 0.149」。
+    N 中位 37.0（27--43），支撑连接中位 192.5 条（105--289），密度中位 0.149」。
     **若此断言失败：不要改断言去迁就** —— 要么 `develop` 的随机数纪律被破坏，
     要么 02-method.tex 的数字已过期，两者都必须先查清。
     2026-09-26：§7 发育门禁修复（`U` 散布钳制 + `W⁰` 谱半径归位）改变了表型规模，
     由 36（26--44）/ 186（94--287）/ 0.148 移至本值；论文与断言同批更新。
+    2026-09-27：§5 基因组通道 β 0.0 → 1.0（用户授权）+ K=16，表型规模再移至
+    37.0（27--43）/ 192.5（105--289）/ 0.149。本次成因是**配置变更**（非随机数纪律被破坏），
+    依本 docstring 的处置：论文 02-method / 06-limitations / 04-baselines 与断言**同批**更新。
     """
     pooled = formal_payload["architecture_probe"]["pooled"]
     assert pooled["n_individuals"] == len(FORMAL_SEEDS) * SAMPLE_N == 42
 
-    assert pooled["n_neurons"]["median"] == 36.5
+    assert pooled["n_neurons"]["median"] == 37.0
     assert (pooled["n_neurons"]["min"], pooled["n_neurons"]["max"]) == (27, 43)
 
-    assert pooled["support_edges"]["median"] == 195
+    assert pooled["support_edges"]["median"] == 192.5
     assert (pooled["support_edges"]["min"], pooled["support_edges"]["max"]) == (105, 289)
 
     assert round(pooled["support_density"]["median"], 3) == 0.149

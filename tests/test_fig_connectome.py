@@ -170,7 +170,7 @@ def test_manifest_carries_traceable_provenance(figmod, payload, built):
     assert "connectome_matrix.json" in texts
     assert provenance["matrix_json_digest"] == payload["digest"]
     assert provenance["tensor_cells_per_individual"] == str(payload["max_nodes"] ** 2)
-    assert provenance["primary_representative"] == "seed 1103 index 4"
+    assert provenance["primary_representative"] == "seed 1103 index 0"
 
     rep = figmod.primary_representative(payload)
     assert provenance["primary_n_neurons"] == str(rep["n_neurons"])
