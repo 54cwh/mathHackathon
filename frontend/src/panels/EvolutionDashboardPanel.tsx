@@ -68,8 +68,6 @@ export function EvolutionDashboardPanel() {
   const [job, setJob] = useState<JobStatus | null>(null);
   /** job 来源：只有环境选择 job 完成才刷新「详情=最新实验」，会话演化不产 ExperimentRun。 */
   const [busy, setBusy] = useState(false);
-  /** 发起新实验的表单默认折叠（演示时不抢戏）。 */
-  const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // 列表与详情
   const [items, setItems] = useState<EnvironmentalSelectionSummary[]>([]);
@@ -218,23 +216,14 @@ export function EvolutionDashboardPanel() {
       icon={<FlaskConical className="size-4 text-primary" />}
     >
       <div className="grid h-full min-h-0 grid-cols-2 divide-x divide-border">
-        {/* 左：发起新实验（默认折叠）+ 本进程实验列表。该区字号统一放大到 12px。 */}
+        {/* 左：发起新实验（表单常显，不折叠）+ 本进程实验列表。 */}
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-3">
-          <button
-            type="button"
-            onClick={() => setShowForm((v) => !v)}
-            className="flex items-center justify-between border border-border px-2 py-1.5 text-left"
-          >
-            <span className="inline-flex items-baseline gap-1.5">
-              <span className="font-pixel text-[14px] leading-none">ENVIRONMENTAL SELECTION</span>
-              <span className="text-sm leading-none text-muted-foreground">环境选择实验</span>
-            </span>
-            <span className="font-pixel text-[14px] leading-none text-muted-foreground">
-              {showForm ? "▾ 收起" : "▸ 发起新实验"}
-            </span>
-          </button>
+          <span className="inline-flex items-baseline gap-1.5">
+            <span className="font-pixel text-[14px] leading-none">ENVIRONMENTAL SELECTION</span>
+            <span className="text-sm leading-none text-muted-foreground">环境选择实验</span>
+          </span>
 
-          {showForm && (
+          {(
             <>
               <label className="flex flex-col gap-1">
                 <span className="text-sm text-muted-foreground">名称 NAME</span>

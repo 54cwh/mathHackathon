@@ -385,20 +385,8 @@ export function DanioArenaPanel() {
 
           {/* 排行榜（§1.9）：按 (captures, survival_steps) 降序 */}
           <div className="border border-border p-2">
-            <div className="mb-1 flex items-center justify-between">
+            <div className="mb-1">
               <SectionLabel en="LEADERBOARD" zh="排行榜" />
-              <button
-                type="button"
-                onClick={() =>
-                  sessionId &&
-                  void getLeaderboard(sessionId)
-                    .then(setBoard)
-                    .catch((e) => setError(String(e)))
-                }
-                className="border border-border px-2 py-0.5 font-pixel text-[11px] leading-none"
-              >
-                REFRESH · 刷新
-              </button>
             </div>
             <table className="w-full font-mono text-[11px]">
               <thead>

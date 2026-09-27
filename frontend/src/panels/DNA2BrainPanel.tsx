@@ -10,7 +10,6 @@ import type { Base, DevelopmentResult, GenomeRecord, MutationDiff, MutationResul
 import { DevCompare } from "@/panels/DevCompare";
 
 import { spawnIndividual } from "@/api/arena";
-import { BreedingLab } from "@/panels/BreedingLab";
 
 /**
  * DNA2Brain Lab —— 真编辑器（原模型 → 突变 → 发育 的界面证据链）。
@@ -420,24 +419,11 @@ export function DNA2BrainPanel() {
 
           {/* §5 / §11 compare：基线 vs 改后 */}
           <section className="border border-border p-2">
-            <div className="mb-1 flex items-center justify-between">
+            <div className="mb-1">
               <SectionLabel en="BEFORE / AFTER" zh="改前 / 改后" />
-              <button
-                type="button"
-                onClick={() => {
-                  setBaseline(development);
-                  setMutations([]);
-                }}
-                disabled={!development}
-                className="border border-border px-2 py-0.5 font-pixel text-[11px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
-              >
-                SET BASELINE
-              </button>
             </div>
             <DevCompare before={baseline} after={development} mutations={mutations} />
           </section>
-
-          <BreedingLab current={genome} onAdopt={(id) => void adoptGenome(id)} />
 
           <p className="shrink-0 text-xs text-muted-foreground">
             {error ? `⚠ ${error}` : "点选碱基或用 POS 定位，MUTATE 单点突变后 DEVELOP 重算表型。"}
