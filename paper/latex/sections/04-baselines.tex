@@ -87,13 +87,13 @@ Arena每局约 $2$\,s，而一次训练 $8.8$\,min（\texttt{train\_bc} 恒 $7.6
 (ii)~基线 $v=\tanh(\cdot)\in[-1,1]$ 与DanioNet $v=\sigma(\cdot)\in[0,1]$ 的\textbf{动作区间口径不同}，
 本轮照实记录、\textbf{未修改基线读出}（\texttt{connectome/DanioNet设计规范.md} \S8）。
 （第三个seed未跑完即按限时停止；补跑后 \texttt{scripts/rebuild\_baselines\_table.py} 一行重建即可升到 $n=3$。）
-\todo{判据：trainable parameter count 同一数量级（按连接数，$|\Delta\log_{10}|\le 1$）。}
-\todo{实测可训练连接数中位 192.5（$\Theta$ 张量 $48\times48=2304$，有效支撑内 195；个体间 105--289）。}
+
+结构规模的对照口径取可训练连接数：$\Theta$ 张量 $48\times48=2304$，
+实测有效支撑内中位 $192.5$，个体间 $105$--$289$。
+
+
 
 \subsection{消融}
-\todo{w/o GRN；allele 聚合（mean vs max）；homogeneous $\tau$；}
-\todo{w/o spatial wiring cost；BC 有/无 Dale 约束。}
-\todo{实现状态：\textbf{BC 有/无 Dale 约束的模型侧开关已实现}，
-  \texttt{DanioNet(sign\_constrained=False)} 走非约束路径 $W=A\odot\Theta$
-  （\texttt{connectome/danionet.py}）；其余消融项\textbf{尚未实现}。
-  全部消融项\textbf{均无 runner 与结果}，故本节空缺。}
+
+消融实验尚未实现，本节不列数值。
+

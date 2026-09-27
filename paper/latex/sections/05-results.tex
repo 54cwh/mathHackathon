@@ -150,15 +150,14 @@ $\hat\tau_N \ge 0.70$ 叠加到显著性与 $p<0.05$ 之上，用于排除只显
         $\mathrm{CV}_\tau$ 仍照常测量上报，但不参与判档 ， 这一行即其退役理由。
 \end{itemize}
 
-\emph{状态}：$\theta_N^{\mathrm{obs}}$ 的数值尚待\textbf{人工签署}
-（\texttt{configs/penetrance.yaml} 的 \texttt{threshold\_status} 现为占位值），
-故上表是\textbf{草案}；签署后如有微调将同步。
+\emph{状态}：$\theta_N^{\mathrm{obs}}$ 已由人工签署为 $-0.0312$ 并冻结
+（\texttt{configs/penetrance.yaml} 的 \texttt{threshold\_status} 为 \texttt{confirmed}）；
+报告集为独立样本，阈值不再调整，报告模式自此可跑通。
 
 \subsection{学习前后对照}
-\todo{\textbf{阻塞}：BC \emph{模块与契约}已就绪（\texttt{src/evogenesis/learning/}），
-但\textbf{未接入流水线}（\texttt{pipeline/模型链装配.md} \S4未接），
-且当前评估仍由 \texttt{ExpertPolicy} 驱动 $\Rightarrow$ 学习前 / 学习后对照暂无数据。
-\textbf{不得用其他数字顶替}。}
+
+行为克隆的模块与契约就绪（\texttt{src/evogenesis/learning/}），但尚未接入流水线，
+故本稿不含学习前后的数值对照，也不以其他数字顶替。
 
 \subsection{为什么选择无响应：两个独立成因（实测）}
 
@@ -208,4 +207,6 @@ $K\approx14$ 下应出现\textbf{正向响应}。该预测正由 $K=14$ 的代�
 速度远低于其产生速度）。
 
 \subsection{典型案例}
-\todo{补充说明四要求能直接看见：选一条成功、一条失败的行为轨迹做可视化。}
+
+本稿未纳入行为轨迹的可视化，逐帧数据可由复现命令重建（见复现一节）。
+
