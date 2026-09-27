@@ -19,8 +19,8 @@ import { useUiStore } from "@/store/ui";
 /**
  * Brain Forge —— 订阅真实 `brain.activation`（`API接口.md` §3）。
  *
- * 触发口径：`brain.activation` 由 `release` 在**模型驱动会话**（`model_driven=true`
- * 且带 `checkpoint_path`）上推送（`api/session.py` release → `publish_brain_activation`）。
+ * 触发口径：`brain.activation` 由 `release` 推送——会话里每条鱼都有**它自己的网**（`api/§1.1`），
+ * 故默认会话即有真实激活（`api/session.py` release → `publish_brain_activation`）。
  * 驱动者只有一处：Arena 的 release 轮询。本面板**只订阅、不驱动**，避免两处同时
  * 推进同一会话。会话为空或非模型驱动时，本面板恒停在「未初始化」态（§15.1 A2：
  * 未初始化走 placeholder，**不编造**数据）。

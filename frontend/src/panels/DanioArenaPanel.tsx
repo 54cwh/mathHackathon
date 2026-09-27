@@ -44,7 +44,6 @@ const SCENE_EVERY = 5;
 /** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
 const SESSION_RETRY_MS = 3000;
 /** 冻结 demo checkpoint（`artifacts/demo/`；`pipeline §6` 契约）。 */
-const DEMO_CHECKPOINT = "artifacts/demo/checkpoint_v1.pt";
 
 /** 稳定 ID 可能很长；截断只影响显示，不影响 identity。 */
 function shortId(id: string): string {
@@ -59,8 +58,6 @@ export function DanioArenaPanel() {
   const setSessionId = useUiStore((s) => s.setSessionId);
   const resetNonce = useUiStore((s) => s.resetNonce);
   const activeView = useUiStore((s) => s.activeView);
-  /** DanioNet 驱动开关（`API接口.md` §7.2）：开启后本会话推 `brain.activation`，Brain Forge 才有真数据。 */
-  const [modelDriven, setModelDriven] = useState(false);
   const selectedFishId = useUiStore((s) => s.selectedFishId);
   const setSelectedFish = useUiStore((s) => s.setSelectedFish);
   const setStats = useUiStore((s) => s.setStats);
@@ -100,7 +97,6 @@ export function DanioArenaPanel() {
       createSession(
         MASTER_SEED,
         "food_rich",
-        modelDriven ? { model_driven: true, checkpoint_path: DEMO_CHECKPOINT } : {},
         // 演示配置：4 鱼 / 30 猎物 / 1800 步（`configs/demo_arena.yaml`）；种群数由该配置的 n_fish 决定。
         { arenaConfigPath: DEMO_ARENA_CONFIG },
       )
@@ -139,7 +135,7 @@ export function DanioArenaPanel() {
       setSessionId(null);
       if (created) void deleteSession(created).catch(() => undefined);
     };
-  }, [resetNonce, modelDriven, setSessionId, setRunning, setIndividuals]);
+  }, [resetNonce, setSessionId, setRunning, setIndividuals]);
 
   // ---- WS: 鱼层 + 事件 ----------------------------------------------------
   useEffect(() => {
@@ -501,20 +497,6 @@ export function DanioArenaPanel() {
             ))}
           </span>
           <span className="truncate">{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
-          <button
-            type="button"
-            onClick={() => setModelDriven((v) => !v)}
-            title={
-              modelDriven
-                ? "当前：一条冻结的演示网络驱动全部鱼。点此回到每条鱼各用自己的网（默认）"
-                : "当前：每条鱼各用自己的网（默认）。点此切到一条冻结的演示网络 —— 会重建会话"
-            }
-            className={`shrink-0 border border-border px-2 py-0.5 font-pixel text-[10px] leading-none ${
-              modelDriven ? "bg-brand-fish-navy text-brand-bone" : ""
-            }`}
-          >
-            {modelDriven ? "MODEL DRIVEN" : "EXPERT"}
-          </button>
           <span className="truncate">{error ? `⚠ ${error}` : "click a fish to inspect"}</span>
         </div>
       </div>

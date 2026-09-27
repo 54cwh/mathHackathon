@@ -36,11 +36,6 @@ export const MASTER_SEED = 250927;
  */
 export const DEMO_ARENA_CONFIG = "configs/demo_arena.yaml";
 
-/** Session options that are only meaningful for model-driven sessions. */
-export type SessionDriving =
-  | { model_driven?: false; checkpoint_path?: null }
-  | { model_driven: true; checkpoint_path?: string | null };
-
 export interface SessionOptions {
   /** Arena 配置路径（缺省后端用 `configs/default_arena.yaml`）。 */
   arenaConfigPath?: string;
@@ -51,14 +46,11 @@ export interface SessionOptions {
 export function createSession(
   masterSeed = MASTER_SEED,
   environment: Environment = "food_rich",
-  driving: SessionDriving = {},
   options: SessionOptions = {},
 ): Promise<SessionSummary> {
   const body: Partial<SessionCreate> = {
     master_seed: masterSeed,
     environment,
-    model_driven: driving.model_driven ?? false,
-    checkpoint_path: driving.checkpoint_path ?? null,
     population_size: options.populationSize ?? null,
   };
   if (options.arenaConfigPath) body.arena_config_path = options.arenaConfigPath;
