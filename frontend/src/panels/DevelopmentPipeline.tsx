@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Pause, Play } from "lucide-react";
 import { BRAND } from "@/design/palette";
 import { MetricChart } from "@/visuals/MetricChart";
-import { drawLineChart, type SeriesDef } from "@/visuals/chartPrimitives";
+import { drawBars, drawLineChart, type SeriesDef } from "@/visuals/chartPrimitives";
 import type { DevelopmentTraceSample } from "@/api/types";
 
 /**
@@ -26,6 +26,8 @@ export interface DevelopmentPipelineProps {
   playing: boolean;
   /** 该个体是否正在推送实时神经活动（点亮阶段轨末端的 DANIONET）。 */
   activationLive?: boolean;
+  /** `dev_trace.q`（8 维 motif 亲和度）——用于 `q(S)` 阶段的读数。 */
+  q?: number[] | null;
   onCursor: (index: number) => void;
   onTogglePlay: () => void;
 }
@@ -42,10 +44,26 @@ const PIPELINE_STAGES = [
 ] as const;
 
 /** 阶段轨（§4）：整条序列一目了然，当前项高亮；末端 DANIONET 仅在收到实时激活时点亮。 */
-function stageRail(activeIndex: number) {
+function stageRail(activeIndex: number, danionetLive: boolean) {
   return (
     <div role="list" aria-label="development stages" className="flex flex-wrap items-center gap-1">
       {PIPELINE_STAGES.map((label, index) => {
+        // 末项 DANIONET 独立于"当前阶段"：它是**实时激活**指示，与 CONNECTIONS 并列。
+        if (index === 6) {
+          return (
+            <span
+              key={label}
+              role="listitem"
+              data-live={danionetLive ? "true" : undefined}
+              title={danionetLive ? "该个体正在推送实时神经活动" : "等待实时神经活动"}
+              className={`border border-border px-1.5 py-0.5 font-pixel text-[9px] leading-none ${
+                danionetLive ? "bg-brand-grass-green text-brand-ink" : "text-muted-foreground"
+              }`}
+            >
+              {label}
+            </span>
+          );
+        }
         const state = index === activeIndex ? "active" : index < activeIndex ? "done" : "pending";
         return (
           <span
@@ -68,17 +86,20 @@ function stageRail(activeIndex: number) {
   );
 }
 
-/** 由"当前轨迹阶段 + 是否走完 + 是否在推激活"决定阶段轨高亮项（不猜、不跳段）。 */
+/**
+ * 阶段轨高亮项（不猜、不跳段；每个阶段各自可达）。
+ *
+ * 关键划分：trace 的 `grn` **step 0** 是"q 驱动的初始态"，划给 `q(S)`；`grn` step ≥ 1 才是
+ * `GRN` 迭代本身。于是 `MOTIF`（尚未发育）/`q(S)`/`GRN` 三者互不耦合。
+ */
 function stageIndex(
   current: DevelopmentTraceSample["stage"] | null,
-  complete: boolean,
-  activationLive: boolean,
+  step: number | null,
 ): number {
   if (!current) return 0; // 尚未发育：停在起点 MOTIF
-  if (complete && activationLive) return 6; // 发育走完且收到激活：DANIONET
   switch (current) {
     case "grn":
-      return 2;
+      return step === 0 ? 1 : 2; // step 0 = q(S) 初始态；≥1 = GRN 迭代
     case "proliferate":
       return 3;
     case "fate":
@@ -94,6 +115,7 @@ export function DevelopmentPipeline({
   cursor,
   playing,
   activationLive = false,
+  q = null,
   onCursor,
   onTogglePlay,
 }: DevelopmentPipelineProps) {
@@ -104,7 +126,7 @@ export function DevelopmentPipeline({
     return (
       <div className="space-y-2 border border-border p-2">
         <div className="font-pixel text-[10px] leading-none">DEVELOPMENT PIPELINE</div>
-        {stageRail(0)}
+        {stageRail(0, false)}
         <p className="font-mono text-[10px] text-muted-foreground">
           尚无发育轨迹。在左侧 DNA2Brain Lab 点 DEVELOP 开始。
         </p>
@@ -120,11 +142,9 @@ export function DevelopmentPipeline({
   ];
 
   const sliderMax = Math.max(0, trace.length - 1);
-  const activeIndex = stageIndex(
-    current ? current.stage : null,
-    cursor >= sliderMax,
-    activationLive,
-  );
+  const activeIndex = stageIndex(current ? current.stage : null, current ? current.step : null);
+  // DANIONET 是**并列的实时指示**（发育走完且收到激活），不取代 CONNECTIONS 的"当前"。
+  const danionetLive = cursor >= sliderMax && activationLive;
 
   return (
     <div className="space-y-2 border border-border p-2">
@@ -135,7 +155,7 @@ export function DevelopmentPipeline({
         </span>
       </div>
 
-      {stageRail(activeIndex)}
+      {stageRail(activeIndex, danionetLive)}
 
       <div className="flex items-center gap-2">
         <button
@@ -178,6 +198,22 @@ export function DevelopmentPipeline({
           }
         />
       </div>
+
+      {activeIndex === 1 && q && q.length > 0 && (
+        <div>
+          <div className="mb-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">
+            <span>motif 亲和度 q(S)（{q.length} 维）</span>
+            <span>{q.map((v) => v.toFixed(2)).join(" ")}</span>
+          </div>
+          <MetricChart
+            height={28}
+            ariaLabel="motif affinity q"
+            draw={(ctx: CanvasRenderingContext2D, w: number, h: number) =>
+              void drawBars(ctx, w, h, q, BRAND.amber)
+            }
+          />
+        </div>
+      )}
 
       <div>
         <div className="mb-0.5 flex justify-between font-mono text-[10px] text-muted-foreground">

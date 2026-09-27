@@ -146,7 +146,8 @@ export function BrainForgePanel() {
         <div className="min-h-32 flex-[2] overflow-hidden">
           <BrainForgeVisual
             activation={vector ?? undefined}
-            showEdges={showEdges}
+            // 连接层只在「连接组成形」阶段出现 —— 否则它与「细胞分化」画面完全相同（阶段耦合）。
+            showEdges={showEdges && currentSample?.stage === "connectome"}
             geometry={
               currentSample?.positions
                 ? {
@@ -201,6 +202,7 @@ export function BrainForgePanel() {
             trace={trace}
             genomeId={genomeId}
             activationLive={vector !== null}
+            q={development?.result?.dev_trace.q ?? null}
             cursor={cursor}
             playing={playing}
             onCursor={(index) => {
