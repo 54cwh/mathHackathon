@@ -78,6 +78,31 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 - **Evolution Dashboard**：呈现逐代演化指标与排行榜。
 - **Development Pipeline / Playback**：呈现从配置、种子到基因组与发育结果的流程，并支持回放。
 
+**运行**（前置 Node 22）：
+
+```bash
+make demo            # 一键：构建前端 + 启动 API，浏览器打开 http://127.0.0.1:8000
+```
+
+前端开发（热更新；dev server 在 5173，`/v1` 反向代理到后端 8000）：
+
+```bash
+# 终端 A：后端
+uv run python scripts/serve_api.py
+# 终端 B：前端
+cd frontend
+npm install
+npm run dev          # http://127.0.0.1:5173
+```
+
+单独构建静态产物到 `frontend/dist`：
+
+```bash
+make frontend        # = cd frontend && npm run build
+```
+
+前端检查：`npm run typecheck`、`npm run lint`、`npm run lint:design`。
+
 前端只做渲染与交互，仿真由后端权威运行。
 
 ## 环境要求
