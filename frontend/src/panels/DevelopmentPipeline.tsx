@@ -61,7 +61,7 @@ function stageRail(activeIndex: number, danionetLive: boolean) {
               role="listitem"
               data-live={danionetLive ? "true" : undefined}
               title={danionetLive ? "该个体正在推送实时神经活动" : "等待实时神经活动"}
-              className={`border border-border px-1.5 py-0.5 font-pixel text-[11px] leading-none ${
+              className={`border border-border px-1.5 py-0.5 font-pixel text-xs leading-none ${
                 danionetLive ? "bg-brand-grass-green text-brand-ink" : "text-muted-foreground"
               }`}
             >
@@ -75,7 +75,7 @@ function stageRail(activeIndex: number, danionetLive: boolean) {
             key={label}
             role="listitem"
             aria-current={state === "active" ? "step" : undefined}
-            className={`border border-border px-1.5 py-0.5 font-pixel text-[11px] leading-none ${
+            className={`border border-border px-1.5 py-0.5 font-pixel text-xs leading-none ${
               state === "active"
                 ? "bg-brand-fish-navy text-brand-bone"
                 : state === "done"
@@ -132,7 +132,7 @@ export function DevelopmentPipeline({
       <div className="space-y-2 border border-border p-2">
         <div><SectionLabel en="DEVELOPMENT PIPELINE" zh="发育管线" /></div>
         {stageRail(0, false)}
-        <p className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
+        <p className="whitespace-nowrap font-mono text-xs text-muted-foreground">
           尚无发育轨迹。在左侧 DNA2Brain Lab 点 DEVELOP 开始。
         </p>
       </div>
@@ -155,7 +155,7 @@ export function DevelopmentPipeline({
     <div className="space-y-2 border border-border p-2">
       <div className="flex items-center justify-between gap-2">
         <SectionLabel en="DEVELOPMENT PIPELINE" zh="发育管线" />
-        <span className="truncate font-mono text-[11px] text-muted-foreground">
+        <span className="truncate font-mono text-xs text-muted-foreground">
           {genomeId ?? "—"}
         </span>
       </div>
@@ -166,15 +166,15 @@ export function DevelopmentPipeline({
         <button
           type="button"
           onClick={onTogglePlay}
-          className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-[11px] leading-none"
+          className="inline-flex items-center gap-1 border border-border px-2 py-0.5 font-pixel text-xs leading-none"
         >
           {playing ? <Pause className="size-3" /> : <Play className="size-3" />}
           {playing ? "PAUSE" : "PLAY"}
         </button>
-        <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
+        <span className="shrink-0 font-mono text-xs text-muted-foreground">
           {cursor + 1}/{trace.length}
         </span>
-        <span className="truncate font-mono text-[11px]">
+        <span className="truncate font-mono text-xs">
           {current ? STAGE_DISPLAY[activeIndex] : ""}
           {current?.stage === "grn" && activeIndex === 2 ? ` · step ${current.step}` : ""}
         </span>
@@ -191,7 +191,7 @@ export function DevelopmentPipeline({
       />
 
       <div>
-        <div className="mb-0.5 flex justify-between font-mono text-[11px] text-muted-foreground">
+        <div className="mb-0.5 flex justify-between font-mono text-xs text-muted-foreground">
           <span>神经元数</span>
           <span>{current?.n_neurons ?? "—"}</span>
         </div>
@@ -206,7 +206,7 @@ export function DevelopmentPipeline({
 
       {activeIndex === 1 && q && q.length > 0 && (
         <div>
-          <div className="mb-0.5 flex justify-between font-mono text-[11px] text-muted-foreground">
+          <div className="mb-0.5 flex justify-between font-mono text-xs text-muted-foreground">
             <span>motif 亲和度 q(S)（{q.length} 维）</span>
             <span>{q.map((v) => v.toFixed(2)).join(" ")}</span>
           </div>
@@ -221,7 +221,7 @@ export function DevelopmentPipeline({
       )}
 
       <div>
-        <div className="mb-0.5 flex justify-between font-mono text-[11px] text-muted-foreground">
+        <div className="mb-0.5 flex justify-between font-mono text-xs text-muted-foreground">
           <span>平均表达 |g|</span>
           <span>{current ? current.mean_abs.toFixed(4) : "—"}</span>
         </div>
@@ -234,14 +234,14 @@ export function DevelopmentPipeline({
         />
       </div>
 
-      <div className="flex justify-between font-mono text-[11px] text-muted-foreground">
+      <div className="flex justify-between font-mono text-xs text-muted-foreground">
         <span>
           分裂数 {current?.n_divisions ?? "—"} · 连接数 {current?.n_edges ?? "—"}
         </span>
         <span>{current ? `max|g| ${current.max_abs.toFixed(3)}` : ""}</span>
       </div>
 
-      <p className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
+      <p className="whitespace-nowrap font-mono text-xs text-muted-foreground">
         真实发育过程：GRN 表达迭代 {trace.filter((s) => s.stage === "grn").length - 1} 步 →
         前体细胞增殖 → 细胞分化 → 连接组成形。均为模型真实中间状态。
       </p>

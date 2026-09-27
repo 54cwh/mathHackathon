@@ -44,7 +44,7 @@ export function ViewTabs() {
             title={view.zh}
             onClick={() => setActiveView(view.id)}
             className={cn(
-              "px-3 py-1.5 font-pixel text-[10px] leading-none",
+              "px-3 py-1.5 font-pixel text-xs leading-none",
               active
                 ? "bg-brand-fish-navy text-brand-bone"
                 : "bg-card text-muted-foreground hover:bg-brand-slate-shadow hover:text-brand-bone",

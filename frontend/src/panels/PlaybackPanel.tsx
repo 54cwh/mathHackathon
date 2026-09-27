@@ -2,7 +2,7 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Gamepad2 } from "lucide-react";
 import { Panel } from "@/components/Panel";
-import { useUiStore } from "@/store/ui";
+import { SPEED_BASE_STEPS_PER_TICK, useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { getFishCard, getSnapshot, release, type FishCard } from "@/api/arena";
@@ -24,7 +24,7 @@ import { getHealth } from "@/api/health";
  * 若会话处于暂停（底栏 Pause），后端 `advance` 短路 —— 本面板会给出提示而非默默不动。
  */
 
-const TICK_MS = 100; // 驱动间隔；**步速**与 Arena 共用 `store.simSpeed`（默认 20× ⇒ 20 步/tick = 200 步/s）
+const TICK_MS = 100; // 驱动间隔；**步速**与 Arena 共用 `store.simSpeed`（默认 1× ⇒ 20 步/tick = 200 步/s）
 const CARD_EVERY = 10; // 每 10 tick ≈ 1s 刷新一次鱼卡
 /** 巡航速度：不按上下键时的默认 `v`（避免"一松手就停"，也不必长按）。 */
 const CRUISE_SPEED = 0.5;
@@ -108,7 +108,7 @@ export function PlaybackPanel() {
         const target = controlledRef.current;
         const summary = await release(
           sessionId,
-          Math.max(1, Math.round(simSpeed)), // 步速 ≥1：每 tick 多走几步；<1：靠拉长间隔
+          Math.max(1, Math.round(simSpeed * SPEED_BASE_STEPS_PER_TICK)), // 步速倍数 × 基准
           true,
           target ? { fishId: target, omega, speed } : undefined,
         );
@@ -170,7 +170,7 @@ export function PlaybackPanel() {
   const held = actionFor(keysRef.current);
 
   return (
-    <Panel title="Playback" titleZh="手动操控" icon={<Gamepad2 className="size-4 text-primary" />}>
+    <Panel title="Playback" icon={<Gamepad2 className="size-4 text-primary" />}>
       <div className="flex h-full min-h-0 flex-col gap-2">
         <div className="w-full shrink-0" style={{ aspectRatio: arenaAspect() }}>
           <canvas
@@ -186,8 +186,8 @@ export function PlaybackPanel() {
           {/* 被控鱼：点画布上的鱼可切换；默认第一条存活的鱼 */}
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
-              <SectionLabel en="CONTROLLED FISH" zh="被控鱼" />
-              <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+              <SectionLabel en="CONTROLLED FISH" />
+              <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                 {controlledId ?? "—"}
               </span>
             </div>
@@ -197,7 +197,7 @@ export function PlaybackPanel() {
                   key={fid}
                   type="button"
                   onClick={() => takeControl(fid)}
-                  className={`border border-border px-2 py-0.5 font-mono text-[10px] ${
+                  className={`border border-border px-2 py-0.5 font-mono text-xs ${
                     fid === controlledId ? "bg-brand-fish-navy text-brand-bone" : ""
                   }`}
                 >
@@ -205,7 +205,7 @@ export function PlaybackPanel() {
                 </button>
               ))}
               {alive.length === 0 && (
-                <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+                <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                   {sessionId ? "等待会话场景…" : "无会话：Experiment 视图的 Arena 尚未连上后端"}
                 </span>
               )}
@@ -215,8 +215,8 @@ export function PlaybackPanel() {
           {/* 键位 + 当前动作 + 实时读数 */}
           <div className="grid grid-cols-2 gap-2">
             <div className="border border-border p-2">
-              <div className="mb-1"><SectionLabel en="KEYS" zh="按键" /></div>
-              <div className="space-y-0.5 font-mono text-[10px] text-muted-foreground">
+              <div className="mb-1"><SectionLabel en="KEYS" /></div>
+              <div className="space-y-0.5 font-mono text-xs text-muted-foreground">
                 <div>← / A · → / D : turn (ω)</div>
                 <div>↑ / W · ↓ / S : speed (v)</div>
                 <div>click fish : take control</div>

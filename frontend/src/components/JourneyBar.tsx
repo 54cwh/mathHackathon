@@ -102,7 +102,7 @@ export function JourneyBar() {
               aria-current={state === "active" ? "step" : undefined}
               title={STAGE_ZH[stage]}
               className={cn(
-                "px-2 py-1 font-pixel text-[10px] leading-none",
+                "px-2 py-1 font-pixel text-xs leading-none",
                 state === "active" && "bg-brand-fish-navy text-brand-bone",
                 state === "done" && "bg-card text-foreground",
                 state === "locked" && "bg-muted text-muted-foreground",
@@ -120,7 +120,7 @@ export function JourneyBar() {
         title={next === null ? "已是末段" : nextReady ? `进入 ${LABELS[next]}` : GATE_HINT[next]}
         onClick={() => next && goTo(next)}
         className={cn(
-          "inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none",
+          "inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-xs leading-none",
           nextReady
             ? "bg-card text-foreground hover:bg-brand-slate-shadow hover:text-brand-bone"
             : "bg-muted text-muted-foreground",
@@ -135,7 +135,7 @@ export function JourneyBar() {
         title="AUTO DEMO：自动推进到门控未通过的段为止"
         onClick={() => setAutoPlay(!autoPlay)}
         className={cn(
-          "inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none",
+          "inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-xs leading-none",
           autoPlay
             ? "bg-brand-fish-navy text-brand-bone"
             : "bg-card text-foreground hover:bg-brand-slate-shadow hover:text-brand-bone",

@@ -215,21 +215,19 @@ export function EvolutionDashboardPanel() {
   return (
     <Panel
       title="Evolution Dashboard"
-      titleZh="演化面板"
-      icon={<FlaskConical className="size-4 text-primary" />}
+            icon={<FlaskConical className="size-4 text-primary" />}
     >
       <div className="grid h-full min-h-0 grid-cols-2 divide-x divide-border">
         {/* 左：发起新实验（表单常显，不折叠）+ 本进程实验列表。 */}
         <div className="flex min-h-0 flex-col gap-3 overflow-y-auto pr-3">
           <span className="inline-flex items-baseline gap-1.5">
             <span className="font-pixel text-[14px] leading-none">ENVIRONMENTAL SELECTION</span>
-            <span className="text-sm leading-none text-muted-foreground">环境选择实验</span>
           </span>
 
           {(
             <>
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-muted-foreground">名称 NAME</span>
+                <span className="text-sm text-muted-foreground">NAME</span>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -238,7 +236,7 @@ export function EvolutionDashboardPanel() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-muted-foreground">种子 SEEDS</span>
+                <span className="text-sm text-muted-foreground">SEEDS</span>
                 <input
                   value={seedsText}
                   onChange={(e) => setSeedsText(e.target.value)}
@@ -253,7 +251,7 @@ export function EvolutionDashboardPanel() {
 
               <div className="flex items-end gap-2">
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm text-muted-foreground">环境 ENV</span>
+                  <span className="text-sm text-muted-foreground">ENV</span>
                   <select
                     value={environment}
                     onChange={(e) => setEnvironment(e.target.value as Environment)}
@@ -267,7 +265,7 @@ export function EvolutionDashboardPanel() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-sm text-muted-foreground">代数 GENS</span>
+                  <span className="text-sm text-muted-foreground">GENS</span>
                   <input
                     type="number"
                     min={1}
@@ -284,7 +282,7 @@ export function EvolutionDashboardPanel() {
                   disabled={busy || running || !seedsValid}
                   className="border border-border px-3 py-2 font-pixel text-[14px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
                 >
-                  LAUNCH · 启动
+                  LAUNCH
                 </button>
                 {running && (
                   <button
@@ -324,9 +322,6 @@ export function EvolutionDashboardPanel() {
           <div className="space-y-1">
             <span className="inline-flex items-baseline gap-1.5">
               <span className="font-pixel text-[14px] leading-none">SELECTION JOBS</span>
-              <span className="text-sm leading-none text-muted-foreground">
-                本进程实验（重启即空）
-              </span>
             </span>
             <ul className="flex flex-col gap-1">
               {items.map((item) => (
@@ -338,7 +333,7 @@ export function EvolutionDashboardPanel() {
                         .then(setDetail)
                         .catch((e) => setError(String(e)))
                     }
-                    className={`flex w-full items-center justify-between border border-border px-2 py-1 text-left font-mono text-[12px] ${
+                    className={`flex w-full items-center justify-between border border-border px-2 py-1 text-left font-mono text-xs ${
                       detail?.experiment_id === item.experiment_id
                         ? "bg-brand-fish-navy text-brand-bone"
                         : ""
@@ -353,7 +348,7 @@ export function EvolutionDashboardPanel() {
                 </li>
               ))}
               {items.length === 0 && (
-                <li className="font-mono text-[12px] text-muted-foreground">
+                <li className="font-mono text-xs text-muted-foreground">
                   本进程尚未发起实验；右侧历史运行不受影响。
                 </li>
               )}
@@ -365,11 +360,10 @@ export function EvolutionDashboardPanel() {
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto pl-3">
           <div className="flex items-center justify-between gap-2">
             <span className="inline-flex items-baseline gap-1.5">
-              <span className="font-pixel text-[12px] leading-none">DISK RUNS</span>
-              <span className="text-[12px] leading-none text-muted-foreground">历史运行</span>
+              <span className="font-pixel text-xs leading-none">DISK RUNS</span>
             </span>
             <span className="flex items-center gap-2">
-              <span className="truncate font-mono text-[12px] text-muted-foreground">
+              <span className="truncate font-mono text-xs text-muted-foreground">
                 {runId ?? "未选择 run"}
               </span>
               <button
@@ -378,10 +372,10 @@ export function EvolutionDashboardPanel() {
                   void refreshList();
                   void refreshRuns();
                 }}
-                className="inline-flex shrink-0 items-center gap-1 border border-border px-2 py-1 font-pixel text-[12px] leading-none"
+                className="inline-flex shrink-0 items-center gap-1 border border-border px-2 py-1 font-pixel text-xs leading-none"
               >
                 <RefreshCw className="size-3" />
-                REFRESH · 刷新
+                REFRESH
               </button>
             </span>
           </div>
@@ -393,7 +387,7 @@ export function EvolutionDashboardPanel() {
                 <button
                   type="button"
                   onClick={() => setRunId(run.run_id)}
-                  className={`flex w-full items-center justify-between gap-2 border border-border px-2 py-1 text-left font-mono text-[12px] ${
+                  className={`flex w-full items-center justify-between gap-2 border border-border px-2 py-1 text-left font-mono text-xs ${
                     runId === run.run_id ? "bg-brand-fish-navy text-brand-bone" : ""
                   }`}
                 >
@@ -406,14 +400,14 @@ export function EvolutionDashboardPanel() {
               </li>
             ))}
             {runs.length === 0 && (
-              <li className="font-mono text-[12px] text-muted-foreground">暂无历史 run</li>
+              <li className="font-mono text-xs text-muted-foreground">暂无历史 run</li>
             )}
           </ul>
 
           {evolution ? (
             <EvolutionMetrics evolution={evolution} />
           ) : (
-            <div className="border border-border p-2 font-mono text-[12px] text-muted-foreground">
+            <div className="border border-border p-2 font-mono text-xs text-muted-foreground">
               选择上方任一 run 查看逐代指标。
             </div>
           )}
@@ -421,12 +415,12 @@ export function EvolutionDashboardPanel() {
           {detail && (
             <div className="border border-border p-2">
               <div className="mb-1 flex items-center justify-between">
-                <SectionLabel en="RUN DETAIL" zh="运行详情" />
-                <span className="font-mono text-[10px] text-muted-foreground">
+                <SectionLabel en="RUN DETAIL" />
+                <span className="font-mono text-xs text-muted-foreground">
                   {detail.experiment_id}
                 </span>
               </div>
-              <table className="w-full font-mono text-[10px]">
+              <table className="w-full font-mono text-xs">
                 <thead>
                   <tr className="text-muted-foreground">
                     <th className="text-left font-normal">seed</th>

@@ -62,7 +62,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
 
   if (generations.length === 0) {
     return (
-      <div className="border border-border p-2 font-mono text-[10px] text-muted-foreground">
+      <div className="border border-border p-2 font-mono text-xs text-muted-foreground">
         该 run 没有 evolution.jsonl（或没有有效行）——无逐代指标可显示。
       </div>
     );
@@ -98,7 +98,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
     /* 卡片网格：一行两张（`交互与可视化.md` §8）——原来每张图占满一整行，太"长"。 */
     <div className="grid grid-cols-2 gap-2">
       {/* 头部：代数 + 环境变更标记（整行） */}
-      <div className="col-span-2 flex items-center justify-between border border-border p-2 font-mono text-[10px]">
+      <div className="col-span-2 flex items-center justify-between border border-border p-2 font-mono text-xs">
         <span>
           generation <span className="text-brand-bone">{last.generation}</span> / {generations.length}
         </span>
@@ -114,7 +114,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
           <SectionLabel en="P(A) / P(B)" zh="期望表型比例" />
-          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+          <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
             {fmt(last.p_A, 2)} / {fmt(last.p_B, 2)}
           </span>
         </div>
@@ -126,7 +126,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
             if (ok) drawEventMarkers(ctx, w, h, generations.length, markedIndices);
           }}
         />
-        <table className="mt-1 w-full font-mono text-[10px]">
+        <table className="mt-1 w-full font-mono text-xs">
           <thead>
             <tr className="text-muted-foreground">
               <th className="text-left font-normal">phenotype</th>
@@ -158,7 +158,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
           <SectionLabel en="FITNESS" zh="适应度" />
-          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+          <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
             mean {fmt(last.fitness_mean)} ± {fmt(last.fitness_std)}
           </span>
         </div>
@@ -174,13 +174,13 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
 
       {/* fitness：逐个体分布直方图 */}
       <section className="border border-border p-2">
-        <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+        <div className="mb-1 flex items-center justify-between font-mono text-xs text-muted-foreground">
           <SectionLabel en="FITNESS · DIST" zh="适应度分布" />
           <span className="whitespace-nowrap">
             {hist ? `${hist.values.length} 个体` : "未记录逐个体 fitness"}
           </span>
         </div>
-        <div className="font-mono text-[10px] text-muted-foreground">
+        <div className="font-mono text-xs text-muted-foreground">
           distribution @ gen {generations[histIndex]?.generation ?? "—"}
         </div>
         {hist && hist.values.length > 0 && (
@@ -207,7 +207,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
 
       {/* 形态：neurons / edges */}
       <section className="border border-border p-2">
-        <div className="mb-1 flex items-center justify-between font-mono text-[10px]">
+        <div className="mb-1 flex items-center justify-between font-mono text-xs">
           <SectionLabel en="MORPHOLOGY" zh="形态" />
           <span className="whitespace-nowrap text-muted-foreground">
             neurons {fmt(last.mean_neuron, 1)} · edges {fmt(last.mean_edge, 1)}
@@ -225,7 +225,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
 
       {/* 形态：τ */}
       <section className="border border-border p-2">
-        <div className="mb-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+        <div className="mb-1 flex items-center justify-between font-mono text-xs text-muted-foreground">
           <SectionLabel en="TAU" zh="时间常数 τ" />
           <span className="whitespace-nowrap">mean {fmt(last.mean_tau, 2)}</span>
         </div>
@@ -238,7 +238,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
           }}
         />
         {typeof last.mean_neuron !== "number" && (
-          <p className="font-mono text-[10px] text-muted-foreground">
+          <p className="font-mono text-xs text-muted-foreground">
             该 run 未记录神经元数 / 连接数 / τ 均值（早期版本），形态与 τ 曲线为空。
           </p>
         )}
@@ -248,7 +248,7 @@ export function EvolutionMetrics({ evolution }: { evolution: RunEvolution }) {
       <section className="border border-border p-2">
         <div className="mb-1 flex items-center justify-between">
           <SectionLabel en="VIABILITY" zh="可育性" />
-          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+          <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
             {typeof last.n_viable === "number" && typeof last.n_individuals === "number" && last.n_individuals > 0
               ? `${((last.n_viable / last.n_individuals) * 100).toFixed(0)}%`
               : "—"}

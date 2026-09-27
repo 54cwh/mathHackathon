@@ -2,7 +2,7 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Fish } from "lucide-react";
 import { Panel } from "@/components/Panel";
-import { useUiStore } from "@/store/ui";
+import { SPEED_BASE_STEPS_PER_TICK, useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
@@ -168,7 +168,10 @@ export function DanioArenaPanel() {
     const tick = async () => {
       try {
         // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
-        const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
+        const summary = await release(
+          sessionId,
+          Math.max(1, Math.round(simSpeed * SPEED_BASE_STEPS_PER_TICK)),
+        );
         tickRef.current += 1;
 
         // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）。高速时每 tick 取一次，避免猎物/捕食者跳跃。
@@ -391,7 +394,7 @@ export function DanioArenaPanel() {
           />
           {!sessionId && (
             <div className="absolute inset-0 flex items-center justify-center px-3 text-center">
-              <span className="font-pixel text-[11px] leading-tight text-muted-foreground">
+              <span className="font-pixel text-xs leading-tight text-muted-foreground">
                 {error ?? "构建种群中（基因组发育 + 建网）…"}
               </span>
             </div>
@@ -402,8 +405,8 @@ export function DanioArenaPanel() {
           {/* Fish Card（§1.5）：点选后的真实读数 */}
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
-              <SectionLabel en="FISH CARD" zh="个体卡片" />
-              <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
+              <SectionLabel en="FISH CARD" />
+              <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                 {card ? shortId(card.fish_id) : "—"}
               </span>
             </div>
@@ -421,16 +424,16 @@ export function DanioArenaPanel() {
                     ["viable", card.viable ? "yes" : "no"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex flex-col">
-                      <dt className="text-[11px] text-muted-foreground">{label}</dt>
+                      <dt className="text-xs text-muted-foreground">{label}</dt>
                       <dd className="truncate">{value}</dd>
                     </div>
                   ))}
                 </dl>
-                <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
+                <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
                   genome {card.genome_id} · fitness {card.fitness === null ? "—" : card.fitness.toFixed(3)}
                 </div>
                 {Object.keys(card.cell_counts).length > 0 && (
-                  <div className="mt-1 font-mono text-[11px] text-muted-foreground">
+                  <div className="mt-1 font-mono text-xs text-muted-foreground">
                     cells{" "}
                     {Object.entries(card.cell_counts)
                       .map(([fate, count]) => `${fate}:${count}`)
@@ -453,7 +456,7 @@ export function DanioArenaPanel() {
           {/* 排行榜（§1.9）：按 (captures, survival_steps) 降序 */}
           <div className="border border-border p-2">
             <div className="mb-1">
-              <SectionLabel en="LEADERBOARD" zh="排行榜" />
+              <SectionLabel en="LEADERBOARD" />
             </div>
             <table className="w-full font-mono text-sm">
               <thead>
@@ -496,8 +499,8 @@ export function DanioArenaPanel() {
 
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
-            <SectionLabel en="EVOLVE" zh="演化" />
-            <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
+            <SectionLabel en="EVOLVE" />
+            <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
               GENERATION {generation}
             </span>
           </div>
@@ -506,27 +509,27 @@ export function DanioArenaPanel() {
             disabled={!sessionId || evolutionBusy}
             onClick={() => void stepEvolution()}
             title="推进一代（约 2s）：评估 → 折算 F → 选择繁殖 → 子代重建 Arena"
-            className={`border border-border px-2 py-0.5 font-pixel text-[11px] leading-none ${
+            className={`border border-border px-2 py-0.5 font-pixel text-xs leading-none ${
               !sessionId || evolutionBusy
                 ? "bg-muted text-muted-foreground"
                 : "hover:bg-brand-slate-shadow hover:text-brand-bone"
             }`}
           >
-            {evolutionBusy ? "计算中…" : "NEXT GENERATION · 下一代"}
+            {evolutionBusy ? "计算中…" : "NEXT GENERATION"}
           </button>
           <button
             type="button"
             disabled={!sessionId}
             onClick={() => void restartEpisode()}
             title="重开一轮（episode 步数归零；保留当前种群与 generation）"
-            className={`mt-1 border border-border px-2 py-0.5 font-pixel text-[11px] leading-none ${
+            className={`mt-1 border border-border px-2 py-0.5 font-pixel text-xs leading-none ${
               !sessionId ? "bg-muted text-muted-foreground" : "hover:bg-brand-slate-shadow hover:text-brand-bone"
             }`}
           >
-            RESTART · 重开一轮
+            RESTART
           </button>
           {evoSummary && (
-            <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-[11px]">
+            <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-xs">
               <div>
                 fitness{" "}
                 {evoSummary.fitness_mean === null ? "—" : evoSummary.fitness_mean.toFixed(4)}
@@ -546,15 +549,15 @@ export function DanioArenaPanel() {
         </div>
 
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1">
-            <SectionLabel en="SPEED" zh="步速" />
-            {[0.25, 0.5, 1, 2, 4, 20].map((factor) => (
+          <span className="flex flex-wrap items-center gap-1">
+            <SectionLabel en="SPEED" />
+            {[0.25, 0.5, 1, 2, 4].map((factor) => (
               <button
                 key={factor}
                 type="button"
                 onClick={() => setSimSpeed(factor)}
-                title={`步速 ${factor}×（1× = 10 步/s；只改推进快慢，不改模型本身）`}
-                className={`border border-border px-2 py-0.5 font-mono text-[11px] leading-none ${
+                title={`步速 ${factor}×（1× = 20 步/tick = 200 步/s；只改推进快慢，不改模型本身）`}
+                className={`border border-border px-2 py-0.5 font-mono text-xs leading-none ${
                   simSpeed === factor ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}
               >

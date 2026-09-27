@@ -95,7 +95,7 @@ export function NucleotideStrip({
             onClick={clickable ? () => onSelectPosition?.(i) : undefined}
             className={cn(
               // size-5 = 20x20 的方格；本项目无圆角（R2-4），格子上不加任何圆角类。
-              "flex size-5 shrink-0 items-center justify-center font-mono text-[10px] leading-none",
+              "flex size-5 shrink-0 items-center justify-center font-mono text-xs leading-none",
               clickable ? "cursor-pointer" : "cursor-default",
             )}
             style={{
@@ -117,7 +117,7 @@ export function NucleotideStrip({
       })}
       {hidden > 0 && (
         <span
-          className="flex size-5 shrink-0 items-center justify-center font-mono text-[10px] leading-none"
+          className="flex size-5 shrink-0 items-center justify-center font-mono text-xs leading-none"
           style={{ color: STRIP.idle }}
         >
           +{hidden}
