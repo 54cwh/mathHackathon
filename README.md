@@ -70,17 +70,15 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 
 ## 前端
 
-`frontend/` 是现场演示 UI，只做渲染与交互；物理、神经动力学与仿真由 Python 后端权威运行，前端不重算。
+`frontend/` 是现场演示 UI，把后端仿真的过程可视化并支持交互，让观众直观看到 DNA 经发育生成脑网络、进而产生行为与演化的链路。已实现的功能：
 
-**技术栈**：Vite + React 18 + TypeScript、Tailwind CSS、zustand（状态）、ECharts（指标图）、Cytoscape.js（连接组图）、原生 Canvas 2D（Arena 逐帧渲染）、原生 WebSocket 与 fetch（传输）。字体与素材本地自托管，满足离线要求；锁定版本见 `frontend/README.md`。
+- **DNA2Brain Lab**：查看与编辑个体 DNA，呈现 motif 与调控，提供 Free Edit 与 Story Mutation 两种突变模式，并触发重新发育。
+- **Brain Forge**：呈现发育生成的连接组与神经元激活，用于对比不同基因组得到的网络。
+- **Danio Arena**：实时渲染生态会话，点选个体查看状态，支持手动控制与逐代推进。
+- **Evolution Dashboard**：呈现逐代演化指标与排行榜。
+- **Development Pipeline / Playback**：呈现从配置、种子到基因组与发育结果的流程，并支持回放。
 
-**面板**：DNA2Brain Lab（DNA 编辑与 motif）、Brain Forge（连接组与神经元激活）、Danio Arena（实时会话与逐代推进）、Evolution Dashboard（演化指标）、Development Pipeline 与 Playback。
-
-**数据通道**：REST（会话、基因组实验室、运行记录、环境选择实验）加 WebSocket 实时推送；前端类型对齐 `schemas/`，不自行定义后端契约。
-
-**设计系统**：`src/design/` 是颜色、几何、字体的唯一定义处，面板只引用 token；`npm run lint:design` 作为强制闸门，检查颜色越界、圆角残留与 token 漂移。Arena 的热路径走 `requestAnimationFrame` + Canvas 2D，状态放 `useRef`，不经 React 每帧渲染。
-
-**文档**：`frontend/README.md`（技术栈、种子与实时行为、防坑约定）、`交互与可视化.md`（界面规格）、`通用层设计.md` / `通用层接口.md`（通用层接口与设计）、`演示讲稿.md` / `网页说明与讲解顺序.md`（路演）。
+前端只做渲染与交互，仿真由后端权威运行。
 
 ## 环境要求
 
