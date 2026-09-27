@@ -228,12 +228,19 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
     \item \textbf{效率三项尚未实现。} \texttt{latency} / \texttt{FLOPs} / \texttt{peak memory}
           均标注「尚未实现」（\texttt{experiment} \S2.4「实现状态」行）；
           目前可由结构直接读出的只有 \texttt{parameter count} 与 \texttt{active edges}。
-    \item \textbf{基线与消融未实现。} MLP / GRU / Fixed Sparse RNN 三个基线
-          与 \texttt{w/o GRN}、homogeneous $\tau$ 等消融\textbf{均未实现}
-          （\texttt{paper/报告-骨架.md} \S4.1 / \S4.2；\texttt{DanioNet} \S8 / \S9 自标
-          「属实验层评估项，尚未实现」；\S\ref{sec:baselines}）。
-          在没有基线的情况下，「改进」就没有参照系——这是当前离赛题判据
-          「原模型 $\to$ 修改后模型 $\to$ 实验结果对比」最远的一块。
+    \item \textbf{基线已有第一轮结果但功效不足；消融仍全部未实现。}
+          MLP / GRU / Fixed Sparse RNN 三个基线\textbf{已实现，且已跑出第一轮结果}
+          （$2$ seed $\times$ $12$ agent $\times$ $3$ episode，
+          见 \S\ref{sec:baselines}），\textbf{参照系已经建立}；
+          但该轮 $n=2$ 只有 $1$ 个自由度，且 episode 间方差\textbf{淹没}模型效应
+          （逐块摆动跨度远大于模型间差异），故\textbf{不支持任何显著性主张}——
+          即参照系已建立但\textbf{尚未被填满}，这是当前离赛题判据
+          「原模型 $\to$ 修改后模型 $\to$ 实验结果对比」\textbf{最近的一块}。
+          消融一侧（\texttt{w/o GRN}、allele 聚合、homogeneous $\tau$、
+          \texttt{w/o spatial wiring cost}）\textbf{仍全部未实现}
+          （\texttt{paper/报告-骨架.md} \S4.2）；「BC 有/无 Dale 约束」的
+          \emph{模型侧开关}已实现（\texttt{DanioNet(sign\_constrained=False)}），
+          但\textbf{无 runner 与结果}。
   \end{enumerate}
   这一条是\textbf{当前状态}的限制而非设计缺陷：判据已被量化到可执行的粒度——
   参数量对齐按连接数取
@@ -268,5 +275,5 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
 $\text{capture\_attempts}-\text{captures}$ 为 $0$」是一条关于指标在确定性捕获下退化的确凿事实，
 它使「本 run 不报告捕食技巧」这一决定有据可依，而不是一句含糊的免责声明
 （\S\ref{sec:results} 与 \texttt{.../diagnostics.md} 自动复现该诊断）。
-与此相对，凡本章与全文标注为待补而尚无证据的项目（学习前后对照、基线对照、消融、
+与此相对，凡本章与全文标注为待补而尚无证据的项目（学习前后对照、消融、
 效率三项），一律以显式占位标出，\textbf{不以估计值或文献值顶替}。
