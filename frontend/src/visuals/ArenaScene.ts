@@ -72,7 +72,10 @@ export function drawArenaScene(
   ctx: CanvasRenderingContext2D,
   scene: ArenaScene,
   selectedFishId?: string | null,
+  /** 泳姿帧（1..4）。缺省按 `scene.step`；Arena 的 rAF 传入**渲染时钟**帧 ⇒ 速度无关且不频闪。 */
+  frame?: number,
 ): void {
+  const spriteFrame = frame ?? frameOf(scene.step);
   ctx.imageSmoothingEnabled = false; // hard pixel edges (rule 9(b))
   fillBackdrop(ctx);
 
@@ -112,7 +115,7 @@ export function drawArenaScene(
     const side = spriteSide(PREDATOR, dia);
     const cx = sx(d.x);
     const cy = sy(d.y);
-    if (drawSprite(ctx, predatorSrc("s", frameOf(scene.step)), cx, cy, side)) {
+    if (drawSprite(ctx, predatorSrc("s", spriteFrame), cx, cy, side)) {
       // 威胁读数：捕食者位图只有深色四色，在 ink 画布上对比过低（旧版是亮红圆），
       // 故补一圈 1px 危险色边框。用四条 fillRect 而非 stroke，保持整数、无插值（rule 9(b)）。
       const bx = Math.round(cx - side / 2);
@@ -142,7 +145,7 @@ export function drawArenaScene(
     // 位图足迹 = 原三角的视觉长度（前 len + 后 0.6 len），换皮不改玩法读数。
     const bodyLen = Math.max(12, Math.round(len * 1.6));
     const side = spriteSide(family, bodyLen);
-    const src = fishSrc(family, dirOf(f.heading), frameOf(scene.step));
+    const src = fishSrc(family, dirOf(f.heading), spriteFrame);
 
     if (drawSprite(ctx, src, x, y, side)) {
       if (isSelected) {

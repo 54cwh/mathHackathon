@@ -5,6 +5,7 @@ import { Panel } from "@/components/Panel";
 import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
 import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
+import { animFrame, createPoseBuffer, pushScene, sampleScene } from "@/visuals/arenaSmoothing";
 import { subscribe } from "@/api/ws";
 import { stepSessionEvolution } from "@/api/selections";
 import { createGenome, develop } from "@/api/lab";
@@ -33,7 +34,7 @@ import {
  *
  * 数据来源（hybrid，理由见 `API接口.md` §3/§8）：
  *   - **鱼层**：`release` 每步推送 `arena.fish_state`（只含鱼）→ 走 WS，免去每 tick 的 snapshot 往返；
- *   - **场景层**（猎物/捕食者/障碍）：WS 不推送，故每 `SCENE_EVERY` 个 tick 取一次 REST snapshot；
+ *   - **场景层**（猎物/捕食者/障碍）：WS 不推送，故每 tick 取一次 REST snapshot（与鱼层同刻）；
  *   - **兜底**：WS 未连上时，鱼层回退到 snapshot 里的鱼（行为与改造前一致）。
  * 每个 tick 把合成后的场景写入回放缓冲（Playback 视图消费）。
  */
@@ -46,8 +47,13 @@ const LEADERBOARD_EVERY = 20;
 const REPLENISH_BELOW = 2;
 /** 补鱼冷却：避免连续补（每次都要发育 + 建网）。 */
 const REPLENISH_COOLDOWN_MS = 6000;
-/** 场景层（猎物/捕食者/障碍）刷新节奏：每 5 tick ≈ 0.5s。 */
-const SCENE_EVERY = 5;
+/**
+ * 渲染时延（ms，`交互与可视化.md` §7.1）：渲染时刻取 `now - RENDER_DELAY_MS`，使两侧都有权威
+ * 样本 ⇒ 真插值（不外推、不越帧）。≈ 一个仿真 tick（`POLL_MS`）。
+ */
+const RENDER_DELAY_MS = 110;
+/** 泳姿帧步进（ms/帧）：与仿真速度解耦。 */
+const ANIM_MS = 110;
 /** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
 const SESSION_RETRY_MS = 3000;
 /** 冻结 demo checkpoint（`artifacts/demo/`；`pipeline §6` 契约）。 */
@@ -90,8 +96,10 @@ export function DanioArenaPanel() {
   const tickRef = useRef(0);
   /** WS 最新鱼层；undefined = WS 尚无帧（回退到 snapshot 的鱼）。 */
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
-  /** 低频场景层（猎物/捕食者/障碍 + step）。 */
+  /** 场景层（猎物/捕食者/障碍 + step）：每 tick 刷新，故也是"最新权威帧"的持有者。 */
   const sceneRef = useRef<ArenaScene | null>(null);
+  /** 位姿缓冲（`visuals/arenaSmoothing.ts`）：rAF 逐帧插值用。 */
+  const poseBufRef = useRef(createPoseBuffer());
 
 
   // ---- session lifecycle: one live session per mount / reset ---------------
@@ -125,6 +133,7 @@ export function DanioArenaPanel() {
           tickRef.current = 0;
           wsFishRef.current = null;
           sceneRef.current = null;
+          poseBufRef.current = createPoseBuffer();
           // 初始种群（§1.1 已基因组化）拉进 store：供去重与导演线门控（选择走点击画布上的鱼）。
           void listIndividuals(s.session_id)
             .then((items) => {
@@ -160,6 +169,12 @@ export function DanioArenaPanel() {
     return subscribe(sessionId, {
       fishState: (payload) => {
         wsFishRef.current = payload.fish;
+        // 鱼层入平滑缓冲（`step: 0` + 空场景层：只更新鱼，猎物/捕食者由 snapshot 更新）。
+        pushScene(
+          poseBufRef.current,
+          { step: 0, fish: payload.fish, prey: {}, predators: {}, obstacles: [] },
+          performance.now(),
+        );
       },
     });
   }, [sessionId]);
@@ -179,12 +194,9 @@ export function DanioArenaPanel() {
         const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
         tickRef.current += 1;
 
-        // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）。高速时每 tick 取一次，避免猎物/捕食者跳跃。
-        const sceneEvery = simSpeed >= 4 ? 1 : SCENE_EVERY;
-        if (tickRef.current === 1 || tickRef.current % sceneEvery === 0) {
-          const snap: ArenaSnapshot = await getSnapshot(sessionId);
-          sceneRef.current = { ...snap };
-        }
+        // 场景层：WS 不推猎物/捕食者/障碍 ⇒ 每 tick 取一次，与鱼层同刻入缓冲（平滑靠插值，不靠抽稀）。
+        const snap: ArenaSnapshot = await getSnapshot(sessionId);
+        sceneRef.current = { ...snap };
         if (stop) return;
 
         const base = sceneRef.current;
@@ -197,6 +209,7 @@ export function DanioArenaPanel() {
             fish: wsFishRef.current ?? base.fish,
           };
           sceneRef.current = composed;
+          pushScene(poseBufRef.current, composed, performance.now());
           setScene(composed);
         }
 
@@ -304,6 +317,7 @@ export function DanioArenaPanel() {
       tickRef.current = 0;
       sceneRef.current = null;
       wsFishRef.current = null;
+      poseBufRef.current = createPoseBuffer();
       setScene(null);
       setCard(null);
       setBoard(null);
@@ -331,19 +345,38 @@ export function DanioArenaPanel() {
     void stepRef.current();
   }, [intent]);
 
-  // ---- render：rAF + 显示层外推 ---------------------------------------------
-  //  服务端帧 ≈30 Hz、屏幕 60 Hz：在两帧之间按 (heading, speed) 外推，画面连续不"跳"。
-  //  位置仍以服务端权威帧为基准；仅当 Experiment 视图可见时跑 rAF（避免隐藏时白烧 CPU）。
+  // ---- render：rAF + 权威帧插值（`交互与可视化.md` §7.1） ---------------------
+  //  仿真仍按 `POLL_MS × simSpeed` 推进（速度口径不变）；画面按显示刷新率逐帧绘制，位姿取
+  //  `now - RENDER_DELAY_MS` 的插值 ⇒ 连续丝滑。切走（非 Experiment）或暂停时只画一帧，
+  //  不跑循环（隐藏视图不白烧 CPU）。
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    if (!scene) {
-      ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+    const paint = () => {
+      const live = sceneRef.current;
+      const t = performance.now();
+      if (!live) ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+      else
+        drawArenaScene(
+          ctx,
+          sampleScene(poseBufRef.current, live, t - RENDER_DELAY_MS),
+          selectedFishId,
+          animFrame(t, ANIM_MS),
+        );
+    };
+    if (activeView !== "experiment") {
+      paint();
       return;
     }
-    drawArenaScene(ctx, scene, selectedFishId);
-  }, [scene, selectedFishId]);
+    let raf = 0;
+    const frame = () => {
+      paint();
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [activeView, selectedFishId]);
 
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
   const shortSessionId = sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : null;
