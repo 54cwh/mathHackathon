@@ -19,6 +19,7 @@ import {
   getLeaderboard,
   getSnapshot,
   listIndividuals,
+  resetSession,
   release,
   spawnIndividual,
   type ArenaSnapshot,
@@ -91,6 +92,8 @@ export function DanioArenaPanel() {
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
   /** 低频场景层（猎物/捕食者/障碍 + step）。 */
   const sceneRef = useRef<ArenaScene | null>(null);
+  /** episode 结束标记（WS `arena.episode_end`）→ 下一 tick 自动重置会话。 */
+  const episodeEndedRef = useRef(false);
 
   // ---- session lifecycle: one live session per mount / reset ---------------
   //  失败要**自愈**：后端未起 / 端口上还是旧进程时，会话创建会失败；若只建一次，
@@ -152,6 +155,12 @@ export function DanioArenaPanel() {
       fishState: (payload) => {
         wsFishRef.current = payload.fish;
       },
+      // episode 跑完（到 `episode_steps`）后端停步 → 这里收到事件后自动重置会话，演示不中断。
+      events: (payload) => {
+        if (payload.events.some((e) => e.type === "arena.episode_end")) {
+          episodeEndedRef.current = true;
+        }
+      },
     });
   }, [sessionId]);
 
@@ -165,13 +174,36 @@ export function DanioArenaPanel() {
     let timer = 0;
 
     const tick = async () => {
+      // episode 跑完 → 自动重置（演示不中断）：步数归零、场景重取。
+      if (episodeEndedRef.current && sessionId) {
+        episodeEndedRef.current = false;
+        tickRef.current = 0;
+        sceneRef.current = null;
+        try {
+          const reset = await resetSession(sessionId);
+          setStats({
+            environment: reset.environment,
+            generation: reset.generation,
+            population: reset.population,
+            fishAlive: reset.fish_alive,
+            preyAlive: reset.prey_remaining,
+            seed: reset.master_seed,
+            step: 0,
+          });
+        } catch (e) {
+          setError(String(e));
+        }
+        if (!stop) timer = window.setTimeout(tick, POLL_MS);
+        return;
+      }
       try {
         // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
         const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
         tickRef.current += 1;
 
-        // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）
-        if (tickRef.current === 1 || tickRef.current % SCENE_EVERY === 0) {
+        // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）。高速时每 tick 取一次，避免猎物/捕食者跳跃。
+        const sceneEvery = simSpeed >= 4 ? 1 : SCENE_EVERY;
+        if (tickRef.current === 1 || tickRef.current % sceneEvery === 0) {
           const snap: ArenaSnapshot = await getSnapshot(sessionId);
           sceneRef.current = { ...snap };
         }
@@ -509,7 +541,7 @@ export function DanioArenaPanel() {
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1">
             <SectionLabel en="SPEED" zh="步速" />
-            {[0.25, 0.5, 1, 2, 4].map((factor) => (
+            {[0.25, 0.5, 1, 2, 4, 20].map((factor) => (
               <button
                 key={factor}
                 type="button"
