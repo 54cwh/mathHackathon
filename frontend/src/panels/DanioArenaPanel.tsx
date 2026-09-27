@@ -418,7 +418,7 @@ export function DanioArenaPanel() {
             </div>
             {card ? (
               <>
-                <dl className="grid grid-cols-4 gap-x-2 font-mono text-xs">
+                <dl className="grid grid-cols-3 gap-x-3 gap-y-1 font-mono text-sm">
                   {[
                     ["gen", String(card.generation)],
                     ["energy", card.energy.toFixed(3)],
@@ -430,16 +430,16 @@ export function DanioArenaPanel() {
                     ["viable", card.viable ? "yes" : "no"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex flex-col">
-                      <dt className="text-xs text-muted-foreground">{label}</dt>
+                      <dt className="text-sm text-muted-foreground">{label}</dt>
                       <dd className="truncate">{value}</dd>
                     </div>
                   ))}
                 </dl>
-                <div className="mt-1 truncate font-mono text-xs text-muted-foreground">
+                <div className="mt-1 truncate font-mono text-sm text-muted-foreground">
                   genome {card.genome_id} · fitness {card.fitness === null ? "—" : card.fitness.toFixed(3)}
                 </div>
                 {Object.keys(card.cell_counts).length > 0 && (
-                  <div className="mt-1 font-mono text-xs text-muted-foreground">
+                  <div className="mt-1 font-mono text-sm text-muted-foreground">
                     cells{" "}
                     {Object.entries(card.cell_counts)
                       .map(([fate, count]) => `${fate}:${count}`)
@@ -455,7 +455,7 @@ export function DanioArenaPanel() {
                 )}
               </>
             ) : (
-              <p className="text-xs text-muted-foreground">点选画布上的鱼查看卡片。</p>
+              <p className="text-sm text-muted-foreground">点选画布上的鱼查看卡片。</p>
             )}
           </div>
 
