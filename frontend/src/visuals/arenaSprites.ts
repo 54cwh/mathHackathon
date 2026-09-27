@@ -4,7 +4,7 @@
  * 故接线只此一处，两处显示不会漂移。
  *
  * 素材出处：`artifacts/assets_placeholder/生图总清单.md` §十一。
- * 命名 `{族}_{朝向}_f{1..4}.png`；朝向取罗盘四基本向（斜向按 §3.0 未生成，本文件不用）。
+ * 命名 `{族}_{朝向}_f{1..4}.png`；朝向为罗盘八向（斜向由基本向 45° 旋转派生）。
  * 49 个文件的落盘尺寸 / 色数 / flat 实测见 §十一 的表。
  *
  * 绘制约定（与生图侧的裁剪对齐一致）：
@@ -15,13 +15,16 @@
  * - `imageSmoothingEnabled = false` 由 `ArenaScene` 统一设置，故此处缩放一律最近邻。
  */
 
-export type SpriteDir = "e" | "s" | "w" | "n";
+export type SpriteDir = "e" | "se" | "s" | "sw" | "w" | "nw" | "n" | "ne";
 
 /** 资产根：Vite 把 `public/` 直出到根路径，dev 与 build 同路径。 */
 const ROOT = "/assets/arena";
 
-/** 四个基本朝向，按 `heading` 每 π/2 一档排列（见 `dirOf`）。 */
-const DIRS: SpriteDir[] = ["e", "s", "w", "n"];
+/**
+ * 八个朝向，按 `heading` 每 π/4 一档排列（见 `dirOf`）。
+ * 斜向是基本向的 45° 整数旋转，已在落盘阶段生成，运行时不做任何变换。
+ */
+const DIRS: SpriteDir[] = ["e", "se", "s", "sw", "w", "nw", "n", "ne"];
 
 /** 摆尾帧号，与落盘文件名一致。 */
 const FRAMES = [1, 2, 3, 4] as const;
@@ -61,12 +64,14 @@ export function predatorSrc(dir: SpriteDir, frame: number): string {
 }
 
 /**
- * `heading`（弧度；画布坐标 +x 右、+y 下）→ 四个基本朝向：
- * 0 → e（头朝右）、π/2 → s（头朝下）、π → w、3π/2 → n（头朝上）。
+ * `heading`（弧度；画布坐标 +x 右、+y 下）→ 八个朝向：
+ * 0 → e（右）、π/4 → se（右下）、π/2 → s（下）、3π/4 → sw（左下）、
+ * π → w（左）、5π/4 → nw（左上）、3π/2 → n（上）、7π/4 → ne（右上）。
+ * 量化到最近的 45°，所以转向是八向吸附，不是连续旋转。
  */
 export function dirOf(heading: number): SpriteDir {
-  const k = Math.round(heading / (Math.PI / 2));
-  return DIRS[((k % 4) + 4) % 4];
+  const k = Math.round(heading / (Math.PI / 4));
+  return DIRS[((k % 8) + 8) % 8];
 }
 
 /** 摆尾帧（1..4）。取 `step` 而非墙钟，回放与实时因此逐帧一致。 */
