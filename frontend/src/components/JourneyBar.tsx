@@ -10,7 +10,7 @@ import {
 } from "@/store/ui";
 
 /**
- * 导演线（`交互与可视化.md` §1 状态机表）：六段进度条 + 单一「下一步」+ AUTO DEMO。
+ * 导演线（`交互与可视化.md` §1 状态机表）：五段进度条 + 单一「下一步」+ AUTO DEMO。
  *
  * 口径：
  *  - **前端门控**：`isStageReady(state, 目标段)` 为 `false` 时「下一步」不可点（title 说明缺口）。

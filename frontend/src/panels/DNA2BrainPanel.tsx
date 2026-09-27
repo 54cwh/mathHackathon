@@ -42,8 +42,7 @@ export function DNA2BrainPanel() {
   const [base, setBase] = useState<Base>("A");
   const [mutation, setMutation] = useState<MutationResult | null>(null);
   const [development, setDevelopment] = useState<DevelopmentResult | null>(null);
-  /** 基线发育结果（§5 Before）：首次 DEVELOP 即设为基线，之后每次 DEVELOP 都是 After。 */
-  /** 已应用突变（§5 DNA difference 的真实记录）。 */
+  /** 最近一次发育结果（点 DEVELOP 即覆盖；对比新旧表型靠用户先后两次发育自行比对）。 */
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sessionId = useUiStore((s) => s.sessionId);
@@ -196,7 +195,7 @@ export function DNA2BrainPanel() {
     setError(null);
     try {
       const result = await develop({ genome_id: genome.genome_id, seed: DEV_SEED }, true);
-      // 首次 DEVELOP = 基线；之后每次都是「改后」，与基线对比（§5）。
+      // 每次 DEVELOP 都用当前序列重算表型（点 MUTATE 会先清空旧结果）。
       setDevelopment(result);
       // → Brain Forge 的 §4 分阶段动画（真实过程，见 API接口.md §2.3）
       publishDevelopment(genome.genome_id, result, result.trace ?? null);

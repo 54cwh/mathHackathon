@@ -32,7 +32,7 @@ export const MASTER_SEED = 250927;
 
 /**
  * 演示专用 Arena 配置（`configs/demo_arena.yaml`；`交互与可视化.md` §1）。
- * 与正式实验口径分离：4 鱼 / 30 猎物 / 1800 步（90 s）——默认 12–16 鱼 × 600 步时实测**捕食为 0**。
+ * 与正式实验口径分离：40 猎物 / 3600 步（360 s）——默认 12–16 鱼 × 600 步时实测**捕食为 0**。
  */
 export const DEMO_ARENA_CONFIG = "configs/demo_arena.yaml";
 
