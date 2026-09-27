@@ -93,8 +93,8 @@ interface UiState {
   /** AUTO DEMO 开关：定时循环「下一步」，门控未通过即停。 */
   autoPlay: boolean;
   /**
-   * 步速倍数（Arena 与 Playback 共用）。`1×` = `SPEED_BASE_STEPS_PER_TICK` 步/tick = 200 步/s
-   * （2026-09-27 重定义：原"20×"记为 `1×`）。只改前端 `release` 的步数/间隔，不改模型时长。
+   * 步速档（Arena 与 Playback 共用）：直接就是**每 tick 推几步**（tick 间隔 100 ms）。
+   * 演示默认 `20`（= 20 步/tick = 200 步/s）。只改前端 `release` 的步数，不改模型时长。
    */
   simSpeed: number;
   // ---- 动作 ---------------------------------------------------------------
@@ -127,9 +127,6 @@ interface UiState {
   resetJourney: () => void;
 }
 
-/** `1×` 每 tick 推几步（步进基于它做倍数换算；20 步/tick @100ms = 200 步/s）。 */
-export const SPEED_BASE_STEPS_PER_TICK = 20;
-
 export const useUiStore = create<UiState>((set) => ({
   running: false,
   sessionId: null,
@@ -149,7 +146,7 @@ export const useUiStore = create<UiState>((set) => ({
   focusNonce: 0,
   intent: null,
   autoPlay: false,
-  simSpeed: 1,
+  simSpeed: 20,
   setSelectedFish: (selectedFishId) => set({ selectedFishId }),
   setRunning: (running) => set({ running }),
   setSessionId: (sessionId) => set({ sessionId }),

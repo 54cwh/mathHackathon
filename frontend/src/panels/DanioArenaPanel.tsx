@@ -2,16 +2,9 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Fish } from "lucide-react";
 import { Panel } from "@/components/Panel";
-import { SPEED_BASE_STEPS_PER_TICK, useUiStore } from "@/store/ui";
+import { useUiStore } from "@/store/ui";
 import { arenaAspect, CANVAS } from "@/design/geometry";
-import {
-  drawArenaScene,
-  extrapolateFish,
-  fishHitRadius,
-  hitTestFish,
-  type ArenaScene,
-} from "@/visuals/ArenaScene";
-import { WORLD } from "@/design/geometry";
+import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
 import { subscribe } from "@/api/ws";
 import { stepSessionEvolution } from "@/api/selections";
 import { createGenome, develop } from "@/api/lab";
@@ -45,18 +38,16 @@ import {
  * 每个 tick 把合成后的场景写入回放缓冲（Playback 视图消费）。
  */
 
-// 驱动间隔：33 ms（≈30 fps）。配合"时间归一化"的步数公式，`1×` 仍 = 200 步/s（见下），
-// 但每帧只推 ~7 步 ⇒ 鱼每帧位移小得多、看着丝滑（原 100 ms/20 步会"跳"）。
-const POLL_MS = 33;
+const POLL_MS = 100; // 10 fps render; 每 tick 推 `simSpeed` 步
 /** 排行榜刷新节奏（每 20 tick ≈ 2s）。 */
-const LEADERBOARD_EVERY = 60;
+const LEADERBOARD_EVERY = 20;
 
 /** 演示：活鱼少于该值时自动补一条（新基因组 → 发育 → 入 Arena）。 */
 const REPLENISH_BELOW = 2;
 /** 补鱼冷却：避免连续补（每次都要发育 + 建网）。 */
 const REPLENISH_COOLDOWN_MS = 6000;
 /** 场景层（猎物/捕食者/障碍）刷新节奏：每 5 tick ≈ 0.5s。 */
-const SCENE_EVERY = 10;
+const SCENE_EVERY = 5;
 /** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
 const SESSION_RETRY_MS = 3000;
 /** 冻结 demo checkpoint（`artifacts/demo/`；`pipeline §6` 契约）。 */
@@ -101,12 +92,7 @@ export function DanioArenaPanel() {
   const wsFishRef = useRef<Record<string, FishState> | null>(null);
   /** 低频场景层（猎物/捕食者/障碍 + step）。 */
   const sceneRef = useRef<ArenaScene | null>(null);
-  /** 最近一帧**权威**鱼层 + 到达时刻（供显示层外推；不改仿真）。 */
-  const fishBaseRef = useRef<{ ts: number; fish: Record<string, FishState> } | null>(null);
-  /** 画布最近一帧实际画出的（外推后）鱼层——点选命中用它，所见即所点。 */
-  const drawnFishRef = useRef<Record<string, FishState> | null>(null);
-  const selectedRef = useRef<string | null>(null);
-  selectedRef.current = selectedFishId;
+
 
   // ---- session lifecycle: one live session per mount / reset ---------------
   //  失败要**自愈**：后端未起 / 端口上还是旧进程时，会话创建会失败；若只建一次，
@@ -144,6 +130,12 @@ export function DanioArenaPanel() {
               if (!cancelled) setIndividuals(items);
             })
             .catch(() => undefined);
+          // 会话就绪即预取一次排行榜（否则要等到第 20 tick 才第一次拿到排名）
+          void getLeaderboard(s.session_id)
+            .then((board) => {
+              if (!cancelled) setBoard(board);
+            })
+            .catch(() => undefined);
         })
         .catch((e) => {
           if (cancelled) return;
@@ -167,7 +159,6 @@ export function DanioArenaPanel() {
     return subscribe(sessionId, {
       fishState: (payload) => {
         wsFishRef.current = payload.fish;
-        fishBaseRef.current = { ts: performance.now(), fish: payload.fish };
       },
     });
   }, [sessionId]);
@@ -184,18 +175,11 @@ export function DanioArenaPanel() {
     const tick = async () => {
       try {
         // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
-        // 步数按时间归一化：`1×` = 200 步/s ⇒ 每 tick = 200 × (POLL_MS/1000) ≈ 7 步。
-        const summary = await release(
-          sessionId,
-          Math.max(
-            1,
-            Math.round((simSpeed * SPEED_BASE_STEPS_PER_TICK * POLL_MS) / 100),
-          ),
-        );
+        const summary = await release(sessionId, Math.max(1, Math.round(simSpeed)));
         tickRef.current += 1;
 
         // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）。高速时每 tick 取一次，避免猎物/捕食者跳跃。
-        const sceneEvery = simSpeed >= 4 ? 3 : SCENE_EVERY;
+        const sceneEvery = simSpeed >= 4 ? 1 : SCENE_EVERY;
         if (tickRef.current === 1 || tickRef.current % sceneEvery === 0) {
           const snap: ArenaSnapshot = await getSnapshot(sessionId);
           sceneRef.current = { ...snap };
@@ -212,7 +196,6 @@ export function DanioArenaPanel() {
             fish: wsFishRef.current ?? base.fish,
           };
           sceneRef.current = composed;
-          fishBaseRef.current = { ts: performance.now(), fish: composed.fish };
           setScene(composed);
         }
 
@@ -351,28 +334,15 @@ export function DanioArenaPanel() {
   //  服务端帧 ≈30 Hz、屏幕 60 Hz：在两帧之间按 (heading, speed) 外推，画面连续不"跳"。
   //  位置仍以服务端权威帧为基准；仅当 Experiment 视图可见时跑 rAF（避免隐藏时白烧 CPU）。
   useEffect(() => {
-    if (activeView !== "experiment") return;
-    let raf = 0;
-    const frame = () => {
-      raf = window.requestAnimationFrame(frame);
-      const canvas = canvasRef.current;
-      const ctx = canvas?.getContext("2d");
-      const base = sceneRef.current;
-      if (!canvas || !ctx) return;
-      if (!base) {
-        ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
-        return;
-      }
-      const authoritative = fishBaseRef.current;
-      const fish = authoritative
-        ? extrapolateFish(authoritative.fish, Math.min(0.25, (performance.now() - authoritative.ts) / 1000), WORLD)
-        : base.fish;
-      drawnFishRef.current = fish;
-      drawArenaScene(ctx, { ...base, fish }, selectedRef.current);
-    };
-    raf = window.requestAnimationFrame(frame);
-    return () => window.cancelAnimationFrame(raf);
-  }, [activeView]);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    if (!scene) {
+      ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+      return;
+    }
+    drawArenaScene(ctx, scene, selectedFishId);
+  }, [scene, selectedFishId]);
 
   // Session ids look like "session_ab12cd34ef56" -- show the hex, not the prefix.
   const shortSessionId = sessionId ? sessionId.replace(/^session_/, "").slice(0, 8) : null;
@@ -397,8 +367,7 @@ export function DanioArenaPanel() {
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
     const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
-    const displayed = drawnFishRef.current ?? scene.fish;
-    const hit = hitTestFish({ ...scene, fish: displayed }, mx, my, fishHitRadius(rect.width));
+    const hit = hitTestFish(scene, mx, my, fishHitRadius(rect.width));
     selectFish(hit);
   }
 
@@ -588,12 +557,12 @@ export function DanioArenaPanel() {
         <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
           <span className="flex flex-wrap items-center gap-1">
             <SectionLabel en="SPEED" />
-            {[0.25, 0.5, 1, 2, 4].map((factor) => (
+            {[0.25, 0.5, 1, 2, 4, 20].map((factor) => (
               <button
                 key={factor}
                 type="button"
                 onClick={() => setSimSpeed(factor)}
-                title={`步速 ${factor}×（1× = 20 步/tick = 200 步/s；只改推进快慢，不改模型本身）`}
+                title={`步速 ${factor}×（每 tick 推 ${factor} 步；只改推进快慢，不改模型本身）`}
                 className={`border border-border px-2 py-0.5 font-mono text-xs leading-none ${
                   simSpeed === factor ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}

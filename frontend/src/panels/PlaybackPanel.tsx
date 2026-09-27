@@ -2,16 +2,10 @@ import { SectionLabel } from "@/components/SectionLabel";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Gamepad2 } from "lucide-react";
 import { Panel } from "@/components/Panel";
-import { SPEED_BASE_STEPS_PER_TICK, useUiStore } from "@/store/ui";
-import { arenaAspect, CANVAS, WORLD } from "@/design/geometry";
-import {
-  drawArenaScene,
-  extrapolateFish,
-  fishHitRadius,
-  hitTestFish,
-  type ArenaScene,
-} from "@/visuals/ArenaScene";
-import { getFishCard, getSnapshot, release, type FishCard, type FishState } from "@/api/arena";
+import { useUiStore } from "@/store/ui";
+import { arenaAspect, CANVAS } from "@/design/geometry";
+import { drawArenaScene, fishHitRadius, hitTestFish, type ArenaScene } from "@/visuals/ArenaScene";
+import { getFishCard, getSnapshot, release, type FishCard } from "@/api/arena";
 import { getHealth } from "@/api/health";
 
 /**
@@ -30,8 +24,7 @@ import { getHealth } from "@/api/health";
  * 若会话处于暂停（底栏 Pause），后端 `advance` 短路 —— 本面板会给出提示而非默默不动。
  */
 
-// 驱动间隔 33 ms（≈30 fps）；**步速**与 Arena 共用 `store.simSpeed`（默认 1× = 200 步/s，按时间归一化分到每 tick）。
-const TICK_MS = 33;
+const TICK_MS = 100; // 驱动间隔；步速与 Arena 共用 `store.simSpeed`（默认 20 ⇒ 20 步/tick）
 const CARD_EVERY = 10; // 每 10 tick ≈ 1s 刷新一次鱼卡
 /** 巡航速度：不按上下键时的默认 `v`（避免"一松手就停"，也不必长按）。 */
 const CRUISE_SPEED = 0.5;
@@ -56,11 +49,6 @@ export function PlaybackPanel() {
   const activeView = useUiStore((s) => s.activeView);
   const stats = useUiStore((s) => s.stats);
   const [scene, setScene] = useState<ArenaScene | null>(null);
-  /** 最近一帧权威鱼层 + 到达时刻（显示层外推用；不改仿真）。 */
-  const fishBaseRef = useRef<{ ts: number; fish: Record<string, FishState> } | null>(null);
-  const sceneRef = useRef<ArenaScene | null>(null);
-  const drawnFishRef = useRef<Record<string, FishState> | null>(null);
-  const drawSelRef = useRef<string | null>(null);
   const [controlledId, setControlledId] = useState<string | null>(null);
   const [card, setCard] = useState<FishCard | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -120,14 +108,12 @@ export function PlaybackPanel() {
         const target = controlledRef.current;
         const summary = await release(
           sessionId,
-          Math.max(1, Math.round((simSpeed * SPEED_BASE_STEPS_PER_TICK * TICK_MS) / 100)),
+          Math.max(1, Math.round(simSpeed)),
           true,
           target ? { fishId: target, omega, speed } : undefined,
         );
         const snap = await getSnapshot(sessionId);
         if (stop) return;
-        fishBaseRef.current = { ts: performance.now(), fish: snap.fish };
-        sceneRef.current = { ...snap };
         setScene({ ...snap });
         // 首次进入或原被控鱼已死：自动接管第一条存活的鱼。
         if (!controlledRef.current || !snap.fish[controlledRef.current]?.alive) {
@@ -158,34 +144,13 @@ export function PlaybackPanel() {
     };
   }, [active, running, sessionId, simSpeed]);
 
-  // 绘制：rAF + 显示层外推（与 Arena 同一套；被控鱼高亮复用 Arena 的选中样式）。
-  drawSelRef.current = controlledId;
+  // 绘制：被控鱼高亮（复用 Arena 的选中样式）
   useEffect(() => {
-    if (!active) return;
-    let raf = 0;
-    const frame = () => {
-      raf = window.requestAnimationFrame(frame);
-      const ctx = canvasRef.current?.getContext("2d");
-      if (!ctx) return;
-      const base = sceneRef.current;
-      if (!base) {
-        ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
-        return;
-      }
-      const authoritative = fishBaseRef.current;
-      const fish = authoritative
-        ? extrapolateFish(
-            authoritative.fish,
-            Math.min(0.25, (performance.now() - authoritative.ts) / 1000),
-            WORLD,
-          )
-        : base.fish;
-      drawnFishRef.current = fish;
-      drawArenaScene(ctx, { ...base, fish }, drawSelRef.current);
-    };
-    raf = window.requestAnimationFrame(frame);
-    return () => window.cancelAnimationFrame(raf);
-  }, [active]);
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    if (scene) drawArenaScene(ctx, scene, controlledId);
+    else ctx.clearRect(0, 0, CANVAS.w, CANVAS.h);
+  }, [scene, controlledId]);
 
   const takeControl = useCallback((fishId: string | null) => {
     controlledRef.current = fishId;
@@ -198,9 +163,7 @@ export function PlaybackPanel() {
     const rect = e.currentTarget.getBoundingClientRect();
     const mx = ((e.clientX - rect.left) / rect.width) * CANVAS.w;
     const my = ((e.clientY - rect.top) / rect.height) * CANVAS.h;
-    // 命中用「实际画出的」（外推后）鱼层：所见即所点。
-    const displayed = drawnFishRef.current ?? scene.fish;
-    takeControl(hitTestFish({ ...scene, fish: displayed }, mx, my, fishHitRadius(rect.width)));
+    takeControl(hitTestFish(scene, mx, my, fishHitRadius(rect.width)));
   }
 
   const alive = scene ? Object.entries(scene.fish).filter(([, f]) => f.alive) : [];
