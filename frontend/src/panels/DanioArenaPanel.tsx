@@ -38,16 +38,18 @@ import {
  * 每个 tick 把合成后的场景写入回放缓冲（Playback 视图消费）。
  */
 
-const POLL_MS = 100; // 10 fps render; backend sim runs at 20 Hz
+// 驱动间隔：33 ms（≈30 fps）。配合"时间归一化"的步数公式，`1×` 仍 = 200 步/s（见下），
+// 但每帧只推 ~7 步 ⇒ 鱼每帧位移小得多、看着丝滑（原 100 ms/20 步会"跳"）。
+const POLL_MS = 33;
 /** 排行榜刷新节奏（每 20 tick ≈ 2s）。 */
-const LEADERBOARD_EVERY = 20;
+const LEADERBOARD_EVERY = 60;
 
 /** 演示：活鱼少于该值时自动补一条（新基因组 → 发育 → 入 Arena）。 */
 const REPLENISH_BELOW = 2;
 /** 补鱼冷却：避免连续补（每次都要发育 + 建网）。 */
 const REPLENISH_COOLDOWN_MS = 6000;
 /** 场景层（猎物/捕食者/障碍）刷新节奏：每 5 tick ≈ 0.5s。 */
-const SCENE_EVERY = 5;
+const SCENE_EVERY = 10;
 /** 会话创建失败后的重试间隔（后端未起 / 端口上是旧进程时会走到这里）。 */
 const SESSION_RETRY_MS = 3000;
 /** 冻结 demo checkpoint（`artifacts/demo/`；`pipeline §6` 契约）。 */
@@ -168,14 +170,18 @@ export function DanioArenaPanel() {
     const tick = async () => {
       try {
         // 步速 ≥1：每 tick 多走几步（不加密请求）；<1：拉长间隔（慢动作）。
+        // 步数按时间归一化：`1×` = 200 步/s ⇒ 每 tick = 200 × (POLL_MS/1000) ≈ 7 步。
         const summary = await release(
           sessionId,
-          Math.max(1, Math.round(simSpeed * SPEED_BASE_STEPS_PER_TICK)),
+          Math.max(
+            1,
+            Math.round((simSpeed * SPEED_BASE_STEPS_PER_TICK * POLL_MS) / 100),
+          ),
         );
         tickRef.current += 1;
 
         // 场景层：低频刷新（WS 不推猎物/捕食者/障碍）。高速时每 tick 取一次，避免猎物/捕食者跳跃。
-        const sceneEvery = simSpeed >= 4 ? 1 : SCENE_EVERY;
+        const sceneEvery = simSpeed >= 4 ? 3 : SCENE_EVERY;
         if (tickRef.current === 1 || tickRef.current % sceneEvery === 0) {
           const snap: ArenaSnapshot = await getSnapshot(sessionId);
           sceneRef.current = { ...snap };

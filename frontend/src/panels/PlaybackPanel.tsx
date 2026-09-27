@@ -24,7 +24,8 @@ import { getHealth } from "@/api/health";
  * 若会话处于暂停（底栏 Pause），后端 `advance` 短路 —— 本面板会给出提示而非默默不动。
  */
 
-const TICK_MS = 100; // 驱动间隔；**步速**与 Arena 共用 `store.simSpeed`（默认 1× ⇒ 20 步/tick = 200 步/s）
+// 驱动间隔 33 ms（≈30 fps）；**步速**与 Arena 共用 `store.simSpeed`（默认 1× = 200 步/s，按时间归一化分到每 tick）。
+const TICK_MS = 33;
 const CARD_EVERY = 10; // 每 10 tick ≈ 1s 刷新一次鱼卡
 /** 巡航速度：不按上下键时的默认 `v`（避免"一松手就停"，也不必长按）。 */
 const CRUISE_SPEED = 0.5;
@@ -108,7 +109,7 @@ export function PlaybackPanel() {
         const target = controlledRef.current;
         const summary = await release(
           sessionId,
-          Math.max(1, Math.round(simSpeed * SPEED_BASE_STEPS_PER_TICK)), // 步速倍数 × 基准
+          Math.max(1, Math.round((simSpeed * SPEED_BASE_STEPS_PER_TICK * TICK_MS) / 100)),
           true,
           target ? { fishId: target, omega, speed } : undefined,
         );
