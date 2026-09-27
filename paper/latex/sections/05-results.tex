@@ -31,22 +31,19 @@
     \item ExpertPolicy 只读 \texttt{obs[0..5]} 与 \texttt{obs[11]}、不读 \texttt{obs[6..10]}，故 A5 looming 改动不影响本基线；
     本基线\textbf{不是} DanioNet 模型结果，仅作参考基线与环境 pre-check 对照。
     \item 早期草案引用的 \texttt{exp\_arena\_expert\_ref\_v2} 属 A14 \textbf{拆分 arena 随机流之前}的批次，数值已作废
-    （见 \texttt{research/notes/契约决策记录.md}）。图~\ref{fig:metrics} 仍取自该旧批次，其数值与上表\textbf{不一致}，
-    一律以本表为准。
+    （见 \texttt{research/notes/契约决策记录.md}）；本表与图~\ref{fig:metrics} 均已改用 A14 后的 \texttt{v3} 重跑。
   \end{tablenotes}
   \end{threeparttable}
 \end{table}
 
 
-\subsection{基线主指标（图；A14 前批次，数值以表~\ref{tab:baseline} 为准）}
+\subsection{基线主指标（图）}
 \begin{figure}[t]
   \centering
-  \includegraphics[width=0.95\linewidth]{fig_metrics_mean_std}
-  \caption{Arena 主指标（ExpertPolicy 驱动，3 seed \ $\times$ 12 鱼 $\times$ 600 步）。
-  左：0--1 比值类；右：\texttt{energy\_efficiency} 为\textbf{每步速率}（$\sim10^{-3}$），
-  因量纲不同单列一轴。误差棒为跨 seed 的 mean $\pm$ std。
-  说明：本图取自 A14 拆分随机流\textbf{之前}的批次，其数值与表~\ref{tab:baseline} 不一致；
-  此处仅用于展示指标形态与量纲差异，指标数值以表~\ref{tab:baseline} 为准。}
+  \includegraphics[width=0.95\linewidth]{fig_baseline_v3}
+  \caption{ExpertPolicy 冻结基线（3 seed $\times$ 12 鱼 $\times$ 600 步，跨 seed 的 $\mathrm{mean}\pm\mathrm{std}$）。
+  左：0--1 比值类；右：\texttt{energy\_efficiency} 为每步速率（$\sim10^{-3}$），因量纲不同单列一轴。
+  数值与表~\ref{tab:baseline} 同源。}
   \label{fig:metrics}
 \end{figure}
 
@@ -98,13 +95,46 @@
     报告集（seeds 1103 / 2207 / 3301） & $0.8712$ & $0.2158$ & 冻结（取自校准集） \\
     \midrule
     \multicolumn{4}{@{}l@{}}{\emph{报告集逐类外显率（Wilson 95\% CI）}} \\
-    \texttt{A\_B\_}（$	heta$ 门控期望高） & $0.6975$ & $[0.6709,\,0.7228]$ & \\
-    \texttt{A\_bb}（$	heta$ 门控期望高） & $0.8892$ & $[0.8701,\,0.9057]$ & \\
-    \texttt{aaB\_}（$	heta$ 门控期望低） & $0.7908$ & $[0.7669,\,0.8129]$ & \\
-    \texttt{aabb}（$	heta$ 门控期望低） & $0.7592$ & $[0.7342,\,0.7825]$ & \\
+    \texttt{A\_B\_}（$\theta$ 门控期望高） & $0.6975$ & $[0.6709,\,0.7228]$ & \\
+    \texttt{A\_bb}（$\theta$ 门控期望高） & $0.8892$ & $[0.8701,\,0.9057]$ & \\
+    \texttt{aaB\_}（$\theta$ 门控期望低） & $0.7908$ & $[0.7669,\,0.8129]$ & \\
+    \texttt{aabb}（$\theta$ 门控期望低） & $0.7592$ & $[0.7342,\,0.7825]$ & \\
     \bottomrule
   \end{tabular}
 \end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.98\linewidth]{fig_penetrance}
+  \caption{penetrance 报告集（3 seed $\times$ 4 类 $\times$ 400，$n=1200$ 每类）。
+  左：逐类外显率及其 Wilson 95\% 区间，虚线为 0.5 机遇水平；右：两轴分离度 AUC，
+  红虚线为签署的效应量下限 0.70。N 轴可分离而 H 轴不可分离，故生效轴取单轴 N。}
+  \label{fig:penetrance}
+\end{figure}
+
+\noindent\textbf{判据的形式化。} 记第 $i$ 个体的读数为 $N_i$，同 seed 分层集读数中位数为 $b_s$，
+则居中偏差读数为 $\tilde N_i = N_i - b_{s(i)}$。门控与三个统计量的定义如下。
+
+\[
+\hat\tau_N \;=\; \frac{1}{n_+ n_-}\sum_{i\in +}\sum_{j\in -}
+\mathbf{1}\!\left[\tilde N_i > \tilde N_j\right],\qquad
++\;=\;\{\,i:\ \mathrm{expected}_i \in \{A\_B\_, A\_bb\}\,\},\quad
+-\;=\;\{\,i:\ \mathrm{expected}_i \in \{aaB\_, aabb\}\,\}
+\]
+
+$\hat\tau_N$ 即分离度 AUC，等于 Mann--Whitney $U$ 统计量除以 $n_+n_-$，其对单调变换不变，
+故不依赖 $\beta$ 的单位规范。逐类外显率为 $\hat p_g = k_g / n_g$，区间取 Wilson 得分区间
+
+\[
+\frac{\hat p + \frac{z^2}{2n} \;\pm\; z\sqrt{\frac{\hat p (1-\hat p)}{n} + \frac{z^2}{4n^2}}}{1 + \frac{z^2}{n}},
+\qquad z = z_{1-\alpha/2}, \quad n = n_g,
+\]
+
+阈值取两类内中位数的中点 $\theta_N^{\mathrm{obs}} = \tfrac{1}{2}\big(\mathrm{med}(\tilde N_{+}) + \mathrm{med}(\tilde N_{-})\big)$，
+其一致性判据为最小错分率
+$\min_{t} \big[\#\{i\in+: \tilde N_i < t\} + \#\{i\in-: \tilde N_i \ge t\}\big] / n$；
+本波取中点口径（见 \S\ref{sec:results} 与 \texttt{contract} 决策记录）。效应量下限以
+$\hat\tau_N \ge 0.70$ 叠加到显著性与 $p<0.05$ 之上，用于排除只显著而效应微弱的读数。
 
 三点结果：
 
