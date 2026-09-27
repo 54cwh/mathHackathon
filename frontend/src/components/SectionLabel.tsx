@@ -10,15 +10,18 @@ export function SectionLabel({
   en,
   zh,
   className,
+  textClass = "text-xs",
 }: {
   en: string;
   zh?: string;
   className?: string;
+  /** 字号类（默认 `text-xs`；面板主读区用 `text-sm`，与 `交互与可视化.md` 的字号口径一致）。 */
+  textClass?: string;
 }) {
   return (
     <span className={cn("inline-flex items-baseline gap-1.5", className)}>
-      <span className="font-pixel text-xs leading-none">{en}</span>
-      {zh && <span className="text-xs leading-none text-muted-foreground">{zh}</span>}
+      <span className={cn("font-pixel leading-none", textClass)}>{en}</span>
+      {zh && <span className={cn("leading-none text-muted-foreground", textClass)}>{zh}</span>}
     </span>
   );
 }

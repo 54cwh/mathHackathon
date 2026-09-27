@@ -84,13 +84,6 @@ export function DNA2BrainPanel() {
     });
   }, [genome]);
 
-  /** 当前选中位点落在哪条单倍体上（螺旋只画这一条，避免把 4 条混在一起）。 */
-  const activeRow = useMemo(
-    () => haplotypes.find((row) => position >= row.start && position < row.start + row.seq.length),
-    [haplotypes, position],
-  );
-  const sequence = activeRow?.seq ?? haplotypes[0]?.seq ?? "";
-
   const loadFresh = useCallback(async () => {
     setBusy(true);
     setError(null);
@@ -257,13 +250,10 @@ export function DNA2BrainPanel() {
               HELIX (SCHEMATIC)
             </span>
             <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-              显示 {activeRow?.label ?? "—"} · 非互补配对
+              示意素材 · 非互补配对
             </span>
           </div>
-          <DnaHelixVisual
-            sequence={sequence}
-            highlightPosition={activeRow ? position - activeRow.start : position}
-          />
+          <DnaHelixVisual />
         </div>
 
         {/* 下方内容（条带 + 编辑器 + 表型 + 提示）独立成可滚区，矮面板下不裁剪。 */}
@@ -387,12 +377,12 @@ export function DNA2BrainPanel() {
         {/* 发育结果：真实数值（DOM 渲染，§15.1 A2 允许且应当显示真实 simulation state） */}
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
-            <SectionLabel en="PHENOTYPE" zh="表型" />
-            <span className="whitespace-nowrap font-mono text-xs text-muted-foreground">
+            <SectionLabel en="PHENOTYPE" zh="表型" textClass="text-sm" />
+            <span className="whitespace-nowrap font-mono text-sm text-muted-foreground">
               seed {DEV_SEED} · {development ? (development.phenotype.viable ? "viable" : "non-viable") : "—"}
             </span>
           </div>
-          <dl className="grid grid-cols-4 gap-x-2 gap-y-1 font-mono text-xs">
+          <dl className="grid grid-cols-2 gap-x-2 gap-y-1 font-mono text-sm">
             {[
               ["neurons", development?.phenotype.n_neurons],
               ["edges", development?.phenotype.n_edges],
@@ -400,7 +390,7 @@ export function DNA2BrainPanel() {
               ["tau", development?.phenotype.tau_mean],
             ].map(([label, value]) => (
               <div key={String(label)} className="flex flex-col">
-                <dt className="text-xs text-muted-foreground">{String(label)}</dt>
+                <dt className="text-sm text-muted-foreground">{String(label)}</dt>
                 <dd className="truncate">
                   {typeof value === "number"
                     ? label === "density" || label === "tau"

@@ -604,25 +604,32 @@ export function DanioArenaPanel() {
           )}
         </div>
 
-        <div className="flex shrink-0 items-center justify-between gap-2 text-xs text-muted-foreground">
-          <span className="flex flex-wrap items-center gap-1">
-            <SectionLabel en="SPEED" />
+        {/* SPEED 独占一行（不与会话号/提示抢宽）；档位等宽，读作一个分段控件。 */}
+        <div className="shrink-0 space-y-1 text-sm text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-0.5">
+            <SectionLabel en="SPEED" textClass="text-sm" />
             {[0.25, 0.5, 1, 2, 4, 20].map((factor) => (
               <button
                 key={factor}
                 type="button"
                 onClick={() => setSimSpeed(factor)}
                 title={`步速 ${factor}×（每 tick 推 ${factor} 步；只改推进快慢，不改模型本身）`}
-                className={`border border-border px-2 py-0.5 font-mono text-xs leading-none ${
+                className={`min-w-10 border border-border px-1 py-0.5 text-center font-mono text-sm leading-none ${
                   simSpeed === factor ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}
               >
                 {factor}×
               </button>
             ))}
-          </span>
-          <span className="truncate">{shortSessionId ? `session ${shortSessionId}` : "connecting..."}</span>
-          <span className="truncate">{error ? `⚠ ${error}` : "click a fish to inspect"}</span>
+          </div>
+          <div className="flex items-center justify-between gap-2 font-mono">
+            <span className="min-w-0 truncate">
+              {shortSessionId ? `session ${shortSessionId}` : "connecting..."}
+            </span>
+            <span className="min-w-0 shrink-0 truncate">
+              {error ? `⚠ ${error}` : "click a fish to inspect"}
+            </span>
+          </div>
         </div>
       </div>
     </Panel>

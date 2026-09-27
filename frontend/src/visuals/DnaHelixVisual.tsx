@@ -1,231 +1,120 @@
 import { useEffect, useRef } from "react";
-import { DNA, STRIP } from "@/design/palette";
 
 /* ===========================================================================
-   DNA 双螺旋（**像素风**，扁平硬边），由**真实序列**驱动。
+   DNA 双螺旋（**示意素材** + 纵向滚动）。
 
-   与旧版的区别（2026-09-27，前端功能项接管的改动）：
-     1) 新增 `sequence` / `highlightPosition` props：横档颜色 = 该行对应碱基的
-        STRIP 色（A/C/G/T），行列 -> 碱基索引的映射是 `flatten()` 的同一坐标序
-        （`API接口.md` §2.3：pair0.maternal → pair0.paternal → pair1.maternal →
-        pair1.paternal），因此画面与 mutation 的 position 语义一致。
-     2) 新增帧循环：相位 `phase` 使正弦沿轴滚动（螺旋"转起来"）。**不是**缩放/淡出
-        类动画（那些被 A10 禁止），只是结构沿轴的平移相位。
-     3) 布局仍是 `(w, h)` 的纯函数（无随机数、无时钟输入）；`phase` 只影响绘制相位，
-        故同尺寸同相位必得同一像素 —— 确定性性质保留。
+   与上一版的区别（2026-09-27 用户裁决）：
+     - 画面改为 `public/assets/dna/helix.png`（像素风双螺旋素材，**自带透明背景**，
+       **纵向无缝可平铺**：顶行像素 == 底行像素），纵向**平铺多份** + 匀速滚动 ⇒ 无缝循环的
+       "链在流动"——**不再由真实序列绘制**。
+     - 因此 `sequence` / `highlightPosition` 两个 props 一并移除：素材不承载
+       碱基身份与突变位点。**真实碱基的可视证据由下方四条单倍体条带（
+       `NucleotideStrip`，含选中位高亮）承担**（`交互与可视化.md` §15）。
+     - 标题旁的读数由「显示 <单倍体>」改为「示意素材」：素材与当前选中的
+       单倍体无关，继续标"显示 X"会读成"这条链就是 X"。
 
    刻意不做的事：
-     - 不用 three.js / 不用 @react-three/*：pixel-art + scientific UI hybrid。
-     - 不写任何文字或数字，不画坐标轴、图例、刻度。
-     - 不做渐变描边、不用线宽过渡：链是整数方块沿轴逐行堆出来的。
+     - 不抠图/不改素材像素：素材下缘是 alpha=0 的透明底，直接叠在面板背景上即可；
+       `alphaBBox()` 只用来裁掉四周空白，避免把大量透明区缩进画面。
+     - 不做缩放动画、不做淡入淡出（`A10`）：只有沿轴的匀速平移。
+     - 不用 three.js / 不用 @react-three/*（`README.md` 技术栈 3D DNA 条推迟）。
 
-   「不是虚点」怎么保证：每行除了画本行的块，还把**该行的块与上一行的块之间的
-   垂直跳变补齐**（见 put 调用里的 |c - cp| + BLOCK）。螺距恒定 => 每行最多跳
-   约 ROW_STEP 像素，补齐后链是连续的折线，而不是一串孤立方块。
-
-   颜色：只用 @/design/palette，本文件**没有**任何 hex 字面量。
+   确定性：`(容器尺寸, 时间)` 的函数，无随机数；位图取容器 CSS 像素，逻辑像素 =
+   CSS 像素。
    =========================================================================== */
 
-/** 小于这些尺寸就不画（避免退化画布上出现半像素）。 */
 const MIN_W = 8;
 const MIN_H = 16;
 
-/** 沿轴每 2 逻辑像素一行；行厚同时是链的块厚。 */
-const ROW_STEP = 2;
-/** 链的块厚（垂直于轴的那一边）。 */
-const BLOCK = 2;
-/** 无序列时的稀疏横档：每 8 行一道（约每半圈 4 道，太密会读成梯子）。 */
-const RUNG_EVERY = 8;
-/**
- * 画布长边内的圈数。**固定圈数**（而不是固定振幅）=> 螺距恒定，链的斜率
- * 只由画布长宽比决定，换尺寸时形状不会退化成一条扁直线。
- */
-const TURNS = 2.4;
-/** 轴两端留白 = BLOCK + 2。 */
-const PAD = BLOCK + 2;
-/** 滚动速度（圈/秒）与帧率上限：低帧率足够表现"活"，且不抢 CPU。 */
-const TURNS_PER_SEC = 0.06;
+/** 素材路径（`public/assets/` 下，构建后按原路径发布）。 */
+const IMG_SRC = "/assets/dna/helix.png";
+/** 帧率上限：滚动很慢，15 fps 足够，且不抢 CPU。 */
 const FPS = 15;
+/**
+ * 缩放：素材裁到不透明包围盒后，其高度映射为容器高度的该倍数。
+ * 素材是**纵向无缝平铺**的（顶行像素 == 底行像素），故任意缩放都无缝；`1.0` = 一屏正好一个周期。
+ */
+const ZOOM = 0.4;
+/** 滚动速度（CSS px/s）：能看清横档，同时看得出链在快速流动。 */
+const SCROLL_PX_PER_SEC = 55;
 
-interface HelixRow {
-  /** 行序号，用于决定哪几行画横档 */
-  i: number;
-  /** 沿轴的整数位置 */
-  a: number;
-  /** sin(相位)：> 0 表示 strandA 在前（遮挡 B） */
-  s: number;
-  /** strandA 垂直于轴的整数位置 */
-  ca: number;
-  /** strandB 垂直于轴的整数位置 */
-  cb: number;
-}
-interface Helix {
-  horizontal: boolean;
-  rows: HelixRow[];
+interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
 }
 
 /**
- * 参数化螺旋 -> 行表。**无需随机数**：给定 (w, h, phase) 完全确定，且所有坐标都是整数。
- *
- * 轴的取法：**长边作轴**。本面板的视觉区通常是"宽而扁"，竖着画一个正弦会退化成
- * 几个很扁的椭圆（振幅受高度限制，而横向留白浪费）；沿长边画，螺距与斜率才稳定。
+ * 不透明像素的包围盒（裁掉素材四周空白）。逐像素扫一次，只在加载后算一次；
+ * 扫不到任何不透明像素时返回整幅（调用方回退）。
  */
-function buildHelix(w: number, h: number, phase: number): Helix {
-  const horizontal = w >= h;
-  const span = horizontal ? w : h;
-  const cross = horizontal ? h : w;
-
-  const rows: HelixRow[] = [];
-  const L = span - 2 * PAD;
-  // 振幅：先按"每半圈抬升 2*amp"求出约 45 度的斜率，再用cross 方向的 30% 封顶。
-  const amp = Math.max(
-    BLOCK + 2,
-    Math.min(Math.round(L / (2 * Math.PI * TURNS)), Math.round(cross * 0.3)),
-  );
-  if (L < ROW_STEP * 8) return { horizontal, rows };
-  if (cross < 2 * PAD + BLOCK) return { horizontal, rows };
-
-  const cc = Math.round(cross / 2);
-  for (let a = PAD, i = 0; a <= span - PAD; a += ROW_STEP, i++) {
-    const t = ((i * ROW_STEP) / L) * TURNS * Math.PI * 2 + phase;
-    const s = Math.sin(t);
-    const d = Math.round(amp * s);
-    rows.push({ i, a, s, ca: cc + d, cb: cc - d });
+function alphaBBox(img: HTMLImageElement): Box {
+  const w = img.naturalWidth;
+  const h = img.naturalHeight;
+  const full: Box = { x: 0, y: 0, w, h };
+  if (w === 0 || h === 0) return full;
+  const probe = document.createElement("canvas");
+  probe.width = w;
+  probe.height = h;
+  const pctx = probe.getContext("2d");
+  if (!pctx) return full;
+  pctx.drawImage(img, 0, 0);
+  let data: Uint8ClampedArray;
+  try {
+    data = pctx.getImageData(0, 0, w, h).data;
+  } catch {
+    return full; // 同源素材不应触发；保险起见回退整幅
   }
-  return { horizontal, rows };
-}
-
-export interface DnaHelixVisualProps {
-  /** 真实碱基串（`flatten()` 展平的 512 碱基）。缺省 = 纯装饰链，不带碱基色。 */
-  sequence?: string;
-  /** 高亮第 i 个碱基对应的那一行（0-based；见 `API接口.md` §2.3 坐标序）。 */
-  highlightPosition?: number;
-}
-
-/**
- * 绘制顺序 = 真实的遮挡顺序，共四遍：
- *   1) 交织暗部  shade   —— 只在两链靠近的行铺一块比链稍大的暗底。
- *   2) 后链      strandA / strandB（按每行的 s 决定谁在后面）
- *   3) 横档      rung    —— 画在后链之上、前链之下，于是横档"从后面穿过去"；
- *                          有真实序列时按碱基上 STRIP 色，且每行都画（一行 = 一个碱基）。
- *   4) 前链      压在横档与后链之上。
- * 四遍都只调 fillRect，且参数全为整数，因此边缘是硬的、没有任何抗锯齿过渡。
- */
-function drawHelix(
-  canvas: HTMLCanvasElement,
-  w: number,
-  h: number,
-  sequence: string | undefined,
-  highlightPosition: number | undefined,
-  phase: number,
-) {
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-  ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, w, h);
-
-  const { horizontal, rows } = buildHelix(w, h, phase);
-  if (rows.length < 2) return;
-
-  /** 把 (沿轴位置 a, 垂直位置 c, 沿轴长 aLen, 垂直厚 cLen) 映射成 fillRect。 */
-  const put = (a: number, c: number, aLen: number, cLen: number) => {
-    if (horizontal) ctx.fillRect(a, c, aLen, cLen);
-    else ctx.fillRect(c, a, cLen, aLen);
-  };
-  /** 补齐"上一行块 -> 本行块"的跳变，使链连续（而不是虚点）。 */
-  const prevRow = (i: number) => (i > 0 ? rows[i - 1] : rows[0]);
-
-  /** 行 -> 碱基索引：与 flatten() 的坐标序一致（线性覆盖整条序列）。 */
-  const baseIndexAt = (i: number): number => {
-    if (!sequence || sequence.length === 0) return -1;
-    return Math.min(sequence.length - 1, Math.floor((i * sequence.length) / rows.length));
-  };
-
-  // 1) 交织暗部：只在 |ca - cb| <= BLOCK 的行（两链重叠处）
-  ctx.fillStyle = DNA.shade;
-  for (const r of rows) {
-    if (Math.abs(r.ca - r.cb) > BLOCK) continue;
-    const lo = Math.min(r.ca, r.cb) - 1;
-    const hi = Math.max(r.ca, r.cb) + BLOCK + 1;
-    put(r.a - 1, lo, ROW_STEP + 2, hi - lo);
-  }
-
-  // 2) 后链
-  for (const r of rows) {
-    const p = prevRow(r.i);
-    const c = r.s > 0 ? r.cb : r.ca;
-    const cp = r.s > 0 ? p.cb : p.ca;
-    ctx.fillStyle = r.s > 0 ? DNA.strandB : DNA.strandA;
-    put(r.a, Math.min(c, cp), ROW_STEP, Math.abs(c - cp) + BLOCK);
-  }
-
-  // 3) 横档：连接两条链。两链交叉处宽度不足，自然跳过（画不出负长度的横档）。
-  for (const r of rows) {
-    const lo = Math.min(r.ca, r.cb) + BLOCK;
-    const hi = Math.max(r.ca, r.cb) - 1;
-    if (hi < lo) continue;
-
-    const baseIndex = baseIndexAt(r.i);
-    const selected = baseIndex >= 0 && baseIndex === highlightPosition;
-    if (baseIndex < 0 && r.i % RUNG_EVERY !== 0) continue; // 无数据时退回稀疏装饰横档
-
-    let fill: string = DNA.rung;
-    if (baseIndex >= 0) {
-      const ch = sequence?.[baseIndex];
-      fill = selected ? DNA.highlight : (baseFill(ch) ?? DNA.rung);
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  for (let y = 0; y < h; y++) {
+    const row = y * w * 4;
+    for (let x = 0; x < w; x++) {
+      if (data[row + x * 4 + 3] > 8) {
+        if (x < x0) x0 = x;
+        if (x > x1) x1 = x;
+        if (y < y0) y0 = y;
+        if (y > y1) y1 = y;
+      }
     }
-    ctx.fillStyle = fill;
-    const thickness = selected ? 2 : 1;
-    put(r.a + Math.floor(ROW_STEP / 2) - (selected ? 1 : 0), lo, thickness, hi - lo + 1);
   }
-
-  // 4) 前链
-  for (const r of rows) {
-    const p = prevRow(r.i);
-    const c = r.s > 0 ? r.ca : r.cb;
-    const cp = r.s > 0 ? p.ca : p.cb;
-    ctx.fillStyle = r.s > 0 ? DNA.strandA : DNA.strandB;
-    put(r.a, Math.min(c, cp), ROW_STEP, Math.abs(c - cp) + BLOCK);
-  }
-}
-
-/** 碱基 -> STRIP 色；未知字符返回 undefined（调用方回退到装饰色）。 */
-function baseFill(ch: string | undefined): string | undefined {
-  switch (ch) {
-    case "A":
-      return STRIP.A;
-    case "C":
-      return STRIP.C;
-    case "G":
-      return STRIP.G;
-    case "T":
-      return STRIP.T;
-    default:
-      return undefined;
-  }
+  if (x1 < x0 || y1 < y0) return full;
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 
 /**
- * 尺寸**随容器**：位图宽高取容器的 CSS 像素（取整），因此逻辑像素 = CSS 像素，
- * 1 px 的横档不会被缩放糊掉；设备像素比 > 1 时是整数倍放大，仍然锐利。
+ * 尺寸**随容器**：位图宽高取容器的 CSS 像素（取整），因此逻辑像素 = CSS 像素；
+ * DPR > 1 时是整数倍放大。
  */
-export function DnaHelixVisual({ sequence, highlightPosition }: DnaHelixVisualProps) {
+export function DnaHelixVisual() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // props 走 ref：帧循环只建一次，不因每次数据更新重建 RAF。
-  const propsRef = useRef({ sequence, highlightPosition });
-  propsRef.current = { sequence, highlightPosition };
 
   useEffect(() => {
     const wrap = wrapRef.current;
     const canvas = canvasRef.current;
     if (!wrap || !canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let ready = false;
+    let crop: Box = { x: 0, y: 0, w: 0, h: 0 };
+    const img = new Image();
+    img.onload = () => {
+      crop = alphaBBox(img);
+      ready = true;
+    };
+    img.src = IMG_SRC;
 
     let raf = 0;
-    let phase = 0;
-    let last = 0;
     let w = 0;
     let h = 0;
+    let last = 0;
+    /** 已滚动的距离（CSS px，单调递增；取模在绘制时做）。 */
+    let scroll = 0;
 
     const resize = () => {
       w = Math.max(MIN_W, Math.round(wrap.clientWidth));
@@ -235,18 +124,38 @@ export function DnaHelixVisual({ sequence, highlightPosition }: DnaHelixVisualPr
       if (canvas.height !== h) canvas.height = h;
     };
 
+    const draw = () => {
+      ctx.clearRect(0, 0, w, h);
+      if (!ready || crop.h === 0) return;
+      // 素材高度 -> 容器高度 × ZOOM；横向居中；纵向平铺（三份，视图窗口恒被覆盖）。
+      const scale = (h * ZOOM) / crop.h;
+      const dw = Math.max(1, Math.round(crop.w * scale));
+      const dh = Math.max(1, Math.round(crop.h * scale));
+      // 缩小时用平滑（素材像素密度高于显示区，nearest 会丢像素/出摩尔纹）；
+      // 放大时关掉，保住像素硬边（与 Arena 素材同规）。
+      ctx.imageSmoothingEnabled = scale < 1;
+      const x = Math.round((w - dw) / 2);
+      // 向上滚动：offset ∈ (-dh, 0]
+      const offset = -(((scroll % dh) + dh) % dh);
+      // 纵向平铺足够多份：`ceil(h/dh) + 2` 保证任意缩放/任意 ZOOM 下视图窗口都被覆盖（无缝）。
+      const copies = Math.ceil(h / dh) + 2;
+      for (let i = -1; i < copies; i++) {
+        ctx.drawImage(img, crop.x, crop.y, crop.w, crop.h, x, Math.round(offset + i * dh), dw, dh);
+      }
+    };
+
     const frame = (now: number) => {
       raf = requestAnimationFrame(frame);
       if (now - last < 1000 / FPS) return;
+      const dt = last === 0 ? 0 : Math.min(0.25, (now - last) / 1000);
       last = now;
+      scroll += SCROLL_PX_PER_SEC * dt;
       resize();
-      phase += (TWO_PI * TURNS_PER_SEC * 1) / FPS;
-      const { sequence: seq, highlightPosition: pos } = propsRef.current;
-      drawHelix(canvas, w, h, seq, pos, phase);
+      draw();
     };
 
     resize();
-    drawHelix(canvas, w, h, propsRef.current.sequence, propsRef.current.highlightPosition, 0);
+    draw();
     raf = requestAnimationFrame(frame);
 
     const ro = new ResizeObserver(() => resize());
@@ -259,11 +168,7 @@ export function DnaHelixVisual({ sequence, highlightPosition }: DnaHelixVisualPr
 
   return (
     <div ref={wrapRef} className="h-full w-full overflow-hidden">
-      {/* 也加 .pixelated：位图 = 容器 CSS 像素，在 DPR>1（本机 1.5）时是 1.5 倍
-          上采样，不加则被双线性插值糊掉硬边；1px 横档会消失。 */}
-      <canvas ref={canvasRef} aria-hidden className="pixelated block h-full w-full" />
+      <canvas ref={canvasRef} aria-hidden className="block h-full w-full" />
     </div>
   );
 }
-
-const TWO_PI = Math.PI * 2;
