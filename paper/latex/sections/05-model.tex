@@ -1,0 +1,317 @@
+\section{模型的建立}\label{sec:model}\label{sec:method}
+
+本节按数据流\textbf{自上而下}组织：先说明基因型与调控网络（\S\ref{method:genome}），
+再依次给出发育（\S\ref{method:dev}）、连接组（\S\ref{method:net}）、
+当代学习（\S\ref{method:bc}）与演化闭环（\S\ref{method:evo}）。
+每个设计选择均给出依据与代价；符号沿用 \S\ref{sec:notation}，管线沿用式~\eqref{eq:pipeline}。
+连接组的生成机制如图~\ref{fig:mechanism}。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[
+    font=\scriptsize,
+    gen/.style={draw, rounded corners, align=center, minimum height=0.85cm, inner sep=4pt, fill=green!8},
+    proc/.style={draw, rounded corners, align=center, minimum height=0.85cm, inner sep=4pt, fill=orange!12},
+    ar/.style={-{Latex}, thick},
+    bound/.style={draw, dashed, red, rounded corners, align=center, fill=red!4, inner sep=4pt},
+  ]
+    \node[gen, minimum width=3.0cm] (g) at (0,0) {基因组\\（碱基串与调控基序）};
+    \node[proc, minimum width=3.0cm] (grn) at (3.8,0) {调控网络\\读出 $q(G)$};
+    \node[proc, minimum width=3.0cm] (fate) at (7.6,0) {细胞命运\\（六类功能域）};
+    \node[proc, minimum width=3.6cm] (wire) at (11.7,0) {连接概率\\（类型兼容、空间代价、表达相似度）};
+    \node[gen, minimum width=3.6cm] (conn) at (16.0,0) {连接组\\$(A,Z,\tau,W^{(0)},M)$};
+    \node[bound, minimum width=5.2cm] (bc) at (16.0,-1.7) {当代学习：增量 $\Delta W$（不遗传）};
+    \draw[ar] (g) -- (grn);
+    \draw[ar] (grn) -- (fate);
+    \draw[ar] (fate) -- (wire);
+    \draw[ar] (wire) -- (conn);
+    \draw[ar] (conn) -- (bc);
+  \end{tikzpicture}}
+  \caption{连接组的生成机制。}
+  \label{fig:mechanism}
+\end{figure}
+
+\subsection{基因型与调控网络}\label{method:genome}
+
+\textbf{设计选择}：基因组是\textbf{离散碱基串与调控基序目录}，碱基不直接编码权重，
+表达量经\textbf{调控网络}（GRN）给出细胞命运。
+
+\paragraph{基因组布局。}个体为二倍体：2 对同源染色体，每条单倍体染色体 $128$\,bp，
+故配子 $256$\,bp、二倍体全基因组 $2\times2\times128=\mathbf{512}$\,bp，
+字母表 $\{$A,C,G,T$\}$。第 0 代种群不植入基序，4 条链共 512 个碱基在字母表上
+\textbf{均匀独立同分布}抽取。调控基序目录为 8 条、每条 $6$\,bp，
+在实验随机种子下\textbf{一次性抽样后固定}，跨个体、跨代不变。
+
+\paragraph{读出 $q(G)$。}单链基序相似度取简化式
+$a(M_k,s)=1-d_H(M_k,s)/|M_k|$（$d_H$ 为 Hamming 距离），整条序列取
+$q_k(S)=\mathrm{TopKMean}_{s\subset S}\,a(M_k,s)$（窗口 $6$\,bp、步长 1、$K=3$），
+两条同源链按\textbf{加性平均}合并：
+
+\begin{equation}\label{method:eq-qg}
+q(G)=\tfrac12\bigl(q^{(h1)}+q^{(h2)}\bigr)\in[0,1]^8 ,
+\qquad
+\mathbf g_i^{r+1}=(1-\rho)\,\mathbf g_i^{r}
++\rho\,\sigma\!\bigl(W_g\mathbf g_i^{r}+B\,q(G)+P\mathbf p_i+\mathbf b\bigr).
+\end{equation}
+
+右式为离散调控网络：8 维状态，默认 12 步、$\rho=0.35$、$\sigma$ 为 sigmoid、
+初态 $\mathbf g_i^{0}=\mathbf 0$；$W_g\in\mathbb R^{8\times8}$ 取 Xavier uniform 后重标定
+至谱半径 $0.9$。窗口在\textbf{各染色体内}滑动、不跨染色体边界。
+
+\paragraph{依据与代价。}二倍体与独立分配是孟德尔式结构分离的前提；
+把等位基因效应压到 $q(G)$ 一条通路，才能让单碱基与结构的变化可归因。
+代价是位点表达量不进入发育，只作为报告层的阈值读出；
+加性平均会\textbf{抹平完全显性}，故把逐基序取最大（完全显性投影）留作消融对照；
+简化相似度\textbf{丢失位置权重}，须配 PWM 对照；
+基序目录固定后，跨实验比较必须共享同一种子家族，否则 $q(G)$ 的坐标系不同、不可直接比较。
+
+\subsection{发育：从调控网络到连接组}\label{method:dev}
+
+\textbf{设计选择}：区别于由基因组直接指定连接，网络结构由\textbf{发育过程}从调控网络终态生成。
+
+\textbf{依据}：这是 genomic bottleneck 的机制主张，遗传信息先于网络结构
+\citep{bib1_zador2019,bib3_shuvaev2024}；以发育先验生成权重矩阵
+\citep{bib2_barabasi2023} 与用简单随机发育生成模型重建小脑连接组
+\citep{bib4_richter2025} 已有先例。把可演化的对象上移一层，也使
+同源基因组与不同随机种子的组合、以及单碱基扰动，都成为可测量的结构变异来源。
+
+\paragraph{发育流程。}初始 24 个前体细胞，均分到 6 个发育域
+（sensory / prey / threat / integrator\_memory / inhibitory / motor，每域 4 个），
+位置取\textbf{域分块均匀随机}（归一化发育单位方域划为 $3\times2$ 个 block，按域行优先填入）。
+每个前体\textbf{至多分裂一次}，
+$p_i^{\mathrm{divide}}=\sigma(\mathbf w_d^\top\mathbf g_i^{12}+b_d)$，
+分裂扰动加到位置与调控网络终态上，故 $24\le N\le 48$。
+细胞身份由 $\mathbf l_i=U\mathbf g_i+\mathbf c_{domain(i)}$、
+$\mathbf z_i=\mathrm{softmax}(\mathbf l_i)$、$type_i=\arg\max_k z_{ik}$ 给出。
+连接概率为
+
+\begin{equation}\label{method:eq-lij}
+P(A_{ij}=1)=\sigma\bigl(\underbrace{\mathbf z_i^\top C\mathbf z_j}_{\text{type 兼容}}
+\underbrace{-\lambda d_{ij}}_{\text{空间代价}}
++\underbrace{\gamma R(\mathbf g_i,\mathbf g_j)}_{\text{表达相似度}}
++b_A\bigr),\qquad d_{ij}=\lVert \mathbf p_i-\mathbf p_j\rVert_2,
+\end{equation}
+
+不允许自环；$b_A$ 用二分反解使\emph{期望}非对角密度 $=0.15$。
+初始权重幅度 $\lvert w^{(0)}_{ij}\rvert=\mathrm{softplus}\bigl(\mathbf u^\top[\mathbf g_i;\mathbf g_j;\mathbf z_i;\mathbf z_j]+b_w\bigr)$，
+符号由\textbf{突触前}类型决定（Dale 式约束）：
+
+\begin{equation}\label{method:eq-dale}
+\operatorname{sign}(w_{ij})=
+\begin{cases}
+-1, & type_i=\text{Inhibitory},\\
++1, & \text{otherwise};
+\end{cases}
+\qquad
+\tau_i=\tau_{\min}+(\tau_{\max}-\tau_{\min})\,\sigma(\mathbf a^\top\mathbf g_i+b_\tau)\in[1,10].
+\end{equation}
+
+发育产物为 $(A,Z,\tau,W^{(0)},M)$。其中 $A$ 为二值邻接、$Z$ 为细胞身份、
+$\tau$ 为时间常数、$W^{(0)}$ 为初始有效权重、$M$ 为活跃神经元掩码。
+
+\paragraph{依据与代价。}六类细胞类型是\textbf{功能抽象}，划分参照斑马鱼感觉运动回路与
+全脑连接组组织 \citep{bib6_petrucco2023,bib7_dunn2016,bib14_dorkenwald2024}，
+不对应特定真实细胞类型；真实细胞类型远超六类 \citep{bib84_kunst2019}，
+且 $\arg\max$ 是离散化理想化，真实命运是连续谱 \citep{bib75_moris2016}。
+连接概率含空间布线代价 $-\lambda d_{ij}$（$\lambda=2.0$，在归一化单位方域上取值），
+logit 中的线性距离项等价于指数距离规则 $P\propto e^{-\lambda d}$，有连接组学支撑
+\citep{bib125_ercseyravasz2013}，随机放置已足以复现特异功能连接 \citep{bib123_hill2012}；
+代价是 $\lambda$ \textbf{有量纲}、绑定本项目的归一化方域口径，不能照搬文献的毫米口径值，
+故 $\lambda=0$ 须作消融对照（对应 H4）。
+表达相似度项取逐分量标准化后的\textbf{双线性}形式，$\gamma=1.0$ 固定、零额外参数，按弱偏置使用
+\citep{bib111_qiao2024,bib112_kovacs2020,bib119_sanes2020}；
+单用表达相似度预测连线的证据仅 AUC$\approx0.64$，且有反 Hebbian 的反例 \citep{bib121_hayashi2022}，
+故须报告 $\gamma=0$ 消融与 $\{0.5,1,2\}$ 敏感性搜索。
+类型兼容先验 $C$ 取\textbf{人工固定矩阵}，给出抑制性前神经元自抑制、
+sensory 不互相兴奋这类定性符号模式 \citep{bib14_dorkenwald2024}；
+其数值\textbf{无外部依据}，属项目设计选择，只作定性参照。
+
+\paragraph{良构判据。}三类判据缺一不可：(i) \textbf{发育}，每类命运至少 1 个，
+motor 至少各有 1 个左右输出神经元；(ii) \textbf{功能}，存在 sensory 到 motor 的有向路径；
+(iii) \textbf{动力学}，零输入下从零态跑 50 步无 NaN/Inf、$\lvert h_i^t\rvert<1$
+（该式是 $h_i^t$ 与 $\tanh(\cdot)$ 的凸组合，由零初态归纳即得，属模型的数学性质）、
+尾部 10 步平均饱和比例 $<0.9$、谱半径 $\rho(W^{(0)})<1$；后两条为工程判据。
+
+良构通过率如图~\ref{fig:viability}。四个面板依次为累计通过率与 Wilson 区间、各判据失败次数、
+谱半径分布与阈值、随机 $q$ 与管线 $q(G)$ 的口径对照。正式配置下 $1000$ 次随机 $q$ 全部通过
+（Wilson $[99.6\%,100.0\%]$），八项判据零次触发：判据 (ii) 与 (iv) 及命运缺失项由设计约定保证，
+恒真而不贡献区分力。故发育算子的作用是构造可行结构，筛选压力归代际适应度 $F$。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\linewidth]{fig_viability}
+  \caption{发育良构通过率。}
+  \label{fig:viability}
+\end{figure}
+
+\subsection{网络结构：DanioNet 与 48 节点}\label{method:net}
+
+\textbf{设计选择}：把发育产物当作一个\textbf{漏积分发放（firing-rate）离散网络}来跑，
+状态维数按容量上界 $48$ 分配张量，再用掩码界定真正活跃的部分。
+
+\paragraph{48 节点的含义。}$48$ 是\textbf{容量上界}，逐基因型的实际规模由发育决定。
+发育产出的活跃神经元数 $N$ 落在 $[24,48]$。在 3 个正式种子 $\times$ 14 个体共 42 个基因型上实测：
+$N$ 中位 $37.0$（27--43），支撑连接中位 $192.5$ 条（105--289），
+密度中位 $0.149$（由目标密度经 $b_A$ 二分反解保证）。
+网络张量在批内补零到 48，由神经元掩码 $M$ 与邻接掩码 $A$ 共同界定参与计算的神经元，
+非活跃神经元的行与列恒 0。
+
+\paragraph{可训练参数量。}被优化的 $\Theta$ 张量形状为 $48\times48=2304$，
+但\textbf{有效可训练的只有支撑之内的那些边}，实测中位 $192.5$ 条（个体间 105--289），
+即 $\mathcal O(10^2)$ 量级，其余位置被掩码屏蔽、梯度恒 0。
+与基线做参数量同一数量级对照时，以此为准（\S\ref{sec:solution}）。
+
+\paragraph{动力学。}网络为
+
+\begin{equation}\label{method:eq-dyn}
+h_i^{t+1}=\Bigl(1-\tfrac{1}{\tau_i}\Bigr)h_i^{t}
++\tfrac{1}{\tau_i}\,\phi\Bigl(\sum_j A_{ij}w_{ij}h_j^{t}+U_i x_t+m_i H_t+b_i\Bigr),
+\end{equation}
+
+默认 $\phi=\tanh$；$\tau\ge1$ 是前提（$\tau<1$ 被拒，因 $1/\tau>1$ 会放大）。
+$U_i,m_i,b_i$ 按\textbf{细胞类型}取固定先验、不学习，使发育输出契约 $(A,Z,\tau,W^{(0)},M)$ 保持冻结，
+感官增益仍经细胞类型与基因型挂钩。
+
+\paragraph{动作。}取\textbf{均值池化}：$\omega_t=\tanh(y_\omega)$、$v_t=\sigma(y_v)$，其中
+
+\begin{equation}\label{method:eq-action}
+y_\omega=\overline{h}_{M_L}-\overline{h}_{M_R},\qquad
+y_v=\overline{h}_{M_{\mathrm{motor}}},\qquad
+\omega_t\in[-1,1],\ v_t\in[0,1],
+\end{equation}
+
+$M_L,M_R$ 为左右 motor 池、$M_{\mathrm{motor}}$ 为全 motor 池。左池主导得 $\omega>0$。
+
+\paragraph{输入。}12 维观测由网络侧冻结：语义、顺序、值域 $[0,1]$、dtype \texttt{float32}；
+左右两个通道各自的猎物种群强度、天敌强度、障碍强度（6 维），
+最近可见猎物与天敌的相对体型（2 维），天敌视角扩张率（1 维），
+上一步推进（1 维），能量与饥饿（2 维，互补且和恒为 1）。其中饥饿即式~\eqref{method:eq-dyn} 的 $H_t=x_t[11]$。
+
+\paragraph{依据与代价。}动力学取漏积分发放的离散形式、时间常数逐神经元异质 $\tau_i\in[1,10]$：
+在 20\,Hz（$\Delta t=50$\,ms）下，$\tau_i$ 步等效 $50$--$500$\,ms 的网络级整合时间常数，
+与 NMDA / GABA$_B$ 及数百毫秒决策整合同量级，异质性本身是 H3 的处理变量；
+作为\textbf{单神经元膜时间常数}该量偏大（皮层约 20\,ms），其语义是网络级整合。
+动作取均值池化，对池大小不变、零新参数，代价是丢弃池内分布信息。
+左右 motor 按发育坐标中位数二分，保证两池非空、直接满足良构判据。
+输入取 12 维\textbf{结构化感知向量}，捕食与威胁分通道对应斑马鱼视觉的捕食与威胁回避通路
+\citep{bib8_trivedi2013,bib58_temizer2015,bib60_semmelhack2014}，
+饥饿与能量对应内部状态对决策的调制 \citep{bib9_filosa2016,bib10_zaupa2024}；
+结构化编码本身是建模假设，区别于从像素学得。
+
+图~\ref{fig:connectome} 中左为 $48\times48$ 的 $W^0$（含填充）与活跃的 $N\times N$ 块，
+中为按细胞类型分块的权重符号结构，右为 $N$ 与支撑边数的群体分布。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\linewidth]{fig_connectome}
+  \caption{连接矩阵与结构统计。}
+  \label{fig:connectome}
+\end{figure}
+
+\subsection{当代学习：行为克隆}\label{method:bc}
+
+\textbf{设计选择}：唯一的学习环节是\textbf{行为克隆}，且它只改\textbf{当代}权重、
+\textbf{不进入繁殖通路}。遗传边界为
+
+\begin{equation}\label{method:eq-boundary}
+\text{DNA 经调控网络到发育，得 } W^{(0)}
+\text{ 再经当代学习，得 } \Delta W \quad(\text{不遗传}),
+\end{equation}
+
+后代只继承 DNA，并从发育重新开始。训练对象被参数化为
+
+\begin{equation}\label{method:eq-wtheta}
+W=A\odot\Bigl(\operatorname{sign}(W^{(0)})\odot\mathrm{softplus}(\Theta)\Bigr),
+\qquad
+\Theta^{0}=\mathrm{softplus}^{-1}\bigl(\lvert W^{(0)}\rvert\bigr)
+\ \Longrightarrow\ \Delta W=0,
+\end{equation}
+
+被优化的是 $\Theta$（与 $W^{(0)}$ 同形），支撑 $A$ 与
+$\operatorname{sign}(W^{(0)})$ 在训练期\textbf{冻结}：不新增连接、不翻转符号，
+$\Delta W=W-W^{(0)}$ 是导出量。
+
+\paragraph{数据。}教师是\textbf{透明的规则控制器} ExpertPolicy
+（视野内追踪最近猎物、按威胁与障碍转向），可解释。它驱动鱼、逐步记录
+$(\text{observation},\text{expert\_action})$ 样本；每条回合只记录 1 条受控鱼
+（其余个体照常存在以提供真实感知上下文），标准预算 200 条回合对应约 $1.2\times10^{5}$ 个步样本。
+
+\paragraph{训练。}$\Delta W$ 是\textbf{逐个体}的：DNA 不同，故网络不同，
+故每个当代个体各自训练自己的网络（同一份专家数据、各自的 $\Theta$）。
+因零初态时 $W h^{0}=0$、单步梯度恒 0，故按回合顺序\textbf{整段展开 BPTT}：
+每次更新抽 64 条回合为一 batch，每条自零初态前向满 600 步，
+先对回合内逐步损失取均值、再对 batch 取均值后整段回传。预算 20 次更新、Adam、学习率 $10^{-3}$。
+损失按目标尺度归一化后求加权 MSE：
+
+\begin{equation}\label{method:eq-bcloss}
+\lambda_i=\frac{1}{\max(\sigma_i,\ 0.05R_i)^{2}},\quad i\in\{\omega,v\},
+\qquad
+\mathcal L=\lambda_\omega\,\mathrm{MSE}(\hat\omega,\omega^{*})
++\lambda_v\,\mathrm{MSE}(\hat v,v^{*}),
+\end{equation}
+
+其中 $\sigma_i$ 为训练集上第 $i$ 维动作的总体标准差、$R_\omega=2,R_v=1$ 为取值跨度，
+权重整体缩放至 $\lambda_\omega+\lambda_v=2$，等价于对各维目标 z-score 后等权，
+故 $\lambda$ \textbf{无量纲、非自由超参}，只改损失尺度，不改式~\eqref{method:eq-action} 的有界映射。
+
+\paragraph{依据与代价。}$\Delta W$ 不遗传：这是 genomic bottleneck 的核心主张
+\citep{bib1_zador2019,bib3_shuvaev2024}；评估阶段必须由 DanioNet 驱动，
+否则 DNA 与学习都不影响行为、适应度失去意义。代价是学习收益\textbf{每代都要重新付出}、无法积累，
+且结构在当代\textbf{不可改变}，这是本文要测量的代价之一（对应 H1、H3）。
+
+\subsection{演化闭环：适应度、选择与漂变}\label{method:evo}
+
+\textbf{设计选择}：闭环为 $F$ 经选择与漂变得到下一代 $G'$，
+其中选择算子取\textbf{二元锦标赛}、繁殖规模\textbf{恒定}。
+
+\paragraph{适应度。}用四项原始行为指标的加权和
+
+\begin{equation}\label{method:eq-fitness}
+F=0.35\,S+0.25\,P+0.20\,E_{\mathrm{esc}}+0.20\,Q ,
+\end{equation}
+
+$S$ 为生存、$P$ 为捕食、$E_{\mathrm{esc}}$ 为逃脱、$Q$ 为净能量积累率。
+四项各自在\textbf{代内良构个体}上做 min-max 归一到 $[0,1]$
+（某分量当代 $\max=\min$ 时该分量置 0），故 $F$ 是\textbf{代内相对分数}。
+
+\paragraph{遗传算子与漂变。}每对染色体以 0.5 概率发生一次单点交叉（切点取自内部断点），
+随后随机选一条进入配子；配子上施加 SNP 替换突变，
+$\mu=0.001$ 每碱基每配子（256\,bp 单倍体对应每个配子期望 0.256 个新突变）。
+种群规模 $48$，随机配子与随机后代抽样\textbf{自然产生}遗传漂变，不额外引入漂变参数。
+
+\paragraph{依据与代价。}适应度取四项代内归一后的加权和，覆盖生存、觅食、避敌、能量四个生态维度，
+使各分量与量纲无关、权重之和为 1；代价是 $F$ \textbf{只是代内相对分数}，
+不可跨代、跨环境比较，跨代与跨环境一律改用原始指标，且四位权重须做敏感性分析。
+二元锦标赛尺度无关（对适应度的平移与线性变换不变，且在期望适应度分布上等价于最大线性排名
+\citep{bib136_blickle1996,bib137_eiben2015}），而比例选择的强度与适应度尺度不可分离
+\citep{bib135_goldberg1991}；代价是尺度无关以\textbf{有放回}抽样为前提。
+亲本池\textbf{只含良构个体}，non-viable 排除。
+每代恒产 $48$ 个后代、世代不重叠，使漂变强度跨代可比。
+SNP 替换率与数字演化惯例同量级（Avida 默认约 $0.0075$），
+比脊椎动物真实种系碱基替换率高约 $10^{5}$ 倍，故\textbf{不可作生物学参数解读}。
+
+\paragraph{闭环回到起点。}下一代的基因组重新进入式~\eqref{eq:pipeline} 的顶端，
+且\textbf{不携带任何 $\Delta W$}：结构从发育重新生成，当代权重从 $\Delta W=0$ 重新开始。
+这条回路与式~\eqref{method:eq-boundary} 的边界共同定义本文的实验对象。
+生成-演化主循环如算法~\ref{alg:loop} 所示。
+
+\begin{algorithm}[H]
+\caption{生成-演化主循环}\label{alg:loop}
+\begin{algorithmic}[1]
+\Require 配置与 master seed；种群规模 $N_p=48$；代数 $T$
+\Ensure 逐代记录：基因组与结构统计、行为指标与适应度
+\State 由 master seed 派生各命名空间子种子
+\State 初始化第 $0$ 代种群（512\,bp 随机基因组）
+\For{$t \gets 0$ \textbf{to} $T-1$}
+  \State 每个基因组经发育算子生成 $(A,Z,\tau,W^{(0)},M)$，并做良构判定
+  \State 每个良构个体在生态仿真中跑一回合，得行为轨迹
+  \State 由轨迹计算四分量，代内归一得适应度 $F$
+  \If{启用当代学习}
+    \State 以专家轨迹做行为克隆，更新当代权重 $\Delta W$（不遗传）
+  \EndIf
+  \State 二元锦标赛选择亲本，经交叉与突变得下一代基因组
+\EndFor
+\State \Return 逐代记录
+\end{algorithmic}
+\end{algorithm}

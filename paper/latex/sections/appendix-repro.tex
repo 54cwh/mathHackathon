@@ -1,0 +1,56 @@
+\section{复现说明}\label{sec:repro}
+
+\subsection{环境与依赖}
+
+后端与实验以 \texttt{uv} 管理环境，并以\textbf{锁文件}安装（\texttt{uv sync --frozen}），
+项目要求 Python $3.12$ 及以上。论文用 \texttt{xelatex}（\texttt{ctex} 的中文排版依赖它）编译，
+中文草稿的编译命令为 \texttt{latexmk -xelatex main.tex}。
+
+\subsection{从随机种子到运行产物}
+
+\textbf{子种子派生。}所有随机过程由 master seed 经 NumPy \texttt{SeedSequence} 统一派生：
+命名空间序号取列表熵 $S_{ns}=\texttt{SeedSequence}([ns,\ master\_seed])$，
+实体序号 $t$ 取 $S_{ns}.\texttt{spawn}(k)[t]$，整数子种子由
+$C.\texttt{generate\_state}(1,\texttt{uint32})[0]$ 给出。两条约束直接决定换台机器能否对上：
+变化 ID 前置（取 $[ns, master\_seed]$），
+且实体序号必须由稳定标识确定性映射，不得使用调用顺序。
+
+\textbf{正式种子与运行目录。}正式实验固定种子 $[1103,2207,3301]$；
+演示种子单独固定，与实验种子隔离。每个种子对应一个独立运行目录，
+逐个体原值全部留在该目录，任何人都可据此重算汇总数，不必信任正文报出的汇总值。
+
+\subsection{全流程命令链}
+
+以下脚本按顺序执行即得本文全部数字；除第一个外都只读上游产物，可重复执行而不改变语义。
+
+\begin{itemize}
+  \item \texttt{run\_experiment.py --config <cfg> --seed <s> --experiment-id <id>}：
+        建立运行目录并固定配置快照、种子与代码版本，是目录布局的唯一来源；
+        同一 \texttt{(id, seed)} 只能建一次，已存在即报错退出。
+  \item \texttt{run\_arena.py --experiment-id <id> [--seeds 1103,2207,3301]}：
+        跑 $20$\,Hz $\times$ $600$ 步每回合，落逐个体指标、逐回合事件计数、
+        事件日志与逐种子汇总，并写出跨种子 $\text{mean}\pm\text{std}$。
+  \item \texttt{make\_figs.py --experiment-id <id>}：
+        只读运行目录，出逐种子诊断图与跨种子报告图，并为每张图导出同名数据表。
+  \item \texttt{make\_tables.py --experiment-id <id>}：
+        出汇总表、口径诊断、逐个体明细与逐回合明细。
+  \item \texttt{run\_penetrance.py --experiment-id <id> --mode calibrate|report}：
+        出可辨识性的校准与报告产物（两口径、轴向分离度、逐类置信区间）。
+\end{itemize}
+
+\subsection{图与数据的对应}
+
+每张跨种子报告图都带\textbf{来源脚注}（运行标识与代码版本），拿到一张图即可回到产生它的那次运行。
+图的文字一律用英文，中文叙述放表格。每张图都有同名数据表：约定为
+\texttt{<图目录>/<图名>.png} 配 \texttt{<图目录>/data/<图名>.xlsx}，同名即对应；
+每个工作簿的第一张表固定为清单，逐表写明来源、口径与溯源项，其余表为原始数据。
+这样后续统一美化时可以改样式而不改数据，也便于第三方直接取数复算。
+
+\subsection{确定性与最脆弱处}
+
+生态仿真侧的确定性由两条机制保障：每次重置会重建随机源，故同一环境反复重置得到逐字段一致的初始局面；
+每步的随机数消费只由该步状态决定，故推进到第 $k$ 步与分几次调用推进到第 $k$ 步无关。
+最脆弱的一环是出生布局的拒绝采样：其采样次数取决于当前障碍布局，
+故改动障碍数量、半径范围或间距会使后续所有实体的随机流整体平移，同一随机种子下的初始世界随之改变，
+历史基线不可直接对比。种子固定的只是随机流；语义一改，同种子的两局即不再属于同一实验。
+环境对照遵守单因子原则，未被列出的段一律取默认值。

@@ -1,0 +1,98 @@
+\section{模型检验}\label{sec:validation}
+
+本章从消融、参数敏感性与统计误差三方面检验模型，并说明尚未取得结果的部分。
+
+\subsection{消融实验}
+
+消融用于隔离单个设计变量对结果的影响，设计如下。
+
+\begin{itemize}
+  \item \textbf{去掉调控网络（w/o GRN）}：隔离「结构由调控网络发育生成」这一机制；
+  \item \textbf{等位基因聚合（加性平均与逐基序取最大）}：隔离显性投影规则；
+  \item \textbf{同质时间常数（homogeneous $\tau$）}：隔离异质时间常数的贡献（对应 H3）；
+  \item \textbf{去掉空间布线代价（$\lambda=0$）}：隔离空间代价（对应 H4）；
+  \item \textbf{行为克隆是否施加 Dale 符号约束}：隔离符号约束；
+  \item \textbf{去掉上位效应（w/o epistasis）}：按声明处理。
+\end{itemize}
+
+上述消融的完整结果列于后续补充。
+
+\subsection{参数敏感性}
+
+以下参数属设计选择，其取值变动对结论的影响须逐项检验：
+
+\begin{itemize}
+  \item 空间布线代价系数 $\lambda$ 与表达相似度系数 $\gamma$：$\gamma$ 取 $\{0.5,1,2\}$ 搜索，
+        $\gamma=0$ 作消融；$\lambda$ 有量纲，$\lambda=0$ 作消融，改布局参数必须重定基线。
+  \item 适应度四位权重 $(0.35,0.25,0.20,0.20)$：属设计选择，须做敏感性分析。
+  \item 突变率 $\mu=0.001$：计算抽象参数，不作生物学解读。
+  \item 逐种子居中基线：$N$ 读数跨种子比较前须逐种子居中，否则会得到外显率恒为 $0.5$ 的假象；
+        外显率为群体内对比量，不适用于跨批次直接池化。
+\end{itemize}
+
+\subsection{统计与误差分析}\label{sec:exp-matrix}
+
+\textbf{分析计划。}表~\ref{tab:analysis-plan} 把五个待检验命题映射到实验与检验口径，不引入新命题。
+
+\begin{table}[H]
+  \centering
+  \caption{命题、实验与检验口径。}
+  \label{tab:analysis-plan}
+  \footnotesize
+\setlength{\tabcolsep}{3pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}p{0.05\linewidth}p{0.28\linewidth}p{0.17\linewidth}p{0.42\linewidth}@{}}
+    \toprule
+    命题 & 内容 & 对应实验 & 检验口径（不依赖 $3$ 对 $3$ 置换者标 \checkmark） \\
+    \midrule
+    H1 & 不同基因组在相同随机种子控制下产生系统性的连接组差异
+      & 48 个基因组的完整发育 &
+      组内图距离，以重连零模型为基线 \citep{bib20_hartle2020} \checkmark \\
+    H2 & 连接组与神经元动力学的差异导致行为差异
+      & 发育与行为矩阵 &
+      Mantel 检验 \citep{bib21_smouse1986} \checkmark \\
+    H3 & 异质 $\tau_i$ 形成与同质 $\tau$ 不同的性能—效率权衡
+      & 同质 $\tau$ 消融 &
+      性能—效率 Pareto 前沿 \citep{bib23_deb2002} \\
+    H4 & 空间布线代价改变网络的局部性、稀疏性与有效边效率
+      & 空间代价消融（$\lambda=0$） &
+      平均连接距离度量局部性；与图论效率区分命名 \citep{bib22_latora2001} \\
+    H5 & $F=F(G,E)$，不存在对所有环境都占优的基因型
+      & 同一种群进入三组环境 &
+      reaction norm 与 AMMI 检验基因型与环境的秩反转
+      \citep{bib24_via1985,bib25_malosetti2013} \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\textbf{统计能力。}正式实验独立随机种子仅 3 个，$n=3$ 时 $3$ 对 $3$ 标签置换检验的双侧最小
+$p\approx0.10$，不足以支持逐命题的置换检验。故 H1 采用组内口径、H2 采用 Mantel 检验，
+二者均不依赖 $3$ 对 $3$ 置换；其余结论以效应量与跨种子波动并列报告，
+并在结论中显式标注 $n=3$。任何未达显著均不能读作无效应。
+
+\textbf{评估预算与度量饱和（误差来源）。}逐代适应度曲线看不到正向响应，定量归因于两个独立成因：
+
+\begin{itemize}
+  \item \textbf{单回合排序几乎不可复现。}把同一个固定种群依次放在 11 个不同的代下标下评估，
+        任意两个下标之间个体排序的 Spearman 相关平均仅 $\rho_1=0.069$，
+        即选择分数里约 $93\%$ 是代特异噪声。按 Spearman--Brown 校正，
+        达到 $\rho\ge0.5$ 需约 14 次平均、$\rho\ge0.7$ 需约 32 次。
+  \item \textbf{复合分顶在天花板上。}同一面板中生存分量（权重 $0.35$）有 $81.8\%$ 的观测顶到回合上限，
+        复合分中位数恰为该饱和贡献，其余分量达成率仅 $9.7\%$--$13.0\%$。
+        即便把测量做到零噪声，选择也只能在一大团并列最高分里挑人，故选择差约等于零。
+\end{itemize}
+
+$K$ 次平均同时把并列团分级并把噪声降 $K$ 倍，由此给出可证伪预测：
+$K=1$ 时响应约等于零，$K\approx14$ 时应出现正向响应。该预测由后续的多回合代循环实验检验。
+
+\subsection{已知局限}\label{sec:exp-gaps}
+
+以下各项是当前尚未闭合的度量或结果：
+
+\begin{itemize}
+  \item 捕获默认确定性（满足几何条件即必定捕获），使一部分指标偏乐观：
+        实测进过口但吃不下的判定为零，捕食技巧这一维度几乎未被检验。
+        启用非确定性捕获后，失败会记为未命中，接触转化率自动成为真成功率。
+  \item 学习前后对照、完整消融、多代演化正式结果与效率三项（时延、浮点运算量、峰值内存）
+        均尚未取得落盘结果。
+  \item 观测编码的取值规则属设计选择，其与像素输入的差异是本文的建模假设之一。
+\end{itemize}

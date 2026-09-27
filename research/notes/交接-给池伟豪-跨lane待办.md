@@ -433,3 +433,13 @@ min-misclass 0.2219（pen 0.778）、θ_N^obs = −0.0312**（= 中位中点）�
 **仍未决（不属本 lane）**：θ 数值签署（`theta_N_obs`/`theta_H_obs` 仍 `null`、`threshold_status` 仍 `unset`；
 校准产物已放 `results/tables/pen-beta1-k16_penetrance_calibration.json`，可直接据此签）；
 §7 判据**无效应下限**；H 轴单轴化实现。
+
+---
+
+## 附录 lane 待办：refs.bib 作者字段解析（2026-09-27 记录）
+
+- **现象**：论文切到 GB/T 7714 后，参考文献渲染出 `HAYASHI T, AJ M, GANGULY I` 一类**错位作者**
+  （看起来把 `First-Initial Last` 或 `Last, First` 混排，名缩写被当成姓）。
+- **根因**：在 `scripts/make_bib.py` 的 author 解析，而非 `refs.bib`（该文件自动生成，不手改）。
+- **影响**：仅参考文献人名不合规；正文引用编号与 `\citep` 正常，编译 0 警告。
+- **建议**：修 `make_bib.py` 的 author 切分 → 重生成 `refs.bib` → `latexmk` 复验。

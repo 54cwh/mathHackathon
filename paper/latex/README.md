@@ -18,7 +18,9 @@ cd paper/latex && ./build.sh          # = latexmk -xelatex main.tex -> main.pdf
 main.tex                 总装：docclass + 顺序 input
 preamble.tex             导言区（**换会议时主要改这里**）
 refs.bib                 自动生成，请勿手改
-sections/00..07-*.tex    正文，与 paper/报告-骨架.md 章节一一对应
+sections/00-abstract,01-problem,02-analysis,03-assumptions,04-notation,
+         05-model,06-solution,07-validation,08-evaluation,09-declaration,
+         appendix-repro     正文，与 paper/报告-骨架.md §1 章节映射一一对应
 figs/                    论文用图（自包含）
 ```
 

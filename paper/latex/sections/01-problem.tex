@@ -1,0 +1,51 @@
+\section{问题重述}\label{sec:problem}
+
+\subsection{问题背景}
+
+当代深度网络的能力主要由两件事决定：\textbf{人工指定的架构}与大数据上的参数拟合。
+生物智能体则不同：它的网络拓扑由一段紧凑的基因组经\textbf{发育过程}生成，
+而个体一生中由经验造成的突触改变\textbf{不会写回基因组}，
+即所谓 genomic bottleneck：遗传信息必须先于网络结构，后天学习不得遗传
+\citep{bib1_zador2019,bib2_barabasi2023,bib3_shuvaev2024}。
+
+围绕这一差别，已有三条相关研究线索。神经演化（neuroevolution）在网络结构或权重空间上直接搜索
+\citep{bib5_miikkulainen2025}；其生成式路线把可演化对象从权重扩展到结构或生成规则，
+如 NEAT 以历史标记交叉直接演化拓扑 \citep{bib222_stanley2002}，
+HyperNEAT 由一个 CPPN 按几何坐标查询生成连接权重 \citep{bib223_stanley2009}，
+增强版 ES-HyperNEAT 进一步让位置与密度可演化 \citep{bib124_risi2012}。
+发育式编码路线已证明紧凑基因组可以编码先天能力 \citep{bib1_zador2019,bib3_shuvaev2024}，
+并以发育先验生成权重矩阵 \citep{bib2_barabasi2023}，
+或用简单随机发育的生成模型重建小脑连接组 \citep{bib4_richter2025}。
+神经架构搜索（NAS）则在离散的层、算子、连接空间上搜索
+\citep{bib224_elsken2019}，或把该空间连续松弛为混合算子权重以便梯度优化 \citep{bib225_liu2019}。
+上述工作的评价场景多为静态基准；近年用发育程序长出网络的近作
+\citep{bib226_najarro2023} 仍以静态机器学习基准评价。
+
+本文的切入点是：把\textbf{可演化的对象上移一层}，搜索空间是生成网络结构的基因组，
+网络结构是发育算子的产物，并按 genomic bottleneck 的要求把当代学习限制为
+不接受遗传的权重扰动；评价放进\textbf{闭环生态仿真}，使结构与行为通过感知—动作回路耦合，
+从而可以在同一平台上分别测量「结构多样性」「结构—行为联系」「当代可塑性的代价」。
+
+\subsection{问题提出}
+
+本文围绕以下两个问题建立模型并求解：
+
+\begin{enumerate}
+  \item 若让\textbf{网络架构本身}由基因组、发育、连接组逐级生成，
+        能否得到既\textbf{可用}（可完成任务）又\textbf{多样}（不同基因型给出系统性不同的结构）的网络？
+  \item 若把学习严格限制为\textbf{当代权重的有界扰动}且\textbf{不接受其遗传}，
+        要为此付出什么代价？这一限制究竟是负担，还是塑造了可演化的结构？
+\end{enumerate}
+
+据此构建 \textsc{EvoGenesis} 作为可复现的计算实验平台，主要工作包括四部分：
+(i) 提出「基因组—发育—连接组—行为」的三层生成式架构模型（\S\ref{sec:model}）；
+(ii) 构建二维闭环生态仿真环境，把行为评价落到觅食、避敌、能量与生长（\S\ref{sec:solution}）；
+(iii) 建立与三类主流网络（MLP、GRU、稀疏循环网络）在同参数量级下的对照，
+      回答「改之前与改之后」的差异（\S\ref{sec:solution}）；
+(iv) 量化基因型到架构的可辨识性、环境依赖性与误差范围，并给出模型评价与推广（\S\ref{sec:validation}、\S\ref{sec:evaluation}）。
+
+\textbf{重点与范围。}本文的重心是建模机制：从基因型到连接组的生成链、当代学习与遗传边界、
+闭环生态评价，均给出完整的数学形式与可运行实现（\S\ref{sec:model}），
+并在此基础上给出已完成的对照与检验结果（\S\ref{sec:solution}、\S\ref{sec:validation}）；
+训练类实验按计算预算分批推进。配套前端展示与工程仓库已搭建完成，
+代码、演示与复现说明见 \url{https://github.com/54cwh/mathHackathon} 。

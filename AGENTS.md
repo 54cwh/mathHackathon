@@ -46,28 +46,32 @@ mathHackathon/
 │       └── API接口.md            # 逐端点接口参考
 ├── frontend/                   # 演示 UI（Vite + React）
 │   ├── README.md               # 版本锁定与构建
-│   └── 交互与可视化.md
+│   ├── 交互与可视化.md            # 界面规格
+│   ├── 通用层设计.md / 通用层接口.md
+│   ├── 演示讲稿.md / 网页说明与讲解顺序.md
+│   └── 交接-给池伟豪-前端分工与开工包.md
 ├── configs/                    # yaml 实验配置
 ├── scripts/                    # 薄 CLI 入口
 ├── notebooks/                  # 探索性分析
 ├── tests/                      # 冒烟 + 单测
-├── paper/                      # LaTeX 论文
-├── schemas/                    # JSON Schema：跨语言契约（genome / fish / experiment / population / trajectory / event_log / penetrance / baseline_comparison 等，共 18 份）
-├── docs/                       # 跨模块协作文档（AI工作流 / ai-tone-boundaries / 后端模块清单 / 参数总表 / 验收清单 / 赛题补充说明 / search-spec / declaration 等）
+├── paper/                      # 论文（报告骨架 / 图表-数据对照 / latex/）
+├── schemas/                    # JSON Schema：跨语言契约（genome / fish / experiment / population / trajectory / event_log / penetrance / baseline_comparison 等，共 19 份）
+├── docs/                       # 跨模块协作文档（AI工作流 / ai-tone-boundaries / 后端模块清单 / 参数总表 / 验收清单 / 赛题补充说明 / search-spec / 设计依据审计 / 相关工作与开源参考 / 开发排期与人员分工 / 局限与未来路线 / 路演与答辩 / declaration 等）
 ├── archive/                    # 历史版本归档（DNA2Brain v0.1 等）
 ├── prompts/                    # AI 角色提示词
 ├── artifacts/                  # 冻结演示资产（入库）
 ├── results/                    # 实验产物（忽略）
 │   ├── figs/                   # 图
 │   ├── runs/                   # 每次运行的 config/指标/日志
-│   └── tables/                 # 指标表
+│   ├── tables/                 # 指标表
+│   └── mlruns/                 # MLflow 本地 file store
 ├── data/                       # 数据
 │   ├── raw/                    # 原始数据（忽略）
 │   ├── processed/              # 处理后数据
 │   └── external/               # 外部数据
 └── research/                   # 写代码前的材料
     ├── reference/              # 子代理调研 JSON
-    └── notes/                  # 建模推导、符号表、决策记录
+    └── notes/                  # 建模推导、决策记录、bibliography.md（文献单一来源）
 ```
 
 根文件：`AGENTS.md`（本文件）、`opencode.json`、`README.md`、`LICENSE`、`pyproject.toml`/`uv.lock`/`.python-version`、`Makefile`、`.gitignore`。

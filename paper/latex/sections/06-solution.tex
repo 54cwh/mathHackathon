@@ -1,0 +1,401 @@
+\section{模型的求解与结果分析}\label{sec:solution}\label{sec:results}\label{sec:experiment}\label{sec:baselines}
+
+本章给出环境的设置（\S\ref{sec:exp-env}）、与三类基线网络的对比（\S\ref{sec:baselines-ours}）、
+环境对照（\S\ref{sec:exp-env-groups}）、基因型到架构的可辨识性（\S\ref{sec:pen}），
+以及学习前后对照与典型案例。尚未取得落盘结果的项在正文中标为待补。
+呈现以图为主、表为辅，且「改之前与改之后」保持同图同轴可比。
+
+\subsection{实验设置与参考基线}\label{sec:exp-env}
+
+\textsc{Danio Arena} 是一个\textbf{连续二维、闭环}的觅食—避敌环境：被测对象是
+DanioNet 个体网络，其行为由感知—动作回路与环境耦合产生。
+
+\paragraph{世界与时钟。}世界为 $100\times60$ 世界单位的连续二维平面，
+更新频率 $20$\,Hz（$\Delta t=0.05$\,s），一个标准回合为 $30$\,s $=600$ 步。
+默认对象为 12 条鱼、24 只猎物、3 只天敌、6 个障碍。\textbf{两种种群规模不混用}：
+本文基线与环境对照用 12 鱼，世代演化用 48 个个体的种群。
+
+\paragraph{边界。}取镜面反射边界：越界分量取反射，朝向按墙法线镜面反射。
+该策略确定性、不消耗随机数，故不会扰动同一随机种子下的随机流，跨种子对照才成立。
+
+\paragraph{生理机制。}能量按
+$E_{t+1}=\mathrm{clip}(E_t-C_{\text{base}}-C_{\text{move}}v_t^2-C_{\text{pen}}p_t
++R_{\text{food}}f(\text{size}_{\text{prey}})\mathbb{1}_{\text{cap}},0,E_{\max})$
+演化（$p_t$ 为本步障碍穿透深度，$\mathbb{1}_{\text{cap}}$ 为本步是否捕获的指示函数），
+饥饿 $H_t=1-E_t/E_{\max}$，能量归零即死亡；
+吃到猎物后按面积守恒带损耗生长
+$\text{size}\leftarrow\min(\text{size}_{\max},\sqrt{\text{size}^2+g\,\text{size}_{\text{prey}}^2})$，
+故体型增大带来可捕食更大猎物的收益，同时付出代谢成本上升与转向灵活性下降
+（$\omega_{\text{eff}}=\omega/[1+k_{\text{turn}}(\text{size}-1)]$）的代价。
+生长增益 $g$ 的取值区间参照开源游戏实现 \citep{bib215_testn.d.}，属工程对照，不作学术依据；
+$30$\,s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故局内可见的生长是游戏化抽象，须放到跨回合与世代尺度讨论。
+
+\paragraph{捕食与再生。}捕食需\textbf{同时}满足三条：距离 $d<r_{\text{capture}}$、
+体型门 $\text{size}_{\text{hunter}}\ge\kappa\,\text{size}_{\text{target}}$、
+且目标位于猎人朝向的前向锥内（$\theta_{\text{cone}}=120^\circ$ 为总锥角）。
+其中 $\kappa=1.25$ 属设计选择：未找到斑马鱼直接的最大可吞猎物与体长上限，
+替代物种的 $20$--$27\%$ 体长度量的是猎物体高，不可倒数为 $\kappa$ \citep{bib221_mihalitsis2017}。
+前向锥 $120^\circ$ 与限时追击 $80$ 步同属设计选择，机制对照来自开源游戏实现
+\citep{bib217_tghbrkn.d.,bib218_monkwarriorn.d.}，不是经验证的生物学量。
+猎物走开放可再生：存活猎物数低于设定时按固定间隔补 1 只。
+鱼每步遍历猎物时命中第一个进入捕获半径的猎物即处理并退出，
+故每鱼每步\textbf{至多}产生一条捕获判定。回合结束只由步数决定，一律跑满 600 步；
+个体死亡只冻结该个体，空种群不提前结束，故生存率以固定分母计算。
+生态仿真的关键设定列于表~\ref{tab:arena-config}。
+
+\begin{table}[H]
+  \centering
+  \caption{生态仿真的关键设定。}
+  \label{tab:arena-config}
+  \footnotesize
+\setlength{\tabcolsep}{1pt}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lll@{}}
+    \toprule
+    设定 & 值 & 说明 \\
+    \midrule
+    世界 $W\times H$ & $100\times60$ wu & 世界单位 \\
+    更新频率 / $\Delta t$ & $20$ Hz / $0.05$ s & 时钟步长 \\
+    标准回合 & $30$ s $=600$ 步 & 固定长度 \\
+    规模（基线） & 12 鱼 / 24 猎物 / 3 天敌 / 6 障碍 & 与种群规模分离 \\
+    规模（演化） & 48 个体 & 世代演化 \\
+    边界 & 镜面反射 & 确定性、不耗随机数 \\
+    感知半径 / 视野 & $18.0$ wu / $220^\circ$ & 受限感知 \\
+    捕获半径 $r_{\text{capture}}$ & $4.61$ wu & 几何判定 \\
+    体型门 $\kappa$ & $1.25$ & 设计选择 \\
+    前向锥 $\theta_{\text{cone}}$ & $120^\circ$（总锥角） & 设计选择 \\
+    能量系数 & $E_{\max}=1.0$, $C_{\text{base}}=0.0008$, & \\
+     & $C_{\text{move}}=0.0015$, $R_{\text{food}}=0.12$ & \\
+    生长上限 / 增益 & $\text{size}_{\max}=2.5$, $g=0.2$ & $g$ 为设计选择 \\
+    逃脱存活窗口 & 20 步（$=1$ s） & 设计选择 \\
+    限时追击 & 80 步 & 设计选择 \\
+    \bottomrule
+  \end{tabular}}
+\end{table}
+
+\paragraph{感知。}个体不拥有全图信息，只有左右两条视觉通道、有限感知半径与有限视野；
+网络每步接收一个 12 维观测向量，其值域与顺序由网络侧冻结（\S\ref{method:net}）。
+
+\paragraph{度量口径。}本节的口径是三处最容易被误读的地方，引用对应数字时必须同时带上。
+
+\textbf{（一）三个都叫捕获率的量，数值差约 7 倍。}
+\begin{enumerate}
+  \item \textbf{绝对速率}：个体单位时间捕食数 $\overline{(\text{captures}_i/\text{episode\_steps})}$，无偏、可跨环境直接比较；
+  \item \textbf{接触转化率}：个体层面 $\overline{(\text{captures}_i/\text{encounters}_i)}$，即追近的猎里有多少吃到；
+  \item \textbf{汇总比值}：$\sum_i\text{captures}_i/\sum_i\text{encounters}_i$，按遭遇次数加权。
+\end{enumerate}
+实测（基线，3 种子 $\times$ 12 鱼）：接触转化率的个体均值为 $0.5407$，
+而汇总比值为 $55/722=0.0762$，两者相差 $7.1$ 倍。原因是前者为个体比值的等权平均
+（把一个只遇到 1 次猎物却恰好捕获的个体与一个遇到 200 次的个体同等看待），后者按遭遇次数加权。
+正文与图表所报的比值一律指\textbf{接触转化率的个体均值}。
+
+\textbf{（二）接触转化率的分母语义。}其定义为
+\begin{equation}\label{eq:prey-capture}
+  \text{prey\_capture}_i \;=\; \frac{\text{captures}_i}{\max(\text{encounters}_i,\,1)} .
+\end{equation}
+分母 $\text{encounters}$ 是\textbf{尺寸门之前的纯距离接触计数}：鱼每步遇到首个
+$d<r_{\text{capture}}$ 的猎物即自增并退出，故它计的是进入捕获半径的次数，与尺寸门和
+前向锥都无关。分母取 $\max(\cdot,1)$ 只是数值兜底：$\text{encounters}=0$ 的个体记 $0.0$，
+表示没有遭遇，区别于捕食失败。进过口但吃不下的次数由不变式约束：
+\begin{equation}\label{eq:capture-ineq}
+  \text{captures}_i \;\le\; \text{capture\_attempts}_i \;\le\; \text{encounters}_i .
+\end{equation}
+
+\textbf{（三）分母严重右偏。}$\text{encounters}$ 的分布极度右偏：基线中位数 $2$、
+最大 $225$、合计 $722$，而前 3 位个体就占 $65.7\%$；四个环境全部存在此偏态
+（如 \texttt{food\_rich} 前 3 位占 $41.2\%$）。成因是少数个体长期蹲守在猎物集群中把分母刷大。
+凡引用该类个体比值均值，必须并列偏态尾与绝对量（捕获每回合、遭遇每回合）。
+
+\textbf{（四）能量效率是每步非正速率。}其定义为终末能量相对容量的平均缺口
+$r_i=(E_i(T_i)-E_{\max})/T_i$，量纲为能量每步，值域 $(-\infty,0]$，基线实测约 $-1.031\times10^{-3}$ 每步，
+不可与 $[0,1]$ 的比值类指标共用一根轴。
+
+\paragraph{重复与统计口径。}个体指标先在\textbf{种子内对个体取等权均值}得到该种子的一行，
+再沿\textbf{种子轴}报告 $\text{mean}\pm\text{std}$（样本标准差，$n-1$；$n<2$ 时记 \texttt{null}）。
+这一先内后外的顺序保证每个种子权重相等。正式实验的独立随机种子为
+$[1103,2207,3301]$，即 $n=3$；演示种子与正式种子分离，正式结果不人工挑选表现最好的一次。
+
+\paragraph{参考基线。}表~\ref{tab:baseline} 与图~\ref{fig:metrics} 给出规则控制器 ExpertPolicy 驱动的冻结基线，
+作为环境前置检查与对照的参考，不是 DanioNet 模型结果。
+
+\begin{table}[H]
+  \centering
+  \caption{ExpertPolicy 冻结基线：Arena 六项主指标（3 种子 $\times$ 12 鱼 $\times$ 600 步）。}
+  \label{tab:baseline}
+  \small
+  \begin{threeparttable}
+  \begin{tabular}{lll}
+    \toprule
+    指标 & 均值 $\pm$ 标准差 & 量纲/口径 \\
+    \midrule
+    \texttt{survival}           & $0.9188 \pm 0.1362$ & 比值 \\
+    \texttt{capture\_rate}      & $0.0030 \pm 0.0014$ & 每步 \\
+    \texttt{prey\_capture}      & $0.5148 \pm 0.2972$ & 个体比值均值 \\
+    \texttt{escape\_success}    & $0.3032 \pm 0.1354$ & 比值 \\
+    \texttt{energy\_efficiency} & $-9.25\times10^{-4} \pm 1.62\times10^{-4}$ & 每步速率 \\
+    \texttt{composite\_fitness} & $0.3828 \pm 0.0725$ & 0--1 \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item \texttt{prey\_capture} 为个体比值均值口径，先各自个体上求比值，再跨个体与跨种子取 $\text{mean}\pm\text{std}$。
+    \item 该基线由规则控制器 ExpertPolicy 驱动，仅作参考基线与环境前置检查对照。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
+图~\ref{fig:metrics} 中左为 $0$--$1$ 比值类指标，右为每步速率的 $\text{energy\_efficiency}$
+（量纲不同，单列一轴）。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_baseline_v3}
+  \caption{ExpertPolicy 冻结基线（3 种子 $\times$ 12 鱼 $\times$ 600 步，跨种子 $\text{mean}\pm\text{std}$）。}
+  \label{fig:metrics}
+\end{figure}
+
+\subsection{与基线模型的对比（原模型到改后模型）}\label{sec:baselines-ours}
+
+补充说明要求形成「原模型到修改后模型到实验结果对比」。本文以 MLP、GRU、
+Fixed Sparse RNN 三类网络为原模型对照，以 DanioNet 为改后模型；
+连接数按 $N_{\text{ours}}=151$（支撑边数）反解为 $154$ / $141$ / $154$，
+使参数量处于同一数量级（判据 $\left|\Delta\log_{10}\right|\le1$）。
+三个评测回合对全部四模型共享同一出生布局与同一条猎物游走，故模型间比较可在块内配对。
+
+表~\ref{tab:expc-models} 给出四模型读数（$2$ 种子 $\times$ $12$ 个体 $\times$ $3$ 回合；
+每种子内先对个体与回合等权折叠成一条记录，沿种子轴报 $\text{mean}\pm\text{std}$，$n=2$ 为种子数）。
+
+\begin{table}[H]
+  \centering
+  \caption{四模型在 Arena 主指标上的读数。}
+  \label{tab:expc-models}
+  \footnotesize
+\setlength{\tabcolsep}{1pt}
+  \begin{threeparttable}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lcccc@{}}
+    \toprule
+    指标 & MLP & GRU & Fixed Sparse RNN & DanioNet \\
+    \midrule
+    \texttt{survival} & $0.9042\pm0.0045$ & $0.9074\pm0.0057$ & $\mathbf{0.9179}\pm0.0322$ & $0.8970\pm0.0075$ \\
+    \texttt{capture\_rate} & $0.001042\pm0.000033$ & $0.000903\pm0.000622$ & $\mathbf{0.001111}\pm0.000065$ & $0.000718\pm0.000033$ \\
+    \texttt{prey\_capture} & $0.660\pm0.038$ & $0.493\pm0.205$ & $\mathbf{0.677}\pm0.068$ & $0.523\pm0.235$ \\
+    \texttt{escape\_success} & $\mathbf{0.3623}\pm0.0246$ & $0.2671\pm0.0707$ & $0.2836\pm0.0409$ & $0.2637\pm0.0560$ \\
+    \texttt{energy\_efficiency} ($\times10^{-3}$) & $-1.149\pm0.012$ & $-1.121\pm0.050$ & $\mathbf{-1.114}\pm0.031$ & $-1.159\pm0.111$ \\
+    \texttt{composite\_fitness} & $\mathbf{0.3890}\pm0.0065$ & $0.3710\pm0.0120$ & $0.3780\pm0.0194$ & $0.3666\pm0.0085$ \\
+    \bottomrule
+  \end{tabular}}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item 数值为 $\text{mean}\pm\text{std}$（沿种子轴，$n=2$，$n$ 为种子数）；加粗为该指标上的最佳基线。
+    \item \texttt{prey\_capture} 为个体比值均值口径；\texttt{energy\_efficiency} 为每步非正速率，不与 $0$--$1$ 的比值同轴。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
+表~\ref{tab:expc} 给出块内置换检验（块为种子与回合的组合，共 $6$ 个；
+同块内四模型共享同一出生布局与猎物游走，故块内置换模型标签在强零假设下精确）。
+
+\begin{table}[H]
+  \centering
+  \caption{块内置换检验。}
+  \label{tab:expc}
+  \footnotesize
+\setlength{\tabcolsep}{1pt}
+  \begin{threeparttable}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lccc@{}}
+    \toprule
+    指标 & $\Delta$（DanioNet $-$ 三基线） & 更高的块 & $p$ \\
+    \midrule
+    \texttt{survival} & $-0.0128$ & $3/6$ & $0.511$ \\
+    \texttt{capture\_rate} & $-0.00030$（$-30\%$） & $2/6$ & $0.076$ \\
+    \texttt{prey\_capture} & $-0.0796$ & $2/6$ & $0.459$ \\
+    \texttt{escape\_success} & $-0.0407$ & $2/6$ & $0.344$ \\
+    \texttt{energy\_efficiency} & $-0.00003$ & $3/6$ & $0.281$ \\
+    \texttt{composite\_fitness} & $-0.0127$ & $3/6$ & $0.313$ \\
+    \midrule
+    \texttt{encounters}（原始计数） & $+7.25$ & $3/6$ & $0.361$ \\
+    \texttt{captures}（原始计数） & $-0.181$ & $2/6$ & $0.076$ \\
+    \texttt{survival\_steps}（原始计数） & $-7.69$ & $3/6$ & $0.515$ \\
+    \bottomrule
+  \end{tabular}}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item 块为种子与回合组合，共 $6$ 个；同块内四模型共享出生布局与猎物游走，块内置换模型标签在强零假设下精确。
+    \item $2\times10^{4}$ 次重抽样，$p$ 为蒙特卡洛估计。$\Delta$ 为 DanioNet 减去其余三基线的均值；「更高的块」为 $6$ 块中 DanioNet 领先的块数。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
+\emph{读法}：在同等参数量级下，本模型与三类主流网络的\textbf{性能相当}，
+差异未达显著（十个受检指标的最小 $p=0.076$），说明三类主流网络已能覆盖本任务的可用性下界。
+进一步看，主导读数的是\textbf{评估预算}：块间方差完全淹没模型效应，
+\texttt{encounters} 的逐块 $\Delta$ 跨度达 $54.6$，比模型间任何差异大一个数量级，
+这也解释了六项主指标为何没有一致排序。由此得到的下一步是先抬高评测回合数，
+把模型效应从块间方差里分离出来。$n=2$ 的标准差只有 $1$ 个自由度，
+当前结论应读作\textbf{差异未在本轮预算下显现}。
+
+\subsection{环境对照}\label{sec:exp-env-groups}
+
+\textbf{设计原则：单因子对照。}每个环境相对基线只改变一个驱动，
+这样观测到的差异才能归因到该驱动。三组环境与基线的取值列于表~\ref{tab:env-groups}；
+未被列出的段取默认值。
+
+\begin{table}[H]
+  \centering
+  \caption{环境对照三组与基线。}
+  \label{tab:env-groups}
+  \footnotesize
+\setlength{\tabcolsep}{1pt}
+  \begin{threeparttable}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}llcccc@{}}
+    \toprule
+    环境 & 标识 & $n_{\text{prey}}$ & $n_{\text{predators}}$
+      & 再生间隔 & 隔离的驱动 \\
+    \midrule
+    基线 & default & 24 & 3 & 25 & --- \\
+    Food Rich & food\_rich & \textbf{48} & 3 & \textbf{13} & 猎物可得性上升 \\
+    Predator Rich & predator\_rich & 24 & \textbf{6} & 25 & 捕食压力上升 \\
+    Resource Scarce & resource\_scarce & \textbf{12} & 3 & \textbf{50} & 猎物可得性下降 \\
+    \bottomrule
+  \end{tabular}}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item 取值属设计选择，无文献实测依据。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
+\textbf{派生约定：再生间隔 $=\lceil 600/n_{\text{prey}}\rceil$。}该量随猎物数机械确定，
+不是可独立调节的参数。取向上取整：$600/48=12.5$ 恰是平局，
+四舍五入会给出 $12$、语义偏向早于名义速率恢复，
+而无原则依据；向上取整在平局处无歧义，且统一地取不早于名义速率一侧。
+
+\textbf{前置区分力检查。}在正式跑世代演化之前，先用基线与三环境
+$\times$ 3 种子 $\times$ 600 步 $\times$ 12 鱼、以 ExpertPolicy 驱动跑了一轮区分力检查
+（表~\ref{tab:env-power}）。表中 $d$ 为环境均值减基线均值再除以合并标准差；$n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
+
+\begin{table}[H]
+  \centering
+  \caption{环境对照的前置区分力检查。}
+  \label{tab:env-power}
+  \footnotesize
+\setlength{\tabcolsep}{1pt}
+  \begin{threeparttable}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}lcccc@{}}
+    \toprule
+    指标 & 基线 & \texttt{food\_rich} & \texttt{predator\_rich} & \texttt{resource\_scarce} \\
+    \midrule
+    survival & 0.9472 & 0.9873 ($d=+1.11$) & 0.8949 ($d=-0.88$) & 0.9464 ($d=-0.02$) \\
+    \texttt{prey\_capture}（个体比值均值） & 0.5407 & 0.5324 ($d=-0.08$)
+      & \textbf{0.7106} ($d=+1.92$) & 0.5474 ($d=+0.06$) \\
+    \texttt{escape\_success} & 0.2292 & 0.2157 ($d=-0.19$)
+      & \textbf{0.4491} ($d=+2.89$) & 0.1759 ($d=-1.00$) \\
+    \texttt{energy\_efficiency} & $-1.031\text{e-}3$ & $-0.820\text{e-}3$ ($d=+4.12$)
+      & $-1.041\text{e-}3$ ($d=-0.30$) & $-1.119\text{e-}3$ ($d=-1.57$) \\
+    \texttt{composite\_fitness} & 0.5123 & 0.5216 ($d=+0.24$)
+      & \textbf{0.5805} ($d=+1.86$) & 0.5031 ($d=-0.25$) \\
+    \midrule
+    绝对量：捕获 / 回合 & 55 & \textbf{100} & 55 & \textbf{38} \\
+    绝对量：遭遇 / 回合 & 722 & \textbf{2325} & 379 & 323 \\
+    \bottomrule
+  \end{tabular}}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item 3 种子 $\times$ 12 鱼 $\times$ 600 步，ExpertPolicy 驱动；括号内为相对基线的效应量 $d$；最后两行为绝对量。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
+检查给出三条结论：
+
+\begin{enumerate}
+  \item \textbf{\texttt{predator\_rich} 的区分力明确。}\texttt{escape\_success}（$d=+2.89$）、
+        \texttt{prey\_capture}（$d=+1.92$）、\texttt{composite\_fitness}（$d=+1.86$）
+        三处均超过 $1.9\sigma$，且符号方向符合机制预期（天敌变多，逃逸成功率与接触转化率同时上升）。
+  \item \textbf{\texttt{food\_rich} 与 \texttt{resource\_scarce} 的比值指标几乎没有区分力，
+        但绝对量差别巨大。}\texttt{food\_rich} 的 \texttt{prey\_capture} $d=-0.08$（几乎为零），
+        而捕获绝对数从 $55$ 升到 $100$（$+82\%$）；原因是猎物密度上升同时抬高分子与分母
+        （遭遇从 722 升到 2325，$3.2$ 倍），比值把真实效应掩盖了（图~\ref{fig:env-absolute}）。
+  \item \textbf{\texttt{food\_rich} 的真实效应落在能量侧。}其 \texttt{energy\_efficiency} $d=+4.12$、
+        \texttt{survival} $d=+1.11$，即食物丰富主要通过降低饥饿致死起作用。
+\end{enumerate}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.95\linewidth]{fig_env_absolute}
+  \caption{猎物密度对比值指标的掩盖。}
+  \label{fig:env-absolute}
+\end{figure}
+
+\subsection{基因型到架构的可辨识性}\label{sec:pen}
+
+发育算子把基因组映射成连接组，但这条映射带有发育期随机性：同一基因型类的个体仍会因随机分裂
+落在不同架构档上。以两位点自交的四类基因型为条件，报告观测架构档等于其期望档的比例
+$\mathrm{pen}(g)=P(\hat a_i=a^*(g)\mid g_i=g)$。该量是概率性陈述：$\mathrm{pen}<1$
+表示基因型只给出架构的偏置，不决定个体命运。
+
+观测轴取神经元数 $N=|M|$。因奠基者背景会使不同随机种子的整体水平平移
+（种子间读数中位差约 $8$ 个神经元，而基因型效应约 $1$），$N$ 须\textbf{逐种子居中}
+（基线为该种子分层抽样集内读数中位数）后才可跨种子比较；
+分裂抽签独立重复 $K=16$ 次取均值，以压低抽样噪声而保留个体发育变异。
+校准集与报告集使用不同随机种子，报告集上不再调整阈值。
+两种集合的读数与外显率见表~\ref{tab:penetrance}。
+
+\begin{table}[H]
+  \centering
+  \caption{可辨识性与逐类外显率。}
+  \label{tab:penetrance}
+  \small
+  \begin{threeparttable}
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    集合 & 分离度 AUC & 最小错分率 & $\theta_N^{\mathrm{obs}}$ \\
+    \midrule
+    校准集 & $0.8570$ & $0.2219$ & $-0.0312$ \\
+    报告集 & $0.8712$ & $0.2158$ & 冻结（取自校准集） \\
+    \midrule
+    \multicolumn{4}{@{}l@{}}{\emph{报告集逐类外显率（Wilson 95\% 置信区间）}} \\
+    \texttt{A\_B\_}（门控期望高） & $0.6975$ & $[0.6709,\,0.7228]$ & \\
+    \texttt{A\_bb}（门控期望高） & $0.8892$ & $[0.8701,\,0.9057]$ & \\
+    \texttt{aaB\_}（门控期望低） & $0.7908$ & $[0.7669,\,0.8129]$ & \\
+    \texttt{aabb}（门控期望低） & $0.7592$ & $[0.7342,\,0.7825]$ & \\
+    \bottomrule
+  \end{tabular}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item 校准集 $n=3200$，报告集 $n=4800$（独立样本，阈值取自校准集后冻结）。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
+图~\ref{fig:penetrance} 中左为逐类外显率及其 Wilson 区间（虚线为 0.5 机遇水平），
+右为两轴分离度 AUC（红虚线为效应量下限 0.70）。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.98\linewidth]{fig_penetrance}
+  \caption{可辨识性报告集（3 种子 $\times$ 4 类 $\times$ 400）。}
+  \label{fig:penetrance}
+\end{figure}
+
+\noindent\textbf{判据的形式化。}记第 $i$ 个个体的读数为 $N_i$，同种子分层集读数中位数为 $b_s$，
+则居中偏差读数为 $\tilde N_i = N_i - b_{s(i)}$。分离度 $\hat\tau_N$ 取
+\[
+\hat\tau_N \;=\; \frac{1}{n_+ n_-}\sum_{i\in +}\sum_{j\in -}\mathbf{1}\!\left[\tilde N_i > \tilde N_j\right],
+\]
+即 Mann--Whitney $U$ 统计量除以 $n_+n_-$，对单调变换不变，故不依赖单位规范
+（等价于 ROC 曲线下面积，简称 AUC）；
+$+$、$-$ 分别为期望档高、低的两类集合。逐类外显率为 $\hat p_g = k_g / n_g$，
+区间取 Wilson 得分区间。三点结果：
+
+\begin{itemize}
+  \item \textbf{该轴携带基因型信息，且跨种子可迁移。}校准集分离度 $0.8570$，独立报告集 $0.8712$；
+        逐种子外显率均未退化到随机水平。
+  \item \textbf{外显率不完全。}逐类外显率落在 $0.71$--$0.87$：
+        同一基因型类中仍有 $13\%$--$29\%$ 的个体落在另一个架构档，
+        故正确读法是\textbf{概率性偏置}，基因型并不决定架构。
+  \item \textbf{一根观测轴无区分力。}异质性轴的 AUC 仅 $0.4862$（$p=0.175$，与随机不可分），
+        故报告口径取单轴 $N$；异质性轴仍照常测量上报，但不参与判档。
+\end{itemize}
+
+\subsection{学习前后对照}\label{sec:bc-results}
+
+学习前后的数值对照尚未取得，本章不含对应结果。
+
+\subsection{典型案例}
+
+本稿未纳入行为轨迹的可视化，逐帧数据可由附录的复现命令重建。
+典型案例的动态展示在补充轨迹可视化后给出。

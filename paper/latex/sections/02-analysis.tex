@@ -1,0 +1,176 @@
+\section{问题分析}\label{sec:analysis}
+
+\subsection{总体思路}
+
+本文把「网络架构由基因组经发育生成」抽象为一条\emph{确定性推进的生成管线}，
+并用一条\emph{遗传边界}把当代学习与代际遗传分开。管线为
+
+\begin{equation}\label{eq:pipeline}
+G\;\text{ 经 } D_{\Theta} \text{ 得 }\; (A,Z,\tau,W^{(0)},M)
+\;\text{ 再由 DanioNet 得 }\; \mathcal{T}
+\;\text{ 经 }\mathcal{F}\text{ 评 }\; F
+\;\text{ 经 }\mathcal{R}\text{ 产生 }\; \mathcal{P}_{t+1},
+\end{equation}
+
+其中 $G$ 为人工二倍体基因组，$D_\Theta$ 为发育算子（基因调控网络、细胞命运、发育式连接生成），
+$A,Z,\tau,W^{(0)},M$ 分别为连接矩阵、细胞身份、时间常数、发育初始权重与活跃神经元掩码，
+$\mathcal{T}$ 为个体在环境中的行为轨迹，$F$ 为适应度，$\mathcal R$ 为代际更新。
+\textbf{当代学习}发生在轨迹之前：$W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，
+$L$ 只更新连接权重的幅度，且产生的增量 $\Delta W$ 不进入下一代。
+
+采用这条管线的理由是\emph{受控对照}：被检验的命题链是
+「不同 DNA 故不同架构，故不同行为，故不同环境不同演化结局」，
+而只有仿真能做到只改一个碱基、其余全部相同。
+本模型不使用任何外部数据集训练，全部数据由受控仿真生成，
+每个数字都能由同一配置与同一随机种子确定性重放。
+
+\subsection{技术路线}
+
+建模数据流如图~\ref{fig:pipeline}，分生成链、同源分支、代际闭环三段。
+
+\textbf{生成链。}自随机种子到行为轨迹是一条确定性生成链：配置与随机种子经种子管理派生基因组 $G$，
+$G$ 经发育算子 $D_{\Theta}$ 生成连接组 $(A,Z,\tau,W^{(0)},M)$，
+再由 DanioNet 在连续二维生态仿真（$20$\,Hz $\times$ $600$ 步每回合）中驱动得到行为轨迹 $\mathcal{T}$。
+随机种子是唯一的随机入口，调控读出 $q(G)$ 是基因型影响连接组的唯一通路；
+因此单碱基扰动、以及同源基因组在不同随机种子下的实现，都是可测量的结构变异来源。
+
+\textbf{同源分支。}仿真之后，同一次运行产生三路共用编号、可相互对齐的数据：
+专家轨迹（规则控制器逐步记录观测与动作，用于行为克隆）、
+事件日志（用于实验指标）、帧快照（用于实时演示）。
+磁盘日志是演示推送的超集，推送的每条记录都能在日志中找到。
+
+\textbf{代际闭环与遗传边界。}适应度 $F$ 经选择与漂变产生下一代基因组，回到生成链顶端；
+后代不携带任何当代学习增量。图中红虚线框标出\textbf{遗传边界}：行为克隆只改变权重的幅度，
+其增量 $\Delta W$ 不进入繁殖通路，后代只继承基因组并从发育重新开始（\S\ref{method:bc}）。
+
+\begin{figure}[H]
+  \centering
+  \resizebox{\linewidth}{!}{%
+  \begin{tikzpicture}[
+    font=\scriptsize,
+    box/.style={draw, rounded corners, align=center, minimum height=0.72cm, inner sep=3pt},
+    gen/.style={box, fill=green!8, minimum width=3.6cm},
+    sim/.style={box, fill=orange!14, minimum width=15cm, minimum height=0.9cm},
+    br/.style={box, fill=violet!8, minimum width=3.0cm},
+    evo/.style={box, fill=blue!6, minimum width=2.6cm},
+    bound/.style={box, draw=red, dashed, fill=red!4, minimum width=3.6cm},
+    ar/.style={-{Latex}, thick},
+    gar/.style={-{Latex}, thick, green!55!black},
+  ]
+    \node[gen] (seed) at (0,10.0) {配置与随机种子};
+    \node[gen] (genome) at (0,9.0) {基因组（碱基串与调控基序）};
+    \node[gen] (dev) at (0,8.0) {发育（调控网络 / 连接生成）};
+    \node[gen] (conn) at (0,7.0) {连接组（DanioNet，至多 48 节点）};
+    \node[sim] (arena) at (0,5.9) {生态仿真（$20$\,Hz $\times$ $600$ 步 / 回合）};
+
+    \node[evo] (fit) at (-6.6,4.5) {适应度 $F$};
+    \node[evo] (sel) at (-6.6,3.5) {选择 / 漂变};
+    \node[evo] (next) at (-6.6,2.5) {下一代基因组};
+
+    \node[br] (t1) at (-2.6,4.5) {专家轨迹};
+    \node[br] (t2) at (-2.6,3.5) {行为克隆};
+    \node[bound] (dw) at (-2.6,2.5) {权重增量 $\Delta W$\\（当代，不遗传）};
+
+    \node[br] (l1) at (1.4,4.5) {事件日志};
+    \node[br] (l2) at (1.4,3.5) {实验指标};
+
+    \node[br] (s1) at (5.4,4.5) {帧快照};
+    \node[br] (s2) at (5.4,3.5) {实时演示};
+
+    \draw[ar] (seed) -- (genome);
+    \draw[ar] (genome) -- (dev);
+    \draw[ar] (dev) -- (conn);
+    \draw[ar] (conn) -- (arena);
+    \draw[ar] (arena.south) -- ++(0,-0.45) -| (t1.north);
+    \draw[ar] (arena.south) -- ++(0,-0.45) -| (l1.north);
+    \draw[ar] (arena.south) -- ++(0,-0.45) -| (s1.north);
+    \draw[ar] (arena.west) -- ++(-0.9,0) |- (fit.west);
+    \draw[ar] (t1) -- (t2);
+    \draw[ar] (t2) -- (dw);
+    \draw[ar] (l1) -- (l2);
+    \draw[ar] (s1) -- (s2);
+    \draw[ar] (fit) -- (sel);
+    \draw[ar] (sel) -- (next);
+
+    \draw[gar] (next.west) -- ++(-1.0,0) |- (genome.west);
+
+    \node[align=left, font=\scriptsize, text=red] at (2.2,1.7)
+      {遗传边界：$\Delta W$ 只作用于当代，\emph{不进入繁殖通路}；\\后代只继承基因组并从发育重新开始。};
+  \end{tikzpicture}}
+  \caption{整体数据流（技术路线图）。}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{关键问题与待检验命题}\label{sec:rq}
+
+由两个中心问题拆出五个待检验命题（H1--H5），构成本文的分析主线：
+
+\begin{itemize}
+  \item \textbf{H1}：不同基因组在相同随机种子控制下产生\textbf{系统性}的连接组差异。
+  \item \textbf{H2}：连接组与神经元动力学的差异导致行为差异。
+  \item \textbf{H3}：异质时间常数 $\tau_i$ 形成与同质 $\tau$ 不同的\textbf{性能—效率权衡}。
+  \item \textbf{H4}：空间布线代价改变网络的局部性、稀疏性与有效边效率。
+  \item \textbf{H5}：$F=F(G,E)$，\textbf{不存在对所有环境都占优的基因型}。
+\end{itemize}
+
+对应的量化判据（阈值属独立标定任务，不在本文主张内）：
+H1 用组内图距离并以重连零模型为基线 \citep{bib20_hartle2020}；
+H2 用 Mantel 检验 \citep{bib21_smouse1986}；
+H3 用性能—效率 Pareto 前沿 \citep{bib23_deb2002}；
+H4 以平均连接距离度量局部性，并与图论效率区分命名 \citep{bib22_latora2001}；
+H5 用 reaction norm 与 AMMI 检验基因型与环境的秩反转
+\citep{bib24_via1985,bib25_malosetti2013}。
+
+\textbf{统计能力有限}：正式实验的独立随机种子数为 $3$，
+此时 $3$ 对 $3$ 标签置换检验的双侧最小 $p\approx0.10$，
+不足以支持逐命题的置换检验。H1 采用组内口径、H2 采用 Mantel 检验，
+二者均不依赖 $3$ 对 $3$ 置换；其余结论以效应量与跨种子波动并列报告
+（见 \S\ref{sec:solution} 与 \S\ref{sec:validation}）。
+
+\subsection{设计要点与创新}\label{sec:innovation}
+
+本文的竞争力在建模设计。整个模型围绕三个设计要点展开，它们互相约束、缺一不可：
+
+\begin{enumerate}
+  \item \textbf{把可演化的对象上移一层。}主流做法在网络结构或权重空间上直接搜索，
+        本文让被搜索的对象是\textbf{生成结构的基因组}，网络结构是发育算子的产物。
+        由此，同源基因组与不同随机种子、单碱基扰动都成为可测量的结构变异来源，
+        结构变异与基因变异可分（\S\ref{method:genome}、\S\ref{method:dev}）。
+  \item \textbf{用一条遗传边界把先天与后天分开。}当代学习只改变量幅度，
+        $\Delta W$ 不进入繁殖通路，后代只继承基因组并从发育重新开始。
+        这把 genomic bottleneck 由一句主张变成可对照的实验条件：
+        当代可塑性承担了多少、发育结构承担了多少，可以分别测量（\S\ref{method:bc}）。
+  \item \textbf{在闭环生态里同时度量可用与多样。}评价不走静态基准，
+        而走感知—动作回路与环境耦合的连续二维生态仿真，
+        使「结构多样性」与「行为可用性」在同一条链上被观测（\S\ref{method:net}、\S\ref{sec:solution}）。
+\end{enumerate}
+
+表~\ref{tab:related} 概括本文设计与三类相关工作的差别。
+三个要点的组织方式决定了后文的顺序：\S\ref{sec:model} 给出每个子模型的数学形式与设计依据，
+\S\ref{sec:solution} 给出可复核的结果证据。
+
+\begin{table}[H]
+  \centering
+  \caption{本文设计与相关工作的对照。}
+  \label{tab:related}
+  \footnotesize
+  \setlength{\tabcolsep}{2pt}
+  \begin{threeparttable}
+  \resizebox{\linewidth}{!}{\begin{tabular}{@{}p{0.14\linewidth}p{0.2\linewidth}p{0.2\linewidth}p{0.2\linewidth}p{0.22\linewidth}@{}}
+    \toprule
+    维度 & 神经演化 & 神经架构搜索 & 发育式编码 & 本文 \\
+    \midrule
+    可演化对象 & 网络结构或权重 & 架构（层、算子、连接） & 基因组到权重的映射 & 基因组（结构是发育产物） \\
+    生成规则 & 直接变异与交叉 & 离散搜索或连续松弛 & 发育先验生成权重 & 调控网络与连接生成组成的发育过程 \\
+    遗传边界 & 未显式区分 & 训练所得权重即解 & 侧重先天编码能力 & 显式：当代增量 $\Delta W$ 不遗传 \\
+    评价场景 & 多为静态基准 & 静态基准的验证精度 & 静态基准或连接组重建 & 连续二维闭环生态仿真 \\
+    \bottomrule
+  \end{tabular}}
+  \begin{tablenotes}\footnotesize\raggedright
+    \item 代表文献：神经演化 \citep{bib5_miikkulainen2025,bib222_stanley2002,bib223_stanley2009}；
+          神经架构搜索 \citep{bib224_elsken2019,bib225_liu2019}；
+          发育式编码 \citep{bib1_zador2019,bib2_barabasi2023,bib4_richter2025}。
+  \end{tablenotes}
+  \end{threeparttable}
+\end{table}
+
