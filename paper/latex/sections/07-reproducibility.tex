@@ -103,6 +103,12 @@ $n<2$ 时 \texttt{std} 记 \texttt{null}）。这一「先内后外」的顺序�
         $\text{mean}\pm\text{std}$，含逐 seed 值）、\texttt{diagnostics.md}（\textbf{口径诊断}：
         分母健康度、不变式核对、比值与偏态）、\texttt{by\_fish.csv}（全部个体行，可直接进附录）、
         \texttt{episodes.csv}。
+  \item \texttt{scripts/run\_penetrance.py --experiment-id <id> --mode calibrate|report}\\
+        出 penetrance 的校准 / 报告产物到 \texttt{results/tables/}：$\theta^{\mathrm{obs}}$ 两口径、
+        轴向分离度诊断、逐类 Wilson CI。校准与报告使用不同 master seed 与不同命名空间，
+        报告集上不再调阈值；配置 \texttt{configs/penetrance.yaml}，契约 \texttt{experiment} \S3.9。
+        \textbf{当前边界}：$\theta^{\mathrm{obs}}$ 尚待人工签署（\texttt{threshold\_status} 为占位），
+        故报告模式只出\textbf{演示表}；其数字见 \S\ref{sec:results} 并已标注草案状态。
 \end{itemize}
 
 环境对照图另有 \texttt{scripts/make\_env\_compare.py}（读

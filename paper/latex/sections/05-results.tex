@@ -31,6 +31,63 @@
 \todo{predator\_rich 的 escape 效应量 $d=+2.89$、prey\_capture $d=+1.92$；}
 \todo{food\_rich 绝对捕获 55$\to$100 但比值反降（分母 722$\to$2325）。}
 
+\subsection{基因型 $\to$ 架构档的可辨识性（penetrance）}
+
+\emph{问题}：发育算子把基因组映射成连接组，但这条映射\emph{不是确定性的} ——
+同一基因型类的个体仍会因发育期随机性（GRN 初态、\S5 分裂抽签）落在不同架构档上。
+本节量化这种不决定性：以两位点自交（\texttt{AaBb}$\times$\texttt{AaBb}）的四类基因型为条件，
+报告观测架构档等于其期望档的比例 $\mathrm{pen}(g)=P\big(\hat a_i=a^*(g)\mid g_i=g\big)$。
+该量是\textbf{概率性陈述}：$\mathrm{pen}<1$ 表示基因型只给出架构的\emph{偏置}，而非个体命运。
+
+\emph{读数与协议}（\texttt{experiment} \S3.9）：观测轴取神经元数 $N=|M|$。
+因 founder 背景会使不同 master seed 的整体水平平移（实测 seed 间读数中位差约 $8$ 个神经元，
+而基因型效应约 $1$），$N$ 须\textbf{逐 seed 居中}（基线 = 该 seed 分层抽样集内读数中位数，
+与基因型无关）后才可跨 seed 比较；\S5 分裂抽签独立重复 $K=16$ 次取均值，
+以压低\textbf{抽样}噪声而保留个体发育变异（故 $\mathrm{pen}$ 保持不完全）。
+校准集与报告集使用\textbf{不同 master seed 与不同命名空间}，报告集上\emph{不再调整}阈值。
+
+\begin{table}[t]
+  \centering
+  \caption{penetrance 的可辨识性与逐类外显率。校准集 $n=3200$（2 seed $\times$ 4 类 $\times$ 400）；
+  报告集 $n=4800$（3 seed $\times$ 4 类 $\times$ 400，独立样本、阈值冻结不再调）。
+  $\theta_N^{\mathrm{obs}}$ 是\textbf{逐 seed 居中}后的偏差刻度（可正可负），
+  取校准集上使错分最少之点。}
+  \label{tab:penetrance}
+  \small
+  \begin{tabular}{@{}llll@{}}
+    \toprule
+    集合 & 分离度 AUC & 最小错分率 & $\theta_N^{\mathrm{obs}}$ \\
+    \midrule
+    校准集（seeds 20260926 / 424242） & $0.8433$ & $0.2366$ & $-0.0312$ \\
+    报告集（seeds 1103 / 2207 / 3301） & $0.8678$ & $0.2112$ & 冻结（取自校准集） \\
+    \midrule
+    \multicolumn{4}{@{}l@{}}{\emph{报告集逐类外显率（Wilson 95\% CI）}} \\
+    \texttt{A\_B\_}（期望高） & $0.7075$ & $[0.6811,\,0.7325]$ & \\
+    \texttt{A\_bb}（期望高） & $0.8708$ & $[0.8507,\,0.8886]$ & \\
+    \texttt{aaB\_}（期望低） & $0.8042$ & $[0.7808,\,0.8256]$ & \\
+    \texttt{aabb}（期望低） & $0.7650$ & $[0.7402,\,0.7881]$ & \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+三点结果：
+
+\begin{itemize}
+  \item \textbf{该轴携带基因型信息，且跨 seed 可迁移。} 校准集分离度 $0.8433$
+        （Mann--Whitney $p<10^{-247}$），\emph{独立}报告集 $0.8678$；
+        逐 seed 的 \texttt{A\_B\_} 外显率为 $0.725/0.635/0.762$，无一 seed 退化到随机水平。
+  \item \textbf{外显率不完全。} 逐类 $\mathrm{pen}$ 落在 $0.71$--$0.87$：
+        同一基因型类中仍有 $13\%$--$29\%$ 的个体落在另一个架构档。
+        故正确读法是\textbf{概率性偏置}，而非「基因型决定架构」。
+  \item \textbf{一根观测轴无区分力。} 异质性轴 $\mathrm{CV}_\tau$ 的 AUC 仅 $0.4862$
+        （$p=0.175$，与随机不可分），故报告口径取\textbf{单轴} $[N]$；
+        $\mathrm{CV}_\tau$ 仍照常测量上报，但不参与判档 —— 这一行即其退役理由。
+\end{itemize}
+
+\emph{状态}：$\theta_N^{\mathrm{obs}}$ 的数值尚待\textbf{人工签署}
+（\texttt{configs/penetrance.yaml} 的 \texttt{threshold\_status} 现为占位值），
+故上表是\textbf{草案}；签署后如有微调将同步。
+
 \subsection{学习前后对照}
 \todo{\textbf{阻塞}：BC \emph{模块与契约}已就绪（\texttt{src/evogenesis/learning/}），
 但\textbf{未接入流水线}（\texttt{pipeline/模型链装配.md} \S4「未接」），

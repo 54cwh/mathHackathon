@@ -240,6 +240,17 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   $\left|\log_{10}N_{\text{base}}-\log_{10}N_{\text{ours}}\right|\le 1$，
   以 $N_{\text{ours}}=190$ 代入即基线取 19--1900（\texttt{paper/报告-骨架.md} \S2.1），
   实现即可填表。
+  \item \textbf{外显率不完全，且观测阈值尚未冻结。}以两位点自交的四类基因型为条件，观测架构档与期望档的一致率仅 $0.71$--$0.87$
+  （报告集 $n=4800$，样本与命名空间均独立于校准集；\S\ref{sec:results}）——
+  即基因型给出的是\textbf{概率性偏置}，而不是确定性架构。两点声明随之：
+  (i)~异质性轴 $\mathrm{CV}_\tau$ 与本期望档不可分（AUC $0.4862$，$p=0.175$），
+  故报告口径已收为\textbf{单轴} $N$，两轴 $2\times2$ 分箱仅在显式声明时给出；
+  (ii)~该轴读数须\textbf{逐 seed 居中}（基线 = 该 seed 分层集读数中位数）：
+  不同 founder 背景使各 seed 的整体水平平移约 $8$ 个神经元，而基因型效应仅约 $1$，
+  故\textbf{跨 seed（或跨批次）直接池化会得到 $\mathrm{pen}\equiv0.5$ 的假象}。
+  这条限定同时界定了适用范围：$\mathrm{pen}$ 是\emph{群体内}对比量。
+  观测阈值 $\theta_N^{\mathrm{obs}}$ 的数值仍待\textbf{人工签署}，
+  故 \S\ref{sec:results} 的该表是草案。
 \end{enumerate}
 
 \paragraph{这些限制如何影响结论的读法}
