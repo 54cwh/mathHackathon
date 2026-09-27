@@ -64,7 +64,7 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 
 | 层 | 选型 |
 |---|---|
-| 后端 / 模型 | Python 3.12（uv）、PyTorch（CPU 可运行、GPU 加速）、FastAPI + Pydantic、NumPy / SciPy / pandas、NetworkX |
+| 后端 / 模型 | Python 3.12（uv）、PyTorch、FastAPI + Pydantic、NumPy / SciPy / pandas、NetworkX |
 | 前端 / 演示 | Vite + React + TypeScript、Tailwind CSS、Canvas 2D（Arena）、Cytoscape.js（脑图）、ECharts（图表）、zustand；原生 WebSocket / fetch |
 | 数据 / 配置 | YAML（`configs/`）、JSON Schema（`schemas/`）、structlog（JSONL）、MLflow（本地 file store）、pyarrow / NumPy `npz` |
 | 训练 / 演化 | Behavior Cloning；PPO / SAC 仅作扩展 |
