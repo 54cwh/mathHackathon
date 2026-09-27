@@ -68,6 +68,43 @@ configs → SeedManager → G → D_Θ → (A, Z, τ, W⁰, M) → DanioNet → 
 - **跨语言契约。** `schemas/` 的 JSON Schema 由 Python 后端与 TS 前端共用，改契约双方同步。
 - **离线可运行。** CPU 可运行、GPU 可加速；现场不依赖外部模型 API、远程数据库或 CDN 资产。
 
+## 实验与消融
+
+实验协议（A–F 均为必做）由 `src/evogenesis/experiment/实验与评价体系.md` 拥有，指标定义与统计口径同在该文件。
+
+### 实验
+
+- **A 基因组 → 架构**：随机生成一批基因组，各跑完整发育，统计神经元数、细胞类型分布、连接密度与时间常数分布。
+- **B 单碱基突变**：对代表性 haplotype 逐位点做替代突变，测表达变化与结构距离（`d_edge` / `d_τ` / `ΔB`），产出基因组敏感性图谱。
+- **C 基线对照**：MLP、GRU、固定稀疏 RNN 与 DanioNet 在相同数据、相同预算、参数量同一数量级下比较任务与效率指标。
+- **D 消融**：见下。
+- **E 鲁棒性**：对已发育网络的活跃支撑边按比例删除，主指标为行为发散，outcome 指标作次要证据。
+- **F 环境选择**：同一初始种群分别进入三组环境，跑多代演化，记录等位基因与表型频率、viability、适应度与结构统计。
+- **BC 生命周期学习**：训练前 / 后在**同一局与同一网络对象**上对照，并给出 ΔW 不进入遗传通路的证据。
+- **penetrance**：以两位点自交的四类基因型为条件，报告观测架构档与期望档的一致率（外显率），暴露「基因型 → 架构」是概率性偏置。
+- **孟德尔验证**：AaBb × AaBb 的分离比与 χ² 检验。
+
+### 消融
+
+每个消融臂只改一个变量（实现口径见 `connectome/DanioNet设计规范.md` §9）：
+
+| 臂 | 唯一变量 |
+|---|---|
+| homogeneous τ | 时间常数改为常数（`tau_min = tau_max`） |
+| w/o spatial wiring cost | 空间布线代价系数置 0（`distance_lambda = 0`） |
+| BC 有 / 无 Dale 符号约束 | 关闭 Dale 符号约束（`sign_constrained=False`） |
+| w/o GRN（可选第 4 臂） | 跳过 GRN 发育，按固定密度随机采样连接 |
+
+### 环境对照
+
+三组环境相对基线**单因子**改变一个驱动，`environment_id` 取值集合为 `default` / `food_rich` / `predator_rich` / `resource_scarce`。
+
+### 统计与产物
+
+- 正式种子与最低重复数见 `configs/experiment_seeds.yaml`；逐级统计为先 seed 内对个体等权、再沿 seed 轴报 mean ± std。
+- 每个 run 固定 config / seed / git commit，逐个体原值落盘，任何汇总数字可重算。
+- 实验结果与结论见论文 §5 / §6 与 `paper/图表-数据对照表.md`，本文件不复述数值。
+
 ## 前端
 
 `frontend/` 是现场演示 UI，把后端仿真的过程可视化并支持交互，让观众直观看到 DNA 经发育生成脑网络、进而产生行为与演化的链路。已实现的功能：
