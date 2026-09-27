@@ -40,8 +40,7 @@
   关键是这两个判据\textbf{不依赖跨种子显著性}，故在仅有 3 个正式种子的预算下依然可给出结论（\S\ref{sec:rq}）。
 
   \item \textbf{输出同源，使结论可被他人复核。}
-  \texttt{config} $\to$ \texttt{seed} $\to$ \texttt{genome} $\to$ \texttt{development}
-  $\to$ \texttt{connectome} $\to$ \texttt{Arena} 的整条链是确定性推进的；
+  \texttt{config}、\texttt{seed}、\texttt{genome}、\texttt{development}、\texttt{connectome}、\texttt{Arena} 的整条链是确定性推进的；
   事件日志、实验指标与专家轨迹三条输出共用同一 \texttt{(experiment\_id, episode\_id, seq)}
   生成器（\texttt{core} \S2），且磁盘日志是推送的超集。因此每个报告数字都能回溯到 run 目录。
   这是把上述问题做成结论而非演示的前提。
@@ -50,7 +49,7 @@
 \textbf{必须说清这条价值目前被验证到了哪一层。}
 上列四点里，只有链路可运行、环境对照可区分两件事有落盘证据（\S\ref{sec:results}）。
 凡涉及\emph{学习效果}的主张，即\emph{当代 BC 能带来多少行为改善}以及
-\emph{该改善经表现型 $\to$ 适应度是否会改变选择结果}（注意 $\Delta W$ 本身不遗传，
+\emph{该改善经表现型、适应度是否会改变选择结果}（注意 $\Delta W$ 本身不遗传，
 故只能经适应度间接影响基因型频率），目前\textbf{只是设计意图，尚未验证}：
 BC 训练契约与训练模块已就绪（\texttt{learning/行为克隆学习.md} 已定稿；
 该目标的经典出处是 \citep{bib209_pomerleau1991}），但\textbf{尚未接入流水线}。
@@ -67,7 +66,7 @@ BC 训练契约与训练模块已就绪（\texttt{learning/行为克隆学习.md
 实测结构规模（3 个正式 seed $\times$ 14 个体 $=$ 42 个基因型）：$N$ 中位 $37.0$（27--43，上限 48），
 支撑连接中位 $192.5$ 条（105--289），密度中位 $0.149$；六类细胞计数\textbf{中位均为 $6$}
 （每域 4 个前体、分裂过程同分布），左右 motor 池中位 $3/3$
-（\texttt{scripts/probe\_architecture.py} $\to$ \texttt{results/tables/architecture\_probe.json}，
+（\texttt{scripts/probe\_architecture.py}、\texttt{results/tables/architecture\_probe.json}，
 seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   相较真实斑马鱼的全脑细胞分辨率图谱（细胞类型远超六类 \citep{bib84_kunst2019}）
   与主流任务上 $10^{6}$--$10^{9}$ 参数的网络，这里的规模小若干数量级。
@@ -119,7 +118,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           \texttt{BC 学习（learning）}。因此\textbf{没有任何学习前后的对照结果}，
           \S\ref{sec:results} 的对应小节仍然阻塞。
     \item \textbf{评估驱动仍是 \texttt{ExpertPolicy}，不是 \texttt{DanioNet}。}
-          \texttt{DanioNet} $\to$ \texttt{Arena} 的驱动链路已实现并有测试守护
+          \texttt{DanioNet}、\texttt{Arena} 的驱动链路已实现并有测试守护
           （\texttt{pipeline/模型链装配.md} \S4 已接；\texttt{tests/test\_pipeline.py}），
           但\textbf{尚未产出任何落盘结果}：现存全部落盘 run（\texttt{exp\_arena\_expert\_ref\_v2}
           与 \texttt{exp\_env\_*}）均由规则型 \texttt{ExpertPolicy} 驱动。
@@ -195,7 +194,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   （\texttt{.../exp\_arena\_expert\_ref\_v2/diagnostics.md}；
   \texttt{research/notes/契约决策记录.md} 同条给出极端例：某个体 225 次接触只吃 1 只，
   比值 $0.0044$）。分母的健康度还有一个必须并列的事实：36 个个体中有 8 个
-  \texttt{encounters} 为 $0$（被 $\max(\cdot,1)$ 兜底 $\Rightarrow$ 记 $0.0$，
+  \texttt{encounters} 为 $0$（被 $\max(\cdot,1)$ 兜底，故记 $0.0$，
   \textbf{不等于}捕食失败），\texttt{captures} 为 $0$ 的也是 8 个（同上引诊断文件）。
   因此本报告引用该均值时\textbf{一律并列偏态尾与绝对量}，这是
   \texttt{experiment} \S1.3 的硬性报告纪律，不是可选的补充说明。
@@ -210,8 +209,8 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   \texttt{predator\_rich} 可区分（\texttt{escape\_success} $d=+2.89$、
   \texttt{prey\_capture} $d=+1.92$、\texttt{composite\_fitness} $d=+1.86$）；
   而 \texttt{food\_rich} / \texttt{resource\_scarce} 的\textbf{比值指标几乎无区分力}
-  （$d=-0.08$ / $+0.06$），只有绝对量差别显著（捕获 $55\to100$ / $55\to38$），
-  原因是猎物密度同时抬高分子与分母（遭遇 $722\to2325$）\textbf{比值掩盖了真实效应}
+  （$d=-0.08$ / $+0.06$），只有绝对量差别显著（捕获由 $55$ 增至 $100$，或降至 $38$），
+  原因是猎物密度同时抬高分子与分母（遭遇由 $722$ 增至 $2325$）\textbf{比值掩盖了真实效应}
   （\texttt{experiment} \S4 结论 2）。因此环境对照的结论目前只能建立在
   \texttt{predator\_rich} 与绝对量上；另两组的比值口径需要加大对照幅度后重做检查（同节排期建议）。
   这也是一条方法论教训：跨 seed 报告图不是装饰，
@@ -235,7 +234,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
           但该轮 $n=2$ 只有 $1$ 个自由度，且 episode 间方差\textbf{淹没}模型效应
           （逐块摆动跨度远大于模型间差异），故\textbf{不支持任何显著性主张}，
           即参照系已建立但\textbf{尚未被填满}，这是当前离赛题判据
-          \emph{原模型 $\to$ 修改后模型 $\to$ 实验结果对比}\textbf{最近的一块}。
+          \emph{原模型、修改后模型、实验结果对比}\textbf{最近的一块}。
           消融一侧（\texttt{w/o GRN}、allele 聚合、homogeneous $\tau$、
           \texttt{w/o spatial wiring cost}）\textbf{仍全部未实现}
           （\texttt{paper/报告-骨架.md} \S4.2）；BC 有/无 Dale 约束的
@@ -260,7 +259,7 @@ seeds $[1103,2207,3301]$，产物自带内容 sha256）。
   故 \S\ref{sec:results} 的该表是草案。
   \item \textbf{评估预算限定了本平台能测到的效应下限。}
   单次 Arena episode 的排序可靠性仅 $\rho_1 = 0.069$，且复合分有 $81.8\%$ 的观测顶在
-  \texttt{survival} 上界 $\Rightarrow$ \textbf{未经 $K$ 次平均的逐代 fitness 曲线不具备区分能力}，
+  \texttt{survival} 上界，故\textbf{未经 $K$ 次平均的逐代 fitness 曲线不具备区分能力}，
   不能用它论证进化有效 / 无效；达到 $\rho\ge0.5$ 需 $K\approx14$（即评估预算 $\times14$，
   \S\ref{sec:results}）。Exp C 中期（2 seed）同样由\emph{块方差}而非模型质量主导
   （\texttt{encounters} 块间差 $-13.5\sim+41.1$，而模型差 $+7.25$、$p=0.361$），

@@ -21,10 +21,10 @@ DanioNet 个体网络，其行为由感知—动作回路与环境耦合产生�
 \texttt{population.n\_fish} 后传入。
 
 \textbf{边界（选择 / 理由 / 代价）。}取 \texttt{world.boundary = reflect}（镜面反射：
-越界分量取反射，朝向按墙法线镜面反射）。\emph{理由}：该策略是\textbf{确定性的、
+越界分量取反射，朝向按墙法线镜面反射）。其依据是该策略是\textbf{确定性的、
 不消耗随机数}的，因此不会扰动同一 seed 下的随机流，跨 seed 的对照才成立；
 旧默认 \texttt{clamp}（贴墙卡住）会让个体在墙边持续耗能，属\textbf{隐性能耗}。
-\emph{代价}：与更早用 \texttt{clamp} 跑出的历史结果不可比，
+代价在于与更早用 \texttt{clamp} 跑出的历史结果不可比，
 \texttt{clamp} 只保留为对照 / 历史复现选项。
 
 \textbf{生理机制。}能量按
@@ -66,9 +66,9 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
 （$\text{done}=\text{step\_idx}\ge600$），\textbf{一律跑满 600 步}；
 个体死亡只\textbf{冻结该个体}，空种群也不判团灭、不提前结束。
 因此本文所有 episode 的 \texttt{terminated} 与 \texttt{truncated} 标志\textbf{均为 \texttt{False}}。
-\emph{选择}：固定长度、固定分母（生存率 $S=\text{survival\_steps}/600$，线性）。
-\emph{理由}：若团灭即提前结束，episode 长度变成内生变量，
-会破坏跨 episode / 跨 seed 的适应度可比性。\emph{代价}：幸存个体在种群全灭后
+固定长度、固定分母（生存率 $S=\text{survival\_steps}/600$，线性）。
+其依据是若团灭即提前结束，episode 长度变成内生变量，
+会破坏跨 episode / 跨 seed 的适应度可比性。代价在于幸存个体在种群全灭后
 仍要空转到第 600 步，这些步不携带行为信息；代价被接受，因为它换来可比的固定分母。
 
 \begin{table}[t]
@@ -105,15 +105,15 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
 有限感知半径与有限视野；网络每步接收一个 12 维观测向量。
 该向量的\textbf{值域与顺序}由 DanioNet 规范冻结，但其\textbf{编码规则}目前仍为
 草案待确认（owner 未定稿，见 \S\ref{sec:exp-gaps}），
-这是本文解释观测 $\to$ 行为链条时的一个已知缺口。
+这是本文解释观测、行为链条时的一个已知缺口。
 
 \subsection{环境对照三组}\label{sec:exp-env-groups}
 
 \textbf{设计原则：单因子对照（选择 / 理由 / 代价）。}
 每个环境相对基线（\texttt{default\_arena.yaml}：$n_{\text{prey}}=24$、
 $n_{\text{predators}}=3$）\textbf{只改变一个驱动}。
-\emph{理由}：只有一个驱动变动时，观测到的差异才能归因到该驱动上，
-而不是多个驱动混杂的结果。\emph{代价}：可见的资源轴只有一个自由度，
+其依据是只有一个驱动变动时，观测到的差异才能归因到该驱动上，
+而不是多个驱动混杂的结果。代价在于可见的资源轴只有一个自由度，
 无法刻画食物多且天敌也多这类交互情形。交互效应被有意排除在本轮设计之外。
 未被列出的段（\texttt{world}、\texttt{sensing}、\texttt{energy}、\texttt{growth}、
 \texttt{actors}）一律取默认值，实验环境\textbf{不得暗改契约值}，
@@ -142,12 +142,12 @@ $n_{\text{predators}}=3$）\textbf{只改变一个驱动}。
 \textbf{派生约定：\texttt{prey\_regrowth\_steps} $=\lceil 600/n_{\text{prey}}\rceil$。}
 该量\textbf{不是独立旋钮}，它随 $n_{\text{prey}}$ 机械确定，以避免多出一个可调参数
 带来的自由度。默认 $600/24=25$，与 \texttt{default\_arena.yaml} 一致。
-\emph{选择}：用 \texttt{ceil}（向上取整）而\textbf{不是} \texttt{round}。
-\emph{理由}：$600/48=12.5$ 恰好是一个\textbf{平局}，
+用 \texttt{ceil}（向上取整）而\textbf{不是} \texttt{round}。
+其依据是$600/48=12.5$ 恰好是一个\textbf{平局}，
 Python 的 \texttt{round} 走银行家舍入会给出 $12$，而 $12$ 的语义是
 比名义速率更早恢复，这与不早于名义速率回复的约定相反，且平局点的方向
 并无原则性依据；\texttt{ceil} 在平局处无歧义，且统一地取不早于名义速率一侧。
-\emph{代价}：三组的再生间隔系统性偏保守（如 \texttt{food\_rich} 取 13），
+代价在于三组的再生间隔系统性偏保守（如 \texttt{food\_rich} 取 13），
 使资源轴的真实对比度略被压低。这只会让后续的环境效应结论更保守，不会虚假放大。
 
 \textbf{前置区分力检查。}在正式跑 Experiment F 之前，先用基线与三环境
@@ -188,7 +188,7 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
   \item \textbf{\texttt{predator\_rich} 的区分力明确，可直接用于 Experiment F。}
         \texttt{escape\_success}（$d=+2.89$）、\texttt{prey\_capture}（$d=+1.92$）、
         \texttt{composite\_fitness}（$d=+1.86$）三处均超过 $1.9\sigma$，且\textbf{符号方向
-        符合机制预期}（天敌变多 $\Rightarrow$ 逃逸成功率与接触转化率同时上升）。
+        符合机制预期}（天敌变多，故逃逸成功率与接触转化率同时上升）。
   \item \textbf{\texttt{food\_rich} 与 \texttt{resource\_scarce} 的\emph{比值}指标几乎没有
         区分力，但\emph{绝对量}差别巨大。}\texttt{food\_rich} 的 \texttt{prey\_capture}
         $d=-0.08$（几乎为零），而捕获绝对数从 $55$ 升到 \textbf{100}（$+82\%$）；
@@ -229,8 +229,8 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 此时任何以首次接触为单位的\emph{去重}口径都恒等于 1、零方差；
 而含重复计数的口径（每步每猎物各计一次 / 每鱼每步至多一次）其分母随\textbf{停留步数}
 增长，比值实际上度量的是\textbf{蹲守程度}，与捕食技巧无关。这正是下文右偏的来源。
-绝对速率则无偏、且可跨环境直接比较（实测：\texttt{food\_rich} 捕获 55$\to$100、
-\texttt{resource\_scarce} 55$\to$38，都能直接体现）。
+绝对速率则无偏、且可跨环境直接比较（实测：\texttt{food\_rich} 捕获 55 增至 100、
+\texttt{resource\_scarce} 55 增至 38，都能直接体现）。
 
 \textbf{注意：个体比值均值 $\ne$ 汇总比值。}实测（基线，3 seed $\times$ 12 鱼）：
 个体比值均值为 \textbf{0.5407}，而汇总比值为 $55/722$（即 \textbf{0.0762}），
@@ -315,7 +315,7 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
         \texttt{"unknown"}（Arena 侧向后兼容保留）；实验路径已由构造注入
         经 \texttt{core/ids.py::mint\_id} 铸出的 \texttt{genome\_id}（纯函数、确定性）。
         且\textbf{代循环已接线并冻结}（\texttt{experiment/evolution\_run.py::run\_evolution}，
-        编排评估 $\to$ 折算 $F$ $\to$ 回填 $\to$ \texttt{advance\_generation}；
+        编排评估、折算 $F$、回填、\texttt{advance\_generation}；
         \texttt{experiment/代循环编排.md} v1.0，2026-09-26；
         \texttt{configs/experiment.yaml} 的 \texttt{generations: 20}），
         故新采轨迹的 \texttt{genome\_id} 对应\emph{真实演化出的}基因型。
@@ -333,8 +333,7 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
 
 \subsection{重复、种子与统计口径}\label{sec:exp-stats}
 
-\textbf{逐级聚合口径（契约）。}个体指标先在 \textbf{seed 内对个体取等权均值}
-$\to$ 该 seed 的一行；再沿 \textbf{seed 轴}报告 $\text{mean}\pm\text{std}$
+\textbf{逐级聚合口径（契约）。}个体指标先在 \textbf{seed 内对个体取等权均值}、该 seed 的一行；再沿 \textbf{seed 轴}报告 $\text{mean}\pm\text{std}$
 （样本标准差，$n-1$；$n<2$ 时 \texttt{std} 记 \texttt{null}）。
 逐个体原值全部保留在 \texttt{results/runs/<id>-s<seed>/metrics.csv}，
 任何人都可据此重算。这一先内后外的顺序保证了\textbf{每个 seed 的权重相等}，
@@ -366,7 +365,7 @@ H1 走 \textbf{within-ensemble} 比较（同一 ensemble 内部的结构变异�
 
 \begin{table}[t]
   \centering
-  \caption{假设 $\to$ 实验 $\to$ 检验口径。第三列的措辞与 \S\ref{sec:rq} 一致。}
+  \caption{假设、实验、检验口径。第三列的措辞与 \S\ref{sec:rq} 一致。}
   \label{tab:analysis-plan}
   \small
   \begin{tabular}{@{}p{0.06\linewidth}p{0.30\linewidth}p{0.18\linewidth}p{0.38\linewidth}@{}}
@@ -405,7 +404,7 @@ H1 走 \textbf{within-ensemble} 比较（同一 ensemble 内部的结构变异�
 代数过少时漂变会盖过环境效应。
 
 \textbf{实验矩阵的其余部分（概述，细节见 \S\ref{sec:baselines}）。}
-A 用 48 个随机 genome 刻画基因组 $\to$ 结构统计的分布；
+A 用 48 个随机 genome 刻画基因组、结构统计的分布；
 B 对固定 haplotype 的 256 个位点\textbf{逐位全部}做确定性碱基替换并跑完整发育
 （不降采样），产出 Genome Sensitivity Map；
 C 对比 MLP / GRU / Fixed Sparse RNN / DanioNet 四种模型，

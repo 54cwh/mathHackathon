@@ -13,11 +13,11 @@ PyTorch 不保证数学等价的计算得到逐位一致的结果 \citep{bib163_
 
 \subsection{环境与依赖}
 
-\emph{选择}：以 \texttt{uv} 管理环境，并以\textbf{锁文件}安装，即 \texttt{uv sync --frozen}。
+以 \texttt{uv} 管理环境，并以\textbf{锁文件}安装，即 \texttt{uv sync --frozen}。
 项目声明 \texttt{requires-python = ">=3.12"}（\texttt{pyproject.toml}），
 版本闸门另记于 \texttt{.python-version}（\texttt{3.12}）。
 
-\emph{理由}：两个问题都是实测撞出来的，不是预设的美德。
+其依据是两个问题都是实测撞出来的，不是预设的美德。
 (i)~\textbf{Python 版本不可退}：仓库中已有只有 3.12 才能解析的语法
 （\texttt{core/config.py} 的 PEP 695 泛型），3.11 下连测试收集都会失败。
 (ii)~\textbf{裸 \texttt{uv sync} 会污染锁}：在\emph{未配置镜像源}的 shell 里直接
@@ -30,7 +30,7 @@ PyTorch 不保证数学等价的计算得到逐位一致的结果 \citep{bib163_
 \texttt{--frozen} 的作用正是\textbf{按锁原样安装、不重解析、不改写锁}，
 并自动走锁里记录的源。
 
-\emph{代价}：新增 / 升级依赖必须显式执行一次\emph{不带} \texttt{--frozen} 的同步并提交
+代价在于新增 / 升级依赖必须显式执行一次\emph{不带} \texttt{--frozen} 的同步并提交
 \texttt{uv.lock}，否则新依赖不会进入环境；协作者若本地已用默认源改写过锁，
 须先还原（\texttt{git checkout -- uv.lock}）再 \texttt{--frozen}，
 该改写不含任何真实依赖变更，不应提交。
@@ -61,9 +61,9 @@ $S_{ns}=\texttt{SeedSequence}([ns,\ master\_seed])$，
 （原始副本）、\texttt{arena\_config\_resolved.json}（\emph{解析后}实际生效的
 \texttt{ArenaConfig} 快照）、\texttt{seed.txt}、\texttt{git\_commit.txt}，外加
 \texttt{metadata.json}。
-\emph{理由}：原始 YAML 副本会与解析值漂移（默认值 / 环境变量 / overrides 都会改变实际取值），
+其依据是原始 YAML 副本会与解析值漂移（默认值 / 环境变量 / overrides 都会改变实际取值），
 而仿真只认\textbf{已解析}的配置对象；只固定文件路径不足以复现一局。
-\emph{代价}：同一份配置要在盘上存两遍（原件与解析快照），且解析快照的字段名随后者演进。
+代价在于同一份配置要在盘上存两遍（原件与解析快照），且解析快照的字段名随后者演进。
 
 \textbf{汇总口径（契约，\texttt{experiment/实验与评价体系.md} \S1.2）}：
 个体指标先在 \textbf{seed 内对个体取等权均值}，得到该 seed 的一行；
@@ -114,7 +114,7 @@ $n<2$ 时 \texttt{std} 记 \texttt{null}）。这一先内后外的顺序保证�
 环境对照图另有 \texttt{scripts/make\_env\_compare.py}（读
 \texttt{results/tables/exp\_env\_*\_summary.json}，出比值与绝对量双面板）。
 
-\subsection{图的可回溯性与图 $\to$ 数据表对应}
+\subsection{图的可回溯性及其与数据表的对应}
 
 \textbf{每张跨 seed 报告图都带脚注 \texttt{experiment\_id @ git\_commit}}：
 \emph{git} 短哈希取自任一 run 目录的 \texttt{git\_commit.txt}，
@@ -129,9 +129,9 @@ $n<2$ 时 \texttt{std} 记 \texttt{null}）。这一先内后外的顺序保证�
 逐 sheet 写明这张 sheet 是什么、来自哪个脚本、什么口径，
 并附 \texttt{experiment\_id} / \texttt{git\_commit} 等溯源项；其余 sheet 一律\textbf{原始数据}
 （列名保持英文原名）。
-\emph{理由}：把图与其底层数据解耦，后续统一美化时\textbf{改样式不改数据}，
+其依据是把图与其底层数据解耦，后续统一美化时\textbf{改样式不改数据}，
 也便于第三方直接取数复算，而不必从 PNG 里读数。
-\emph{代价}：每个实验目录多一层 \texttt{data/} 与一份 Excel（体积远大于图本身），
+代价在于每个实验目录多一层 \texttt{data/} 与一份 Excel（体积远大于图本身），
 且历史图集需重跑一次出图脚本才补齐该文件，例如本轮的
 \texttt{exp\_arena\_expert\_ref\_v2} 图集在引入本条约定之前生成，尚无配套
 \texttt{.xlsx}；重跑 \texttt{make\_figs.py} 即同时重出图与表。

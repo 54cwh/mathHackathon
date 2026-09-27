@@ -18,21 +18,19 @@
 生成。管线为
 
 \begin{equation}\label{method:eq-pipeline}
-\texttt{configs} \;\to\; \text{SeedManager} \;\to\; G
-\;\xrightarrow{\;D_\Theta\;}\; (A,Z,\tau,W^{(0)},M)
-\;\xrightarrow{\;\text{DanioNet}\;}\; \mathcal{T}
-\;\xrightarrow{\;\mathcal{F}\;}\; F
-\;\xrightarrow{\;\mathcal{R}\;}\; \mathcal{P}_{t+1} ,
+\texttt{configs} \;\text{ 经 SeedManager 得 }\; G
+\;\text{ 经 } D_\Theta \text{ 得 }\; (A,Z,\tau,W^{(0)},M)
+\;\text{ 再由 DanioNet 得 }\; \mathcal{T}
+\;\text{ 经 }\mathcal{F}\text{ 评 }\; F
+\;\text{ 经 }\mathcal{R}\text{ 产生 }\; \mathcal{P}_{t+1} ,
 \end{equation}
 
 其中 $G$ 为人工二倍体基因组，$D_\Theta$ 为发育算子，$\mathcal T$ 为行为轨迹，
 $F$ 为适应度，$\mathcal P_{t+1}$ 为下一代种群（与 \S\ref{sec:intro} 式~\eqref{eq:pipeline} 同义，
-此处展开为可执行链路）。链路各环的归属为：\texttt{genome}（DNA与motif）$\to$
-\texttt{development}（GRN / RGCD发育）$\to$ \texttt{connectome}（DanioNet）$\to$
-\texttt{arena}（20\,Hz $\times$ 600步 / episode，即30\,s）。
+此处展开为可执行链路）。链路各环的归属为：\texttt{genome}（DNA与motif）、\texttt{development}（GRN / RGCD发育）、\texttt{connectome}（DanioNet）、\texttt{arena}（20\,Hz $\times$ 600步 / episode，即30\,s）。
 
 \textbf{理由}：待检验的命题链是
-不同DNA $\Rightarrow$ 不同架构 $\Rightarrow$ 不同行为 $\Rightarrow$ 不同环境不同演化结局，
+不同DNA，故不同架构，故不同行为，故不同环境不同演化结局，
 本质是受控对照实验，只有仿真能做到只改一个碱基、其余全同。因此本项目
 \textbf{不使用任何外部数据集训练}，全部数据由受控仿真生成，每个数字都能由
 同一 \texttt{config} 文件与同一 \texttt{master seed}重放
@@ -43,9 +41,9 @@ Arena的随机源尚未按命名空间拆分（出生与逐步游走共用一条
 因此跨模块的按模块重放目前做不到，只能整条链路重跑。
 
 \paragraph{三条同源分支。}Arena之后数据分成三条并行分支，三者\textbf{同源}：
-(i) \textbf{专家轨迹}（由 \texttt{ExpertPolicy} 驱动）$\to$ BC训练 $\to$ $\Delta W$；
-(ii) \textbf{事件日志} $\to$ 实验指标；
-(iii) \textbf{帧快照}（位置 / 朝向 / 能量）$\to$ WebSocket实时推送（仅现场演示，不落盘）。
+(i) \textbf{专家轨迹}（由 \texttt{ExpertPolicy} 驱动）、BC训练、$\Delta W$；
+(ii) \textbf{事件日志}、实验指标；
+(iii) \textbf{帧快照}（位置 / 朝向 / 能量）、WebSocket实时推送（仅现场演示，不落盘）。
 其中 (ii) 与 (iii) 的关系是\textbf{单向同源}：磁盘事件日志是推送的\emph{超集}，
 推送的每个事件都能在落盘日志中找到，而日志里有只记录、不推送的事件（例如 $48\times48$ 连接矩阵）。
 两路共用同一 \texttt{(experiment\_id, episode\_id, seq)} 生成器，保证可对齐。
@@ -55,8 +53,8 @@ $W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，$L$ 只更新连接权重的\emph{�
 \textbf{不进入下一代}：
 
 \begin{equation}\label{method:eq-boundary}
-\text{DNA} \to \text{GRN} \to \text{发育（RGCD）} \to W^{(0)}
-\to \text{当代学习（BC）} \to \Delta W \quad(\text{不遗传});
+\text{DNA 经 GRN 到发育（RGCD），得 } W^{(0)}
+\text{再经当代学习（BC），得 } \Delta W \quad(\text{不遗传});
 \end{equation}
 
 后代只继承DNA，并从发育重新开始。这是genomic bottleneck的核心主张
@@ -73,11 +71,10 @@ $W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，$L$ 只更新连接权重的\emph{�
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{fig_pipeline}
-  \caption{整体数据流（F12）。骨架为 \texttt{configs}（含seed）$\to$ Seed Manager $\to$
-  genome（DNA与motif）$\to$ 发育（GRN / RGCD）$\to$ 连接组（DanioNet）$\to$ Arena
-  （$20$\,Hz $\times$ $600$ 步）；Arena \textbf{之后}分成三条并行同源分支：专家轨迹 $\to$ BC
-  训练 $\to$ $\Delta W$、事件日志 $\to$ 实验指标、帧快照 $\to$ WS推送（仅演示、不落盘）；
-  再由 \texttt{fitness} $\to$ \texttt{selection}/\texttt{drift} 产生下一代genome。
+  \caption{整体数据流（F12）。骨架为 \texttt{configs}（含seed）、Seed Manager、genome（DNA与motif）、发育（GRN / RGCD）、连接组（DanioNet）、Arena
+  （$20$\,Hz $\times$ $600$ 步）；Arena \textbf{之后}分成三条并行同源分支：专家轨迹、BC
+  训练、$\Delta W$、事件日志、实验指标、帧快照、WS推送（仅演示、不落盘）；
+  再由 \texttt{fitness}、\texttt{selection}/\texttt{drift} 产生下一代genome。
   红虚线框与红虚线边标出\textbf{遗传边界}：$\Delta W$ 是\emph{当代}的、\textbf{不遗传}，
   后代只继承DNA并从发育重新开始。底部的 \texttt{results/runs/}（不入库）与
   \texttt{artifacts/}（入库）是两个去向。节点与边的逐条出处（\texttt{core} \S2等）见同名
@@ -116,9 +113,9 @@ q(G)=\tfrac12\bigl(q^{(h1)}+q^{(h2)}\bigr)\in[0,1]^8 ,
 \paragraph{选择 / 理由 / 代价（基因型层）。}
 
 \begin{description}
-  \item[选择] 二倍体、两位点（A/B位点分处两对染色体），等位基因效应\textbf{只经 $q(G)\to$ GRN传导}。
-  \item[理由] 二倍体与独立分配是孟德尔式结构分离（RQ5）的前提；把效应压到 $q(G)$ 一条通路，
-        才能让单碱基 $\to$ 结构的变化可归因（RQ2）。
+  \item 二倍体、两位点（A/B位点分处两对染色体），等位基因效应\textbf{只经 $q(G)$ 传给 GRN}。
+  \item 二倍体与独立分配是孟德尔式结构分离（RQ5）的前提；把效应压到 $q(G)$ 一条通路，
+        才能让单碱基、结构的变化可归因（RQ2）。
   \item[代价] 位点表达量 $E_A,E_B$ 因此\textbf{不进入发育}，只作为报告层的阈值读出
         （默认\textbf{单轴}：观测轴 $N=|M|$ 按基因型期望档二分；两轴 $2\times2$ 为可选口径）。
         其中 $N$ 读数须\textbf{逐seed居中}（基线 = 该seed分层集读数中位数）：期望档是
@@ -127,22 +124,22 @@ q(G)=\tfrac12\bigl(q^{(h1)}+q^{(h2)}\bigr)\in[0,1]^8 ,
 \end{description}
 
 \begin{description}
-  \item[选择] 两条同源链的聚合算子取\textbf{加性平均}（$q=\tfrac12(q^{(h1)}+q^{(h2)})$）。
-  \item[理由] 加性是定量遗传的标准基线 \citep{bib138_fisher1918}，且gene dosage语义清晰。
+  \item 两条同源链的聚合算子取\textbf{加性平均}（$q=\tfrac12(q^{(h1)}+q^{(h2)})$）。
+  \item 加性是定量遗传的标准基线 \citep{bib138_fisher1918}，且gene dosage语义清晰。
   \item[代价] 加性会\textbf{抹平完全显性}；故把逐motif取max（完全显性投影）留作
         消融基线，两类聚合下的结果需并列报告。
 \end{description}
 
 \begin{description}
-  \item[选择] motif相似度用简化式 $a=1-d_H/|M_k|$（等价于每列one-hot、失配等权的退化PWM）。
-  \item[理由] 可解释、可编辑：单碱基改动对 $q$ 的影响可以直接读出。
+  \item motif相似度用简化式 $a=1-d_H/|M_k|$（等价于每列one-hot、失配等权的退化PWM）。
+  \item 可解释、可编辑：单碱基改动对 $q$ 的影响可以直接读出。
   \item[代价] 标准表示是PWM/PSSM；本式\textbf{丢失位置权重}，须在报告中声明为简化，
         并配PWM对照。
 \end{description}
 
 \begin{description}
-  \item[选择] motif目录由master seed \textbf{一次抽样、全实验固定}。
-  \item[理由] 目录固定后，DNA差异 $\to$ 结构差异不再混入目录本身的随机波动。
+  \item motif目录由master seed \textbf{一次抽样、全实验固定}。
+  \item 目录固定后，DNA差异、结构差异不再混入目录本身的随机波动。
   \item[代价] 跨实验比较必须共享同一master seed家族，否则 $q(G)$ 的坐标系不同，不可直接比较。
 \end{description}
 
@@ -203,9 +200,9 @@ $W^{(0)}$ 初始有效权重、$M$ 活跃神经元掩码。
 \paragraph{选择 / 理由 / 代价（发育层）。}
 
 \begin{description}
-  \item[选择] 六类细胞类型（sensory / prey / threat / integrator\_memory / inhibitory / motor），
+  \item 六类细胞类型（sensory / prey / threat / integrator\_memory / inhibitory / motor），
         由6维one-hot域偏置 $\mathbf c_{domain}$ 保证各谱系具备developmental competence。
-  \item[理由] 六类是\textbf{功能抽象}，划分参照斑马鱼感觉运动回路与全脑连接组组织
+  \item 六类是\textbf{功能抽象}，划分参照斑马鱼感觉运动回路与全脑连接组组织
         \citep{bib6_petrucco2023,bib7_dunn2016,bib14_dorkenwald2024}；
         它们不对应特定真实细胞类型，只承担让基本回路可长出的角色。
   \item[代价] 真实细胞类型远超6类 \citep{bib84_kunst2019}；且 $\arg\max$ 是离散化理想化，
@@ -213,8 +210,8 @@ $W^{(0)}$ 初始有效权重、$M$ 活跃神经元掩码。
 \end{description}
 
 \begin{description}
-  \item[选择] 连接概率中含\textbf{空间布线代价} $-\lambda d_{ij}$（$\lambda=2.0$，在归一化单位方域上取值）。
-  \item[理由] logit中的线性距离项等价于指数距离规则 $P\propto e^{-\lambda d}$，
+  \item 连接概率中含\textbf{空间布线代价} $-\lambda d_{ij}$（$\lambda=2.0$，在归一化单位方域上取值）。
+  \item logit中的线性距离项等价于指数距离规则 $P\propto e^{-\lambda d}$，
         有充分的连接组学支撑 \citep{bib125_ercseyravasz2013}；
         随机放置已足以复现特异功能连接 \citep{bib123_hill2012}。
   \item[代价] $\lambda$ \textbf{有量纲}，其数值绑定本项目归一化发育单位方域的口径，
@@ -222,16 +219,16 @@ $W^{(0)}$ 初始有效权重、$M$ 活跃神经元掩码。
 \end{description}
 
 \begin{description}
-  \item[选择] 表达相似度项 $\gamma R(\mathbf g_i,\mathbf g_j)$ 取逐分量标准化后的\textbf{双线性}形式，
+  \item 表达相似度项 $\gamma R(\mathbf g_i,\mathbf g_j)$ 取逐分量标准化后的\textbf{双线性}形式，
         $\gamma=1.0$ 固定、零额外参数；按\textbf{弱偏置}使用。
-  \item[理由] 转录组 / 细胞类型相似度预测连线的双线性模型 \citep{bib111_qiao2024,bib112_kovacs2020,bib119_sanes2020}。
+  \item 转录组 / 细胞类型相似度预测连线的双线性模型 \citep{bib111_qiao2024,bib112_kovacs2020,bib119_sanes2020}。
   \item[代价] 单用表达相似度预测连线的证据仅AUC$\approx0.64$（且有反Hebbian的反例
         \citep{bib121_hayashi2022}），故必须报告 $\gamma=0$ 消融，敏感性搜索 $\{0.5,1,2\}$。
 \end{description}
 
 \begin{description}
-  \item[选择] 类型兼容先验 $C$ 取\textbf{人工固定矩阵}，MVP不学习它。
-  \item[理由] 给出抑制性前神经元自抑制、sensory不互相兴奋这类定性符号模式
+  \item 类型兼容先验 $C$ 取\textbf{人工固定矩阵}，MVP不学习它。
+  \item 给出抑制性前神经元自抑制、sensory不互相兴奋这类定性符号模式
         \citep{bib14_dorkenwald2024}，作为结构先验。
   \item[代价] 其数值\textbf{无外部依据}，属项目设计选择；只能作定性参照，不得表述为定量测量。
 \end{description}
@@ -315,9 +312,9 @@ left池主导得 $\omega>0$；区别于离散标签，escape是高威胁状态�
 \paragraph{选择 / 理由 / 代价（网络层）。}
 
 \begin{description}
-  \item[选择] 动力学取漏积分发放的离散形式，$\phi=\tanh$，时间常数 \textbf{逐神经元异质}
+  \item 动力学取漏积分发放的离散形式，$\phi=\tanh$，时间常数 \textbf{逐神经元异质}
         $\tau_i\in[1,10]$。
-  \item[理由] 在20\,Hz（$\Delta t=50$\,ms）下，$\tau_i$ 步等效 $50$–$500$\,ms的
+  \item 在20\,Hz（$\Delta t=50$\,ms）下，$\tau_i$ 步等效 $50$–$500$\,ms的
         \textbf{网络级整合}时间常数，与NMDA / GABA$_B$ 及数百ms决策整合同量级。
         异质性本身是H3的处理变量。
   \item[代价] 作为\textbf{单神经元膜时间常数}该量偏大（皮层约20\,ms），故 $\tau$ 的语义须
@@ -325,14 +322,14 @@ left池主导得 $\omega>0$；区别于离散标签，escape是高威胁状态�
 \end{description}
 
 \begin{description}
-  \item[选择] 动作取均值池化，无新参数。
-  \item[理由] 对池大小不变，且零新参数，不引入额外的可训练自由度。
+  \item 动作取均值池化，无新参数。
+  \item 对池大小不变，且零新参数，不引入额外的可训练自由度。
   \item[代价] 池内\textbf{分布信息被丢弃}（只保留均值），大池与小池的区分只能靠幅度体现。
 \end{description}
 
 \begin{description}
-  \item[选择] left / right motor按发育坐标 $x_i$ 的\textbf{中位数二分}标记。
-  \item[理由] 左右转向竞争与heading-direction回路有生物学对应
+  \item left / right motor按发育坐标 $x_i$ 的\textbf{中位数二分}标记。
+  \item 左右转向竞争与heading-direction回路有生物学对应
         \citep{bib6_petrucco2023,bib7_dunn2016}；中位数二分保证两池非空，
         直接满足发育viability。
   \item[代价] 区别于世界坐标，位置是\textbf{归一化发育方域坐标}，故left/right是该轴上的
@@ -340,8 +337,8 @@ left池主导得 $\omega>0$；区别于离散标签，escape是高威胁状态�
 \end{description}
 
 \begin{description}
-  \item[选择] 区别于原始像素，输入取12维\textbf{结构化感知向量}。
-  \item[理由] 捕食 / 威胁分通道对应斑马鱼视觉的捕食与威胁回避通路
+  \item 区别于原始像素，输入取12维\textbf{结构化感知向量}。
+  \item 捕食 / 威胁分通道对应斑马鱼视觉的捕食与威胁回避通路
         \citep{bib8_trivedi2013,bib58_temizer2015,bib60_semmelhack2014}；
         饥饿 / 能量对应内部状态对决策的调制 \citep{bib9_filosa2016,bib10_zaupa2024}。
   \item[代价] 结构化编码本身是建模假设（区别于从像素学得）；且\emph{编码规则}
@@ -388,7 +385,7 @@ $\Delta W=W-W^{(0)}$ 是导出量。支撑外与padding行列恒0，并从损失
 样本；每条episode只记录1条受控鱼（环境内其余个体照常存在以提供真实感知上下文，
 但不入轨迹），故标准预算200条episode对应约 $1.2\times10^{5}$ 个step样本。
 
-\paragraph{训练。}$\Delta W$ 是\textbf{逐个体}的：DNA不同 $\Rightarrow$ 网络不同，
+\paragraph{训练。}$\Delta W$ 是\textbf{逐个体}的：DNA不同，故网络不同，
 故每个当代个体各自训练自己的网络（同一份专家数据、各自的 $\Theta$）。
 因 $h^{0}=\mathbf 0$ 时 $W h^{0}=0$，单步 $\partial L/\partial\Theta\equiv0$，
 故按episode顺序\textbf{整段展开BPTT}：每次更新抽64条episode为一batch
@@ -424,7 +421,7 @@ $R_\omega=2,R_v=1$ 为取值跨度，权重整体缩放至 $\lambda_\omega+\lamb
 
 \subsection{演化闭环：fitness、选择与漂变}\label{method:evo}
 
-\textbf{选择}：闭环为 $F\to$ 选择 / 漂变 $\to$ 下一代 $G'$，其中选择算子取
+\textbf{选择}：闭环为 $F$ 经选择与漂变得到下一代 $G'$，其中选择算子取
 \textbf{二元锦标赛}、繁殖规模\textbf{恒定}。
 
 \paragraph{适应度。}用四项原始行为指标的加权和
@@ -446,8 +443,8 @@ $\mu=0.001$ per base per gamete（256\,bp单倍体对应每个配子期望0.256�
 \paragraph{选择 / 理由 / 代价（演化层）。}
 
 \begin{description}
-  \item[选择] 适应度取四项\textbf{代内min-max归一}后的加权和，权重 $0.35/0.25/0.20/0.20$。
-  \item[理由] 四项覆盖生存—觅食—避敌—能量四个生态维度；代内归一使各分量与量纲无关，
+  \item 适应度取四项\textbf{代内min-max归一}后的加权和，权重 $0.35/0.25/0.20/0.20$。
+  \item 四项覆盖生存—觅食—避敌—能量四个生态维度；代内归一使各分量与量纲无关，
         也让权重之和为1，便于直接读出相对重要性。
   \item[代价] $F$ 因此\textbf{只是代内相对分数}，\textbf{不可跨代、跨环境比较}，
         跨代 / 跨环境一律改用原始指标（存活步数 / 捕获数 / 逃脱数 / 能量）；
@@ -455,8 +452,8 @@ $\mu=0.001$ per base per gamete（256\,bp单倍体对应每个配子期望0.256�
 \end{description}
 
 \begin{description}
-  \item[选择] 二元锦标赛（$k=2$、有放回抽样），取适应度较大者为亲本；不使用比例 / softmax选择。
-  \item[理由] 选择压力\textbf{尺度无关}：锦标赛对适应度的平移 / 线性变换不变，且在期望适应度
+  \item 二元锦标赛（$k=2$、有放回抽样），取适应度较大者为亲本；不使用比例 / softmax选择。
+  \item 选择压力\textbf{尺度无关}：锦标赛对适应度的平移 / 线性变换不变，且在期望适应度
         分布上等价于最大线性排名 \citep{bib136_blickle1996,bib137_eiben2015}；
         而比例选择的强度与适应度尺度不可分离 \citep{bib135_goldberg1991}，
         后者在小种群、含噪的单episode适应度下不可接受。
@@ -466,17 +463,17 @@ $\mu=0.001$ per base per gamete（256\,bp单倍体对应每个配子期望0.256�
 \end{description}
 
 \begin{description}
-  \item[选择] 亲本池\textbf{只含viable个体}；non-viable排除（其 $F\equiv0$）。
-  \item[理由] non-viable是发育层面的失败，不应获得繁殖机会。
+  \item 亲本池\textbf{只含viable个体}；non-viable排除（其 $F\equiv0$）。
+  \item non-viable是发育层面的失败，不应获得繁殖机会。
   \item[代价] 本规则在正式配置下\textbf{不产生代价}：随机 $q$ 下发育通过率实测为 $100\%$
         （\S\ref{method:dev}；八项判据零次触发），故\textbf{亲本池即全部 $48$ 个个体}；
         该规则仅在门禁真正分离时生效（正式配置下为守护路径，不触发）；viable个体少于2个，配对不可能，本次繁殖判失败并记录运行级事件。
 \end{description}
 
 \begin{description}
-  \item[选择] 每代\textbf{恒产 $N=48$ 个后代}，世代\textbf{不重叠}（亲代不保留）；
+  \item 每代\textbf{恒产 $N=48$ 个后代}，世代\textbf{不重叠}（亲代不保留）；
         non-viable新生儿仍计入下一代（$F=0$）但不进亲本池。
-  \item[理由] 出生数恒定使\textbf{漂变强度跨代可比}（可变出生数会把漂变与选择混淆）；
+  \item 出生数恒定使\textbf{漂变强度跨代可比}（可变出生数会把漂变与选择混淆）；
         世代不重叠使一代的语义干净。
   \item[代价] 逐代计算开销恒定。正式配置下发育通过率实测为 $100\%$
         （\S\ref{method:dev}），故新生儿全部进入Arena，\textbf{有效评估样本不随代波动}。
@@ -485,8 +482,8 @@ $\mu=0.001$ per base per gamete（256\,bp单倍体对应每个配子期望0.256�
 \end{description}
 
 \begin{description}
-  \item[选择] $\mu=0.001$ per base per gamete的SNP替换率。
-  \item[理由] 与数字演化惯例同量级（Avida默认per-site $\approx0.0075$），属计算抽象参数。
+  \item $\mu=0.001$ per base per gamete的SNP替换率。
+  \item 与数字演化惯例同量级（Avida默认per-site $\approx0.0075$），属计算抽象参数。
   \item[代价] 它比脊椎动物真实germline碱基替换率（约 $5.97\times10^{-9}$/site/代）
         高约 $10^{5}$ 倍，故\textbf{不可作生物学参数解读}。
 \end{description}

@@ -11,7 +11,7 @@
 由此产生两个可检验的问题，它们构成本文的主线：
 
 \begin{enumerate}
-  \item 若让\textbf{网络架构本身}也由基因组 $\to$ 发育 $\to$ 连接组生成，
+  \item 若让\textbf{网络架构本身}也由基因组、发育、连接组生成，
         能否得到既\textbf{可用}（可完成任务）又\textbf{多样}（不同基因型给出系统性不同的结构）的网络？
   \item 若把学习严格限制为\textbf{当代权重的有界扰动}且\textbf{不接受其遗传}，
         要为此付出什么代价？这一限制究竟是负担，还是塑造了可演化的结构？
@@ -20,12 +20,12 @@
 我们构建 \textsc{EvoGenesis} 作为回答上述问题的\textbf{可复现计算实验平台}。
 其数据流为（各算子的数学定义见 \S\ref{sec:method} 与 \texttt{问题定义与研究假设.md}）：
 \begin{equation}\label{eq:pipeline}
-G \;\xrightarrow{\;D_{\Theta}\;}\; (A,Z,\tau,W^{(0)},M)
-\;\xrightarrow{\;\text{DanioNet}\;}\; \mathcal{T}
-\;\xrightarrow{\;\mathcal{F}\;}\; F
-\;\xrightarrow{\;\mathcal{R}\;}\; \mathcal{P}_{t+1},
+G\;\text{ 经 } D_{\Theta} \text{ 得 }\; (A,Z,\tau,W^{(0)},M)
+\;\text{ 再由 DanioNet 得 }\; \mathcal{T}
+\;\text{ 经 }\mathcal{F}\text{ 评 }\; F
+\;\text{ 经 }\mathcal{R}\text{ 产生 }\; \mathcal{P}_{t+1},
 \end{equation}
-其中 $G$ 为人工二倍体基因组，$D_\Theta$ 为发育算子（GRN $\to$ 细胞命运 $\to$ 连接组），
+其中 $G$ 为人工二倍体基因组，$D_\Theta$ 为发育算子（GRN、细胞命运、连接组），
 $A,Z,\tau,W^{(0)},M$ 分别为连接矩阵、细胞身份、时间常数、发育初始权重与活跃神经元掩码，
 $\mathcal{T}$ 为个体在环境 $E$ 中的行为轨迹，$F$ 为适应度，$\mathcal R$ 为代际更新。
 \textbf{当代学习}发生在 $\mathcal{T}$ 之前：$W^{*}=L(W^{(0)},A,Z,\tau,\mathcal{D},K)$，
@@ -42,7 +42,7 @@ $L$ 只更新连接权重的幅度，且产生的增量 $\Delta W$ 不进入下�
 \begin{itemize}
   \item \textbf{RQ1}：紧凑基因组能否经发育算子生成\textbf{多样且可运行}的网络？\quad 对应 \textbf{H1}：
         不同基因组在相同随机种子控制下产生\textbf{系统性}的连接组差异。
-  \item \textbf{RQ2}：单碱基变化能否经motif $\to$ GRN $\to$ 连接组产生连续或突变式的结构变化？
+  \item \textbf{RQ2}：单碱基变化能否经motif、GRN、连接组产生连续或突变式的结构变化？
   \item \textbf{RQ3}：异质时间常数 $\tau_i$ 与发育生成的稀疏拓扑，是否改变性能、效率或鲁棒性？
         \quad 对应 \textbf{H3}（异质 $\tau_i$ 形成与同质 $\tau$ 不同的\textbf{性能—效率权衡}）
         与 \textbf{H4}（空间布线代价改变网络的局部性、稀疏性与有效边效率）。
@@ -93,7 +93,7 @@ H2采用Mantel检验，二者均不依赖3对3置换；其余结论以效应量�
 \citep{bib223_stanley2009}。本文与之有三处差别：
 (i) 搜索对象是\textbf{基因组}（DNA与motif），区别于架构：架构只是发育算子的产物，
 同源基因组与不同随机种子、单碱基扰动本身即是可测量的变异来源（RQ1/RQ2）；
-(ii) 生成规则是\textbf{发育过程}（GRN $\to$ 细胞命运 $\to$ RGCD），
+(ii) 生成规则是\textbf{发育过程}（GRN、细胞命运、RGCD），
 而HyperNEAT的substrate布局与几何是\textbf{给定}的、CPPN只做坐标到权重的映射
 （其增强版ES-HyperNEAT \citep{bib124_risi2012} 让位置与密度也可演化，但仍无基因组层面的显式结构）；
 (iii) 适应度来自\textbf{闭环生态仿真}，区别于静态基准。近年用发育程序长出网络的近作
