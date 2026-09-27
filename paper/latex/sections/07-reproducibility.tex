@@ -1,8 +1,8 @@
 \section{可复现性}\label{sec:repro}
 
-本章给出「从干净环境到本文每一个数字」的完整路径，
+本章给出从干净环境到本文每一个数字的完整路径，
 并\textbf{显式写出当前尚不具备的复现能力}：按仓库硬约束，能一条命令重跑的写清命令，
-不能重放的写清边界，不以「结果可复现」一句带过。
+不能重放的写清边界，不以结果可复现一句带过。
 
 \textbf{复现判据}沿用 \texttt{core/核心机制与数据流.md} \S3：
 \emph{同一 \texttt{(config 文件, master seed)} 在\textbf{同设备、同线程数}下结果一致；
@@ -21,7 +21,7 @@ PyTorch 不保证数学等价的计算得到逐位一致的结果 \citep{bib163_
 (i)~\textbf{Python 版本不可退}：仓库中已有只有 3.12 才能解析的语法
 （\texttt{core/config.py} 的 PEP 695 泛型），3.11 下连测试收集都会失败。
 (ii)~\textbf{裸 \texttt{uv sync} 会污染锁}：在\emph{未配置镜像源}的 shell 里直接
-\texttt{uv sync}，uv 会按默认源重新解析并\textbf{整份改写} \texttt{uv.lock}——
+\texttt{uv sync}，uv 会按默认源重新解析并\textbf{整份改写} \texttt{uv.lock}，
 实测 2750 增 / 2750 删，版本与哈希全同，只是 registry 由清华源换成
 \texttt{pypi.org}，同时从 \texttt{pypi.org} 拉取约 1.9\,GB 的 \texttt{torch}。
 根因是清华源\textbf{不在仓库内}（\texttt{pyproject.toml} 只登记
@@ -32,7 +32,7 @@ PyTorch 不保证数学等价的计算得到逐位一致的结果 \citep{bib163_
 
 \emph{代价}：新增 / 升级依赖必须显式执行一次\emph{不带} \texttt{--frozen} 的同步并提交
 \texttt{uv.lock}，否则新依赖不会进入环境；协作者若本地已用默认源改写过锁，
-须先还原（\texttt{git checkout -- uv.lock}）再 \texttt{--frozen}——
+须先还原（\texttt{git checkout -- uv.lock}）再 \texttt{--frozen}，
 该改写不含任何真实依赖变更，不应提交。
 
 \subsection{从 master seed 到 run 目录}
@@ -45,7 +45,7 @@ NumPy \texttt{SeedSequence} 派生：命名空间序号 $ns$（注册表
 $S_{ns}=\texttt{SeedSequence}([ns,\ master\_seed])$，
 实体序号 $t$ 取 $C(ns,t)=S_{ns}.\texttt{spawn}(k)[t]$，
 整数子种子 $g=C.\texttt{generate\_state}(1,\texttt{uint32})[0]$。
-两条设计约束直接决定「换台机器能不能对上」：
+两条设计约束直接决定换台机器能不能对上：
 变化 ID \textbf{前置}（$[ns, master\_seed]$ 而非反序），
 且实体序号 $t$ 必须由\textbf{稳定 ID}（\texttt{fish\_id} / \texttt{genome\_id} /
 \texttt{generation} / episode 序号）确定性映射，\textbf{不得使用调用顺序}。
@@ -57,7 +57,7 @@ $S_{ns}=\texttt{SeedSequence}([ns,\ master\_seed])$，
 \texttt{metrics.csv} 里，任何人都可据此重算，不必信任本文报出的汇总数。
 
 \textbf{目录布局的唯一 owner 是 \texttt{scripts/run\_experiment.py}}：
-它建目录并落四件「固定下来才能重放」的东西——\texttt{config\_snapshot/<配置文件名>.yaml}
+它建目录并落四件固定下来才能重放的东西，\texttt{config\_snapshot/<配置文件名>.yaml}
 （原始副本）、\texttt{arena\_config\_resolved.json}（\emph{解析后}实际生效的
 \texttt{ArenaConfig} 快照）、\texttt{seed.txt}、\texttt{git\_commit.txt}，外加
 \texttt{metadata.json}。
@@ -68,7 +68,7 @@ $S_{ns}=\texttt{SeedSequence}([ns,\ master\_seed])$，
 \textbf{汇总口径（契约，\texttt{experiment/实验与评价体系.md} \S1.2）}：
 个体指标先在 \textbf{seed 内对个体取等权均值} $\to$ 该 seed 的一行；
 再沿 \textbf{seed 轴}报告 $\text{mean}\pm\text{std}$（样本标准差，$n-1$；
-$n<2$ 时 \texttt{std} 记 \texttt{null}）。这一「先内后外」的顺序保证每个 seed 权重相等，
+$n<2$ 时 \texttt{std} 记 \texttt{null}）。这一先内后外的顺序保证每个 seed 权重相等，
 不会被某个 seed 中个体偏多而放大（口径的后果与阅读警示见 \S\ref{sec:exp-metrics}）。
 
 \subsection{全流程命令链}
@@ -114,32 +114,32 @@ $n<2$ 时 \texttt{std} 记 \texttt{null}）。这一「先内后外」的顺序�
 环境对照图另有 \texttt{scripts/make\_env\_compare.py}（读
 \texttt{results/tables/exp\_env\_*\_summary.json}，出比值与绝对量双面板）。
 
-\subsection{图的可回溯性与「图 $\to$ 数据表」对应}
+\subsection{图的可回溯性与图 $\to$ 数据表对应}
 
 \textbf{每张跨 seed 报告图都带脚注 \texttt{experiment\_id @ git\_commit}}：
 \emph{git} 短哈希取自任一 run 目录的 \texttt{git\_commit.txt}，
 故拿到一张图即可回到产生它的那次 run 与那个提交。
-图的文字\textbf{一律用英文}——matplotlib 默认字体不含 CJK，中文会渲染成方框；
+图的文字\textbf{一律用英文}，matplotlib 默认字体不含 CJK，中文会渲染成方框；
 中文叙述放表格（表与图注的数字口径警示另见 \S\ref{sec:exp-metrics}）。
 
 \textbf{每张图都有同名数据表}：约定为
 \texttt{<fig\_dir>/<fig\_name>.png} 配 \texttt{<fig\_dir>/data/<fig\_name>.xlsx}
-——\textbf{同名即对应}，只多一层 \texttt{data/}，
+，\textbf{同名即对应}，只多一层 \texttt{data/}，
 不需要人工维护映射表。每个工作簿的\textbf{第一个 sheet 固定为 \texttt{\_manifest}}，
-逐 sheet 写明「这张 sheet 是什么、来自哪个脚本、什么口径」，
+逐 sheet 写明这张 sheet 是什么、来自哪个脚本、什么口径，
 并附 \texttt{experiment\_id} / \texttt{git\_commit} 等溯源项；其余 sheet 一律\textbf{原始数据}
 （列名保持英文原名）。
 \emph{理由}：把图与其底层数据解耦，后续统一美化时\textbf{改样式不改数据}，
 也便于第三方直接取数复算，而不必从 PNG 里读数。
 \emph{代价}：每个实验目录多一层 \texttt{data/} 与一份 Excel（体积远大于图本身），
-且历史图集需重跑一次出图脚本才补齐该文件——例如本轮的
+且历史图集需重跑一次出图脚本才补齐该文件，例如本轮的
 \texttt{exp\_arena\_expert\_ref\_v2} 图集在引入本条约定之前生成，尚无配套
 \texttt{.xlsx}；重跑 \texttt{make\_figs.py} 即同时重出图与表。
 
 \subsection{入库与不入库的边界}
 
 \texttt{results/**} 被 \texttt{.gitignore} 忽略（仅保留空目录占位），
-\textbf{体积原因不入库}——其上所有图与表\textbf{按需重新生成}，而不是随仓库分发。
+\textbf{体积原因不入库}，其上所有图与表\textbf{按需重新生成}，而不是随仓库分发。
 由此产生一条编译纪律：论文用图必须\textbf{复制}进 \texttt{paper/latex/figs/}
 （该目录自包含、可提交），\textbf{不得}让 \texttt{\textbackslash includegraphics}
 指向 \texttt{results/}，否则他机编译失败。
@@ -150,21 +150,21 @@ $n<2$ 时 \texttt{std} 记 \texttt{null}）。这一「先内后外」的顺序�
 默认忽略、但对 \texttt{artifacts/**} 开白名单，正是为这条边界服务。
 \textbf{须如实声明}：该目录目前只有占位资产，
 冻结的 Demo 种群与 checkpoint 尚未提交（\texttt{core} \S2 执行清单中该项仍未勾选），
-故「现场离线可复现」目前只在\emph{代码与种子}层面成立，不在\emph{权重资产}层面成立。
+故现场离线可复现目前只在\emph{代码与种子}层面成立，不在\emph{权重资产}层面成立。
 
 \subsection{一局仿真的确定性与最脆弱处}
 
 Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}随机源，
 故同一 arena 反复 \texttt{reset()} 得到逐字段一致的初始局面；
 且每步的随机数消费只由\emph{该步状态}决定（存活猎物数 $\times$ 一次正态抽样），
-因此「推进到第 $k$ 步」与「分几次调用推进到第 $k$ 步」无关（600 步上限内）。
+因此推进到第 $k$ 步与分几次调用推进到第 $k$ 步无关（600 步上限内）。
 两者均有测试守护。
 
 \textbf{最脆弱的一环是拒绝采样 \texttt{\_free\_spot}}：它的\emph{采样次数}
-取决于当前障碍布局，因此它是随机数消费路径的一部分——
+取决于当前障碍布局，因此它是随机数消费路径的一部分，
 一旦改动障碍数量 / 半径范围 / clearance，后续所有实体的随机流会\textbf{整体平移}，
 同一 seed 下的初始世界随之改变，\textbf{历史基线不可直接对比}。
-这条不是实现缺陷，而是「固定 seed」这一承诺的边界：\emph{种子固定的是流，
+这条不是实现缺陷，而是固定 seed这一承诺的边界：\emph{种子固定的是流，
 不是语义}；语义一改，同种子的两局就不再是同一实验。
 因此本文的环境对照遵守\textbf{单因子对照}：每个环境相对基线只改一个驱动，
 未被列出的段一律取默认值，\textbf{不得暗改契约值}（\S\ref{sec:exp-env-groups}）。
@@ -172,7 +172,7 @@ Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}
 \subsection{已知缺口：哪些能重跑，哪些不能}
 
 按同样口径，原第三条 A14（Arena 自建随机源、未走 \texttt{SeedManager}）已于
-2026-09-26 \textbf{闭合}：Arena 现从 \texttt{SeedManager} 取两条整数子种子——
+2026-09-26 \textbf{闭合}：Arena 现从 \texttt{SeedManager} 取两条整数子种子，
 \texttt{arena\_spawn}（id 3，出生 / 再生）与 \texttt{arena\_dynamics}（id 9，逐步游走），
 两者各自独立派生，\textbf{改其一不再平移另一条流}，故\emph{出生布局}与\emph{逐步游走}
 可分别重放，不再是复现粒度的瓶颈。以下两条直接限制本文的复现粒度，
@@ -185,11 +185,11 @@ Arena 侧的确定性由两条机制保障：\texttt{reset()} 会\textbf{重建}
         编排见 \texttt{experiment/代循环编排.md} v1.0），
         故新采轨迹的 \texttt{genome\_id} 对应真实演化出的基因型。
         \textbf{仍未验证}：补线后没有重采轨迹、也没有跑通端到端 BC，
-        故「按基因型分组可用」尚未在真实产物上被证明；
+        故按基因型分组可用尚未在真实产物上被证明；
         现存历史产物（接线前采集）仍是 \texttt{"unknown"}。
   \item \textbf{BC 侧与观测编码。} 演化与学习的\textbf{联合}效果尚未验证
-        （行为克隆未实现），12 维观测的\textbf{编码规则}仍为「草案待确认」，
-        故本文无法给出「学习前 / 学习后」的可复现对照——
+        （行为克隆未实现），12 维观测的\textbf{编码规则}仍为草案待确认，
+        故本文无法给出学习前 / 学习后的可复现对照，
         该对照所需的数据链路本身还不存在（详见 \S\ref{sec:exp-gaps} 与
         \S\ref{sec:limitations}）。
 \end{itemize}

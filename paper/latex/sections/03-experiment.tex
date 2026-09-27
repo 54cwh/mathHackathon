@@ -3,7 +3,7 @@
 本节交代四件事：仿真环境是什么（\S\ref{sec:exp-env}）、环境如何做单因子对照
 （\S\ref{sec:exp-env-groups}）、指标与统计口径如何定义（\S\ref{sec:exp-metrics}）
 与如何汇总（\S\ref{sec:exp-stats}）、以及分析计划如何对应 \S\ref{sec:rq} 的 H1--H5
-（\S\ref{sec:exp-matrix}）。凡是「我们打算怎么分析」的承诺，一律回落到引言
+（\S\ref{sec:exp-matrix}）。凡是我们打算怎么分析的承诺，一律回落到引言
 \S\ref{sec:rq} 已声明的假设；本文不另立新假设。
 
 \subsection{仿真环境}\label{sec:exp-env}
@@ -34,9 +34,9 @@ $E_{t+1}=\mathrm{clip}(E_t-C_{\text{base}}-C_{\text{move}}v_t^2-C_{\text{pen}}p_
 饥饿 $H_t=1-E_t/E_{\max}$，能量归零即死亡；
 吃到猎物后按\textbf{面积守恒带损耗}生长
 $\text{size}\leftarrow\min(\text{size}_{\max},\sqrt{\text{size}^2+g\,\text{size}_{\text{prey}}^2})$，
-故体型增大带来「可捕食更大猎物」的收益，同时付出代谢成本上升与转向灵活性下降
-（$\omega_{\text{eff}}=\omega/[1+k_{\text{turn}}(\text{size}-1)]$）的代价——
-「大」不是单向优势。
+故体型增大带来可捕食更大猎物的收益，同时付出代谢成本上升与转向灵活性下降
+（$\omega_{\text{eff}}=\omega/[1+k_{\text{turn}}(\text{size}-1)]$）的代价，
+大不是单向优势。
 生长增益 $g$ 的取值区间参照开源游戏实现 \citep{bib215_testn.d.}，
 但须声明三点：该来源\textbf{非同行评审}，只作\textbf{工程对照而非学术依据}
 （本仓库仅借鉴机制、自行重写，未复制代码或素材）；
@@ -59,7 +59,7 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
 \textbf{每步至多一次判定（S5）。}鱼每步遍历猎物时，命中第一个 $d<r_{\text{capture}}$
 的猎物即处理并 \texttt{break}，故每鱼每步\textbf{至多}产生一条
 \texttt{capture\_attempt} 或 \texttt{prey\_captured}；
-注意这是「至多一次」而非「恰好一次」——若该步没有任何猎物进入捕获半径，
+注意这是至多一次而非恰好一次，若该步没有任何猎物进入捕获半径，
 则一次判定也不发生。
 
 \textbf{episode 长度固定（A9）。}episode 的结束只由步数决定
@@ -67,14 +67,14 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
 个体死亡只\textbf{冻结该个体}，空种群也不判团灭、不提前结束。
 因此本文所有 episode 的 \texttt{terminated} 与 \texttt{truncated} 标志\textbf{均为 \texttt{False}}。
 \emph{选择}：固定长度、固定分母（生存率 $S=\text{survival\_steps}/600$，线性）。
-\emph{理由}：若「团灭即提前结束」，episode 长度变成内生变量，
+\emph{理由}：若团灭即提前结束，episode 长度变成内生变量，
 会破坏跨 episode / 跨 seed 的适应度可比性。\emph{代价}：幸存个体在种群全灭后
-仍要「空转」到第 600 步，这些步不携带行为信息；代价被接受，因为它换来可比的固定分母。
+仍要空转到第 600 步，这些步不携带行为信息；代价被接受，因为它换来可比的固定分母。
 
 \begin{table}[t]
   \centering
-  \caption{Arena 的关键设定。\textbf{状态}列区分「已定稿」（可被正式实验依赖）
-  与「标定占位」（数值待 play-test 标定，引用其后果时须声明）。}
+  \caption{Arena 的关键设定。\textbf{状态}列区分已定稿（可被正式实验依赖）
+  与标定占位（数值待 play-test 标定，引用其后果时须声明）。}
   \label{tab:arena-config}
   \small
   \begin{tabular}{@{}llll@{}}
@@ -104,8 +104,8 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
 \textbf{感知是受限的。}个体不拥有全图信息，只有左 / 右两条视觉通道、
 有限感知半径与有限视野；网络每步接收一个 12 维观测向量。
 该向量的\textbf{值域与顺序}由 DanioNet 规范冻结，但其\textbf{编码规则}目前仍为
-「草案待确认」（owner 未定稿，见 \S\ref{sec:exp-gaps}），
-这是本文解释「观测 $\to$ 行为」链条时的一个已知缺口。
+草案待确认（owner 未定稿，见 \S\ref{sec:exp-gaps}），
+这是本文解释观测 $\to$ 行为链条时的一个已知缺口。
 
 \subsection{环境对照三组}\label{sec:exp-env-groups}
 
@@ -113,8 +113,8 @@ $30$ s 内真实鱼的质量变化仅 $\sim10^{-5}$ 量级，故\textbf{局内�
 每个环境相对基线（\texttt{default\_arena.yaml}：$n_{\text{prey}}=24$、
 $n_{\text{predators}}=3$）\textbf{只改变一个驱动}。
 \emph{理由}：只有一个驱动变动时，观测到的差异才能归因到该驱动上，
-而不是多个驱动混杂的结果。\emph{代价}：可见的「资源轴」只有一个自由度，
-无法刻画「食物多且天敌也多」这类交互情形——交互效应被有意排除在本轮设计之外。
+而不是多个驱动混杂的结果。\emph{代价}：可见的资源轴只有一个自由度，
+无法刻画食物多且天敌也多这类交互情形，交互效应被有意排除在本轮设计之外。
 未被列出的段（\texttt{world}、\texttt{sensing}、\texttt{energy}、\texttt{growth}、
 \texttt{actors}）一律取默认值，实验环境\textbf{不得暗改契约值}，
 否则对照失效。
@@ -140,26 +140,26 @@ $n_{\text{predators}}=3$）\textbf{只改变一个驱动}。
 \end{table}
 
 \textbf{派生约定：\texttt{prey\_regrowth\_steps} $=\lceil 600/n_{\text{prey}}\rceil$。}
-该量\textbf{不是独立旋钮}，它随 $n_{\text{prey}}$ 机械确定，以避免「多出一个可调参数」
+该量\textbf{不是独立旋钮}，它随 $n_{\text{prey}}$ 机械确定，以避免多出一个可调参数
 带来的自由度。默认 $600/24=25$，与 \texttt{default\_arena.yaml} 一致。
 \emph{选择}：用 \texttt{ceil}（向上取整）而\textbf{不是} \texttt{round}。
 \emph{理由}：$600/48=12.5$ 恰好是一个\textbf{平局}，
 Python 的 \texttt{round} 走银行家舍入会给出 $12$，而 $12$ 的语义是
-「比名义速率更早恢复」——这与「不早于名义速率回复」的约定相反，且平局点的方向
-并无原则性依据；\texttt{ceil} 在平局处无歧义，且统一地取「不早于名义速率」一侧。
+比名义速率更早恢复，这与不早于名义速率回复的约定相反，且平局点的方向
+并无原则性依据；\texttt{ceil} 在平局处无歧义，且统一地取不早于名义速率一侧。
 \emph{代价}：三组的再生间隔系统性偏保守（如 \texttt{food\_rich} 取 13 而非 12），
-使资源轴的真实对比度略被压低——这只会让后续的环境效应结论更保守，不会虚假放大。
+使资源轴的真实对比度略被压低，这只会让后续的环境效应结论更保守，不会虚假放大。
 
 \textbf{前置区分力检查。}在正式跑 Experiment F 之前，先用基线 + 三环境
 $\times$ 3 seed $\times$ 600 步 $\times$ 12 鱼、以 \texttt{ExpertPolicy} 驱动跑了一轮
-区分力检查（表 \ref{tab:env-power}）。表中 $d$ 为「环境均值 $-$ 基线均值」除以合并标准差；
+区分力检查（表 \ref{tab:env-power}）。表中 $d$ 为环境均值 $-$ 基线均值除以合并标准差；
 $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 
 \begin{table}[t]
   \centering
   \caption{环境对照的前置区分力检查（3 seed $\times$ 12 鱼 $\times$ 600 步，
   \texttt{ExpertPolicy} 驱动）。括号内为相对基线的效应量 $d$。
-  最后两行为\textbf{绝对量}——它们才是资源轴的真实信号（见正文）。}
+  最后两行为\textbf{绝对量}，它们才是资源轴的真实信号（见正文）。}
   \label{tab:env-power}
   \small
   \begin{tabular}{@{}lcccc@{}}
@@ -201,19 +201,19 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 \end{enumerate}
 
 据此外推，本轮排期为：Experiment F 先跑 \texttt{predator\_rich}（区分力已证）；
-\texttt{food\_rich} / \texttt{resource\_scarce} 若要作为「资源轴」对照，
+\texttt{food\_rich} / \texttt{resource\_scarce} 若要作为资源轴对照，
 须先\textbf{加大幅度}（或其主指标改用绝对量）后重做本检查。
 这是对环境轴结论的一个\textbf{预先声明的方法限制}：本文在资源轴上不主张
-「比值指标有效应」。
+比值指标有效应。
 
 \subsection{指标与统计口径}\label{sec:exp-metrics}
 
 本节的口径是三处最容易被误读的地方，故逐条写死；
 凡在第 \ref{sec:results} 章引用这些数字，\textbf{必须同时带上本节的口径声明}。
 
-\subsubsection{三个都叫「捕获率」的量，数值差 7 倍}
+\subsubsection{三个都叫捕获率的量，数值差 7 倍}
 
-文献与工程口语里有三个量都常被称作「捕获率」，它们\textbf{不可互换}：
+文献与工程口语里有三个量都常被称作捕获率，它们\textbf{不可互换}：
 
 \begin{enumerate}
   \item \textbf{\texttt{capture\_rate}（主口径）}：$\overline{(\text{captures}_i/\text{episode\_steps})}$，
@@ -226,9 +226,9 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 
 \textbf{主口径取绝对速率、而把接触转化降为诊断列的裁决理由}：
 当前捕获是\textbf{确定性的}（\texttt{growth.capture\_success\_prob}\,$=1.0$ 为配置旋钮默认值，\texttt{arena} \S8 项 a），
-此时任何以「首次接触」为单位的\emph{去重}口径都恒等于 1、零方差；
+此时任何以首次接触为单位的\emph{去重}口径都恒等于 1、零方差；
 而含重复计数的口径（每步每猎物各计一次 / 每鱼每步至多一次）其分母随\textbf{停留步数}
-增长，比值实际上度量的是「\textbf{蹲守程度}」而非捕食技巧——这正是下文右偏的来源。
+增长，比值实际上度量的是\textbf{蹲守程度}而非捕食技巧，这正是下文右偏的来源。
 绝对速率则无偏、且可跨环境直接比较（实测：\texttt{food\_rich} 捕获 55$\to$100、
 \texttt{resource\_scarce} 55$\to$38，都能直接体现）。
 
@@ -237,13 +237,13 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 两者相差 \textbf{7.1 倍}。原因是前者是个体比值的\emph{等权平均}（每条约 $1/12$ 权重，
 把一个只遇到 1 次猎物却恰好捕获的个体与一个遇到 200 次的个体同等看待），
 后者按\emph{遭遇次数加权}。因此\textbf{报任何一个都必须写明是哪一个口径}；
-本文正文与图表所报的比值一律指\textbf{个体比值均值} $\overline{(\text{captures}_i/\text{encounters}_i)}$——即\emph{诊断口径}；主口径是绝对速率 \texttt{capture\_rate}，因落盘 run 早于该口径而未在本章出现。
+本文正文与图表所报的比值一律指\textbf{个体比值均值} $\overline{(\text{captures}_i/\text{encounters}_i)}$，即\emph{诊断口径}；主口径是绝对速率 \texttt{capture\_rate}，因落盘 run 早于该口径而未在本章出现。
 
 \textbf{实现现状（须如实声明）}：主口径 \texttt{capture\_rate} 的\textbf{实现已就位}
 （\texttt{experiment/metrics.py}），但\textbf{本文所依据的全部落盘 run 均早于该口径变更}
-——其 \texttt{metrics.csv} 无 \texttt{capture\_rate} 列——故本文所报的捕食比值数字
+，其 \texttt{metrics.csv} 无 \texttt{capture\_rate} 列，故本文所报的捕食比值数字
 一律为\textbf{诊断口径} \texttt{prey\_capture}，其含义是
-「\textbf{追近的猎里有多少吃到了}，受停留时间影响」，\textbf{不是}捕食成功率。
+\textbf{追近的猎里有多少吃到了}，受停留时间影响，\textbf{不是}捕食成功率。
 重建基线后方可补报主口径；本文不引用未落盘的数字。
 \subsubsection{\texttt{prey\_capture} 的分母语义与不变式}
 
@@ -253,11 +253,11 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 \end{equation}
 分母 \texttt{encounters} 是\textbf{尺寸门之前的纯距离接触计数}：
 鱼每步遍历猎物，遇到\textbf{首个} $d<r_{\text{capture}}$ 的猎物即自增并
-\texttt{break}，故它计的是「进入捕获半径」的次数，\textbf{与尺寸门
+\texttt{break}，故它计的是进入捕获半径的次数，\textbf{与尺寸门
 （$\text{size}_{\text{hunter}}\ge\kappa\,\text{size}_{\text{target}}$）
-和前向锥都无关}。它\textbf{不是}「尝试吃」的次数，也不是「看见」的计数。
+和前向锥都无关}。它\textbf{不是}尝试吃的次数，也不是看见的计数。
 分母取 $\max(\cdot,1)$ 只是数值兜底：\texttt{encounters}\,$=0$ 的个体记 $0.0$，
-\textbf{这表示「没遇到过」而不是「捕食失败」}——基线 run 中有 8/36 个个体属于此类。
+\textbf{这表示没遇到过而不是捕食失败}，基线 run 中有 8/36 个个体属于此类。
 
 \texttt{capture\_attempts} 自 2026-09-26 起只是\textbf{诊断列}，
 \textbf{不进入} \texttt{prey\_capture} 的分子或分母。
@@ -265,10 +265,10 @@ $n=3$ 时标准差本身不稳，故 $d$ 仅作指示。
 \begin{equation}\label{eq:capture-ineq}
   \text{captures}_i \;\le\; \text{capture\_attempts}_i \;\le\; \text{encounters}_i ,
 \end{equation}
-其中 \texttt{capture\_attempts}\,$-$\,\texttt{captures} 即「\textbf{进过口但吃不下}」
+其中 \texttt{capture\_attempts}\,$-$\,\texttt{captures} 即\textbf{进过口但吃不下}
 （猎物进了捕获半径且在前向锥内、但未通过尺寸门）的次数。
 基线 run 中该差额对 36/36 个个体\textbf{全部为 0}，
-即没有任何「进过口但吃不下」的判定发生——这是占位参数
+即没有任何进过口但吃不下的判定发生，这是占位参数
 \texttt{growth.capture\_success\_prob}\,$=1.0$ 的直接后果（见 \S\ref{sec:exp-gaps}）。
 $36/36$ 的不变式在四个环境下均被验证为满足。
 
@@ -285,15 +285,15 @@ $36/36$ 的不变式在四个环境下均被验证为满足。
 因此本报告的引用纪律是：\textbf{凡引用 \texttt{prey\_capture} 这类个体比值的均值，
 必须并列其偏态尾与绝对量}（捕获/episode、遭遇/episode）。
 只报一个 $\overline{\text{captures}_i/\text{encounters}_i}$ 会被少数蹲守个体主导，
-读者会误以为它是「全体个体的典型捕食效率」。
+读者会误以为它是全体个体的典型捕食效率。
 
 \subsubsection{\texttt{energy\_efficiency} 是非正速率，不可与比值同轴}
 
 \texttt{energy\_efficiency} 的定义是
 $r_i=(E_i(T_i)-E_{\max})/T_i$，
-即「终末能量相对容量的\textbf{平均缺口}」。
+即终末能量相对容量的\textbf{平均缺口}。
 它是\textbf{每步速率}（量纲：能量/步），值域为 $(-\infty,0]$，
-\emph{不是} $[0,1]$ 的比值——基线实测约 $-1.031\text{e-}3$/step。
+\emph{不是} $[0,1]$ 的比值，基线实测约 $-1.031\text{e-}3$/step。
 因此作图或并列时必须\textbf{单独分轴}（例如左轴放 0--1 的比值类指标，
 右轴单独放该速率），不可与 ratio 指标共用一根 $[0,1]$ 的轴。
 
@@ -304,10 +304,10 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
 
 \begin{itemize}
   \item \texttt{growth.capture\_success\_prob}\,$=1.0$ 是\textbf{配置旋钮的默认值}
-        （Arena \S8 项 a）：默认即历史行为，表示「满足几何条件即必定捕获」。
+        （Arena \S8 项 a）：默认即历史行为，表示满足几何条件即必定捕获。
         其后果是 \texttt{capture\_attempts} 与 \texttt{captures} 普遍相等
         （本 run 中 36/36 个体的差额为 0），因此部分指标\textbf{偏乐观}。
-        该事实\textbf{不影响}公式 \eqref{eq:prey-capture}——分母已是尺寸门之前的
+        该事实\textbf{不影响}公式 \eqref{eq:prey-capture}，分母已是尺寸门之前的
         \texttt{encounters}；启用 \texttt{growth.capture\_success\_prob}\,$<1$ 后，
         失败会记 \texttt{capture\_attempt(result="missed")}，公式不变，
         该指标自动成为标准成功率。
@@ -315,20 +315,20 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
         \texttt{"unknown"}（Arena 侧向后兼容保留）；实验路径已由构造注入
         经 \texttt{core/ids.py::mint\_id} 铸出的 \texttt{genome\_id}（纯函数、确定性）。
         且\textbf{代循环已接线并冻结}（\texttt{experiment/evolution\_run.py::run\_evolution}，
-        编排「评估 $\to$ 折算 $F$ $\to$ 回填 $\to$ \texttt{advance\_generation}」；
+        编排评估 $\to$ 折算 $F$ $\to$ 回填 $\to$ \texttt{advance\_generation}；
         \texttt{experiment/代循环编排.md} v1.0，2026-09-26；
         \texttt{configs/experiment.yaml} 的 \texttt{generations: 20}），
         故新采轨迹的 \texttt{genome\_id} 对应\emph{真实演化出的}基因型。
         但\textbf{补线后未重采轨迹、也未跑通端到端 BC}，
-        故「按基因型分组可用」\textbf{尚未在真实产物上被证明}；
+        故按基因型分组可用\textbf{尚未在真实产物上被证明}；
         现存历史产物（接线前采集）仍是 \texttt{"unknown"}。
-  \item 12 维观测的\textbf{编码规则}仍为「草案待确认」；
-        \texttt{looming\_rate} 一维\textbf{已按 A5 落地}——\texttt{arena/env.py} 在步首按
+  \item 12 维观测的\textbf{编码规则}仍为草案待确认；
+        \texttt{looming\_rate} 一维\textbf{已按 A5 落地}，\texttt{arena/env.py} 在步首按
         角尺寸扩张率 $(\Delta\theta/\theta)/\Delta t$ 计算、经 $R_{\text{loom}}$ 归一后
         传入 \texttt{sensing.observe()}，故该通道\textbf{已携带信息}；
         仍开放的是其\textbf{编码公式的 owner}（\texttt{arena} \S{}4.1，认领表 A1）。
   \item 演化与学习的\textbf{联合}效果尚未验证（BC 未实现）；
-        「捕获率」三口径中的去重口径（事件 vs 去重后的分母）亦尚未裁决。
+        捕获率三口径中的去重口径（事件 vs 去重后的分母）亦尚未裁决。
 \end{itemize}
 
 \subsection{重复、种子与统计口径}\label{sec:exp-stats}
@@ -337,7 +337,7 @@ $r_i=(E_i(T_i)-E_{\max})/T_i$，
 $\to$ 该 seed 的一行；再沿 \textbf{seed 轴}报告 $\text{mean}\pm\text{std}$
 （样本标准差，$n-1$；$n<2$ 时 \texttt{std} 记 \texttt{null}）。
 逐个体原值全部保留在 \texttt{results/runs/<id>-s<seed>/metrics.csv}，
-任何人都可据此重算。这一「先内后外」的顺序保证了\textbf{每个 seed 的权重相等}，
+任何人都可据此重算。这一先内后外的顺序保证了\textbf{每个 seed 的权重相等}，
 不会被某个 seed 中个体数偏多的情形放大。
 
 \textbf{正式种子。}正式实验的独立随机种子为
@@ -347,7 +347,7 @@ Demo seed 与正式 seed 分离（\texttt{configs/demo\_seed.yaml} 与
 \texttt{configs/experiment\_seeds.yaml}），正式结果不人工挑选表现最好的一次。
 
 \textbf{统计能力的硬限制（必须诚实写出）。}$n=3$ 时，
-「3 对 3」标签置换检验的\textbf{双侧最小 $p\approx0.10$}
+3 对 3标签置换检验的\textbf{双侧最小 $p\approx0.10$}
 （$3$ vs $3$ 共 $\binom{6}{3}=20$ 种划分，双侧最小 $p=2/20$），
 \textbf{在 $0.05$ 水平上根本无法拒绝任何原假设}。
 因此本文\textbf{不依赖跨 seed 的置换检验显著性}，而是把三个跨条件比较
@@ -398,14 +398,14 @@ H1 走 \textbf{within-ensemble} 比较（同一 ensemble 内部的结构变异�
 （\texttt{A\_B\_} / \texttt{A\_bb} / \texttt{aaB\_} / \texttt{aabb}）、
 以及 viability、fitness、神经元数、边数、$\tau$ 统计量；
 跨环境比较用\textbf{原始指标}，不可用代内 min-max 后的分数。
-在跑满代之前，先跑 10 代 pilot，以「\textbf{同环境 seed 间 spread}」作噪声带判断区分力：
-若环境间差落在噪声带内，不得直接以满代结果作「有效应」结论，
-须延长代数或如实报「当前幅度无区分力」。
+在跑满代之前，先跑 10 代 pilot，以\textbf{同环境 seed 间 spread}作噪声带判断区分力：
+若环境间差落在噪声带内，不得直接以满代结果作有效应结论，
+须延长代数或如实报当前幅度无区分力。
 这条门的必要性来自种群规模（48）与重复数（3）都小、\textbf{漂变本身很强}，
 代数过少时漂变会盖过环境效应。
 
 \textbf{实验矩阵的其余部分（概述，细节见 \S\ref{sec:baselines}）。}
-A 用 48 个随机 genome 刻画「基因组 $\to$ 结构统计」的分布；
+A 用 48 个随机 genome 刻画基因组 $\to$ 结构统计的分布；
 B 对固定 haplotype 的 256 个位点\textbf{逐位全部}做确定性碱基替换并跑完整发育
 （不降采样），产出 Genome Sensitivity Map；
 C 对比 MLP / GRU / Fixed Sparse RNN / DanioNet 四种模型，

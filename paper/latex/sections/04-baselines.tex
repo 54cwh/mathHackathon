@@ -49,7 +49,7 @@ DanioNet 相对其余三基线的差与块内置换检验见表~\ref{tab:expc}�
   \caption{块内置换检验（块 $=$ (seed, episode) 共 $6$ 个；同块内四模型共享同一出生布局与
   猎物游走，故\textbf{块内置换模型标签}在强零假设下精确；$2\times10^{4}$ 次重抽样，
   $p$ 为蒙特卡洛估计，同量级差异属抽样噪声）。
-  $\Delta$ 为 DanioNet 减去其余三基线的均值；「更高的块」为 $6$ 块中 DanioNet 领先的块数。}
+  $\Delta$ 为 DanioNet 减去其余三基线的均值；更高的块为 $6$ 块中 DanioNet 领先的块数。}
   \label{tab:expc}
   \small
   \begin{tabular}{@{}lccc@{}}
@@ -70,20 +70,20 @@ DanioNet 相对其余三基线的差与块内置换检验见表~\ref{tab:expc}�
   \end{tabular}
 \end{table}
 
-\emph{读法}：\textbf{没有任何指标达到显著} —— 十个受检指标的最小 $p$ 为 $0.076$，
+\emph{读法}：\textbf{没有任何指标达到显著} ， 十个受检指标的最小 $p$ 为 $0.076$，
 $10$ 次比较的 Bonferroni 校正下 $>0.7$；且 $6$ 个块中 DanioNet 领先的块数一律不超过 $3/6$。
 DanioNet 唯一为正的分量是 \texttt{encounters}（$+7.25$），但它同时在
 \texttt{captures}/\texttt{capture\_rate} 上为\textbf{负}（遇得多、转化少），且都不显著。
 更强的一点：表~\ref{tab:expc-models} 的六项主指标里 DanioNet \textbf{没有一项}高于最佳基线，
 其中\textbf{五项为四模型最低}（仅 \texttt{prey\_capture} 一项 GRU 更低）。
-真正的发现是\textbf{瓶颈在评估预算而非模型质量}：块间方差完全淹没模型效应 ——
+真正的发现是\textbf{瓶颈在评估预算而非模型质量}：块间方差完全淹没模型效应 ，
 \texttt{encounters} 的逐块 $\Delta$ 为 $+20.0,\,+41.1,\,-5.4,\,+6.4,\,-13.5,\,-5.1$，
 跨度 $54.6$，比模型间任何差异大一个数量级。
 Arena 每局约 $2$\,s，而一次训练 $8.8$\,min（\texttt{train\_bc} 恒 $7.68\times10^{5}$ BPTT 步，
 与模型无关）$\Rightarrow$ \texttt{n\_episodes} 是近乎免费的轴、\texttt{n\_agents} 是昂贵的轴；
 要把模型效应从块方差里拉出来，\textbf{应先抬 \texttt{n\_episodes}}（例如 $3\to20$，块数 $6\to40$）。
 两点须照实声明：(i)~$n=2$ 的 $\mathrm{std}$ 只有 $1$ 个自由度，故以上是
-「\textbf{未观测到差异}」，不能读成「无差异」；
+\textbf{未观测到差异}，不能读成无差异；
 (ii)~基线 $v=\tanh(\cdot)\in[-1,1]$ 与 DanioNet $v=\sigma(\cdot)\in[0,1]$ 的\textbf{动作区间口径不同}，
 本轮照实记录、\textbf{未修改基线读出}（\texttt{connectome/DanioNet设计规范.md} \S8）。
 （第三个 seed 未跑完即按限时停止；补跑后 \texttt{scripts/rebuild\_baselines\_table.py} 一行重建即可升到 $n=3$。）
@@ -93,7 +93,7 @@ Arena 每局约 $2$\,s，而一次训练 $8.8$\,min（\texttt{train\_bc} 恒 $7.
 \subsection{消融}
 \todo{w/o GRN；allele 聚合（mean vs max）；homogeneous $\tau$；}
 \todo{w/o spatial wiring cost；BC 有/无 Dale 约束。}
-\todo{实现状态：\textbf{「BC 有/无 Dale 约束」的模型侧开关已实现}——
+\todo{实现状态：\textbf{BC 有/无 Dale 约束的模型侧开关已实现}，
   \texttt{DanioNet(sign\_constrained=False)} 走非约束路径 $W=A\odot\Theta$
   （\texttt{connectome/danionet.py}）；其余消融项\textbf{尚未实现}。
   全部消融项\textbf{均无 runner 与结果}，故本节空缺。}

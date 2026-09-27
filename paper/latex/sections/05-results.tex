@@ -1,6 +1,6 @@
 \section{结果}\label{sec:results}
 
-% 呈现方式（赛题补充说明四）：以图为主；「改之前 vs 改之后」必须同图同轴可比。
+% 呈现方式（赛题补充说明四）：以图为主；改之前 vs 改之后必须同图同轴可比。
 
 \subsection{当前可跑的基线（ExpertPolicy 驱动，非学习后）}
 本节给出\textbf{冻结}基线（3 个正式种子 $1103/2207/3301$ $\times$ 12 鱼 $\times$ 600 步，
@@ -60,13 +60,13 @@
 环境对照（\texttt{food\_rich} / \texttt{predator\_rich} / \texttt{resource\_scarce} 对 \texttt{default}）
 须以 A14 拆分随机流\textbf{之后}的基线重跑（\texttt{exp\_env\_*\_v2}）；
 现存 \texttt{results/tables/exp\_env\_*} 四臂及其基线行均属 A14 前批次，
-其基线即已作废的 \texttt{v2}，故\textbf{效应量暂不写入}（\texttt{AGENTS.md}「禁止 AI 填空」）。
+其基线即已作废的 \texttt{v2}，故\textbf{效应量暂不写入}（\texttt{AGENTS.md}禁止 AI 填空）。
 此处只保留一条不依赖具体数值的\textbf{机制}观察：猎物变多时分子与分母同时上升，
-故比值类指标会\textbf{掩盖}猎物密度效应 —— 这正是需要绝对量读数（图~\ref{fig:env-absolute}）的理由。
+故比值类指标会\textbf{掩盖}猎物密度效应 ， 这正是需要绝对量读数（图~\ref{fig:env-absolute}）的理由。
 
 \subsection{基因型 $\to$ 架构档的可辨识性（penetrance）}
 
-\emph{问题}：发育算子把基因组映射成连接组，但这条映射\emph{不是确定性的} ——
+\emph{问题}：发育算子把基因组映射成连接组，但这条映射\emph{不是确定性的} ，
 同一基因型类的个体仍会因发育期随机性（GRN 初态、\S5 分裂抽签）落在不同架构档上。
 本节量化这种不决定性：以两位点自交（\texttt{AaBb}$\times$\texttt{AaBb}）的四类基因型为条件，
 报告观测架构档等于其期望档的比例 $\mathrm{pen}(g)=P\big(\hat a_i=a^*(g)\mid g_i=g\big)$。
@@ -144,10 +144,10 @@ $\hat\tau_N \ge 0.70$ 叠加到显著性与 $p<0.05$ 之上，用于排除只显
         逐 seed 的 \texttt{A\_B\_} 外显率为 $0.725/0.635/0.762$，无一 seed 退化到随机水平。
   \item \textbf{外显率不完全。} 逐类 $\mathrm{pen}$ 落在 $0.71$--$0.87$：
         同一基因型类中仍有 $13\%$--$29\%$ 的个体落在另一个架构档。
-        故正确读法是\textbf{概率性偏置}，而非「基因型决定架构」。
+        故正确读法是\textbf{概率性偏置}，而非基因型决定架构。
   \item \textbf{一根观测轴无区分力。} 异质性轴 $\mathrm{CV}_\tau$ 的 AUC 仅 $0.4862$
         （$p=0.175$，与随机不可分），故报告口径取\textbf{单轴} $[N]$；
-        $\mathrm{CV}_\tau$ 仍照常测量上报，但不参与判档 —— 这一行即其退役理由。
+        $\mathrm{CV}_\tau$ 仍照常测量上报，但不参与判档 ， 这一行即其退役理由。
 \end{itemize}
 
 \emph{状态}：$\theta_N^{\mathrm{obs}}$ 的数值尚待\textbf{人工签署}
@@ -156,11 +156,11 @@ $\hat\tau_N \ge 0.70$ 叠加到显著性与 $p<0.05$ 之上，用于排除只显
 
 \subsection{学习前后对照}
 \todo{\textbf{阻塞}：BC \emph{模块与契约}已就绪（\texttt{src/evogenesis/learning/}），
-但\textbf{未接入流水线}（\texttt{pipeline/模型链装配.md} \S4「未接」），
-且当前评估仍由 \texttt{ExpertPolicy} 驱动 $\Rightarrow$ 「学习前 / 学习后」对照暂无数据。
+但\textbf{未接入流水线}（\texttt{pipeline/模型链装配.md} \S4未接），
+且当前评估仍由 \texttt{ExpertPolicy} 驱动 $\Rightarrow$ 学习前 / 学习后对照暂无数据。
 \textbf{不得用其他数字顶替}。}
 
-\subsection{为什么「选择无响应」：两个独立成因（实测）}
+\subsection{为什么选择无响应：两个独立成因（实测）}
 
 \emph{现象}：\texttt{ExpertPolicy} 驱动的代循环里，逐代 fitness 曲线\textbf{看不到正向响应}。
 本节给出定量归因：两个\emph{互相独立}的成因各自足以使响应 $\approx 0$。
@@ -170,20 +170,20 @@ $\hat\tau_N \ge 0.70$ 叠加到显著性与 $p<0.05$ 之上，用于排除只显
 \paragraph{成因一：单次 episode 的排序几乎不可复现（测量）。}
 把\emph{同一个固定种群}依次放在 11 个不同的 \texttt{generation} 下标下评估，
 任意两个下标之间个体排序的 Spearman 相关平均仅 $\rho_1 = 0.069$
-（55 对下标，范围 $-0.26\sim+0.40$）—— 即选择分数里约 $93\%$ 是代特异噪声；
+（55 对下标，范围 $-0.26\sim+0.40$）， 即选择分数里约 $93\%$ 是代特异噪声；
 同一个体归一分数在不同下标间的扰动 SD $\approx 0.20$、峰值 $0.75$，
 而逐分量归一后的选择分数\textbf{总跨度恒为 $1$}。
 按 Spearman--Brown $\rho_K = K\rho_1/(1+(K-1)\rho_1)$：$\rho\ge0.5$ 需 $K\approx14$、
 $\rho\ge0.7$ 需 $K\approx32$（小 $K$ 实测校验：$K=3$ 实测 $0.164$ vs 预测 $0.183$）。
 后果是具体的：3 复制 $\times$ 2 臂（选择 vs 漂变，各 20 代）测得
 选择 $-$ 漂变 $= -0.0088$，且 3 个种子的选择臂\textbf{全部}低于\textbf{全部}漂变臂
-（$3/3$ vs $0/3$ 完全分离，方向为负）—— 这正是「在噪声上选择」的特征：
+（$3/3$ vs $0/3$ 完全分离，方向为负）， 这正是在噪声上选择的特征：
 被选中的是代内运气而非本质优势，而运气不跨代延续。
 修复已在代码侧落地（第 $g$ 代使用\emph{互不相交}的下标 $gK+k$、分量取 $K$ 次均值、
 \texttt{viable} 取并集；$K=1$ 与旧行为\textbf{逐字节一致}；CLI \texttt{-{}-episodes-per-generation}），
 由 \texttt{tests/test\_evolution\_multiepisode.py} 等守护。
 
-\paragraph{成因二：复合分顶在天花板上，选择在「并列团」里挑人（度量）。}
+\paragraph{成因二：复合分顶在天花板上，选择在并列团里挑人（度量）。}
 同一面板（528 个 (个体, 实现) 观测）里，\texttt{survival}（权重 $0.35$）有 \textbf{81.8\%}
 的观测顶到 episode 上限 $600$；复合分\textbf{中位数 $=210.0=0.35\times600$} 恰为该饱和贡献，
 均值 $187.5$ \emph{低于}中位数（少数早死者把均值拉下）。其余分量达成率仅 $9.7\%$--$13.0\%$
@@ -193,19 +193,19 @@ $\rho\ge0.7$ 需 $K\approx32$（小 $K$ 实测校验：$K=3$ 实测 $0.164$ vs �
 它与成因一是\textbf{两个独立成因}：一个是测量，一个是度量本身的余量。
 
 \paragraph{$K$ 平均同时救回两件事，并给出可证伪预测。}
-$K$ 次平均既把并列团\textbf{分级}（\texttt{survival} 由「是否满 $600$」变为
-「$14/14$ 得 $600$、$13/14$ 约 $557$……」，个体重新可分辨），又把噪声降 $K$ 倍。
+$K$ 次平均既把并列团\textbf{分级}（\texttt{survival} 由是否满 $600$变为
+$14/14$ 得 $600$、$13/14$ 约 $557$……，个体重新可分辨），又把噪声降 $K$ 倍。
 由此给出\textbf{可证伪预测}：$K=1$ 下响应 $\approx0$（并列 + 噪声双重致盲）；
 $K\approx14$ 下应出现\textbf{正向响应}。该预测正由 $K=14$ 的代循环实验与
 \texttt{scripts/one\_gen\_response.py}（$K=1$ vs $K=8$，6 种子）同时检验。
 
 \paragraph{一条自行更正（保留在案）。}
-曾据 $0\sim19$ 这 11 个下标报出「raw 复合分与下标显著负相关」
+曾据 $0\sim19$ 这 11 个下标报出raw 复合分与下标显著负相关
 （斜率 $-0.66$/下标、$p\approx0.027$）。把下标铺到 $279$（$K=14\times20$ 代的真实终点）后
-\textbf{趋势消失}（斜率 $\approx-0.02$/下标，水平 $194\to190$、SD $47\to53$）——
-故该「系统性难度漂移」是\textbf{小样本伪影，已撤回}；逐代下降因此更可能归因于
+\textbf{趋势消失}（斜率 $\approx-0.02$/下标，水平 $194\to190$、SD $47\to53$），
+故该系统性难度漂移是\textbf{小样本伪影，已撤回}；逐代下降因此更可能归因于
 \textbf{突变负荷}（变异率 $0.001$/碱基、每代新生，而 $\rho_1=0.069$ 使选择清除有害突变的
 速度远低于其产生速度）。
 
 \subsection{典型案例}
-\todo{补充说明四要求「能直接看见」：选一条成功、一条失败的行为轨迹做可视化。}
+\todo{补充说明四要求能直接看见：选一条成功、一条失败的行为轨迹做可视化。}
