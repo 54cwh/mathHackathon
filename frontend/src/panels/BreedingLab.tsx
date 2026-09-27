@@ -49,7 +49,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
     <section className="border border-border p-2">
       <div className="mb-1 flex items-center justify-between">
         <SectionLabel en="MENDEL / BREEDING" zh="孟德尔 / 育种" />
-        <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+        <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
           {slotA ? shortId(slotA.genome_id) : "A —"} × {slotB ? shortId(slotB.genome_id) : "B —"}
         </span>
       </div>
@@ -59,7 +59,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
           type="button"
           disabled={!current}
           onClick={() => setSlotA(current)}
-          className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+          className="border border-border px-2 py-1 font-pixel text-[11px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
         >
           SET A
         </button>
@@ -67,7 +67,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
           type="button"
           disabled={!current}
           onClick={() => setSlotB(current)}
-          className="border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+          className="border border-border px-2 py-1 font-pixel text-[11px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
         >
           SET B
         </button>
@@ -75,7 +75,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
           type="button"
           disabled={!slotA || !slotB || busy}
           onClick={() => void handleBreed()}
-          className="inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[10px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+          className="inline-flex items-center gap-1 border border-border px-2 py-1 font-pixel text-[11px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
         >
           <Dna className="size-3" />
           BREED
@@ -88,19 +88,19 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
             setResult(null);
             setError(null);
           }}
-          className="border border-border px-2 py-1 font-pixel text-[10px] leading-none"
+          className="border border-border px-2 py-1 font-pixel text-[11px] leading-none"
         >
           SELF
         </button>
       </div>
 
-      <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+      <p className="mt-1 font-mono text-[11px] text-muted-foreground">
         SET A/B 把当前基因组放进亲本槽；SELF = 同一个个体的自交（A=B=当前）。
       </p>
 
       {result && (
         <div className="mt-2 space-y-1">
-          <div className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+          <div className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
             mu {String(result.meiosis_trace.mu ?? "—")} · crossover{" "}
             {String(result.meiosis_trace.crossover_probability ?? "—")} · offspring{" "}
             {result.offspring.length}
@@ -111,7 +111,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
                 <button
                   type="button"
                   onClick={() => onAdopt(childId)}
-                  className="w-full truncate border border-border px-2 py-0.5 text-left font-mono text-[10px]"
+                  className="w-full truncate border border-border px-2 py-0.5 text-left font-mono text-[11px]"
                   title={`载入 ${childId} 到编辑器并立即发育`}
                 >
                   载入 {shortId(childId)}
@@ -122,7 +122,7 @@ export function BreedingLab({ current, onAdopt }: BreedingLabProps) {
         </div>
       )}
 
-      {error && <p className="mt-1 font-mono text-[10px] text-brand-danger-red">⚠ {error}</p>}
+      {error && <p className="mt-1 font-mono text-[11px] text-brand-danger-red">⚠ {error}</p>}
     </section>
   );
 }

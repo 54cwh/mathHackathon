@@ -17,8 +17,8 @@ export function SectionLabel({
 }) {
   return (
     <span className={cn("inline-flex items-baseline gap-1.5", className)}>
-      <span className="font-pixel text-[10px] leading-none">{en}</span>
-      {zh && <span className="text-[10px] leading-none text-muted-foreground">{zh}</span>}
+      <span className="font-pixel text-[11px] leading-none">{en}</span>
+      {zh && <span className="text-[11px] leading-none text-muted-foreground">{zh}</span>}
     </span>
   );
 }

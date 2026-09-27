@@ -324,7 +324,7 @@ export function DanioArenaPanel() {
           />
           {!sessionId && (
             <div className="absolute inset-0 flex items-center justify-center px-3 text-center">
-              <span className="font-pixel text-[10px] leading-tight text-muted-foreground">
+              <span className="font-pixel text-[11px] leading-tight text-muted-foreground">
                 {error ?? "构建种群中（基因组发育 + 建网）…"}
               </span>
             </div>
@@ -336,7 +336,7 @@ export function DanioArenaPanel() {
           <div className="border border-border p-2">
             <div className="mb-1 flex items-center justify-between">
               <SectionLabel en="FISH CARD" zh="个体卡片" />
-              <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+              <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
                 {card ? shortId(card.fish_id) : "—"}
               </span>
             </div>
@@ -354,16 +354,16 @@ export function DanioArenaPanel() {
                     ["viable", card.viable ? "yes" : "no"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex flex-col">
-                      <dt className="text-[10px] text-muted-foreground">{label}</dt>
+                      <dt className="text-[11px] text-muted-foreground">{label}</dt>
                       <dd className="truncate">{value}</dd>
                     </div>
                   ))}
                 </dl>
-                <div className="mt-1 truncate font-mono text-[10px] text-muted-foreground">
+                <div className="mt-1 truncate font-mono text-[11px] text-muted-foreground">
                   genome {card.genome_id} · fitness {card.fitness === null ? "—" : card.fitness.toFixed(3)}
                 </div>
                 {Object.keys(card.cell_counts).length > 0 && (
-                  <div className="mt-1 font-mono text-[10px] text-muted-foreground">
+                  <div className="mt-1 font-mono text-[11px] text-muted-foreground">
                     cells{" "}
                     {Object.entries(card.cell_counts)
                       .map(([fate, count]) => `${fate}:${count}`)
@@ -395,12 +395,12 @@ export function DanioArenaPanel() {
                     .then(setBoard)
                     .catch((e) => setError(String(e)))
                 }
-                className="border border-border px-2 py-0.5 font-pixel text-[10px] leading-none"
+                className="border border-border px-2 py-0.5 font-pixel text-[11px] leading-none"
               >
                 REFRESH · 刷新
               </button>
             </div>
-            <table className="w-full font-mono text-[10px]">
+            <table className="w-full font-mono text-[11px]">
               <thead>
                 <tr className="text-muted-foreground">
                   <th className="text-left font-normal">#</th>
@@ -442,7 +442,7 @@ export function DanioArenaPanel() {
         <div className="shrink-0 border border-border p-2">
           <div className="mb-1 flex items-center justify-between">
             <SectionLabel en="EVOLVE" zh="演化" />
-            <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+            <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
               GENERATION {generation}
             </span>
           </div>
@@ -451,7 +451,7 @@ export function DanioArenaPanel() {
             disabled={!sessionId || evolutionBusy}
             onClick={() => void stepEvolution()}
             title="推进一代（约 2s）：评估 → 折算 F → 选择繁殖 → 子代重建 Arena"
-            className={`border border-border px-2 py-0.5 font-pixel text-[10px] leading-none ${
+            className={`border border-border px-2 py-0.5 font-pixel text-[11px] leading-none ${
               !sessionId || evolutionBusy
                 ? "bg-muted text-muted-foreground"
                 : "hover:bg-brand-slate-shadow hover:text-brand-bone"
@@ -460,7 +460,7 @@ export function DanioArenaPanel() {
             {evolutionBusy ? "计算中…" : "NEXT GENERATION · 下一代"}
           </button>
           {evoSummary && (
-            <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-[10px]">
+            <dl className="mt-1 grid grid-cols-2 gap-x-2 font-mono text-[11px]">
               <div>
                 fitness{" "}
                 {evoSummary.fitness_mean === null ? "—" : evoSummary.fitness_mean.toFixed(4)}
@@ -488,7 +488,7 @@ export function DanioArenaPanel() {
                 type="button"
                 onClick={() => setSimSpeed(factor)}
                 title={`步速 ${factor}×（只改推进快慢，不改模型本身）`}
-                className={`border border-border px-2 py-0.5 font-mono text-[10px] leading-none ${
+                className={`border border-border px-2 py-0.5 font-mono text-[11px] leading-none ${
                   simSpeed === factor ? "bg-brand-fish-navy text-brand-bone" : ""
                 }`}
               >

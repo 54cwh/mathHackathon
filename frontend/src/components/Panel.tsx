@@ -25,9 +25,9 @@ export function Panel({ title, titleZh, icon, className, children }: PanelProps)
     <section className={cn("flex min-h-0 flex-col overflow-hidden bg-card", className)}>
       <header className="flex items-center gap-2 border-b border-border px-3 py-2">
         {icon}
-        <span className="font-pixel text-[10px] leading-none">{title}</span>
+        <span className="font-pixel text-[11px] leading-none">{title}</span>
         {titleZh && (
-          <span className="text-[10px] leading-none text-muted-foreground">{titleZh}</span>
+          <span className="text-[11px] leading-none text-muted-foreground">{titleZh}</span>
         )}
       </header>
       <div className="min-h-0 flex-1 p-3">{children}</div>

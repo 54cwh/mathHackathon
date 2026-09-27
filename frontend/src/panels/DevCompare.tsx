@@ -79,11 +79,11 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
       <div className="border border-border p-2">
         <div className="mb-1"><SectionLabel en="DNA DIFFERENCE" zh="碱基差异" /></div>
         {mutations.length === 0 ? (
-          <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+          <p className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
             尚无突变（MUTATE 后在此累计）
           </p>
         ) : (
-          <ul className="font-mono text-[10px]">
+          <ul className="font-mono text-[11px]">
             {mutations.map((mutation, index) => (
               <li key={`${mutation.position}-${index}`}>
                 #{index + 1} pos {mutation.position}: {mutation.from_base} → {mutation.to_base}
@@ -95,9 +95,9 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
 
       {/* motif affinity q：8 维成对柱（before 灰蓝 / after 琥珀） */}
       <div className="border border-border p-2">
-        <div className="mb-1 flex items-center justify-between font-pixel text-[10px] leading-none">
+        <div className="mb-1 flex items-center justify-between font-pixel text-[11px] leading-none">
           <span>MOTIF AFFINITY (q)</span>
-          <span className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">q∈[0,1]，8 motif</span>
+          <span className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">q∈[0,1]，8 motif</span>
         </div>
         <MetricChart
           height={40}
@@ -118,7 +118,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
             drawPairedBars(ctx, w, h, cellCounts(before), cellCounts(after), BRAND.blueGrey, BRAND.amber);
           }}
         />
-        <table className="mt-1 w-full font-mono text-[10px]">
+        <table className="mt-1 w-full font-mono text-[11px]">
           <thead>
             <tr className="text-muted-foreground">
               <th className="text-left font-normal">type</th>
@@ -153,7 +153,7 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
       {/* 表型汇总表（含 Δ） */}
       <div className="border border-border p-2">
         <div className="mb-1"><SectionLabel en="PHENOTYPE DELTA" zh="表型变化" /></div>
-        <table className="w-full font-mono text-[10px]">
+        <table className="w-full font-mono text-[11px]">
           <thead>
             <tr className="text-muted-foreground">
               <th className="text-left font-normal">metric</th>
@@ -175,12 +175,12 @@ export function DevCompare({ before, after, mutations }: DevCompareProps) {
         </table>
       </div>
 
-      <p className="border border-brand-danger-red p-2 font-mono text-[10px] text-brand-danger-red">
+      <p className="border border-brand-danger-red p-2 font-mono text-[11px] text-brand-danger-red">
         ⚠ Δ 含发育噪声：两次发育的差异里混有随机发育成分 —— 即使碱基序列完全相同，不同个体也会
         得到略有差别的表型。故单碱基编辑的 Δ 不可直接读作突变效应；要分离遗传效应，需多次抽样取均值。
       </p>
 
-      <p className="whitespace-nowrap font-mono text-[10px] text-muted-foreground">
+      <p className="whitespace-nowrap font-mono text-[11px] text-muted-foreground">
         未展示：边的增删差集、GRN 逐步表达、Arena 行为指标。
       </p>
     </div>

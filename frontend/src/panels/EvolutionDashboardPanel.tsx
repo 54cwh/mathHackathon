@@ -61,9 +61,9 @@ function statusColor(status: JobStatusKind): string {
 export function EvolutionDashboardPanel() {
   // 表单
   const [name, setName] = useState("env-select");
-  const [seedsText, setSeedsText] = useState("1,2,3");
+  const [seedsText, setSeedsText] = useState("1");
   const [environment, setEnvironment] = useState<Environment>("default");
-  const [generations, setGenerations] = useState(10);
+  const [generations, setGenerations] = useState(1);
   // 运行状态
   const [job, setJob] = useState<JobStatus | null>(null);
   /** job 来源：只有环境选择 job 完成才刷新「详情=最新实验」，会话演化不产 ExperimentRun。 */
@@ -226,10 +226,10 @@ export function EvolutionDashboardPanel() {
             className="flex items-center justify-between border border-border px-2 py-1.5 text-left"
           >
             <span className="inline-flex items-baseline gap-1.5">
-              <span className="font-pixel text-[12px] leading-none">ENVIRONMENTAL SELECTION</span>
-              <span className="text-[12px] leading-none text-muted-foreground">环境选择实验</span>
+              <span className="font-pixel text-[14px] leading-none">ENVIRONMENTAL SELECTION</span>
+              <span className="text-sm leading-none text-muted-foreground">环境选择实验</span>
             </span>
-            <span className="font-pixel text-[12px] leading-none text-muted-foreground">
+            <span className="font-pixel text-[14px] leading-none text-muted-foreground">
               {showForm ? "▾ 收起" : "▸ 发起新实验"}
             </span>
           </button>
@@ -237,7 +237,7 @@ export function EvolutionDashboardPanel() {
           {showForm && (
             <>
               <label className="flex flex-col gap-1">
-                <span className="text-[12px] text-muted-foreground">名称 NAME</span>
+                <span className="text-sm text-muted-foreground">名称 NAME</span>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -246,20 +246,21 @@ export function EvolutionDashboardPanel() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[12px] text-muted-foreground">种子 SEEDS</span>
+                <span className="text-sm text-muted-foreground">种子 SEEDS</span>
                 <input
                   value={seedsText}
                   onChange={(e) => setSeedsText(e.target.value)}
                   className="border border-border bg-transparent px-1 py-1 font-mono text-sm"
                 />
-                <span className="font-mono text-[12px] text-muted-foreground">
-                  {seeds.length}/{MAX_SEEDS} 个：{seeds.join(", ") || "—"}
+                <span className="font-mono text-sm text-muted-foreground">
+                  {seeds.length}/{MAX_SEEDS} 个：{seeds.join(", ") || "—"} · 预计约{" "}
+                  {Math.max(1, seeds.length) * Math.max(1, generations) * 40} s
                 </span>
               </label>
 
               <div className="flex items-end gap-2">
                 <label className="flex flex-col gap-1">
-                  <span className="text-[12px] text-muted-foreground">环境 ENV</span>
+                  <span className="text-sm text-muted-foreground">环境 ENV</span>
                   <select
                     value={environment}
                     onChange={(e) => setEnvironment(e.target.value as Environment)}
@@ -273,7 +274,7 @@ export function EvolutionDashboardPanel() {
                   </select>
                 </label>
                 <label className="flex flex-col gap-1">
-                  <span className="text-[12px] text-muted-foreground">代数 GENS</span>
+                  <span className="text-sm text-muted-foreground">代数 GENS</span>
                   <input
                     type="number"
                     min={1}
@@ -288,7 +289,7 @@ export function EvolutionDashboardPanel() {
                   type="button"
                   onClick={() => void handleLaunch()}
                   disabled={busy || running || !seedsValid}
-                  className="border border-border px-2 py-1.5 font-pixel text-[12px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
+                  className="border border-border px-3 py-2 font-pixel text-[14px] leading-none disabled:cursor-not-allowed disabled:text-muted-foreground"
                 >
                   LAUNCH · 启动
                 </button>
@@ -296,7 +297,7 @@ export function EvolutionDashboardPanel() {
                   <button
                     type="button"
                     onClick={() => void handleCancel()}
-                    className="inline-flex items-center gap-1 border border-border px-2 py-1.5 font-pixel text-[12px] leading-none"
+                    className="inline-flex items-center gap-1 border border-border px-3 py-2 font-pixel text-[14px] leading-none"
                   >
                     <X className="size-3" />
                     CANCEL
@@ -308,7 +309,7 @@ export function EvolutionDashboardPanel() {
 
           {job && (
             <div className="space-y-1 border border-border p-2">
-              <div className="flex items-center justify-between font-mono text-[12px]">
+              <div className="flex items-center justify-between font-mono text-sm">
                 <span className="truncate">{job.job_id}</span>
                 <span className={statusColor(job.status)}>{job.status}</span>
               </div>
@@ -318,19 +319,19 @@ export function EvolutionDashboardPanel() {
                   style={{ width: `${Math.round(Math.max(0, Math.min(1, job.progress)) * 100)}%` }}
                 />
               </div>
-              <div className="font-mono text-[12px] text-muted-foreground">
+              <div className="font-mono text-sm text-muted-foreground">
                 {(job.progress * 100).toFixed(0)}%
                 {typeof job.detail?.error === "string" ? ` · ${job.detail.error}` : ""}
               </div>
             </div>
           )}
 
-          {error && <p className="text-[12px] text-brand-danger-red">⚠ {error}</p>}
+          {error && <p className="text-sm text-brand-danger-red">⚠ {error}</p>}
 
           <div className="space-y-1">
             <span className="inline-flex items-baseline gap-1.5">
-              <span className="font-pixel text-[12px] leading-none">SELECTION JOBS</span>
-              <span className="text-[12px] leading-none text-muted-foreground">
+              <span className="font-pixel text-[14px] leading-none">SELECTION JOBS</span>
+              <span className="text-sm leading-none text-muted-foreground">
                 本进程实验（重启即空）
               </span>
             </span>
